@@ -19,3 +19,5 @@ Invocation has two modes:
 Express dependencies as `/skill-name` prose invocation. Keep shared reference material with the skill that owns it; another skill reaches that material by invoking its owner. Because the Skills CLI does not install dependencies transitively, document required installation pairs in the top-level README.
 
 Treat each skill as a predictable process. Ordered steps end with checkable, exhaustive completion criteria. Keep one source of truth for each rule, disclose branch-specific reference behind a precise pointer, and remove instructions that do not change agent behavior.
+
+Use terse imperative commit titles without conventional-commit prefixes.

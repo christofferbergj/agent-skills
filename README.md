@@ -25,6 +25,36 @@ npx skills@latest add christofferbergj/agent-skills \
 
 The Skills CLI does not resolve dependencies between skills. Install both when using `update-dependencies`, because it invokes `/linting-alignment` when a dependency update changes the lint or formatting stack.
 
+## Maintain
+
+Edit existing skills in this repository under `skills/<category>/<skill-name>/`. Add a new skill as another directory containing `SKILL.md`, add its Codex metadata in `agents/openai.yaml`, and list it in both this README and its category README.
+
+Before publishing:
+
+```bash
+npx skills@latest add . --list
+git diff --check
+gitleaks dir . --redact --no-banner
+```
+
+Commit with a terse imperative title, push `main`, then refresh already-installed global skills:
+
+```bash
+npx skills@latest update update-dependencies linting-alignment \
+  --global \
+  --yes
+```
+
+`update` refreshes installed skills; it does not install a newly published one. Add a new skill once with:
+
+```bash
+npx skills@latest add christofferbergj/agent-skills \
+  --skill <skill-name> \
+  --global \
+  --agent codex \
+  --yes
+```
+
 ## Skills
 
 ### User-invoked
