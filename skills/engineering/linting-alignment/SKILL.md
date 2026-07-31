@@ -1,6 +1,6 @@
 ---
 name: linting-alignment
-description: Align repository lint and formatting policy with its owning presets. Use for shared lint-configuration reviews, upgrades involving Ultracite, Oxlint/Oxfmt, or React Doctor, and evidence-based cleanup of plugins or local exceptions.
+description: Align lint and formatting toolchains. Use when reviewing shared configuration; upgrading or migrating linters, formatters, presets, analyzers, or type-aware integrations; or removing plugins, overrides, suppressions, and duplicate commands with evidence.
 ---
 
 # Linting Alignment
@@ -39,7 +39,7 @@ Separate four execution lanes:
 3. **Analyzer lane** — standalone static-analysis CLIs whose project scans exceed plugin coverage.
 4. **Type-aware lane** — semantic rules, compiler diagnostics, and their project-graph dependencies.
 
-When the graph contains Ultracite, Oxlint, Oxfmt, React Doctor, or their integrations, read [`references/toolchain-ownership.md`](references/toolchain-ownership.md) completely before classifying any configuration as redundant.
+When the graph contains Ultracite, Oxlint, Oxfmt, or their integrations, read [`references/ultracite-oxc-ownership.md`](references/ultracite-oxc-ownership.md) completely before classifying any configuration as redundant. When it contains React Doctor or its integrations, read [`references/react-doctor-ownership.md`](references/react-doctor-ownership.md) completely before comparing its analyzer and plugin lanes.
 
 **Complete when:** every configured command resolves through its configs and imports to installed owners, every nested scope and execution lane is accounted for, and duplicate or competing tools are distinguished from intentional complementary lanes.
 

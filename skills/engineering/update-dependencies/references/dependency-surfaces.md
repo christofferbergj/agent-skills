@@ -1,6 +1,6 @@
 # Dependency Surface Inventory
 
-This is the exhaustive reference for the `update-dependencies` sweep. Apply every section to every detected JavaScript or TypeScript package-manager root. Record a section as absent when its signals do not exist.
+This taxonomy defines the version-bearing surfaces covered by the `update-dependencies` sweep. The main skill owns inventory actions, decisions, completion criteria, and validation.
 
 Exclude dependency directories, caches, build output, and vendored examples unless the repository deliberately owns dependency declarations inside them.
 
@@ -14,8 +14,6 @@ Account for:
 - Patched dependencies and the commands or tests that prove each patch still applies.
 - Nested package-manager roots that are intentionally independent of the root workspace.
 
-Read the manager and version from repository declarations and the lockfile. Use that manager's installed help to select its recursive or workspace-aware outdated, audit, list, explanation, and targeted-update commands. Prefer machine-readable output when the installed version supports it. An Audit run may query registries but must not install, update, rewrite a lockfile, or run fix commands.
-
 ## Automation
 
 Inspect tracked CI and automation configuration for external versioned references:
@@ -24,7 +22,7 @@ Inspect tracked CI and automation configuration for external versioned reference
 - Reusable workflows and external CI plugins, orbs, tasks, and setup actions.
 - Bootstrap or release scripts that download a named tool version.
 
-Local paths and repository-owned actions are not external dependencies. Preserve the repository's existing tag, full-version, commit-SHA, or digest style unless a policy change is explicitly in scope.
+Local paths and repository-owned actions are not external dependencies. Record each external reference's tag, full-version, commit-SHA, or digest style and its owning policy.
 
 ## Containers and development environments
 
@@ -44,11 +42,11 @@ Reconcile linked declarations across:
 - Mise, asdf, nvm, Node-version, and other local toolchain files.
 - CI matrices, container base images, deployment configuration, and bootstrap scripts.
 
-A newer runtime or package manager is a sensitive candidate, not an automatic update. All declarations selected for an upgrade move together; mismatched declarations are a policy conflict to resolve or hold.
+Record every consumer of a shared runtime or package-manager declaration so linked versions can be assessed together.
 
 ## Security and supply-chain policy
 
-Run the detected manager's read-only advisory command and inventory all reported severities. Apply the repository's documented remediation threshold. When no threshold exists, classify every reported advisory and record the missing threshold as a policy gap; severity alone does not authorize automatic remediation.
+Account for advisory output, the repository's documented remediation threshold, and any missing threshold.
 
 Inspect Renovate, Dependabot, package-manager, registry, and CI configuration for:
 
@@ -58,9 +56,7 @@ Inspect Renovate, Dependabot, package-manager, registry, and CI configuration fo
 
 ## Generated and source-managed surfaces
 
-Identify generated contracts, vendored sources, provenance locks, and refresh scripts affected by dependency installation or validation. Use their owning refresh path when regeneration is part of the chosen update. Keep incidental generated changes outside the sweep and report upstream-owned migrations at their ownership boundary.
-
-For a patched dependency, verify both patch application and the behavior that motivated the patch before retaining, rebasing, or removing it.
+Identify generated contracts, vendored sources, provenance locks, and refresh scripts affected by dependency installation or validation. Link each generated or patched artifact to its owning refresh path and verification command.
 
 ## Lint, format, and doctor stack
 
@@ -71,9 +67,3 @@ Detect the actual installed and imported stack rather than relying on a fixed pa
 - React Doctor and its lint integration.
 - Loaded JavaScript lint plugins and shared workspace config packages.
 - Root, shared, and scoped configuration files plus inline suppressions.
-
-Any included change to this surface requires the `/linting-alignment` handoff described in the main skill.
-
-## Inventory reconciliation
-
-Deduplicate dynamic or repeated declarations under their owner, but retain every consumer that must stay aligned. The inventory is complete only when each detected surface is represented by a ledger entry, linked to an owning entry, or explicitly recorded as absent.
