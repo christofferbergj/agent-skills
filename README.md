@@ -2,7 +2,7 @@
 
 [![skills.sh](https://skills.sh/b/christofferbergj/agent-skills)](https://skills.sh/christofferbergj/agent-skills)
 
-Focused engineering skills for coding agents. Each skill is small enough to understand, complete enough to run predictably, and designed to compose with the others.
+Focused skills for coding agents. Each skill is small enough to understand, complete enough to run predictably, and designed to compose with the others.
 
 ## Install
 
@@ -62,6 +62,7 @@ npx skills@latest add christofferbergj/agent-skills \
 
 These run only when you select them explicitly.
 
+- **[bro](./skills/communication/bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
 - **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Sweep every JavaScript and TypeScript dependency surface, apply policy-compatible updates, and validate the result.
 
 ### Model-invoked
