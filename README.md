@@ -32,6 +32,7 @@ Edit existing skills in this repository under `skills/<category>/<skill-name>/`.
 Before publishing:
 
 ```bash
+pnpm fmt:check
 npx skills@latest add . --list
 git diff --check
 gitleaks dir . --redact --no-banner

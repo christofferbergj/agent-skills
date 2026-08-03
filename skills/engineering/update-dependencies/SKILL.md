@@ -34,8 +34,8 @@ Use the installed manager's current help before choosing its read-only outdated,
 
 Maintain a working ledger with:
 
-| Surface | Current | Eligible target | Risk | Policy or evidence | Decision |
-| --- | --- | --- | --- | --- | --- |
+| Surface                              | Current   | Eligible target      | Risk                                                 | Policy or evidence           | Decision                         |
+| ------------------------------------ | --------- | -------------------- | ---------------------------------------------------- | ---------------------------- | -------------------------------- |
 | package, action, image, or toolchain | exact ref | exact ref or current | patch, minor, major, non-semver, security, or linked | repository or primary source | current, include, hold, or split |
 
 Keep the ledger as working notes unless the user asks for an artifact.
