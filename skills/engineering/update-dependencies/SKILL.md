@@ -46,7 +46,9 @@ Keep the ledger as working notes unless the user asks for an artifact.
 
 Classify candidates by semver distance when semver applies and by runtime, tooling, CI, toolchain, or security impact. Treat majors, non-comparable refs, runtime-sensitive libraries, security remediations, package-manager or runtime upgrades, and changes with migration instructions as sensitive.
 
-Build the package-dependency candidate set from the installed package manager's workspace-aware resolution and treat that result as authoritative. For sensitive candidates in that set, use primary sources—official migration guides, changelogs, releases, package manifests, published source, and platform documentation—to assess compatibility. Use the repository's prescribed documentation lookup mechanism when one exists.
+Build the package-dependency candidate set from the installed package manager's workspace-aware resolution. Treat the manager's configured eligibility checks as authoritative when its command enforces them. For example, when a pnpm workspace configures `minimumReleaseAge`, let pnpm select eligible versions through commands that honor the setting. Add a separate policy check only when the manager cannot enforce it or repository instructions explicitly require one.
+
+For sensitive candidates in that set, use primary sources—official migration guides, changelogs, releases, package manifests, published source, and platform documentation—to assess compatibility. Use the repository's prescribed documentation lookup mechanism when one exists.
 
 Give every candidate one outcome:
 
@@ -101,7 +103,7 @@ Lead with whether the repository was already current, was updated successfully, 
 
 Audit mode ends with an unchanged worktree. Improve mode ends with the validated changes uncommitted and unpublished.
 
-In Publish mode, follow repository guidance and perform only the explicitly requested boundary:
+In Publish mode, follow repository guidance and harness constraints. Retain any current branch that satisfies those authorities. When publication needs a new branch and neither authority supplies a name, use `agent/YYYY-MM-DD-update-dependencies` as the fallback. Then perform only the explicitly requested boundary:
 
 - Stage and commit only the sweep's files when a commit is requested.
 - Push only when a push is requested.
