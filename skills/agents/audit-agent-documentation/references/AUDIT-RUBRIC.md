@@ -4,7 +4,7 @@ Use this rubric during diagnosis and again during the final read-through. It is 
 
 ## Authority and contract integrity
 
-- Trace each instruction to an owner, scope, consumer, and source of truth.
+- Trace each documentation node and edge to an owner, scope, consumer, and source of truth.
 - Read the effective stack in precedence order instead of reviewing files in isolation.
 - Treat setup outputs, label vocabularies, issue workflows, domain routing, generated instructions, and skill-consumed documents as interfaces.
 - Preserve exact values and repeated constraints when consumers depend on them.
@@ -17,7 +17,9 @@ The governing test is: “Would this change preserve every load-bearing project 
 Check that:
 
 - Commands exist, accept the documented flags or output fields, and run from the stated directory.
+- Inheritance, context pointers, and consumer routes resolve from every scope that relies on them.
 - Paths, package names, workspaces, owners, and architecture descriptions match the current repository.
+- Consumer-required names, headings, fields, values, and conditional sections match their owning contract.
 - Generated-file instructions point to the generator and editable source, not merely to a prohibition.
 - External service or repository-state claims are checked live when safe and relevant.
 - Examples still demonstrate the intended workflow rather than a superseded one.
@@ -45,7 +47,7 @@ Route prose filesystem tours, facts obvious from manifests, and branch-specific 
 
 ### Scoped guidance
 
-Place an instruction in a nested scope when it applies throughout that scope and would distract elsewhere. Favor stable capabilities, boundaries, and domain concepts over volatile inventories of files. Retain a short root-level pointer when agents need to discover the scoped material.
+Place an instruction in a nested scope when it applies throughout that scope and would distract elsewhere. In a monorepo, keep shared navigation and tooling at the root and package-specific purpose, stack, and conventions in the narrowest reliable scope. Favor stable capabilities, boundaries, and domain concepts over volatile inventories of files. Retain a short root-level pointer when agents need to discover the scoped material.
 
 ### Routed reference
 
@@ -65,6 +67,18 @@ Every retained instruction should change likely agent behavior. Look for:
 
 Treat behaviorally inert instructions (**no-ops**), stale **sediment**, vague encouragement, generic software advice, obvious filesystem facts, and oversized example sets as removal candidates. Repair, route, merge, or remove them unless repository evidence shows they are load-bearing.
 
+## Environment leverage
+
+Look beyond prose edits when the evidence points to a stronger environmental fix:
+
+- **Navigation** — add or sharpen a context pointer when agents repeatedly struggle to find an authoritative source.
+- **Automated checks** — move mechanically enforceable rules into repository-owned validation when a safe check can supply the same contract and repair path.
+- **Implementation versus review** — keep implementation context lean; route coding standards to review or validation surfaces when implementers do not need them during exploration.
+- **Information access** — preserve or add precise routes to logs, issue trackers, domain docs, and read-only service data that a workflow requires.
+- **Tool economy** — replace a documented expensive lookup with a stable script or focused command only when current evidence shows recurring cost.
+
+Keep a short discovery pointer when moving a contract out of prose would otherwise make it invisible.
+
 ## Internal consistency and scope
 
 Compare guidance as merged for representative work:
@@ -76,17 +90,7 @@ Compare guidance as merged for representative work:
 
 Check terminology, commands, precedence, ownership, and completion criteria. Short repetition can be a deliberate scope anchor when independent automatic loading makes the constraint materially more reliable; duplicated explanations and mutable facts should have one source.
 
-## Skills and discovery
-
-When the repository includes skills:
-
-- Verify the invocation mode matches how the skill is actually used.
-- Keep a correctness-critical common sequence and its checkable completion criteria in the entry point. Reference-only and router skills may remain sequence-free; disclose branch-specific reference behind precise pointers.
-- Check every linked resource and command in its documented working directory.
-- Verify every intended agent ecosystem can discover the canonical skill through the repository's chosen mechanism.
-- Distinguish repository-owned skills from locked, vendored, generated, or upstream-owned skills before editing.
-
-Use the declared installation, refresh, or publication workflow for source-managed material. An upstream report is a successful boundary outcome when the local repository is not the owner.
+In a monorepo, map every first-party workspace to one merged stack and evaluate each distinct stack. Identical stacks may share one evaluation only when their workspace membership remains explicit.
 
 ## Judgment for capable agents
 

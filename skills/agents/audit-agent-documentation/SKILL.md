@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Audit Agent Documentation
 
-Treat the repository's agent guidance as one **instruction stack**: agents experience root guidance, scoped guidance, routed references, and skills together. Treat every document consumed by a workflow as a **contract**, even when it looks like ordinary prose.
+Treat the repository's agent guidance as a **documentation graph**. Entry points, scoped guidance, routed references, skills, setup outputs, generators, and discovery adapters are nodes; inheritance, pointers, generation, and consumer dependencies are edges. Each task receives one effective **instruction stack** through that graph. Treat every node consumed by a workflow as a **contract**, even when it looks like ordinary prose.
 
 Infer the authorization mode from the request:
 
@@ -14,43 +14,45 @@ Infer the authorization mode from the request:
 - **Improve** — the default; audit, make focused edits, and validate them.
 - **Publish** — improve, then cross only the commit, push, or review boundaries the user explicitly requests.
 
-Read [`references/AUDIT-RUBRIC.md`](references/AUDIT-RUBRIC.md) completely before judging the documentation. It is the evaluation reference for diagnosis and final review.
-
 ## 1. Establish authority and boundaries
 
-Resolve the repository root, current worktree and branch, initial status, and the instruction files that govern the task. Read applicable `AGENTS.md` and equivalent agent instructions from the broadest scope to the most specific scope before examining candidates for change.
+Resolve the repository root, current worktree and branch, initial status, first-party workspace boundaries, and the instruction files that govern the task. Read applicable user-level, root, and scoped agent instructions from the broadest scope to the most specific scope before examining candidates for change. Derive workspace boundaries from authoritative manifests and configuration rather than directory-name guesses.
 
 Mark existing user changes as protected. Record every explicit setup, generation, source-management, publication, and ownership rule that constrains agent documentation.
 
-**Complete when:** the governing instruction chain, initial worktree boundary, and every protected or source-managed surface are identified.
+When the repository has multiple first-party workspaces or distinct nested instruction scopes, read [`references/MONOREPO-GRAPH.md`](references/MONOREPO-GRAPH.md) completely before inventorying them.
 
-## 2. Inventory the instruction stack
+**Complete when:** the governing instruction chain, initial worktree boundary, every first-party workspace, and every protected or source-managed surface are identified.
+
+## 2. Inventory the documentation graph
 
 Search by role across every agent-documentation convention present. Account for:
 
 - Root and nested entry points such as `AGENTS.md`, `CLAUDE.md`, and ecosystem-specific instruction surfaces.
-- Documents and context maps reached from those entry points.
-- Repository-local skills, their routed references, and discovery adapters.
-- Setup outputs, provenance or lock manifests, generated guidance, and the sources or commands that own them.
+- Documents, context maps, coding standards, and information-access instructions reached from those entry points.
+- Repository-local skills and installed skills that the repository invokes, configures, or retains setup outputs for, including their setup skills, templates, routed references, and discovery adapters.
+- Setup outputs, provenance or lock manifests, generated guidance, automated documentation checks, and the sources or commands that own them.
 - Nearby documentation and repository examples that reveal local conventions.
 
 Exclude dependencies, build output, and vendored examples unless the repository deliberately exposes them to agents.
 
-For each surface, record its scope, consumer, load condition, owner or source, and authoritative replacement path. Keep the inventory as working notes unless the user requests an artifact.
+For each node, record its scope, consumer, load condition, owner or source, and authoritative replacement path. For each edge, record what loads, points to, generates, mirrors, or consumes what. In a monorepo, map every first-party workspace to an effective instruction stack; group workspaces only when their stacks and consumers are identical. Keep the graph as working notes unless the user requests an artifact.
 
-**Complete when:** every discovered agent-facing entry point is accounted for, every routed document required to understand its contract has been read, and the search boundary is explicit.
+**Complete when:** every discovered entry point, routed document, first-party workspace, and downstream consumer is accounted for; every edge required to understand their contracts has been followed; and the search boundary is explicit.
 
 ## 3. Verify documentation against reality
 
-Treat each factual claim as a hypothesis. Verify relevant paths, scripts, package-manager commands, CLI fields, workspace boundaries, generated-file repair paths, symlink targets, and architecture claims against repository evidence or a safe live check. Use the repository's prescribed documentation lookup tool when external technical documentation is needed.
+Treat each factual claim and graph edge as a hypothesis. Verify relevant paths, inheritance and pointer targets, scripts, command fields, workspace boundaries, required headings or values, conditional sections, generated-file repair paths, symlink targets, and architecture claims against repository evidence or a safe live check. Use the repository's prescribed documentation lookup tool when external technical documentation is needed.
 
 Use history and nearby examples when intent or ownership is unclear. For source-managed material, verify its provenance and refresh mechanism; route improvements through that mechanism or classify them as upstream work.
 
-**Complete when:** every suspected defect and proposed factual change has current evidence, and every unverifiable claim is recorded as a gap rather than filled from memory.
+When a skill or tool reads or writes repository agent documentation, read [`references/CONSUMER-CONTRACTS.md`](references/CONSUMER-CONTRACTS.md) completely before judging those nodes.
+
+**Complete when:** every suspected defect, proposed factual change, and consumer-critical edge has current evidence, and every unverifiable claim or contract is recorded as a gap rather than filled from memory.
 
 ## 4. Diagnose the merged stack
 
-Apply every section of [`references/AUDIT-RUBRIC.md`](references/AUDIT-RUBRIC.md) to the guidance as an agent receives it: root plus scoped instructions and routed contracts for every discovered scope.
+Read [`references/AUDIT-RUBRIC.md`](references/AUDIT-RUBRIC.md) completely, then apply every section to the graph as a whole and to each distinct effective instruction stack. In a monorepo, map every first-party workspace to one evaluated stack even when identical stacks are evaluated once.
 
 Classify each candidate:
 
@@ -81,22 +83,23 @@ Select the smallest coherent set that preserves project-specific intent and requ
 
 In **Audit** mode, leave the filesystem unchanged and turn the focused change set into an evidence-backed proposal.
 
-In **Improve** or **Publish** mode, make the smallest coherent edits that realize the plan:
+In **Improve** or **Publish** mode, when the change set creates or edits any agent-consumed document, invoke `/writing-for-agents` before drafting the first change and apply its guidance to every changed document. Make the smallest coherent edits that realize the plan:
 
 - Correct verified facts without changing the workflow they serve.
 - Replace vague prohibitions with the desired action and repair path; retain hard guardrails where safety or contract integrity requires them.
 - Prefer stable capabilities and domain concepts over brittle file tours.
 - Link to authoritative source, code, or generated output instead of copying volatile detail.
 - Preserve one canonical source and use the repository's supported discovery mechanism for other consumers.
+- Preserve downstream consumer contracts and selected project values; repair them through their owning setup source or template.
 - Apply generated or source-managed changes through their owning source and refresh path; leave a precise upstream finding when that path is outside the task's authority.
 
-**Complete when:** Audit mode has a complete proposal and an unchanged filesystem; Improve or Publish mode has only intended agent-documentation changes, with protected semantics and user work intact and each meaning owned by one source.
+**Complete when:** Audit mode has a complete proposal and an unchanged filesystem; Improve or Publish mode has only intended agent-documentation changes, with `/writing-for-agents` applied to every changed agent-consumed document, protected semantics and user work intact, each meaning owned by one source, and every downstream consumer edge preserved.
 
 ## 7. Validate as a future agent
 
-In Audit mode, use read-only checks, record mutation-capable gates as unrun, and confirm the final filesystem status matches the initial status. In Improve or Publish mode, read every changed document end to end. Then re-read every affected merged instruction stack and sample at least one unaffected stack for each instruction convention present. Verify that:
+In Audit mode, use read-only checks, record mutation-capable gates as unrun, and confirm the final filesystem status matches the initial status. In Improve or Publish mode, read every changed document end to end. Then re-read every affected effective stack and exercise every changed graph edge. For each first-party workspace and instruction convention not otherwise covered, sample at least one unaffected task path. Verify that:
 
-- Local links, anchors, paths, symlinks, and discovery entry points resolve.
+- Local links, anchors, paths, symlinks, discovery entry points, and consumer reads resolve.
 - Commands and repair paths work in their documented context.
 - Scope and precedence are unambiguous, with no new contradiction or orphaned reference.
 - Generated or source-managed integrity checks pass.
@@ -104,14 +107,15 @@ In Audit mode, use read-only checks, record mutation-capable gates as unrun, and
 
 Use an independent reviewer when available; otherwise begin a fresh rubric-based pass after the draft is complete. Record exact blockers and unrun checks.
 
-**Complete when:** every changed or proposed claim and route has been exercised or marked unverified, every applicable gate has a recorded result, and the final status matches the authorized mode and focused change set.
+**Complete when:** every changed or proposed claim, route, and consumer edge has been exercised or marked unverified; every first-party workspace maps to a validated stack; every applicable gate has a recorded result; and the final status matches the authorized mode and focused change set.
 
 ## 8. Report and publish if authorized
 
 Lead with the outcome. Summarize:
 
 - What changed or is proposed, and which agent behavior it improves.
-- Important guidance deliberately retained, especially project-specific contracts.
+- Graph coverage across workspaces, instruction scopes, and downstream consumers.
+- Important guidance deliberately retained, especially project-specific and setup-owned contracts.
 - Conflicts, source gaps, or upstream work left unresolved.
 - Validation performed, checks still pending, and whether hosted checks are settled or unknown.
 

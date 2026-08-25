@@ -23,7 +23,23 @@ npx skills@latest add christofferbergj/agent-skills \
   --yes
 ```
 
-The Skills CLI does not resolve dependencies between skills. Install both when using `update-dependencies`, because it invokes `/linting-alignment` when a dependency update changes the lint or formatting stack.
+To install the agent-documentation pair globally for Codex:
+
+```bash
+npx skills@latest add mattpocock/skills \
+  --skill writing-for-agents \
+  --global \
+  --agent codex \
+  --yes
+
+npx skills@latest add christofferbergj/agent-skills \
+  --skill audit-agent-documentation \
+  --global \
+  --agent codex \
+  --yes
+```
+
+The Skills CLI does not resolve dependencies between skills. Install both members of each pair: `update-dependencies` invokes `/linting-alignment` when a dependency update changes the lint or formatting stack, and `audit-agent-documentation` invokes `/writing-for-agents` before creating or editing agent documentation.
 
 ## Maintain
 
