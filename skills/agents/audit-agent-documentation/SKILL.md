@@ -12,7 +12,7 @@ Infer the authorization mode from the request:
 
 - **Audit** — diagnose and propose changes without editing.
 - **Improve** — the default; audit, make focused edits, and validate them.
-- **Publish** — improve, then cross only the commit, push, or review boundaries the user explicitly requests.
+- **Publish** — improve, then use the standard ready-PR workflow in Step 8. Explicit user instructions may override its target or publication path when repository guidance permits.
 
 ## 1. Establish authority and boundaries
 
@@ -121,6 +121,15 @@ Lead with the outcome. Summarize:
 
 A clean audit may produce no edits. Reassess the current repository and history on later runs instead of treating a prior audit as current truth.
 
-In **Publish** mode, follow repository publication guidance and perform only the requested commit, push, or review action after local validation. Record the branch, target base, resulting URL or state where applicable, and whether hosted checks are settled or pending.
+In **Publish** mode, treat the request to publish as authorization for this standard workflow after local validation:
 
-**Complete when:** the user can distinguish verified improvements, intentional non-changes, unresolved boundaries, and validation status without the hidden working notes, and any requested publication is complete or has an exact blocker.
+1. Resolve the repository's hosting remote and default branch from current state.
+2. Put the intended changes on a non-default branch, following repository branch and commit guidance while preserving unrelated user work.
+3. Commit the validated change and push that branch.
+4. Open a ready pull request targeting the default branch, following repository templates and review guidance.
+
+An explicit user instruction may select another base branch, request a draft pull request, omit a publication boundary, or choose another publication path. Push directly to the default branch only when the user explicitly requests it and repository guidance permits it. If an override conflicts with repository guidance or available authority, stop at the last safe completed boundary and report the exact blocker.
+
+Record the branch, target base, resulting pull-request URL or state, and whether hosted checks are settled or pending.
+
+**Complete when:** the user can distinguish verified improvements, intentional non-changes, unresolved boundaries, and validation status without the hidden working notes, and the standard ready pull request or explicitly requested override is complete or has an exact blocker.
