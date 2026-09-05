@@ -39,7 +39,7 @@ npx skills@latest add christofferbergj/agent-skills \
   --yes
 ```
 
-The Skills CLI does not resolve dependencies between skills. Install both members of each pair: `update-dependencies` invokes `/linting-alignment` when a dependency update changes the lint or formatting stack, and `audit-agent-documentation` invokes `/writing-for-agents` before creating or editing agent documentation.
+The Skills CLI does not resolve dependencies between skills. Install both members of each pair: `update-dependencies` invokes `/linting-alignment` when a dependency update changes the lint or formatting stack, and `audit-agent-documentation` invokes `/writing-for-agents` during diagnosis and applies it to every changed agent document.
 
 ## Maintain
 
@@ -78,7 +78,7 @@ npx skills@latest add christofferbergj/agent-skills \
 
 These run only when you select them explicitly.
 
-- **[audit-agent-documentation](./skills/agents/audit-agent-documentation/SKILL.md)** — Audit and improve repository agent documentation without weakening project contracts.
+- **[audit-agent-documentation](./skills/agents/audit-agent-documentation/SKILL.md)** — Audit and improve agent documentation across a codebase while preserving project contracts.
 - **[bro](./skills/communication/bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
 - **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Sweep every JavaScript and TypeScript dependency surface, apply policy-compatible updates, and validate the result.
 
