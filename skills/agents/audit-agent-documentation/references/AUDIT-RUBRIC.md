@@ -1,16 +1,17 @@
-# Agent Documentation Audit Rubric
+# Agent documentation audit rubric
 
-Use this rubric during diagnosis and again during the final read-through. It is a decision aid, not a replacement for repository authority: project-specific intent wins over generic advice when that intent is clear and safe.
+Apply this rubric to the declared audit scope during diagnosis and final review. It is a decision aid, not repository authority. Explicit user intent and verified project requirements govern the change set.
 
 ## Authority and contract integrity
 
 - Trace each documentation node and edge to an owner, scope, consumer, and source of truth.
 - Read the effective stack in precedence order instead of reviewing files in isolation.
-- Treat setup outputs, label vocabularies, issue workflows, domain routing, generated instructions, and skill-consumed documents as interfaces.
+- Identify which setup outputs, label vocabularies, issue workflows, domain routes, and generated instructions have consumer requirements or encode explicit project choices.
 - Preserve exact values and repeated constraints when consumers depend on them.
+- Distinguish those contracts from historical workarounds, recommendations, and incidental prose. Being consumed by an agent does not make every sentence an immutable requirement. Verify the behavior a constraint protects before preserving, narrowing, or removing it.
 - Resolve a conflict from repository evidence only when ownership and intent are clear. Otherwise classify it as **Conflict**, quote both requirements, describe the consequence, and keep it out of the edit set.
 
-The governing test is: “Would this change preserve every load-bearing project behavior while making the effective stack more accurate or useful?”
+The governing test is: "Would this change preserve every verified project requirement while making the effective stack more accurate or useful?"
 
 ## Correctness and freshness
 
@@ -18,6 +19,7 @@ Check that:
 
 - Commands exist, accept the documented flags or output fields, and run from the stated directory.
 - Inheritance, context pointers, and consumer routes resolve from every scope that relies on them.
+- Discovery matches the intended agent environment. Check active configuration, launch directory, override and fallback filenames, and size limits before claiming an instruction is loaded. Record configured behavior separately from behavior observed in a running agent.
 - Paths, package names, workspaces, owners, and architecture descriptions match the current repository.
 - Consumer-required names, headings, fields, values, and conditional sections match their owning contract.
 - Generated-file instructions point to the generator and editable source, not merely to a prohibition.
@@ -43,7 +45,7 @@ A useful root entry point usually contains:
 - Repository-wide constraints and non-obvious gotchas.
 - Precise routes to deeper guidance.
 
-Route prose filesystem tours, facts obvious from manifests, and branch-specific procedures to their current sources or narrower documentation.
+Treat these as candidates, not a required template. Route useful branch-specific procedures to narrower documentation; remove prose filesystem tours and facts that merely repeat cheap lookups.
 
 ### Scoped guidance
 
@@ -67,7 +69,7 @@ Every retained instruction should change likely agent behavior. Look for:
 
 Treat behaviorally inert instructions (**no-ops**), stale **sediment**, vague encouragement, generic software advice, obvious filesystem facts, and oversized example sets as removal candidates. Repair, route, merge, or remove them unless repository evidence shows they are load-bearing.
 
-## Environment leverage
+## Environment improvements
 
 Look beyond prose edits when the evidence points to a stronger environmental fix:
 
@@ -77,7 +79,7 @@ Look beyond prose edits when the evidence points to a stronger environmental fix
 - **Information access** — preserve or add precise routes to logs, issue trackers, domain docs, and read-only service data that a workflow requires.
 - **Tool economy** — replace a documented expensive lookup with a stable script or focused command only when current evidence shows recurring cost.
 
-Keep a short discovery pointer when moving a contract out of prose would otherwise make it invisible.
+Keep a short discovery pointer when moving a contract out of prose would otherwise make it invisible. Propose changes to tooling or configuration outside the authorized documentation scope as follow-up work.
 
 ## Internal consistency and scope
 
@@ -90,13 +92,37 @@ Compare guidance as merged for representative work:
 
 Check terminology, commands, precedence, ownership, and completion criteria. Short repetition can be a deliberate scope anchor when independent automatic loading makes the constraint materially more reliable; duplicated explanations and mutable facts should have one source.
 
-In a monorepo, map every first-party workspace to one merged stack and evaluate each distinct stack. Identical stacks may share one evaluation only when their workspace membership remains explicit.
+Use the coverage boundary established by the audit. For multiple workspaces or nested scopes, follow [MONOREPO-GRAPH.md](MONOREPO-GRAPH.md).
 
 ## Judgment for capable agents
 
-Prefer a small set of durable interfaces over a dense web of rigid rules. State the invariant and let the agent exercise judgment inside it. Long examples, exhaustive prohibitions, and historical workarounds need current evidence to remain.
+Judge steering against the models and agent environments that will consume it. An instruction redundant for one model may still help another. Treat claims about default behavior as hypotheses; use representative runs when removing model-dependent guidance would materially affect reliability, and record untested assumptions.
 
-Keep safety boundaries, release policy, ownership seams, and workflow contracts explicit when they protect real behavior.
+Check whether instructions cause unnecessary work or premature stopping:
+
+- **Reading scope:** Replace unconditional document stacks and repository tours with task-specific read conditions. Retain mandatory reads when an invariant applies to every task in that scope.
+- **Execution detail:** State outcomes and decision criteria where several approaches are reasonable. Preserve fixed procedures for fragile operations with a concrete failure mode.
+- **Approval boundaries:** Identify the action and actual authority requiring approval. Separate preparation from the consequential action, respect authorization already given, and continue independent authorized work. Preserve real release, ownership, safety, and data-integrity boundaries.
+- **Completion:** Define the requested result, relevant validation, and stopping condition. Flag review stops after an initial implementation when the request authorizes finishing. Persistence must remain within the requested scope and permissions, with bounded retries for risky or external actions.
+- **Verification cost:** Separate required project gates from generic reminders to test. Match checks to changed behavior; broaden or repeat them only for new changes, failures, or unresolved concerns. Retain non-obvious test setup and environment constraints.
+
+Where evidence confirms that a local workflow is isolated and disposable, document that fact and the permitted repair loop. Never infer production isolation from a command name or turn a past failure into a universal approval requirement.
+
+Prefer a narrow correction supported by observed behavior. Stronger adjectives and additional steps need the same evidence as the instructions they replace.
+
+## Finding classifications
+
+Give each finding one disposition:
+
+- **Keep:** Correct, useful guidance or a verified contract.
+- **Add:** A verified missing invariant, route, or repair path.
+- **Repair:** Useful intent with incorrect facts, vague wording, or broken discovery.
+- **Narrow:** Valid guidance belongs in a smaller scope.
+- **Route:** Conditional detail belongs behind a precise pointer.
+- **Merge:** Repeated meanings need one authoritative source.
+- **Remove:** Obsolete, contradicted, or behaviorally inert guidance.
+- **Conflict:** Authorities disagree and evidence cannot resolve the choice.
+- **Upstream:** The owning source or refresh path is outside the task's authority.
 
 ## Decision quality
 
