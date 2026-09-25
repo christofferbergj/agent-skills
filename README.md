@@ -41,6 +41,16 @@ npx skills@latest add christofferbergj/agent-skills \
 
 The Skills CLI does not resolve dependencies between skills. Install both members of each pair: `update-dependencies` invokes `/linting-alignment` when a dependency update changes the lint or formatting stack, and `audit-agent-documentation` invokes `/writing-for-agents` during diagnosis and applies it to every changed agent document.
 
+To install the self-contained test-audit skill globally for Codex:
+
+```bash
+npx skills@latest add christofferbergj/agent-skills \
+  --skill test-audit \
+  --global \
+  --agent codex \
+  --yes
+```
+
 ## Maintain
 
 Edit existing skills in this repository under `skills/<category>/<skill-name>/`. Add a new skill as another directory containing `SKILL.md`, add its Codex metadata in `agents/openai.yaml`, and list it in both this README and its category README.
@@ -87,6 +97,7 @@ These run only when you select them explicitly.
 These can be selected explicitly or reached automatically when their trigger matches.
 
 - **[linting-alignment](./skills/engineering/linting-alignment/SKILL.md)** — Align lint and formatting policy with the presets and tools that own it.
+- **[test-audit](./skills/engineering/test-audit/SKILL.md)** audits test quality, repairs weak tests, and consolidates redundant coverage. Supports focused reviews and exhaustive campaigns across languages and runners.
 
 ## Design
 

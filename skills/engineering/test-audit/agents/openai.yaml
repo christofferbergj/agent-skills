@@ -1,0 +1,6 @@
+interface:
+  display_name: "Test Audit"
+  short_description: "Audit and clean up tests while preserving coverage"
+  default_prompt: "Use $test-audit to audit this repository's tests and recommend changes that preserve meaningful coverage."
+  icon_small: "./assets/icon.svg"
+  icon_large: "./assets/icon.svg"
