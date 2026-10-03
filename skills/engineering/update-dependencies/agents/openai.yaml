@@ -1,5 +1,5 @@
 interface:
   display_name: "Update Dependencies"
-  short_description: "Audit and update JavaScript dependency surfaces"
+  short_description: "Resolve and validate updates; open a PR when requested"
 policy:
   allow_implicit_invocation: false

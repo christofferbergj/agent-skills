@@ -90,7 +90,7 @@ These run only when you select them explicitly.
 
 - **[audit-agent-documentation](./skills/agents/audit-agent-documentation/SKILL.md)** — Audit and improve agent documentation across a codebase while preserving project contracts.
 - **[bro](./skills/communication/bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
-- **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Sweep every JavaScript and TypeScript dependency surface, apply policy-compatible updates, and validate the result.
+- **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Update dependencies across repositories and monorepos, let the package manager check peer ranges, research releases, validate, and open a pull request when requested.
 
 ### Model-invoked
 

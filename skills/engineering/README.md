@@ -4,7 +4,7 @@ Dependency and linting workflows for JavaScript and TypeScript, plus test audits
 
 ## User-invoked
 
-- **[update-dependencies](./update-dependencies/SKILL.md)** — Sweep dependency surfaces, apply policy-compatible updates, and validate the result. Install `/linting-alignment` with it.
+- **[update-dependencies](./update-dependencies/SKILL.md)** — Resolve and validate dependency updates across repositories and monorepos, research releases, and open a pull request when requested. Install `/linting-alignment` with it.
 
 ## Model-invoked
 
