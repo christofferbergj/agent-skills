@@ -69,6 +69,19 @@ Re-run the local install command after editing them; a local-path install is a s
 
 ## Maintain
 
+Invoke `$update-sourced-skills` in Codex or `/update-sourced-skills` in Claude Code while working in this repository to update every sourced skill. It discovers provenance records and other attribution evidence, checks each original source, and applies upstream changes while preserving documented local adaptations. It records revisions, exclusions, and validation results per skill. A named subset limits the update; publication and refreshing global installations require authorization in the request or current session.
+
+Install it with its Writing for Agents dependency for both hosts:
+
+```bash
+npx skills@latest add mattpocock/skills \
+  --skill writing-for-agents --global --agent codex claude-code --yes
+npx skills@latest add . \
+  --skill update-sourced-skills --global --agent codex claude-code --yes
+```
+
+Run the local command from this repository's root. After publication, use `christofferbergj/agent-skills` instead of `.` for GitHub-backed updates. The updater invokes `/writing-for-agents` when adapting instructions. New sourced skills need a provenance record following the [source-record convention](./skills/agents/update-sourced-skills/references/PROVENANCE.md); there is no hardcoded Thermos list to maintain.
+
 Edit existing skills in this repository under `skills/<category>/<skill-name>/`. Add a new skill as another directory containing `SKILL.md`, add its Codex metadata in `agents/openai.yaml`, and list it in both this README and its category README.
 
 Before publishing:
@@ -107,6 +120,7 @@ These run only when you select them explicitly.
 - **[audit-agent-documentation](./skills/agents/audit-agent-documentation/SKILL.md)** — Audit and improve agent documentation across a codebase while preserving project contracts.
 - **[bro](./skills/communication/bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
 - **[thermos](./skills/engineering/thermos/SKILL.md)** runs parallel correctness and maintainability reviews in Codex or Claude Code. Install both review skills with it.
+- **[update-sourced-skills](./skills/agents/update-sourced-skills/SKILL.md)** updates externally sourced skills from their originals while preserving local adaptations and attribution. Install `/writing-for-agents` with it.
 - **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Update dependencies across repositories and monorepos, let the package manager check peer ranges, research releases, validate, and open a pull request when requested.
 
 ### Model-invoked

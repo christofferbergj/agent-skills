@@ -2,6 +2,8 @@
 
 Use manual, selective updates. Cursor owns the original Thermos plugin; this repository owns the adaptations installed for Codex and Claude Code. Compare upstream changes against the last reviewed commit, port the useful changes, and preserve the host-specific behavior. Installing directly from `cursor/plugins` would replace these same-named skills rather than merge them.
 
+To have an agent perform this process, invoke `$update-sourced-skills` in Codex or `/update-sourced-skills` in Claude Code from this repository. It discovers these source records and preserves the suite-specific contracts below. The commands in this guide remain available for manual maintenance.
+
 ## Sources and ownership
 
 | Local skill                          | Upstream path in `cursor/plugins`                            | Provenance and local differences                                   |

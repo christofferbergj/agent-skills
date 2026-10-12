@@ -6,6 +6,7 @@ Correctness, security, developer-experience, and feature-gate review rubric.
 
 - Original author: Cursor. Source repository: [cursor/plugins](https://github.com/cursor/plugins), [Thermos plugin](https://github.com/cursor/plugins/tree/main/thermos).
 - Original skill: [`thermos/skills/thermo-nuclear-review/SKILL.md`](https://github.com/cursor/plugins/blob/1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def/thermos/skills/thermo-nuclear-review/SKILL.md).
+- Tracking policy: latest commit on the upstream `main` branch.
 - Imported from commit: `1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def`.
 - Reviewed through commit: `1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def`.
 - Last upstream review: 2026-10-12.

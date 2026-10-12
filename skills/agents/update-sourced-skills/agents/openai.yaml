@@ -1,0 +1,5 @@
+interface:
+  display_name: "Update Sourced Skills"
+  short_description: "Update sourced skills while preserving local adaptations"
+policy:
+  allow_implicit_invocation: false
