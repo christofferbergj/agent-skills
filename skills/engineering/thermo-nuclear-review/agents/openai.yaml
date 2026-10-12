@@ -1,0 +1,3 @@
+interface:
+  display_name: "Thermo Nuclear Review"
+  short_description: "Audit branch correctness, security, and developer experience"

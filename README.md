@@ -51,6 +51,22 @@ npx skills@latest add christofferbergj/agent-skills \
   --yes
 ```
 
+The Thermos review suite requires all three skills. Install your local checkout globally for Codex and Claude Code:
+
+```bash
+npx skills@latest add /Users/christofferbergj/code/agent-skills \
+  --skill thermos thermo-nuclear-review thermo-nuclear-code-quality-review \
+  --global \
+  --agent codex claude-code \
+  --yes
+```
+
+Run `$thermos` in Codex or `/thermos` in Claude Code with the review scope. It launches two built-in subagents with the installed review rubrics and combines their findings. No Cursor plugin or custom agent registration is required. Hosts without available subagent tools use an explicitly labeled sequential fallback.
+
+These are owned adaptations of [Cursor's MIT-licensed Thermos plugin](https://github.com/cursor/plugins/tree/main/thermos). Follow the [manual upstream-update guide](./skills/engineering/thermos/MAINTENANCE.md) for source comparisons, local adaptations, validation, and installation. Each skill's linked source record identifies its original file, pinned import, last reviewed commit, and update decisions.
+
+Re-run the local install command after editing them; a local-path install is a snapshot, not a live link to this checkout. After publishing to your GitHub repository, replace the local source path with `christofferbergj/agent-skills` to use GitHub-backed updates. Do not install these same skill names from `cursor/plugins`, which would overwrite the adaptations.
+
 ## Maintain
 
 Edit existing skills in this repository under `skills/<category>/<skill-name>/`. Add a new skill as another directory containing `SKILL.md`, add its Codex metadata in `agents/openai.yaml`, and list it in both this README and its category README.
@@ -90,6 +106,7 @@ These run only when you select them explicitly.
 
 - **[audit-agent-documentation](./skills/agents/audit-agent-documentation/SKILL.md)** — Audit and improve agent documentation across a codebase while preserving project contracts.
 - **[bro](./skills/communication/bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
+- **[thermos](./skills/engineering/thermos/SKILL.md)** runs parallel correctness and maintainability reviews in Codex or Claude Code. Install both review skills with it.
 - **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Update dependencies across repositories and monorepos, let the package manager check peer ranges, research releases, validate, and open a pull request when requested.
 
 ### Model-invoked
@@ -98,6 +115,8 @@ These can be selected explicitly or reached automatically when their trigger mat
 
 - **[linting-alignment](./skills/engineering/linting-alignment/SKILL.md)** — Align lint and formatting policy with the presets and tools that own it.
 - **[test-audit](./skills/engineering/test-audit/SKILL.md)** audits test quality, repairs weak tests, and consolidates redundant coverage. Supports focused reviews and exhaustive campaigns across languages and runners.
+- **[thermo-nuclear-review](./skills/engineering/thermo-nuclear-review/SKILL.md)** audits branch correctness, security, developer experience, and feature-gate leaks.
+- **[thermo-nuclear-code-quality-review](./skills/engineering/thermo-nuclear-code-quality-review/SKILL.md)** audits maintainability, structural simplification, and architecture boundaries.
 
 ## Design
 
@@ -110,3 +129,5 @@ These can be selected explicitly or reached automatically when their trigger mat
 ## License
 
 [MIT](./LICENSE)
+
+The three Thermos adaptations include work by Cursor, copyright 2026, under the MIT license. Each skill retains Cursor's original `LICENSE` and an `UPSTREAM.md` attribution record. See the [source inventory](./skills/engineering/thermos/MAINTENANCE.md#sources-and-ownership).
