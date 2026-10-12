@@ -69,7 +69,7 @@ Re-run the local install command after editing them; a local-path install is a s
 
 ## Maintain
 
-Invoke `$update-sourced-skills` in Codex or `/update-sourced-skills` in Claude Code while working in this repository to update every sourced skill. It discovers provenance records and other attribution evidence, checks each original source, and applies upstream changes while preserving documented local adaptations. It records revisions, exclusions, and validation results per skill. A named subset limits the update; publication and refreshing global installations require authorization in the request or current session.
+Invoke `$maintain-skills` in Codex or `/maintain-skills` in Claude Code from this repository for a periodic sanity check. It reads every skill, applies Writing for Agents, verifies tool references and practices against current evidence, and repairs stale guidance. It also checks sourced skills against their originals while preserving local adaptations and attribution. A named subset limits the pass; publication and refreshing global installations follow the user's existing authorization.
 
 Install it with its Writing for Agents dependency for both hosts:
 
@@ -77,10 +77,10 @@ Install it with its Writing for Agents dependency for both hosts:
 npx skills@latest add mattpocock/skills \
   --skill writing-for-agents --global --agent codex claude-code --yes
 npx skills@latest add . \
-  --skill update-sourced-skills --global --agent codex claude-code --yes
+  --skill maintain-skills --global --agent codex claude-code --yes
 ```
 
-Run the local command from this repository's root. After publication, use `christofferbergj/agent-skills` instead of `.` for GitHub-backed updates. The updater invokes `/writing-for-agents` when adapting instructions. New sourced skills need a provenance record following the [source-record convention](./skills/agents/update-sourced-skills/references/PROVENANCE.md); there is no hardcoded Thermos list to maintain.
+Run the local command from this repository's root, or use `christofferbergj/agent-skills` instead of `.` for the published version. Writing for Agents is a required dependency. New sourced skills need a provenance record following the [source-record convention](./skills/agents/maintain-skills/references/PROVENANCE.md); all skills are reviewed regardless of whether they have an upstream source.
 
 Edit existing skills in this repository under `skills/<category>/<skill-name>/`. Add a new skill as another directory containing `SKILL.md`, add its Codex metadata in `agents/openai.yaml`, and list it in both this README and its category README.
 
@@ -120,7 +120,7 @@ These run only when you select them explicitly.
 - **[audit-agent-documentation](./skills/agents/audit-agent-documentation/SKILL.md)** — Audit and improve agent documentation across a codebase while preserving project contracts.
 - **[bro](./skills/communication/bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
 - **[thermos](./skills/engineering/thermos/SKILL.md)** runs parallel correctness and maintainability reviews in Codex or Claude Code. Install both review skills with it.
-- **[update-sourced-skills](./skills/agents/update-sourced-skills/SKILL.md)** updates externally sourced skills from their originals while preserving local adaptations and attribution. Install `/writing-for-agents` with it.
+- **[maintain-skills](./skills/agents/maintain-skills/SKILL.md)** checks every skill's writing, tools, docs, and practices, repairs stale guidance, and reconciles sourced skills with upstream. Install `/writing-for-agents` with it.
 - **[update-dependencies](./skills/engineering/update-dependencies/SKILL.md)** — Update dependencies across repositories and monorepos, let the package manager check peer ranges, research releases, validate, and open a pull request when requested.
 
 ### Model-invoked

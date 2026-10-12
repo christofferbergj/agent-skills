@@ -17,4 +17,4 @@ When adding a new source record, recover the original import from repository his
 
 For multiple sources within one skill, record paths, revisions, and decisions separately. A completed comparison of one source does not advance the others. If a source moves, preserve the old import identity and record verified continuity to the new location.
 
-The existing Thermos records follow this convention. They describe two callable review rubrics and an explicit-only orchestrator adapted for Codex and Claude Code. Their linked maintenance guide owns the suite-specific compatibility checks; discover and read it through those records instead of hardcoding the suite into the updater.
+The existing Thermos records follow this convention. They describe two callable review rubrics and an explicit-only orchestrator adapted for Codex and Claude Code. Their linked maintenance guide owns the suite-specific compatibility checks; discover and read it through those records instead of hardcoding the suite into the maintenance skill.
