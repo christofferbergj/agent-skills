@@ -1,11 +1,11 @@
 ---
 name: test-audit
-description: Audit test quality, repair weak or brittle tests, and consolidate redundant coverage. Use for focused test reviews or exhaustive test-suite cleanup across repositories and monorepos.
+description: Use when reviewing test quality or cleaning up tests, within a focused scope or an entire suite.
 ---
 
 # Test audit
 
-Optimize for confidence and maintenance cost. Preserve meaningful contracts. Treat suspicious test shapes as leads requiring investigation rather than deletion verdicts.
+Optimize for confidence and useful feedback at justified cost. Preserve meaningful contracts. Treat suspicious test shapes as leads requiring investigation rather than deletion verdicts.
 
 ## 1. Set scope and authority
 
@@ -38,29 +38,34 @@ Use the [candidate patterns](#candidate-patterns) to prioritize inspection. Read
 1. **Contract:** What observable behavior, invariant, or independent requirement does it protect?
 2. **Regression:** What credible incorrect implementation would make it fail, and do its assertions detect that failure?
 3. **Independence:** Can its expected result disagree with the implementation, or does the test manufacture both sides?
-4. **Boundary:** Does it exercise a public interface or stable boundary suitable for that contract?
-5. **Distinct contribution:** What risk does it cover that remaining tests do not?
+4. **Boundary:** Does it exercise a public interface or stable boundary suitable for the contract? Which behavior-preserving implementation changes should leave its assertions passing?
+5. **Distinct contribution:** What useful fault detection, diagnosis, or executable documentation does it add beyond remaining tests?
+6. **Feedback and cost:** Are its intent and failures clear? Does its useful feedback justify its execution and maintenance cost?
 
 Use requirements, documented interfaces, bug history, protocol rules, worked examples, and established caller expectations as evidence. Formal specifications are useful evidence, not a prerequisite for useful coverage. Missing documentation or history leaves uncertainty. If the intended behavior cannot be established, retain the test pending clarification and mark it unresolved.
 
-Prefer the lowest-cost stable boundary that can expose the failure. Keep pure rules close to their implementation through stable interfaces; keep integration coverage for wiring, serialization, storage, lifecycle, and transport risks that isolated tests cannot reach. Keep critical workflows at the user boundary. Choose one primary owner per contract, while preserving distinct risks at other layers.
+Prefer the lowest-cost stable boundary that can expose the failure. Keep pure rules close to their implementation through stable interfaces; keep integration tests for wiring, serialization, storage, lifecycle, and transport risks that isolated tests cannot reach. Keep critical workflows at the user boundary. Choose one primary owner per contract, while preserving distinct value at other layers. Assert only properties required by the contract; test setup may adapt when construction changes.
 
-Retain snapshots, source inspections, exact text, geometry, call ordering, slow tests, and mocks when they independently protect an intentional contract, such as an accessible interaction, wire format, visual baseline, architecture rule, package surface, or migration. Distinguish verifying a published export contract from mechanically copying the current export list. Distinguish a useful fake boundary from a mock that implements the behavior being tested.
+Use existing dependency seams to control collaborators. Prefer practical real implementations or maintained fakes over mocks. Verify that doubles honor the dependency contracts the test exercises, and identify integration or contract evidence for simulated behavior. Exercise the production behavior under test rather than supplying it through a double.
 
-Maintain a concise ledger before editing. Group cases only when their evidence and decision match; split parameter rows with different rationales. Record skipped or disabled execution separately from value.
+Retain snapshots, source inspections, exact text, geometry, call ordering, slow tests, and mocks when they independently protect an intentional contract, such as an accessible interaction, wire format, visual baseline, architecture rule, package surface, or migration. Distinguish verifying a published export contract from mechanically copying the current export list. Lack of internal callers alone does not establish that a public export is obsolete.
 
-| Test or parameter cases | Contract / credible failure | Decision | Evidence and surviving coverage | Validation |
-| ----------------------- | --------------------------- | -------- | ------------------------------- | ---------- |
+Maintain a concise ledger of value, decisions, and evidence before editing. Group cases only when their evidence and decision match; split parameter rows with different rationales. Record skipped or disabled execution separately from value.
+
+| Test or parameter cases | Contract / credible failure | Decision | Value and surviving evidence | Validation |
+| ----------------------- | --------------------------- | -------- | ---------------------------- | ---------- |
 
 Use these decisions:
 
-- **KEEP:** Retain useful, distinct coverage.
-- **REPAIR:** Preserve the contract while fixing assertions, setup, determinism, or the exercised boundary.
+- **KEEP:** Retain useful, distinct feedback at justified cost.
+- **REPAIR:** Preserve the contract while fixing assertions, setup, determinism, clarity, cost, or the exercised boundary.
 - **CONSOLIDATE:** Move necessary cases into a named surviving suite before removing duplication.
-- **DELETE:** Remove only when evidence establishes no meaningful contract is lost, or an identified surviving test already protects it.
+- **DELETE:** Remove tests with no justified contribution once evidence establishes that no meaningful contract is lost or an identified surviving test already protects it.
 - **UNRESOLVED:** Preserve existing coverage; state the missing evidence or decision.
 
-For DELETE and CONSOLIDATE, identify the exact surviving proof and compare inputs, negative cases, assertions, integration paths, and execution in CI. Alternatively, explain why the test protects no meaningful contract. Inspect history when available; record its absence honestly. For REPAIR, state what is currently undetected and how the new assertion exposes it. Overlapping names, setup, executed lines, pattern matches, and a green suite after deletion do not establish redundancy.
+For DELETE and CONSOLIDATE, identify the exact surviving proof and compare inputs, negative cases, assertions, integration paths, and execution in CI. Alternatively, explain why the test protects no meaningful contract. Inspect history when available; record its absence honestly. Overlapping names, setup, executed lines, pattern matches, and a green suite after deletion do not establish redundancy.
+
+For REPAIR, identify the test defect, the useful feedback the repair restores, and evidence appropriate to that repair. Existing assertions may remain unchanged.
 
 Complete when every in-scope test or distinct case group has a decision and evidence. In audit mode, proceed to Step 6 with recommendations; in cleanup mode, continue below.
 
@@ -68,11 +73,11 @@ Complete when every in-scope test or distinct case group has a decision and evid
 
 Group edits by the behavior or subsystem that owns them. Transfer unique cases before deleting their old home. Choose table-driven cases or shared fixtures for readability and stable setup rather than line reduction alone.
 
-Repair vacuous assertions, overly broad exception checks, setup that bypasses the behavior, and determinism problems. Keep mocks at suitable boundaries. Keep product switches and public exports outside test-only repairs. Lack of internal callers alone does not justify removing a public export. Fix flakiness at its cause while preserving assertions and meaningful scenarios; retries are not a substitute for that repair.
+Repair the recorded test defects. Fix flakiness at its cause while preserving assertions and meaningful scenarios; retries are not a substitute for that repair.
 
-Remove newly unused fixtures, imports, snapshots, helpers, and setup. Preserve support used by other packages. Keep test discovery and existing CI routing correct when moving tests; do not weaken gates or quarantine tests to make the result green. Separate discovered product defects from test-maintenance edits unless fixing them is in scope.
+Remove newly unused fixtures, imports, snapshots, helpers, and setup. Preserve support used by other packages. Keep test discovery and existing CI routing correct when moving tests; do not weaken gates or quarantine tests to make the result green.
 
-For any new or rewritten test, answer the five value questions above. For a bug regression, demonstrate failure on the pre-fix behavior for the intended reason where feasible, then success after the fix. If that cannot be run, record the unverified claim.
+For any new or rewritten test, answer the value questions in Step 3. For a bug regression, demonstrate failure on the pre-fix behavior for the intended reason where feasible, then success after the fix. If that cannot be run, record the unverified claim.
 
 Complete when every authorized decision is applied or explicitly blocked, unique cases have an owner, and newly unused support is removed without affecting shared consumers.
 
@@ -82,8 +87,8 @@ Keep files stable during validation. Finish or stop the relevant run before edit
 
 1. Run the smallest affected suite, then relevant sibling and cross-package consumers and repository-required gates. Use commands discovered from the project.
 2. Confirm moved tests are discovered and executed, and meaningful parameter cases remain represented.
-3. Compare original coverage against surviving assertions. Check unique inputs, errors, boundary cases, security, accessibility, ordering, interactions, integration paths, and CI environments where applicable. Restore missing contracts at their appropriate owner.
-4. For high-risk or ambiguous repairs, use a focused negative control or small temporary mutation to show that the retained test catches the intended failure. Work in isolation and restore only the changes made for that check, preserving user edits. Do not require exhaustive mutation testing for routine cleanup.
+3. Compare the original contracts and cases against surviving assertions. Check unique inputs, errors, boundary cases, security, accessibility, ordering, interactions, integration paths, and CI environments where applicable. Restore missing contracts at their appropriate owner.
+4. Validate repairs against their recorded defects. For high-risk or ambiguous assertions, use a focused negative control or small temporary mutation to show that the retained test catches the intended failure. Work in isolation and restore only the changes made for that check, preserving user edits. Do not require exhaustive mutation testing for routine cleanup.
 5. Run applicable formatting/static checks and inspect the final diff for accidental scope expansion, dead support, weakened assertions, and configuration changes.
 
 Reconcile baseline and final results. Report commands, test selection, outcomes, and unavailable environments accurately. Cached results do not prove newly edited tests ran. Stop optional validation once concrete risks are addressed and required gates are satisfied.
@@ -95,7 +100,7 @@ Complete when every affected contract has surviving evidence or a recorded unres
 State whether the result is a read-only audit, completed cleanup, or partial work. Summarize decisions and representative findings; provide the complete ledger for exhaustive campaigns without pasting every KEEP into the chat. Include:
 
 - Scope and inventory reconciliation, including exclusions and unresolved items.
-- Deleted or consolidated coverage and what protects those contracts now.
+- Deleted or consolidated tests and what protects their contracts now.
 - Repaired tests and retained false positives worth explaining.
 - Baseline versus final validation, failures, skipped or unexecuted checks.
 - Product defects or production simplifications requiring separate work.
@@ -111,15 +116,16 @@ Search for these leads, then apply Step 3 before deciding:
 - Expected values computed by the same code under test; assertions comparing a declaration with a copy of itself.
 - Mocks or fixtures that supply the behavior or result the production path should produce.
 - Assertion-free execution with no meaningful success/failure contract; account for implicit assertions such as "does not throw."
-- Source scans, snapshots, counts, private calls, or incidental copy that detect edits without identifying a broken contract.
-- Duplicate cases or layers with no distinct failure mode.
+- Source scans, snapshots, whole-object comparisons, counts, private calls, or incidental copy that detect edits without identifying a broken contract.
+- Duplicate cases or layers with no distinct value.
 - Tests that exercise helpers while missing the real entry-point wiring.
 - Negative tests that pass because an earlier, unrelated guard rejects the input.
 - Broad assertions that cannot distinguish the intended result from a meaningful failure.
 - Timing sleeps, shared mutable state, test ordering, uncontrolled clocks or randomness, and leaked resources.
 - Test-only exports or hooks, obsolete fixtures, skipped suites, and disabled assertions.
 - Names that promise behavior the input and assertions never exercise.
+- Opaque setup or failures, expensive execution, or frequent maintenance with little useful feedback.
 
 ## Provenance
 
-Adapted from [OpenClaw test-audit](https://github.com/openclaw/openclaw/blob/main/.agents/skills/test-audit/SKILL.md) and its campaign workflow. This attribution is not a runtime dependency.
+Adapted from OpenClaw test-audit and its campaign workflow. Before updating upstream material or attribution, read [UPSTREAM.md](UPSTREAM.md) for source revisions, license, and local adaptations.

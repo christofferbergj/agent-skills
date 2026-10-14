@@ -1,6 +1,6 @@
 interface:
   display_name: "Test Audit"
-  short_description: "Audit and clean up tests while preserving coverage"
-  default_prompt: "Use $test-audit to audit this repository's tests and recommend changes that preserve meaningful coverage."
+  short_description: "Audit test value and preserve meaningful contracts"
+  default_prompt: "Use $test-audit to audit this repository's tests and recommend improvements to test value while preserving meaningful contracts."
   icon_small: "./assets/icon.svg"
   icon_large: "./assets/icon.svg"

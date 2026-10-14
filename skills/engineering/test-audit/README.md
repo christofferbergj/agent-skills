@@ -1,3 +1,3 @@
 # Test audit
 
-Reviews whether tests protect meaningful behavior and expose credible regressions. When cleanup is requested, repairs weak tests and consolidates redundant coverage without losing useful checks.
+Reviews whether tests protect meaningful behavior, provide useful feedback, and justify their cost. Cleanup repairs or removes weak and redundant tests while preserving meaningful contracts.

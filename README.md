@@ -128,7 +128,7 @@ These run only when you select them explicitly.
 These can be selected explicitly or reached automatically when their trigger matches.
 
 - **[linting-alignment](./skills/engineering/linting-alignment/SKILL.md)** — Align lint and formatting policy with the presets and tools that own it.
-- **[test-audit](./skills/engineering/test-audit/SKILL.md)** audits test quality, repairs weak tests, and consolidates redundant coverage. Supports focused reviews and exhaustive campaigns across languages and runners.
+- **[test-audit](./skills/engineering/test-audit/SKILL.md)** audits test value and cleans up tests while preserving meaningful contracts. Supports focused reviews and exhaustive campaigns across languages and runners.
 - **[thermo-nuclear-review](./skills/engineering/thermo-nuclear-review/SKILL.md)** audits branch correctness, security, developer experience, and feature-gate leaks.
 - **[thermo-nuclear-code-quality-review](./skills/engineering/thermo-nuclear-code-quality-review/SKILL.md)** audits maintainability, structural simplification, and architecture boundaries.
 
@@ -145,3 +145,5 @@ These can be selected explicitly or reached automatically when their trigger mat
 [MIT](./LICENSE)
 
 The three Thermos adaptations include work by Cursor, copyright 2026, under the MIT license. Each skill retains Cursor's original `LICENSE` and an `UPSTREAM.md` attribution record. See the [source inventory](./skills/engineering/thermos/MAINTENANCE.md#sources-and-ownership).
+
+The test-audit adaptation includes work by the OpenClaw Foundation, copyright 2026, under the MIT license. It retains the upstream [license notice](./skills/engineering/test-audit/LICENSE) and [source record](./skills/engineering/test-audit/UPSTREAM.md).

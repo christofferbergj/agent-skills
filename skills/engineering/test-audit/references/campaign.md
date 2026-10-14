@@ -20,9 +20,9 @@ Keep one ledger owner. When delegation is authorized and available, assign disjo
 
 Complete when every declaration or distinct case group has a decision and evidence, including explicit unresolved entries.
 
-## 3. Reconcile coverage ownership across batches
+## 3. Reconcile contract ownership across batches
 
-Review redundant layers and cross-package contracts against actual assertions and inputs. Identify each affected contract's surviving owner and distinct risks retained elsewhere. List case transfers, files to retire, support to remove, and routing to preserve. Resolve conflicts between batch plans before editing shared support.
+Review redundant layers and cross-package contracts against actual assertions and inputs. Identify each affected contract's surviving owner and distinct value retained elsewhere. List case transfers, files to retire, support to remove, and routing to preserve. Resolve conflicts between batch plans before editing shared support.
 
 Complete when every planned removal satisfies the main skill's evidence requirements and shared-file plans agree. In audit mode, report the ledger and recommendations using Step 6 of the main skill. In cleanup mode, continue below.
 
