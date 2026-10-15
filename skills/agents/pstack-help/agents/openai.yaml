@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pstack help"
+  short_description: "Explain Pstack installation, entrypoints, playbooks, prerequisit"
+policy:
+  allow_implicit_invocation: false

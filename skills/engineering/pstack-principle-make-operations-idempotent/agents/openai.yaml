@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack principle make operations idempotent"
+  short_description: "Pstack principle make operations idempotent"

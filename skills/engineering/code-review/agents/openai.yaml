@@ -1,0 +1,4 @@
+interface:
+  display_name: "Code Review"
+  short_description: "Review one artifact against standards and spec"
+  default_prompt: "Use $code-review to handle this request."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnosing Bugs"
+  short_description: "Find and verify the cause of a bug or slowdown"
+  default_prompt: "Use $diagnosing-bugs to handle this request."

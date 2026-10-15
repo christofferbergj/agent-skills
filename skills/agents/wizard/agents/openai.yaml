@@ -1,0 +1,4 @@
+interface:
+  display_name: "Wizard"
+  short_description: "Build a guided script for human-only steps"
+  default_prompt: "Use $wizard to handle this request."

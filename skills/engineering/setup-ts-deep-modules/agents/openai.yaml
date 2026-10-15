@@ -1,0 +1,6 @@
+interface:
+  display_name: "Setup Ts Deep Modules"
+  short_description: "Enforce TypeScript package entry-point boundaries"
+  default_prompt: "Use $setup-ts-deep-modules to handle this request."
+policy:
+  allow_implicit_invocation: false

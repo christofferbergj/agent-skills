@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack blast radius"
+  short_description: "Pstack blast radius workflow for coding agents"

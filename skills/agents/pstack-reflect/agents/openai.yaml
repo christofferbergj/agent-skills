@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack reflect"
+  short_description: "Use for Pstack reflection on corrections in the current conversa"

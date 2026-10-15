@@ -1,0 +1,4 @@
+interface:
+  display_name: "Design Prototype"
+  short_description: "Answer a design question with a disposable demo"
+  default_prompt: "Use $design-prototype to handle this request."

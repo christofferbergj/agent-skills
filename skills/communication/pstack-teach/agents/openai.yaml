@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack teach"
+  short_description: "Pstack teach workflow for coding agents"

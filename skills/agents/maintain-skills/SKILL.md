@@ -8,6 +8,8 @@ disable-model-invocation: true
 
 Review all skills in the current repository, including this one, and repair stale guidance. A named subset narrows the scope. Preserve each skill's purpose and local adaptations; leave sound guidance alone.
 
+When maintaining this combined library, read [the combined maintenance guide](MAINTENANCE.md) and use `catalog.json` for both upstream inventories, exclusions, shared owners, and checkpointing. Other repositories continue through ordinary skill discovery.
+
 ## 1. Read the skills
 
 Read repository guidance and record initial Git status to protect existing work. Find every skill, including relevant untracked ones, and read its instructions, metadata, and supporting files. Invoke `/writing-for-agents` to assess clarity, triggers, completion criteria, and unnecessary instructions. Check frontmatter, invocation policy, dependencies, links, and README listings against repository conventions.

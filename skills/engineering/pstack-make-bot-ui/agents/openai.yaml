@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack make bot ui"
+  short_description: "Use when building a Pstack control UI for an existing agent webh"

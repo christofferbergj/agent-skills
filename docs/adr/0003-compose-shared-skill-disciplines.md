@@ -1,0 +1,7 @@
+# Compose shared disciplines across source families
+
+Keep Matt Pocock's familiar entrypoints and Pstack's explicit playbooks in one owned library. Assign reusable behavior one owner: domain-modeling for project artifacts, codebase-design for architectural vocabulary, tdd for behavior tests, code-review for Standards/Spec review, pr for descriptions, and pstack-swarm for host execution. Pstack's specialized evidence and adversarial lenses build on these owners. This keeps existing commands useful while avoiding two coordinators, duplicate specs or glossaries, and conflicting defaults.
+
+Preserve existing project artifact roles, including legacy context/domain files, and use the current upstream glossary/ADR defaults only when no project convention already exists. The coordinator reconciles canonical docs; delegates propose changes. A new source family or helper never overrides an accepted project decision or action boundary.
+
+Track both upstreams through one maintenance catalog and weekly review, preserving each skill's source record and unfinished baseline. Keep Matt's prototype under design-prototype to preserve Emil's existing prototype command; use git-guardrails for the two host adapters. User exclusions, reusable experimental inclusion, and these compatibility choices remain local adaptations during upstream review.
