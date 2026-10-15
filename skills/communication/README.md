@@ -15,3 +15,13 @@ Install the complete dependency group from the [top-level README](../../README.m
 - [pstack-teach](./pstack-teach/SKILL.md).
 - [pstack-technical-writing](./pstack-technical-writing/SKILL.md).
 - [pstack-unslop](./pstack-unslop/SKILL.md).
+
+## Combined Matt Pocock workflows
+
+Install the complete library from the [top-level README](../../README.md#install). Shared artifact and execution owners are documented in its [combined workflow](../../README.md#combined-workflow).
+
+- [pr](./pr/SKILL.md).
+- [writing-beats](./writing-beats/SKILL.md).
+- [writing-fragments](./writing-fragments/SKILL.md).
+- [writing-shape](./writing-shape/SKILL.md).
+- [to-questionnaire](./to-questionnaire/SKILL.md).

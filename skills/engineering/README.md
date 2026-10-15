@@ -60,3 +60,23 @@ Install the complete dependency group from the [top-level README](../../README.m
 - [pstack-principle-subtract-before-you-add](./pstack-principle-subtract-before-you-add/SKILL.md).
 - [pstack-principle-test-behavior-not-implementation](./pstack-principle-test-behavior-not-implementation/SKILL.md).
 - [pstack-principle-type-system-discipline](./pstack-principle-type-system-discipline/SKILL.md).
+
+## Combined Matt Pocock workflows
+
+Install the complete library from the [top-level README](../../README.md#install). Shared artifact and execution owners are documented in its [combined workflow](../../README.md#combined-workflow).
+
+- [code-review](./code-review/SKILL.md).
+- [codebase-design](./codebase-design/SKILL.md).
+- [diagnosing-bugs](./diagnosing-bugs/SKILL.md).
+- [domain-modeling](./domain-modeling/SKILL.md).
+- [implement](./implement/SKILL.md).
+- [implement-spec](./implement-spec/SKILL.md).
+- [improve-codebase-architecture](./improve-codebase-architecture/SKILL.md).
+- [design-prototype](./design-prototype/SKILL.md).
+- [tdd](./tdd/SKILL.md).
+- [to-spec](./to-spec/SKILL.md).
+- [to-tickets](./to-tickets/SKILL.md).
+- [triage](./triage/SKILL.md).
+- [wayfinder](./wayfinder/SKILL.md).
+- [setup-ts-deep-modules](./setup-ts-deep-modules/SKILL.md).
+- [migrate-to-shoehorn](./migrate-to-shoehorn/SKILL.md).

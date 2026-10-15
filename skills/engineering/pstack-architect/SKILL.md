@@ -7,7 +7,7 @@ description: "Use for Pstack interface or module design, caller-first sketches, 
 
 ## 1. Ground
 
-Invoke /pstack-how on the surrounding system. Invoke /pstack-why if ownership, layering, or historical constraints will change. Greenfield work can skip existing-system archaeology with a reason. Complete when the relevant callers, invariants, and constraints are explained from evidence.
+Invoke /domain-modeling to read the configured project docs and /codebase-design for architecture vocabulary. Invoke /pstack-how on the surrounding system. Invoke /pstack-why if ownership, layering, or historical constraints will change. Greenfield work can skip existing-system archaeology with a reason. Complete when the relevant callers, invariants, and constraints are explained from evidence.
 
 ## 2. Sketch
 
@@ -15,11 +15,11 @@ Invoke /pstack-arena on types, signatures, module boundaries, and caller usage, 
 
 ## 3. Agree when required
 
-An initial approval checkpoint is opt-in. If the user requests one, present the interfaces and tradeoffs and wait. Once an interface is approved, a later incompatible change is a new decision gate. Complete when the chosen sketch is within the current grant and any requested approval exists.
+An initial approval checkpoint is opt-in. If the user requests one, present the interfaces and tradeoffs and wait. Once an interface is approved, a later incompatible change is a new decision gate. Reconcile settled terms, relationships, ownership, and qualifying decisions through /domain-modeling before implementation. Preserve existing context.md/domain.md roles and link them from the rationale. Complete when the chosen sketch and its canonical artifacts agree within the current grant and any requested approval exists.
 
 ## 4. Implement
 
-Fill in the selected shape using the invoking repository's patterns and relevant /pstack-principle-* dependencies. Validate caller behavior and inspect the diff against the sketch. Complete when the implementation and its evidence satisfy the chosen contract.
+Fill in the selected shape using the invoking repository's patterns, /tdd at agreed public seams when useful, and relevant /pstack-principle-* dependencies. Reconcile any accepted model change through /domain-modeling. Validate caller behavior and inspect the diff against the sketch. Complete when the implementation and its evidence satisfy the chosen contract.
 
 ## 5. Reconsider a failed shape
 

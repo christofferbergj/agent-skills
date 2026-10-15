@@ -1,0 +1,256 @@
+{
+  "schema": 1,
+  "sources": {
+    "pstack": {
+      "repository": "https://github.com/cursor/plugins.git",
+      "branch": "main",
+      "manifest": "skills/agents/pstack-mode/suite.json",
+      "skillRoot": "pstack/skills",
+      "sharedPaths": [
+        "pstack/agents",
+        "pstack/docs",
+        "pstack/.cursor-plugin",
+        "pstack/.claude-plugin",
+        "pstack/README.md",
+        "pstack/CHANGELOG.md",
+        "pstack/LICENSE"
+      ],
+      "sharedRoot": "pstack"
+    },
+    "matt": {
+      "repository": "https://github.com/mattpocock/skills.git",
+      "branch": "main",
+      "initialCommit": "49dd158d1076134a641b33efb035946536778336",
+      "initialVersion": "1.3.1",
+      "skillRoot": "skills",
+      "skills": [
+        {
+          "upstream": "skills/engineering/code-review",
+          "local": "code-review",
+          "directory": "skills/engineering/code-review",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/codebase-design",
+          "local": "codebase-design",
+          "directory": "skills/engineering/codebase-design",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/diagnosing-bugs",
+          "local": "diagnosing-bugs",
+          "directory": "skills/engineering/diagnosing-bugs",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/domain-modeling",
+          "local": "domain-modeling",
+          "directory": "skills/engineering/domain-modeling",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/grill-with-docs",
+          "local": "grill-with-docs",
+          "directory": "skills/agents/grill-with-docs",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/implement",
+          "local": "implement",
+          "directory": "skills/engineering/implement",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/implement-spec",
+          "local": "implement-spec",
+          "directory": "skills/engineering/implement-spec",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/improve-codebase-architecture",
+          "local": "improve-codebase-architecture",
+          "directory": "skills/engineering/improve-codebase-architecture",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/pr",
+          "local": "pr",
+          "directory": "skills/communication/pr",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/prototype",
+          "local": "design-prototype",
+          "directory": "skills/engineering/design-prototype",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/research",
+          "local": "research",
+          "directory": "skills/agents/research",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/retro",
+          "local": "retro",
+          "directory": "skills/agents/retro",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/setup-matt-pocock-skills",
+          "local": "setup-matt-pocock-skills",
+          "directory": "skills/agents/setup-matt-pocock-skills",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/tdd",
+          "local": "tdd",
+          "directory": "skills/engineering/tdd",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/to-spec",
+          "local": "to-spec",
+          "directory": "skills/engineering/to-spec",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/to-tickets",
+          "local": "to-tickets",
+          "directory": "skills/engineering/to-tickets",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/triage",
+          "local": "triage",
+          "directory": "skills/engineering/triage",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/wayfinder",
+          "local": "wayfinder",
+          "directory": "skills/engineering/wayfinder",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/engineering/wizard",
+          "local": "wizard",
+          "directory": "skills/agents/wizard",
+          "stage": "engineering"
+        },
+        {
+          "upstream": "skills/in-progress/chief-of-staff",
+          "local": "chief-of-staff",
+          "directory": "skills/agents/chief-of-staff",
+          "stage": "in-progress"
+        },
+        {
+          "upstream": "skills/in-progress/loop-me",
+          "local": "loop-me",
+          "directory": "skills/agents/loop-me",
+          "stage": "in-progress"
+        },
+        {
+          "upstream": "skills/in-progress/setup-ts-deep-modules",
+          "local": "setup-ts-deep-modules",
+          "directory": "skills/engineering/setup-ts-deep-modules",
+          "stage": "in-progress"
+        },
+        {
+          "upstream": "skills/in-progress/writing-beats",
+          "local": "writing-beats",
+          "directory": "skills/communication/writing-beats",
+          "stage": "in-progress"
+        },
+        {
+          "upstream": "skills/in-progress/writing-fragments",
+          "local": "writing-fragments",
+          "directory": "skills/communication/writing-fragments",
+          "stage": "in-progress"
+        },
+        {
+          "upstream": "skills/in-progress/writing-shape",
+          "local": "writing-shape",
+          "directory": "skills/communication/writing-shape",
+          "stage": "in-progress"
+        },
+        {
+          "upstream": "skills/misc/git-guardrails-claude-code",
+          "local": "git-guardrails",
+          "directory": "skills/agents/git-guardrails",
+          "stage": "misc"
+        },
+        {
+          "upstream": "skills/misc/migrate-to-shoehorn",
+          "local": "migrate-to-shoehorn",
+          "directory": "skills/engineering/migrate-to-shoehorn",
+          "stage": "misc"
+        },
+        {
+          "upstream": "skills/misc/setup-pre-commit",
+          "local": "setup-pre-commit",
+          "directory": "skills/agents/setup-pre-commit",
+          "stage": "misc"
+        },
+        {
+          "upstream": "skills/productivity/grill-me",
+          "local": "grill-me",
+          "directory": "skills/agents/grill-me",
+          "stage": "productivity"
+        },
+        {
+          "upstream": "skills/productivity/grilling",
+          "local": "grilling",
+          "directory": "skills/agents/grilling",
+          "stage": "productivity"
+        },
+        {
+          "upstream": "skills/productivity/to-questionnaire",
+          "local": "to-questionnaire",
+          "directory": "skills/communication/to-questionnaire",
+          "stage": "productivity"
+        },
+        {
+          "upstream": "skills/productivity/writing-for-agents",
+          "local": "writing-for-agents",
+          "directory": "skills/agents/writing-for-agents",
+          "stage": "productivity"
+        }
+      ],
+      "excludedNames": {
+        "handoff": "User exclusion",
+        "teach": "User exclusion",
+        "wait-what": "User exclusion",
+        "ask-matt": "User exclusion",
+        "claude-handoff": "Excluded handoff variant",
+        "scaffold-exercises": "Matt-specific course tooling (ai-hero-cli internal lint)"
+      },
+      "excludedPathComponents": ["personal"],
+      "sharedPaths": [
+        "README.md",
+        "CHANGELOG.md",
+        "LICENSE",
+        "SCOPE.md",
+        ".claude-plugin",
+        "docs",
+        ".agents",
+        "package.json",
+        "AGENTS.md",
+        "CLAUDE.md",
+        "GLOSSARY.md",
+        ".out-of-scope"
+      ],
+      "sharedRoot": "."
+    }
+  },
+  "owners": {
+    "domainArtifacts": "domain-modeling",
+    "architectureVocabulary": "codebase-design",
+    "behaviorTests": "tdd",
+    "standardsAndSpecReview": "code-review",
+    "pullRequestDescription": "pr",
+    "delegation": "pstack-swarm",
+    "upstreamMaintenance": "maintain-skills"
+  },
+  "policy": "Review both upstreams together. Propose eligible additions; preserve removals pending explicit retirement; hold incomplete source and integration baselines."
+}

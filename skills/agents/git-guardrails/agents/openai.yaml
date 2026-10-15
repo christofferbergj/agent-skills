@@ -1,0 +1,4 @@
+interface:
+  display_name: "Git Guardrails"
+  short_description: "Configure Git-operation hooks for either host"
+  default_prompt: "Use $git-guardrails to handle this request."

@@ -3,6 +3,8 @@ name: pstack-create-verification-skill
 description: "Use in a Pstack task to create a project verification skill for real UI, CLI, service, or library behavior."
 ---
 
+Invoke /domain-modeling to resolve and read the invoking project's configured artifacts. Read-only investigations and reviews report documentation drift without edits; creation or implementation reconciles accepted model changes through that owner.
+
 # Create a verification skill
 
 Every serious project needs a scripted way to drive the real app and prove behavior: launch it, exercise a feature the way a user would, and capture evidence. This skill generates that as a project-local skill (`.agents/skills/verify-<app>/`) tailored to the repo. Follow an existing skill-source convention when present; otherwise use `.agents/skills/verify-<app>/` and expose the same source to Claude Code through a project `.claude/skills/verify-<app>` link or its documented installation flow. Resolve links from their actual parent and verify both hosts can read the source. You write the generator's output for the next agent, not for a human: it will be read cold, mid-task, by an agent that has never seen the app.

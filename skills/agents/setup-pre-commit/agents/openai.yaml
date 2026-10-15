@@ -1,0 +1,4 @@
+interface:
+  display_name: "Setup Pre Commit"
+  short_description: "Add checks using the existing formatting stack"
+  default_prompt: "Use $setup-pre-commit to handle this request."

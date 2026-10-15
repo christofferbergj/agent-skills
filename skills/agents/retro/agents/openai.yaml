@@ -1,0 +1,6 @@
+interface:
+  display_name: "Retro"
+  short_description: "Capture lessons from a completed piece of work"
+  default_prompt: "Use $retro to handle this request."
+policy:
+  allow_implicit_invocation: false

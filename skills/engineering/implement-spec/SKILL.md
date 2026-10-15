@@ -1,0 +1,15 @@
+---
+name: implement-spec
+description: "Implement the result of /to-spec and /to-tickets in code."
+disable-model-invocation: true
+---
+
+# Implement a spec
+
+Implement the entire spec on one integration branch, treating its tickets as a dependency graph. One coordinator owns merges, canonical project artifacts, and tracker updates.
+
+1. Read the full spec, tickets, blocking edges, existing branch state, and configured tracker. Reuse the current source of truth; missing tracker configuration can use local artifacts until external publication is authorized. Invoke /domain-modeling to resolve project docs. Complete when scope, accepted seams, branch base, and ready frontier are explicit and the graph has no unresolved cycle.
+2. Create or reuse an owned integration branch. Gather bounded shared exploration once when useful. Invoke /pstack-swarm to dispatch ready tickets within host capacity, each writer on its own worktree based on the verified integration revision. Delegate /tdd instructions and acceptance criteria explicitly. Inspect a wrong worktree base and preserve its changes before repair; never reset unknown work. Complete when every running ticket has an owner, base, and evidence contract.
+3. Inspect each terminal result, merge accepted changes serially, and update the frontier only after integration checks pass. Writers return proposed domain edits; reconcile them through /domain-modeling before canonical docs change. Use the existing tracker graph and link execution evidence instead of duplicating tickets. Complete each ticket when its integrated behavior and acceptance criteria are proved.
+4. When all required tickets are integrated, run relevant whole-spec checks and invoke /code-review once at the final revision. Fix actionable findings and recheck affected behavior. Preserve equivalent review evidence only when it covers this exact artifact and both axes. Complete when the entire spec is demonstrated or the validated subset and remaining blockers are explicit.
+5. Deliver a draft PR by default when authorized, using /pr. Keep readiness, ticket closure, and merging at their explicitly authorized project boundaries; code on an unmerged branch is not automatically shipped. Use native worktree archive/removal for owned managed checkouts after inspecting preservation needs. Complete when all workers are accounted for, evidence survives, and no unknown work is removed.

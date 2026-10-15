@@ -1,6 +1,6 @@
 # Pstack adaptation design
 
-The user confirmed this design on 2026-10-15. It governs the implementation and weekly maintenance automation; the suite validation record reports exercised behavior and remaining integration limits.
+The user confirmed this initial Pstack design on 2026-10-15. Its source and host-execution decisions remain in force. The [combined-library decision](adr/0003-compose-shared-skill-disciplines.md) extends artifact ownership, dependencies, and maintenance to include Matt Pocock's skills; the current [combined maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md) governs the single weekly review. The suite validation records report exercised behavior and remaining integration limits.
 
 ## Result and scope
 

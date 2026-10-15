@@ -3,6 +3,8 @@ name: pstack-why
 description: "Use for Pstack design rationale, regressions, historical constraints, or the evidence behind thresholds."
 ---
 
+Invoke /domain-modeling to resolve and read the invoking project's configured artifacts. Read-only investigations and reviews report documentation drift without edits; creation or implementation reconciles accepted model changes through that owner.
+
 # Why
 
 Investigate why code has its current shape. Invoke /pstack-how for runtime behavior. Read [the epistemics framework](references/epistemics.md) before making confidence claims.

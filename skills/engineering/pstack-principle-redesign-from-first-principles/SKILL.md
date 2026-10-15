@@ -13,3 +13,5 @@ When integrating a change, don't bolt it onto the existing design. Redesign as i
 - Think about the whole redesign, then deliver it incrementally
 
 This is the method for preserving option value when integrating changes into an existing design.
+
+For module/interface reasoning invoke /codebase-design; for accepted project terminology, relationships, or ownership changes invoke /domain-modeling and reconcile the canonical project artifacts.

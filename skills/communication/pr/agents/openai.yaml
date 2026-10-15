@@ -1,0 +1,4 @@
+interface:
+  display_name: "Pr"
+  short_description: "Write a PR description around behavior and risk"
+  default_prompt: "Use $pr to handle this request."

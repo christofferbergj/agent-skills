@@ -35,3 +35,5 @@ Code organization:
 
 - "Is this data crossing a system boundary right now?" If not, validation is redundant.
 - "Can this be a pure function that the shell just calls?" If yes, extract it.
+
+For module/interface reasoning invoke /codebase-design; for accepted project terminology, relationships, or ownership changes invoke /domain-modeling and reconcile the canonical project artifacts.

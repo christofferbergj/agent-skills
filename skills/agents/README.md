@@ -21,3 +21,20 @@ Install the complete dependency group from the [top-level README](../../README.m
 - [pstack-sharpen](./pstack-sharpen/SKILL.md).
 - [pstack-show-me-your-work](./pstack-show-me-your-work/SKILL.md).
 - [pstack-swarm](./pstack-swarm/SKILL.md).
+
+## Combined Matt Pocock workflows
+
+Install the complete library from the [top-level README](../../README.md#install). Shared artifact and execution owners are documented in its [combined workflow](../../README.md#combined-workflow).
+
+- [grill-with-docs](./grill-with-docs/SKILL.md).
+- [research](./research/SKILL.md).
+- [retro](./retro/SKILL.md).
+- [setup-matt-pocock-skills](./setup-matt-pocock-skills/SKILL.md).
+- [wizard](./wizard/SKILL.md).
+- [chief-of-staff](./chief-of-staff/SKILL.md).
+- [loop-me](./loop-me/SKILL.md).
+- [git-guardrails](./git-guardrails/SKILL.md).
+- [setup-pre-commit](./setup-pre-commit/SKILL.md).
+- [grill-me](./grill-me/SKILL.md).
+- [grilling](./grilling/SKILL.md).
+- [writing-for-agents](./writing-for-agents/SKILL.md).

@@ -9,3 +9,5 @@ Run the review through a local Codex automation every Monday at 09:00 Europe/Cop
 Give scheduled reviews a 60-minute working budget and reserve the final ten minutes for validation and reporting. Prepare a draft pull request for the validated subset, checkpoint unfinished work, and leave unfinished review baselines unchanged. Ad hoc autonomous tasks follow their own agreed limits.
 
 Propose straightforward upstream additions when they fit the agreed scope. Treat a new backend or broader authority as a scope change. Preserve local skills removed upstream and propose retirement explicitly for review.
+
+The combined library extends this same weekly review to Matt Pocock and Pstack together. Use the maintain-skills catalog and shared integration contract; keep one update branch/PR and independent completed source positions. The original Pstack-only guide is a compatibility entrypoint.

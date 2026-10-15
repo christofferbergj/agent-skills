@@ -1,0 +1,4 @@
+interface:
+  display_name: "Domain Modeling"
+  short_description: "Maintain project terms, domain rules, and ADRs"
+  default_prompt: "Use $domain-modeling to handle this request."

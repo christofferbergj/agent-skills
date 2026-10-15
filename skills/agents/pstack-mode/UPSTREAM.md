@@ -20,6 +20,8 @@
 - Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
 - `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
 
+- Combined-library integration delegates project artifacts to `/domain-modeling`, design vocabulary to `/codebase-design`, behavior testing to `/tdd`, Standards/Spec review to `/code-review`, and PR descriptions to `/pr` as applicable. Preserve these calls and the single-coordinator contract when updating.
+
 ## Maintenance
 
 Invoke `/pstack-mode` for its suite-maintenance reference, or read its `MAINTENANCE.md` from the source checkout during `/maintain-skills`. That owner tracks the complete suite inventory, supporting wrappers, scripts, guides, and licenses. Installing from this repository refreshes adaptations; it does not merge Cursor's originals.

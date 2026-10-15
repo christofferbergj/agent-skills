@@ -3,6 +3,8 @@ name: pstack-blast-radius
 description: "Use in a Pstack task to trace effects outside a diff and prove the assumption its safety depends on."
 ---
 
+Invoke /domain-modeling to resolve and read the invoking project's configured artifacts. Read-only investigations and reviews report documentation drift without edits; creation or implementation reconciles accepted model changes through that owner.
+
 # Blast radius
 
 Find what a change breaks somewhere else, before it ships. Use for "blast radius of X", "what could this break", or reviewing a small diff you don't trust yet.

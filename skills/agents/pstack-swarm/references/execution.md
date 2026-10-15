@@ -4,7 +4,7 @@ Use this contract whenever a Pstack workflow dispatches a worker or critic. The 
 
 ## Prepare a brief
 
-Include the goal, scope, relevant user directives, repository guidance, exact revisions, resolved rubric and reference paths, allowed writes, done predicate, output location, and report shape. Child skill discovery is not assumed. Give each writer a separate worktree or disjoint artifact location; reviewers inspect without editing or posting. Delegates do not recursively delegate unless their explicitly scoped workflow requires it.
+Include the goal, scope, relevant user directives, repository guidance, canonical spec/ticket and domain-document pointers, exact revisions, resolved rubric and reference paths, allowed writes, done predicate, output location, and report shape. Child skill discovery is not assumed. The coordinator owns canonical glossary/domain/ADR edits; workers return proposals with evidence. Use one execution coordinator and reuse completed review evidence only for the same artifact and coverage. A Matt entrypoint contributes its discipline without starting another Pstack mode or recursive coordinator. Give each writer a separate worktree or disjoint artifact location; reviewers inspect without editing or posting. Delegates do not recursively delegate unless their explicitly scoped workflow requires it.
 
 Read personal role settings from `PSTACK_CONFIG` or `~/.config/pstack/config.json` when present. Use its active host section and only the model and effort choices the user configured and the host supports. Omit overrides to inherit. A rejected override is disclosed and falls back to the host default; never fabricate equivalent model slugs or silently change a requested vendor.
 

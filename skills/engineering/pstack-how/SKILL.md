@@ -3,6 +3,8 @@ name: pstack-how
 description: "Use for Pstack code walkthroughs, subsystem behavior, or module placement and ownership questions."
 ---
 
+Invoke /domain-modeling to resolve and read the invoking project's configured artifacts. Read-only investigations and reviews report documentation drift without edits; creation or implementation reconciles accepted model changes through that owner.
+
 # How
 
 1. Interpret the question from repository context. For a single module or utility, use one focused explainer; for a cross-cutting subsystem, split into distinct evidence-gathering angles. Complete when the target and appropriate depth are explicit.
