@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack sharpen"
+  short_description: "Pstack sharpen workflow for coding agents"

@@ -1,0 +1,10 @@
+# Worktree cleanup
+
+Own evidence of ownership and disposability before reclaiming a checkout.
+
+1. Inspect native host worktree attachments and active task state, the repository's actual Git worktree list, pinned/shared status, local edits, untracked and ignored files, commits, remote and PR state. Invoke /pstack-recall for scoped cross-host activity evidence. Complete when every candidate has an ownership and preservation assessment.
+2. Run `python3 scripts/worktree-audit.py --repo <repo> --base <resolved-base> --activity-index <history.json> --ownership-index <ownership.json>` from this skill directory. Both indexes must be generated within the last 15 minutes; history must cover at least four days. The ownership index records `repository`, `generatedAt` as Unix seconds, and a `worktrees` array containing each inspected worktree's path, kind, and explicit `active`, `pinned`, and `shared` booleans from current native or ordinary-worktree inspection. The audit is read-only and treats missing history or owner state as unknown. Complete when each checkout is held or a candidate for explicit final inspection; a bucket is advice, not deletion permission.
+3. Recheck current activity and contents immediately before acting. Hold dirty, unpushed, pinned, shared, active, or uncertain checkouts. Use native archive/removal APIs for managed worktrees and their recoverable snapshots. Use ordinary Git removal only for established ordinary worktrees within the requested cleanup scope. Complete when the proposed operation preserves needed evidence and work.
+4. Perform only the cleanup the user's request and verified ownership authorize. Never force-remove uncertain work or delete host state to satisfy a disk target. Complete when actual reclaimed resources and held candidates are observed.
+
+Return what was reclaimed, its evidence, and held paths with reasons. Simulator cleanup is optional and requires the requested platform's native ownership and availability checks; preserve active devices and user data.

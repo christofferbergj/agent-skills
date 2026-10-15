@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pstack mode"
+  short_description: "Run the Pstack playbooks for the current conversation."
+policy:
+  allow_implicit_invocation: false

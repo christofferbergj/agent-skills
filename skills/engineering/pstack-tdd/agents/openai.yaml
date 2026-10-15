@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack tdd"
+  short_description: "Pstack tdd workflow for coding agents"

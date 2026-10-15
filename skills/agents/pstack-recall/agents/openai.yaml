@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack recall"
+  short_description: "Use for Pstack recall of recent repository work or scoped cross-"
