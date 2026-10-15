@@ -14,6 +14,7 @@
 
 ## Local adaptations to preserve
 
+- Submit ready research tickets as a batch to the research owner, which dispatches investigators directly; keep canonical map/ticket edits with Wayfinder. Branch publication follows the existing grant.
 - Route prototype tickets to design-prototype; keep one decision map and its configured tracker. Research delegates use the shared research and execution owners.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

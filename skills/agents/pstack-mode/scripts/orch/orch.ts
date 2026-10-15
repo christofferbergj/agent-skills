@@ -83,6 +83,7 @@ interface GateResolveOptions {
 interface FrontierSetOptions {
   readonly repo?: string;
   readonly forge: Forge;
+  readonly trunk?: string;
   readonly prs?: readonly number[];
 }
 
@@ -433,6 +434,7 @@ function createProgram(io: Io): Command {
       new Option("--forge <forge>", "pull request forge").choices(["gh", "origin"]).default("gh"),
     )
     .option("--prs <n,...>", "optional expected pull request order pin", prList)
+    .option("--trunk <branch>", "verified default branch when origin/HEAD is unavailable")
     .action((options: FrontierSetOptions) =>
       runStore(
         program,
@@ -441,6 +443,7 @@ function createProgram(io: Io): Command {
           store.frontier.set({
             repo: frontierRepo(options),
             forge: options.forge,
+            trunk: options.trunk,
             prs: options.prs,
           }),
         frontierLine,

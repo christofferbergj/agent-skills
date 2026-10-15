@@ -156,10 +156,11 @@ def compare(root, catalog, source, upstream, candidate):
         except (OSError, ValueError) as error:
             changes.append({'local': entry['local'], 'upstream': entry['upstream'], 'status': 'blocked', 'reason': str(error)})
     shared = []
+    owned_directories = known | inventory
     for baseline in sorted({change['baseline'] for change in changes if 'baseline' in change}):
         if 'sharedRoot' in definition:
             delta = git(upstream, 'diff', '--name-status', '--find-renames', baseline, candidate, '--', definition['sharedRoot']).decode().splitlines()
-            files = [line for line in delta if any(not path.startswith(skill_root + '/') for path in line.split('\t')[1:])]
+            files = [line for line in delta if any(not any(path.startswith(directory + '/') for directory in owned_directories) for path in line.split('\t')[1:])]
         else:
             files = git(upstream, 'diff', '--name-status', '--find-renames', baseline, candidate, '--', *definition.get('sharedPaths', [])).decode().splitlines()
         shared.append({'baseline': baseline, 'files': files})

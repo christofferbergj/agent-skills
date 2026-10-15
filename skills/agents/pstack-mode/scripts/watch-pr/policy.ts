@@ -138,11 +138,17 @@ const ciBlocker = (row: T.PrSnapshot): T.MergeBlocker | null =>
   row.kind === "open" && (row.ci.kind === "ci-failing" || row.ci.kind === "ci-github-rejected")
     ? { kind: "failing-checks", pr: row.context, ci: row.ci }
     : null;
-function gateReason(row: T.PrSnapshot, allowDraft: boolean): T.MergeGateReason | null {
+export function gateReason(row: T.PrSnapshot, allowDraft: boolean): T.MergeGateReason | null {
   if (row.kind === "merged") return null;
   if (row.kind === "closed") return "closed-without-merge";
   if (row.facts.isDraft && !allowDraft) return "draft-pr";
-  return row.facts.reviewDecision === "CHANGES_REQUESTED" ? "changes-requested" : null;
+  if (row.facts.reviewDecision === "CHANGES_REQUESTED") return "changes-requested";
+  if (row.facts.reviewDecision === "REVIEW_REQUIRED") return "review-required";
+  if (row.facts.mergeable === "UNKNOWN" || row.facts.mergeStateStatus === "UNKNOWN")
+    return "mergeability-unknown";
+  if (row.facts.mergeStateStatus === "BLOCKED" || row.facts.mergeStateStatus === "BEHIND")
+    return "forge-blocked";
+  return null;
 }
 function gateBlocker(row: T.PrSnapshot, allowDraft: boolean): T.MergeBlocker | null {
   const reason = gateReason(row, allowDraft);
@@ -167,7 +173,7 @@ function readyContribution(row: T.PrSnapshot, allowDraft: boolean): T.ReadyPr | 
   )
     return null;
   const reviewDecision = row.facts.reviewDecision;
-  if (reviewDecision === "CHANGES_REQUESTED") return null;
+  if (reviewDecision === "CHANGES_REQUESTED" || reviewDecision === "REVIEW_REQUIRED") return null;
   return {
     kind: "ready-pr",
     context: row.context,

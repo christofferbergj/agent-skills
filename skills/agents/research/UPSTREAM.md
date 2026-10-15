@@ -14,6 +14,7 @@
 
 ## Local adaptations to preserve
 
+- Own batch investigator dispatch directly, within host capacity. An investigator executes its assigned question without another coordinator, and every terminal result is collected.
 - Use actual host background investigation through pstack-swarm with a bounded note destination. Prefer Context7 for version-matched software docs and primary sources for gaps, with truthful sequential fallback.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

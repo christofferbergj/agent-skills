@@ -13,6 +13,7 @@ import {
   selectTierMajorStackDecision,
 } from "./policy.ts";
 import { fakeReader, failedCheck, passingCheck, pendingCheck } from "./fakes.test-helper.ts";
+import { renderStatusTable } from "./render.ts";
 import type {
   GitHubReader,
   NonEmpty,
@@ -38,6 +39,43 @@ const options = {
 } satisfies PollingOptions;
 
 describe("readiness truth table", () => {
+  it("keeps approvals, forge requirements, and unknown mergeability as gates", async () => {
+    const cases = [
+      {
+        facts: { reviewDecision: "REVIEW_REQUIRED", mergeStateStatus: "BLOCKED" },
+        reason: "review-required",
+      },
+      { facts: { mergeStateStatus: "BLOCKED" }, reason: "forge-blocked" },
+      { facts: { mergeStateStatus: "BEHIND" }, reason: "forge-blocked" },
+      { facts: { mergeStateStatus: "UNKNOWN" }, reason: "mergeability-unknown" },
+      { facts: { mergeable: "UNKNOWN" }, reason: "mergeability-unknown" },
+      { facts: { isDraft: true, reviewDecision: "REVIEW_REQUIRED" }, reason: "review-required" },
+    ] satisfies readonly { facts: Partial<PullRequestFacts>; reason: string }[];
+    for (const { facts, reason } of cases) {
+      const snapshot = await readSnapshot({
+        reader: fakeReader({ facts }),
+        context: context(1),
+        pendingHistory: "include",
+        allowDraft: true,
+      });
+      expect(classifyPr(snapshot, true)).toMatchObject({
+        kind: "blocker",
+        blocker: { kind: "merge-gate", reason },
+      });
+      expect(selectTierMajorStackDecision([snapshot], true)).toMatchObject({
+        kind: "blocker",
+        blocker: { reason },
+      });
+      expect(renderStatusTable([snapshot])).not.toMatch(/\| ✅ \|$/m);
+    }
+    const clear = await readSnapshot({
+      reader: fakeReader(),
+      context: context(1),
+      pendingHistory: "include",
+      allowDraft: false,
+    });
+    expect(classifyPr(clear).kind).toBe("ready");
+  });
   it("covers every specified row and every UNKNOWN rollup value", () => {
     const cases: readonly [
       PullRequestFacts["mergeStateStatus"],

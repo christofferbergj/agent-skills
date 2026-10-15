@@ -21,6 +21,16 @@ class GitGuardrails(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertIsNone(guardrails.denied(command))
 
+    def test_comments_keep_the_following_command_boundary(self):
+        for command in ['echo safe # note\ngit push', '# note\ngit reset --hard', 'echo tag#value; git push', 'git pu\\\nsh', 'env -C /tmp git push', 'exec -a fixture git push']:
+            with self.subTest(command=command):
+                self.assertIsNotNone(guardrails.denied(command))
+
+    def test_comment_text_and_quoted_hashes_are_not_executed(self):
+        for command in ['echo safe # git push', 'echo "# git push"', 'echo "first\n# git push\nlast"', 'printf "%s" escaped\\#text', 'git log --format="# field"']:
+            with self.subTest(command=command):
+                self.assertIsNone(guardrails.denied(command))
+
     def test_both_hosts_receive_same_structured_denial_without_command_arguments(self):
         for host in ['codex', 'claude-code']:
             event={'session_id':'fixture','tool_name':'Bash','tool_input':{'command':'git push origin https://example.invalid/PRIVATE'}}

@@ -89,6 +89,20 @@ class CombinedCatalog(unittest.TestCase):
         self.assertEqual(result['skills'][0]['status'],'blocked')
         self.assertFalse(result['reviewComplete'])
 
+    def test_shared_root_preserves_category_docs_shared_files_and_rename_endpoints(self):
+        self.definition['sharedRoot'] = '.'
+        category = self.upstream / 'skills/engineering/README.md'
+        category.write_text('New category policy')
+        (self.upstream / 'skills/shared-guidance.md').write_text('Shared behavior')
+        source = self.upstream / 'skills/engineering/alpha/SKILL.md'
+        source.rename(self.upstream / 'skills/moved-guidance.md')
+        self.commit('Change shared inputs and move a file out of its owner')
+        result = catalog.compare(self.root, self.registry, 'matt', self.upstream, self.revision())
+        files = '\n'.join(result['sharedInputs'][0]['files'])
+        for name in ['skills/engineering/README.md', 'skills/shared-guidance.md', 'skills/moved-guidance.md']:
+            self.assertIn(name, files)
+        self.assertEqual(result['skills'][0]['status'], 'removed')
+
     def test_checkpoint_never_writes_source_or_claims_integration_complete(self):
         before=(self.directory/'UPSTREAM.md').read_bytes()
         result=catalog.checkpoint(self.root,self.registry,{'matt':self.baseline},['alpha'],55,False)

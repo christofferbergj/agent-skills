@@ -2,6 +2,8 @@
 
 Validated on macOS on 2026-10-15 against upstream Pstack 0.15.25, commit `e5136d82418d2db3165ea1050d17577cd618cc05`.
 
+This is the historical initial-port record. The current /maintain-skills validation record and catalog commands supersede the Pstack-only `suite.py` engine removed during the combined-library review. The counts and commands below record what ran at that earlier revision.
+
 The exercised tools were Codex CLI 0.162.1, Claude Code 2.1.292, Bun 1.4.3, Node 24.22.0, Python 3.9.6, Git 2.54.0, and GitHub CLI 2.102.0. Other operating systems were not exercised. The cross-vendor wrapper explicitly requires POSIX process groups and fails to the disclosed native-review path when required CLI controls are unavailable.
 
 ## Packaging and scripts

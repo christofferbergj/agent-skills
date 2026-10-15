@@ -8,13 +8,48 @@ import shlex
 import sys
 
 VALUE_OPTIONS = {'-C', '-c', '--git-dir', '--work-tree', '--namespace', '--config-env', '--super-prefix'}
+WRAPPER_VALUE_OPTIONS = {'env': {'-u', '--unset', '-C', '--chdir'}, 'exec': {'-a'}}
+
+
+def without_comments(command):
+    """Preserve shell word boundaries while removing literal comments."""
+    result = []
+    quote = None
+    word_start = True
+    index = 0
+    while index < len(command):
+        character = command[index]
+        if character == '\\' and quote != "'" and index + 1 < len(command):
+            following = command[index + 1]
+            if following != '\n':
+                result.extend([character, following])
+                word_start = False
+            index += 2
+            continue
+        if quote:
+            result.append(character)
+            if character == quote:
+                quote = None
+        elif character in ["'", '"']:
+            quote = character
+            word_start = False
+            result.append(character)
+        elif character == '#' and word_start:
+            while index < len(command) and command[index] != '\n':
+                index += 1
+            continue
+        else:
+            result.append(character)
+            word_start = character in ' \t\r\n;&|()<>'
+        index += 1
+    return ''.join(result)
 
 
 def segments(command):
-    lexer = shlex.shlex(command, posix=True, punctuation_chars=';&|()\n')
+    lexer = shlex.shlex(without_comments(command), posix=True, punctuation_chars=';&|()\n')
     lexer.whitespace = ' \t\r'
     lexer.whitespace_split = True
-    lexer.commenters = '#'
+    lexer.commenters = ''
     current = []
     for token in lexer:
         if re.fullmatch(r'[;&|()\n]+', token):
@@ -35,7 +70,7 @@ def operation(words):
         wrapper = words.pop(0)
         while words and words[0].startswith('-'):
             flag = words.pop(0)
-            if wrapper == 'env' and flag in ['-u', '--unset'] and words:
+            if flag in WRAPPER_VALUE_OPTIONS.get(wrapper, set()) and words:
                 words.pop(0)
         while words and re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*=.*', words[0], re.DOTALL):
             words.pop(0)

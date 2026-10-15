@@ -64,7 +64,7 @@ Re-run the local install command after editing them; a local-path install is a s
 
 ## Combined workflow
 
-The [combined validation record](skills/agents/maintain-skills/VALIDATION.md) documents packaging, host exercises, tests, and remaining integration limits.
+The [combined validation record](skills/agents/maintain-skills/VALIDATION.md) documents packaging, host exercises, tests, and remaining integration limits. The [Thermos review record](docs/reviews/2026-10-15-combined-skills-thermos.md) records the independent audit and its repairs.
 
 Use `/grill-with-docs` to resolve a design, `/to-spec` to capture an accepted spec, `/to-tickets` to build its dependency graph, and `/implement` or `/implement-spec` to execute it. Invoke `$pstack-mode` in Codex or `/pstack-mode` in Claude Code when you want its coordinated playbooks. Both paths use the same project documents and reusable disciplines; neither starts another coordinator automatically.
 

@@ -19,6 +19,8 @@
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
 - Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
 - `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
+- Keep one maintenance engine in `/maintain-skills`; `suite.json` remains this family's data source. Include category/shared files inside upstream skill roots.
+- Preserve explicit review and unknown/blocked merge gates, cycle-safe stack traversal, forge-supplied immutable PR heads, active-over-historical PR selection, and verified trunk resolution. Hold an unverified Origin head API instead of substituting local refs.
 
 - Combined-library integration delegates project artifacts to `/domain-modeling`, design vocabulary to `/codebase-design`, behavior testing to `/tdd`, Standards/Spec review to `/code-review`, and PR descriptions to `/pr` as applicable. Preserve these calls and the single-coordinator contract when updating.
 

@@ -155,7 +155,7 @@ export interface ReadyPr {
     readonly ci: CiClean;
     readonly gate: {
       readonly state: "OPEN";
-      readonly reviewDecision: Exclude<ReviewDecision, "CHANGES_REQUESTED">;
+      readonly reviewDecision: Exclude<ReviewDecision, "CHANGES_REQUESTED" | "REVIEW_REQUIRED">;
       readonly draft: "not-draft" | "draft-allowed";
     };
   };
@@ -165,7 +165,13 @@ export interface MergedPr {
   readonly context: PrContext;
   readonly mergedAt: string | null;
 }
-export type MergeGateReason = "closed-without-merge" | "draft-pr" | "changes-requested";
+export type MergeGateReason =
+  | "closed-without-merge"
+  | "draft-pr"
+  | "changes-requested"
+  | "review-required"
+  | "forge-blocked"
+  | "mergeability-unknown";
 export type MergeBlocker =
   | {
       readonly kind: "merge-conflicts";
@@ -188,6 +194,11 @@ export type MergeBlocker =
       readonly reason: MergeGateReason;
     };
 export type QueryFailure =
+  | {
+      readonly kind: "invalid-stack";
+      readonly retryable: false;
+      readonly detail: string;
+    }
   | {
       readonly kind: "json-parse";
       readonly retryable: true;

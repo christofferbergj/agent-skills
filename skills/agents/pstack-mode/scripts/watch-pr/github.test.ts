@@ -1,4 +1,6 @@
 import { describe, expect, it } from "bun:test";
+import { spawnSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 import {
   ChecksUnavailable,
   WatcherQueryError,
@@ -371,6 +373,21 @@ describe("review thread pagination", () => {
 });
 
 describe("context and stack discovery", () => {
+  it("rejects cyclic and self-referential bases within a process deadline", () => {
+    for (const selfCycle of [false, true]) {
+      const script = `import {orderStack} from ${JSON.stringify(fileURLToPath(new URL("./github.ts", import.meta.url)))};
+        const context = {owner: "fixture", repo: "fixture", number: 1};
+        const prs = [{number: 1, headRefName: "a", baseRefName: ${JSON.stringify(selfCycle ? "a" : "b")}}, {number: 2, headRefName: "b", baseRefName: "a"}];
+        try { orderStack(context, prs); process.exit(1); } catch (error) { console.log(error.failure?.kind); }`;
+      const result = spawnSync(process.execPath, ["-e", script], {
+        encoding: "utf8",
+        timeout: 1000,
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+      expect(result.stdout.trim()).toBe("invalid-stack");
+    }
+  });
   it("returns a fully explicit context without any reader call", async () => {
     const reader = fakeReader();
     expect(

@@ -598,10 +598,18 @@ export function orderStack(
   const start = byNumber.get(context.number);
   if (start === undefined) return [context];
   const down: T.OpenPullRequest[] = [];
+  const ancestors = new Set<T.PrNumber>([start.number]);
   let current = start;
   while (byHead.has(current.baseRefName)) {
     const parent = byHead.get(current.baseRefName);
     if (parent === undefined) break;
+    if (ancestors.has(parent.number))
+      throw new WatcherQueryError({
+        kind: "invalid-stack",
+        retryable: false,
+        detail: "pull request base chain contains a cycle",
+      });
+    ancestors.add(parent.number);
     down.push(parent);
     current = parent;
   }

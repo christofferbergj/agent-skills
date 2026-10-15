@@ -1,4 +1,5 @@
 import type * as T from "./types.ts";
+import { gateReason } from "./policy.ts";
 export const renderJson = (verdict: T.WatcherVerdict): string => `${JSON.stringify(verdict)}\n`;
 function ciCell(row: T.PrSnapshot): string {
   if (row.kind !== "open") return "\u2014";
@@ -32,13 +33,22 @@ function reviewCell(row: T.PrSnapshot): string {
 function mergeCell(row: T.PrSnapshot): string {
   if (row.kind === "merged") return "✅ merged";
   if (row.kind === "closed") return "❌ closed";
-  if (row.facts.isDraft) return "⏸ draft";
-  if (row.facts.reviewDecision === "CHANGES_REQUESTED") return "⚠️ changes requested";
-  return row.facts.mergeable === "CONFLICTING" ||
+  if (
+    row.facts.mergeable === "CONFLICTING" ||
     row.facts.mergeStateStatus === "DIRTY" ||
     row.facts.mergeStateStatus === "CONFLICTING"
-    ? "⚠️ conflict"
-    : "✅";
+  )
+    return "⚠️ conflict";
+  const reason = gateReason(row, false);
+  const cells: Record<T.MergeGateReason, string> = {
+    "closed-without-merge": "❌ closed",
+    "draft-pr": "⏸ draft",
+    "changes-requested": "⚠️ changes requested",
+    "review-required": "⏸ review required",
+    "forge-blocked": "⏸ forge blocked",
+    "mergeability-unknown": "⏳ mergeability unknown",
+  };
+  return reason === null ? "✅" : cells[reason];
 }
 export function renderStatusTable(rows: T.NonEmpty<T.PrSnapshot>): string {
   const lines = ["| PR | CI | Review | Merge |", "| --- | --- | --- | --- |"];
@@ -102,12 +112,16 @@ function renderBlocker(blocker: T.MergeBlocker | StatusQueryBlocker): string {
       ].join("\n");
     }
     case "merge-gate": {
-      const action =
-        blocker.reason === "closed-without-merge"
-          ? "restore or remove the closed PR from the queued stack"
-          : blocker.reason === "draft-pr"
-            ? "mark the PR ready for review before waiting for the merge queue"
-            : "resolve the changes-requested review before waiting for the merge queue";
+      const actions: Record<T.MergeGateReason, string> = {
+        "closed-without-merge": "restore or remove the closed PR from the queued stack",
+        "draft-pr": "mark the PR ready for review before waiting for the merge queue",
+        "changes-requested":
+          "resolve the changes-requested review before waiting for the merge queue",
+        "review-required": "obtain the required review before waiting for the merge queue",
+        "forge-blocked": "resolve the forge's remaining merge requirements and recheck",
+        "mergeability-unknown": "wait for the forge to determine mergeability and recheck",
+      };
+      const action = actions[blocker.reason];
       return [`BLOCKER: ${blocker.reason}`, `pr=${blocker.pr.number}`, `action=${action}`].join(
         "\n",
       );

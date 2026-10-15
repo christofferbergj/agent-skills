@@ -14,6 +14,7 @@
 
 ## Local adaptations to preserve
 
+- Preserve literal shell comment boundaries, quoted hashes, line continuations, and supported wrapper-option values when detecting accidental destructive Git commands.
 - Generalize the Claude-specific name and provide Codex/Claude hook adapters sharing a Python detector. Handle common Git options, shell separators, forced deletion, and quoted mentions; disclose indirect-command limits and native hook trust requirements.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

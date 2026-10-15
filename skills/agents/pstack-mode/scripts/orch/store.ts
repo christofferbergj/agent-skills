@@ -168,6 +168,7 @@ export interface ResolveGateParams {
 export interface SetFrontierParams {
   readonly repo: string;
   readonly forge?: Forge;
+  readonly trunk?: string;
   readonly prs?: readonly number[];
 }
 
@@ -886,7 +887,7 @@ interface ForgePullRequestQuery {
   readonly states: ReadonlyMap<string, FrontierPrState>;
 }
 
-const FORGE_PULL_REQUEST_QUERIES: Readonly<Record<Forge, ForgePullRequestQuery>> = {
+const FORGE_PULL_REQUEST_QUERIES: Readonly<Partial<Record<Forge, ForgePullRequestQuery>>> = {
   gh: {
     stateField: "state",
     headField: "headRefName",
@@ -895,17 +896,6 @@ const FORGE_PULL_REQUEST_QUERIES: Readonly<Record<Forge, ForgePullRequestQuery>>
       ["OPEN", "OPEN"],
       ["MERGED", "MERGED"],
       ["CLOSED", "CLOSED"],
-    ]),
-  },
-  origin: {
-    stateField: "status",
-    headField: "headRef",
-    baseField: "baseRef",
-    states: new Map<string, FrontierPrState>([
-      ["open", "OPEN"],
-      ["draft", "OPEN"],
-      ["merged", "MERGED"],
-      ["closed", "CLOSED"],
     ]),
   },
 };
@@ -922,6 +912,7 @@ interface ForgePullRequest {
   readonly state: FrontierPrState;
   readonly branch: string;
   readonly base: string;
+  readonly sha: string;
 }
 
 function runTool({
@@ -957,6 +948,10 @@ function listPullRequests({
   repo: string;
 }): readonly ForgePullRequest[] {
   const query = FORGE_PULL_REQUEST_QUERIES[forge];
+  if (query === undefined)
+    throw new UserError(
+      "Origin frontier is unavailable until its immutable PR-head API is verified; use gh for a GitHub repository or inspect the other forge through its native tools",
+    );
   const command = `${forge} pr list ${filter} ${branch}`;
   // Every state is fetched because a merged or closed PR still anchors the
   // chain, and a draft counts as OPEN.
@@ -970,7 +965,7 @@ function listPullRequests({
       "--state",
       "all",
       "--json",
-      ["number", query.stateField, query.headField, query.baseField].join(","),
+      ["number", query.stateField, query.headField, query.baseField, "headRefOid"].join(","),
     ],
     repo,
   });
@@ -988,6 +983,7 @@ function listPullRequests({
     const state = typeof status === "string" ? (query.states.get(status) ?? null) : null;
     const head = isRecord(row) ? row[query.headField] : undefined;
     const base = isRecord(row) ? row[query.baseField] : undefined;
+    const sha = isRecord(row) ? row.headRefOid : undefined;
     if (
       !isRecord(row) ||
       typeof row.number !== "number" ||
@@ -997,11 +993,13 @@ function listPullRequests({
       typeof head !== "string" ||
       head.length === 0 ||
       typeof base !== "string" ||
-      base.length === 0
+      base.length === 0 ||
+      typeof sha !== "string" ||
+      !/^[0-9a-f]{40,64}$/i.test(sha)
     ) {
       throw new UserError(`${command} output has an invalid PR row`);
     }
-    return { pr: row.number, state, branch: head, base };
+    return { pr: row.number, state, branch: head, base, sha };
   });
 }
 
@@ -1014,7 +1012,9 @@ function branchPullRequest({
   forge: Forge;
   repo: string;
 }): ForgePullRequest {
-  const rows = listPullRequests({ filter: "--head", branch, forge, repo });
+  const history = listPullRequests({ filter: "--head", branch, forge, repo });
+  const active = history.filter((row) => row.state === "OPEN");
+  const rows = active.length > 0 ? active : history;
   const row = rows[0];
   if (row === undefined) {
     throw new UserError(
@@ -1023,7 +1023,7 @@ function branchPullRequest({
   }
   if (rows.length > 1) {
     throw new UserError(
-      `branch ${branch} has multiple pull requests (${rows.map((item) => `#${item.pr}`).join(", ")}); close the stale ones first`,
+      `branch ${branch} has multiple ${active.length ? "active" : "historical"} pull requests (${rows.map((item) => `#${item.pr}`).join(", ")}); resolve the ambiguous branch identity before continuing`,
     );
   }
   return row;
@@ -1047,32 +1047,32 @@ function runGit({ args, repo }: { args: readonly string[]; repo: string }): stri
   return runTool({ command: "git", args, repo }).trim();
 }
 
-function branchSha({ branch, repo }: { branch: string; repo: string }): string {
-  const sha = runGit({ args: ["rev-parse", branch], repo });
-  if (!/^[0-9a-f]{40,64}$/i.test(sha)) {
-    throw new UserError(`git rev-parse ${branch} returned an invalid SHA`);
-  }
-  return sha;
-}
-
 function currentBranch(repo: string): string {
   return runGit({ args: ["symbolic-ref", "--short", "HEAD"], repo });
 }
 
-function trunkBranch(repo: string): string {
+function trunkBranch(repo: string, explicit?: string): string {
+  if (explicit !== undefined) {
+    return runGit({ args: ["check-ref-format", "--branch", explicit], repo });
+  }
   try {
     return runGit({
       args: ["symbolic-ref", "--short", "refs/remotes/origin/HEAD"],
       repo,
     }).replace(/^origin\//, "");
   } catch {
-    // Init-plus-fetch checkouts and local fixtures lack origin/HEAD.
-    return "main";
+    throw new UserError(
+      "default branch is unavailable; pass --trunk <verified-default-branch> or establish origin/HEAD",
+    );
   }
 }
 
-function resolveFrontier(repo: string, forge: Forge): readonly FrontierPr[] {
-  const trunk = trunkBranch(repo);
+function resolveFrontier(
+  repo: string,
+  forge: Forge,
+  explicitTrunk?: string,
+): readonly FrontierPr[] {
+  const trunk = trunkBranch(repo, explicitTrunk);
   const current = currentBranch(repo);
   if (current === trunk) {
     return [];
@@ -1113,7 +1113,7 @@ function resolveFrontier(repo: string, forge: Forge): readonly FrontierPr[] {
   return chain.map((row) => ({
     pr: row.pr,
     branches: row.branch,
-    sha: branchSha({ branch: row.branch, repo }),
+    sha: row.sha,
     state: row.state,
   }));
 }
@@ -1390,7 +1390,7 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
           throw new UserError("--prs must not contain duplicates");
         }
         const old = await readFrontier(store);
-        const prs = resolveFrontier(repo, forge);
+        const prs = resolveFrontier(repo, forge, params.trunk);
         if (pin !== undefined) {
           validateFrontierPin({
             actual: prs.map((row) => row.pr),
