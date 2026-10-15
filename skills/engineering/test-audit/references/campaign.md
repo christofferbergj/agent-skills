@@ -16,7 +16,7 @@ Apply the main skill's evaluation step to every declaration, including setup, as
 
 Keep a durable ledger and checkpoint in an environment-approved location when work spans sessions. Record the starting revision, inventory, batch progress, decisions, and validation so another session can resume. Commit these artifacts only when requested or required by project policy.
 
-Keep one ledger owner. When delegation is authorized and available, assign disjoint read-only scopes and serialize shared-file edits. Otherwise work sequentially.
+Reuse or reassign the discovery subagents to disjoint read-only test batches. Reconcile their ledgers before planning shared-file edits; the main skill owns coordination and fallback rules.
 
 Complete when every declaration or distinct case group has a decision and evidence, including explicit unresolved entries.
 
@@ -34,7 +34,7 @@ Complete when every authorized batch decision is applied or explicitly blocked, 
 
 ## 5. Review preservation afresh
 
-Perform the main skill's preservation comparison across the complete original and surviving suites. Revisit the original tests and diff rather than relying solely on ledger conclusions. Use an independent reviewer when authorized and available; otherwise perform a separate pass yourself.
+Perform the main skill's independent preservation comparison across the complete original and surviving suites. Revisit the original tests and diff rather than relying solely on ledger conclusions.
 
 Complete when every suspected gap is restored or rejected with evidence, and remaining uncertainty preserves the affected coverage.
 

@@ -26,7 +26,7 @@ License: [MIT, copyright 2026 OpenClaw Foundation](./LICENSE), retained from the
 - Assess contracts, credible failures, independent expectations, refactoring resilience, distinct feedback, and justified cost. Inspect suspicious patterns before deciding; uncertainty preserves tests.
 - Use existing dependency seams and check double fidelity. Production fixes, API changes, and seam removal require separate scope; tests alone do not establish that a public export is obsolete.
 - Derive commands and CI requirements from the audited project. Keep validation proportional; exclude fixed time budgets, line-count targets, mandatory mutation of every contract, and OpenClaw-specific proof or PR tooling.
-- Keep campaign accounting separate from shared value rules. Delegate only when authorized and available; retain the sequential path and checkable completion criteria.
+- Keep campaign accounting separate from shared value rules. Actively delegate discovery and independent review, scaling to scope and capacity; retain the sequential fallback and checkable completion criteria.
 
 `README.md`, `agents/openai.yaml`, `assets/icon.svg`, this record, and the retained license are locally maintained packaging.
 
@@ -42,3 +42,5 @@ Compare future upstream changes against the reviewed-through revision for all li
 | 2026-10-14 | `71b5563397e95d67ad902f79a717559519010ac8`                                         | Fully reviewed the listed source files to establish a fresh baseline. Retained behavior-preserving refactoring and independent boundary proof; expanded feedback, cost, and double-fidelity criteria. Excluded the upstream authoring mode, automatic production-seam deletion, mandatory parallel reviewers, fixed budgets, line-count goals, and repository-specific CI/PR rules in favor of the local scope and validation process. |
 
 Validation for the 2026-10-14 update passed: `pnpm fmt:check`, `npx skills@latest add . --list`, `git diff --check`, and local Markdown link checks.
+
+On 2026-10-15, added three-role discovery, reuse of subagents for batch audits, and independent preservation review, with scope and capacity fallbacks. This is a local workflow change; the upstream review baseline is unchanged. Formatting, skill discovery, and `git diff --check` passed.
