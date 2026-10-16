@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-separate-before-serializing-shared-state
-description: "Use during a Pstack task or when explicitly requested. Apply when concurrent actors might write to the same file, branch, key, or state object. Eliminate the sharing first; serialize structurally only when one shared writer is a real invariant."
+description: "Apply when concurrent actors might write to the same file, branch, key, or state object. Eliminate the sharing first; serialize structurally only when one shared writer is a real invariant."
 ---
 
 # Separate Before Serializing Shared State

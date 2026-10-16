@@ -8,15 +8,20 @@ The [combined validation record](../skills/agents/maintain-skills/VALIDATION.md)
 
 Use `/grill-with-docs` to resolve a design, `/to-spec` to capture an accepted spec, `/to-tickets` to build its dependency graph, and `/implement` or `/implement-spec` to execute it. Invoke `$pstack-mode` in Codex or `/pstack-mode` in Claude Code when you want its coordinated playbooks. Both paths use the same project documents and reusable disciplines; neither starts another coordinator automatically.
 
-| Responsibility                                                           | Shared owner       |
-| ------------------------------------------------------------------------ | ------------------ |
-| Configured glossary, domain model, legacy context files, and ADR updates | `/domain-modeling` |
-| Architecture vocabulary and interface depth                              | `/codebase-design` |
-| Behavior tests and red/green slices                                      | `/tdd`             |
-| Standards and spec review                                                | `/code-review`     |
-| PR description                                                           | `/pr`              |
-| Native delegation, isolated writers, cross-vendor review and fallback    | `/pstack-swarm`    |
-| Every local skill, its upstreams, and integration changes                | `/maintain-skills` |
+The Matt flow invokes `/pstack-principles` automatically at each phase and before completion. That shared selector reads the applicable principle owners, carries accepted constraints into the existing spec and tickets, and supplies implementation and review workers with the rules. It does not activate Pstack mode. New installed principles enter selection through their descriptions, without a separate list to update.
+
+Principles stay within the current phase and accepted scope. An interview still waits for confirmation; a spec records unresolved conflicts instead of inventing decisions. The migration principle chooses coordinated internal migration or staged coexistence when compatibility requires it, and owns the verification gates for both flows. Runtime completion includes direct evidence from the real user or caller path, with unavailable checks reported as gaps.
+
+| Responsibility                                                           | Shared owner         |
+| ------------------------------------------------------------------------ | -------------------- |
+| Configured glossary, domain model, legacy context files, and ADR updates | `/domain-modeling`   |
+| Architecture vocabulary and interface depth                              | `/codebase-design`   |
+| Behavior tests and red/green slices                                      | `/tdd`               |
+| Standards and spec review                                                | `/code-review`       |
+| PR description                                                           | `/pr`                |
+| Native delegation, isolated writers, cross-vendor review and fallback    | `/pstack-swarm`      |
+| Principle selection and composition within the current phase             | `/pstack-principles` |
+| Every local skill, its upstreams, and integration changes                | `/maintain-skills`   |
 
 Pstack architecture and domain-model work updates the same configured artifacts as Matt's skills. Current defaults are `GLOSSARY.md`, optional `GLOSSARY-MAP.md`, `docs/adr/`, and setup's `docs/agents/domain.md`. Existing `context.md`, `CONTEXT.md`, or domain-model files keep their roles and names. Accepted spec/ticket artifacts remain authoritative; plans and evidence logs link to them. The coordinator owns canonical document edits while delegates return proposals.
 

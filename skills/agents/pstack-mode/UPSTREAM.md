@@ -14,6 +14,8 @@
 
 ## Local adaptations to preserve
 
+- Share phase-specific principle selection with Matt entrypoints through the locally authored /pstack-principles owner. Preserve explicit mode activation and keep suite.json as a source mapping rather than a second selection policy. The refactoring playbook uses the migration owner for compatibility and verification gates.
+
 - Namespace: `poteto-mode` maps to `pstack-mode`. Preserve the installed name and invocation metadata.
 - Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.

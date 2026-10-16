@@ -14,6 +14,8 @@
 
 ## Local adaptations to preserve
 
+- Invoke /pstack-principles for decomposition and completion. Delegate migration strategy to its principle owner instead of defaulting every wide refactor to expand-contract; represent its verification units and compatibility gates in the existing graph.
+
 - Preserve an already-approved breakdown and one canonical dependency graph, with observable acceptance and truthful local/published state.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

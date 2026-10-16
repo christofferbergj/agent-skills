@@ -1,5 +1,7 @@
 # Good and Bad Tests
 
+These examples illustrate /pstack-principle-test-behavior-not-implementation, which owns the criteria. Judge the contract before copying an example.
+
 ## Good Tests
 
 **Integration-style**: Test through real interfaces, not mocks of internal parts.
@@ -39,10 +41,12 @@ Red flags:
 
 - Mocking internal collaborators
 - Testing private methods
-- Asserting on call counts/order
+- Asserting on private collaborator call counts/order
 - Test breaks when refactoring without behavior change
 - Test name describes HOW not WHAT
-- Verifying through external means instead of interface
+- Inspecting storage details outside the promised contract
+
+The next example assumes an application contract with a public retrieval operation. For a persistence adapter whose contract is the written row, inspecting that row is valid. A request to an external payment system is likewise observable behavior; asserting its count can prove a duplicate-charge guarantee.
 
 ```typescript
 // BAD: Bypasses interface to verify

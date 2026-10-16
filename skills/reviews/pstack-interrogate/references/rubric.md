@@ -38,7 +38,7 @@ Does the code fit well into the system it's part of?
 - Coupling: does this change introduce dependencies that will make future changes harder?
 - Data model fit: do the data structures match the actual access patterns?
 - Bolted-on vs. integrated: if the new requirement had been known from the start, would the code look like this, or does the change feel patched onto the existing design?
-- Legacy dual-paths: does the change introduce a new API while keeping the old one alive? If there are no external consumers, migrate callers and delete the old path in the same wave. Don't leave compatibility layers that will become permanent.
+- Legacy dual-paths: invoke /pstack-principle-migrate-callers-then-delete-legacy-apis to assess the chosen migration strategy, compatibility evidence, and deletion gates.
 
 Don't penalize simple code for lacking abstraction. Premature abstraction is worse than duplication.
 

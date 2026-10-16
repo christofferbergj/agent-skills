@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-test-behavior-not-implementation
-description: "Use during a Pstack task or when explicitly requested. Apply when you write, change, or keep a test. Assert what the code's users can observe, so that the test fails when that behavior breaks and keeps passing when only the internals change."
+description: "Apply when you write, change, or keep a test. Assert what the code's users can observe, so that the test fails when that behavior breaks and keeps passing when only the internals change."
 ---
 
 # Test Behavior, Not Implementation

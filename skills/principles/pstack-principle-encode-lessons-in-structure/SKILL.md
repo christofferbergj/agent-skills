@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-encode-lessons-in-structure
-description: "Use during a Pstack task or when explicitly requested. Apply when you catch yourself writing the same instruction a second time, or notice a recurring correction. Encode the rule as a lint, metadata flag, runtime check, or script instead of more text."
+description: "Apply when you catch yourself writing the same instruction a second time, or notice a recurring correction. Encode the rule as a lint, metadata flag, runtime check, or script instead of more text."
 ---
 
 # Encode Lessons in Structure

@@ -14,6 +14,8 @@
 
 ## Local adaptations to preserve
 
+- Select coding and testing principles through /pstack-principles and keep test-quality criteria with /pstack-principle-test-behavior-not-implementation. Preserve contract-observable external effects and separate verified prefactoring from the red/green cycle.
+
 - Reuse already-approved public seams and acceptance criteria, avoid repeated approval gates, and disclose unavailable regression paths. Pstack adds evidence without starting a second test loop.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

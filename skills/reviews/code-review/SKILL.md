@@ -22,6 +22,8 @@ Resolve the base and reviewed head to immutable SHAs. For a committed branch use
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
+Invoke /pstack-principles in review mode against this exact artifact. Carry selected owners into the Standards rubric and their accepted design decisions into the Spec brief. Review applicability and concrete evidence; loading a principle is not a pass, and the review does not authorize edits.
+
 ### 2. Identify the spec source
 
 Look for the originating spec, in this order:
@@ -63,12 +65,14 @@ Use /pstack-swarm to issue the two independent briefs within host capacity and c
 
 - The full diff command and commit list.
 - The list of standards-source files you found in step 3, **plus the smell baseline from step 3** pasted in full (the sub-agent has no other access to it).
+- The selected principle owners' resolved instructions and applicable constraints. Apply documented repository exceptions and distinguish an actionable rule violation from an optional design preference.
 - The brief: "Report, per file/hunk where relevant, (a) every place the diff violates a documented standard: cite the standard (file + the rule); and (b) any baseline smell you spot: name it and quote the hunk. Distinguish hard violations from judgement calls: documented-standard breaches can be hard, but baseline smells are always judgement calls, and a documented repo standard overrides the baseline. Skip anything tooling enforces. Under 400 words."
 
 **Spec sub-agent prompt** should include:
 
 - The diff command and commit list.
 - The path or fetched contents of the spec.
+- Accepted principle-driven design decisions and their required proof, supplied by the caller or the current canonical artifacts.
 - The brief: "Report: (a) requirements the spec asked for that are missing or partial; (b) behaviour in the diff that wasn't asked for (scope creep); (c) requirements that look implemented but where the implementation looks wrong. Quote the spec line for each finding. Under 400 words."
 
 If the spec is missing, skip the Spec sub-agent and note this in the final report.

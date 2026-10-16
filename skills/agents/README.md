@@ -14,6 +14,7 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | [pstack-figure-it-out](pstack-figure-it-out/SKILL.md)           | Coordinate large tasks without an existing playbook. |
 | [pstack-help](pstack-help/SKILL.md)                             | Find the right Pstack workflow.                      |
 | [pstack-mode](pstack-mode/SKILL.md)                             | Run coordinated Pstack playbooks.                    |
+| [pstack-principles](pstack-principles/SKILL.md)                 | Apply shared principles inside Matt or Pstack flows. |
 | [pstack-recall](pstack-recall/SKILL.md)                         | Recover repository-specific work history.            |
 | [pstack-reflect](pstack-reflect/SKILL.md)                       | Propose improvements from session lessons.           |
 | [pstack-setup](pstack-setup/SKILL.md)                           | Configure personal Pstack model roles.               |

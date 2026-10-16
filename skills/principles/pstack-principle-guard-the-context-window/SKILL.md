@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-guard-the-context-window
-description: "Use during a Pstack task or when explicitly requested. Apply when context is filling up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents; keep summaries in the main thread, not raw payloads."
+description: "Apply when context is filling up: large outputs, long files, repeated reads, fan-out planning. Route bulk to subagents; keep summaries in the main thread, not raw payloads."
 ---
 
 # Guard the Context Window

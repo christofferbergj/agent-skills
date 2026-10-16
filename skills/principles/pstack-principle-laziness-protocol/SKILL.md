@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-laziness-protocol
-description: "Use during a Pstack task or when explicitly requested. Apply when refactoring, evaluating diff size, or tempted to add abstractions, layers, or signal threading. Bias toward deletion and the smallest change that solves the problem."
+description: "Apply when refactoring, evaluating diff size, or tempted to add abstractions, layers, or signal threading. Bias toward deletion and the smallest change that solves the problem."
 ---
 
 # Laziness Protocol

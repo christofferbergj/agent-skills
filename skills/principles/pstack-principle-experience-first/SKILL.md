@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-experience-first
-description: "Use during a Pstack task or when explicitly requested. Apply when product, UX, or feature-scope tradeoffs come up. Choose user delight over implementation convenience; ship fewer polished features over more rough ones."
+description: "Apply when product, UX, or feature-scope tradeoffs come up. Choose user delight over implementation convenience; ship fewer polished features over more rough ones."
 ---
 
 # Experience First

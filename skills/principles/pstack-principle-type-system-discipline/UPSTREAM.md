@@ -13,6 +13,8 @@
 
 ## Local adaptations to preserve
 
+- Allow shared selection by /pstack-principles in ordinary Matt and Pstack workflows; applicability does not require Pstack mode. Keep this skill as the single owner of its principle rules.
+
 - Retain the total-function/partiality rule to avoid strengthening types when existing operations are already total. Concrete TypeScript examples remain with /pstack-typescript-best-practices.
 
 - Namespace: `principle-type-system-discipline` maps to `pstack-principle-type-system-discipline`. Preserve the installed name and invocation metadata.

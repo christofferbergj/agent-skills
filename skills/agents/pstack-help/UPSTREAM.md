@@ -13,6 +13,8 @@
 
 ## Local adaptations to preserve
 
+- Route whole-library upkeep through /maintain-skills and read cadence and model from the saved maintenance automation rather than duplicating its settings in help text.
+
 - Namespace: `poteto-help` maps to `pstack-help`. Preserve the installed name and invocation metadata.
 - Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.

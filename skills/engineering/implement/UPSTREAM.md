@@ -14,6 +14,8 @@
 
 ## Local adaptations to preserve
 
+- Apply /pstack-principles before coding and verification and in delegated briefs; preserve accepted scope, shared artifacts, and current review evidence.
+
 - Reuse approved seams and the canonical spec, compose shared TDD and review, reconcile domain changes, and refresh affected review after fixes. Commit and draft-PR delivery follow the invoking grant.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

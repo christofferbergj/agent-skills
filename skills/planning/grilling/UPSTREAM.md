@@ -14,6 +14,8 @@
 
 ## Local adaptations to preserve
 
+- Invoke /pstack-principles during design interviews so recommendations use the shared design and coding owners while preserving the design frontier and user confirmation.
+
 - Retain the decision-frontier interview discipline and explicit invocation policy in both hosts.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-subtract-before-you-add
-description: "Use during a Pstack task or when explicitly requested. Apply when sequencing an addition, refactor, or rewrite. Remove dead code, redundant validators, and stub references first, then build on the simpler base."
+description: "Apply when sequencing an addition, refactor, or rewrite. Remove dead code, redundant validators, and stub references first, then build on the simpler base."
 ---
 
 # Subtract Before You Add

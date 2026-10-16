@@ -52,6 +52,7 @@ Adopt useful upstream changes while preserving the shared owner contract:
 - /code-review owns Standards/Spec assessment; Pstack adversarial lenses add distinct coverage against the same artifact.
 - /pr owns PR description shape; Pstack owns its delivery playbook and evidence mechanics.
 - /pstack-swarm owns native host execution, isolation, bounded cross-vendor review, and disclosed fallback.
+- /pstack-principles selects the existing principle owners for each phase in both Matt and Pstack flows. Preserve automatic selection, explicit worker briefs, and conflict resolution in the owning principles without duplicating their rules or requiring Pstack mode.
 - /maintain-skills owns repository-wide upkeep and coverage accounting.
 
 Preserve one coordinator for canonical artifact writes and one accepted spec/ticket graph per effort. Keep familiar Matt names, the `design-prototype` mapping that avoids Emil's `prototype`, the generic `git-guardrails` mapping, and Pstack's installed names. Preserve invocation policy and callable dependencies in both hosts, immutable imports, MIT notices, and documented local adaptations.

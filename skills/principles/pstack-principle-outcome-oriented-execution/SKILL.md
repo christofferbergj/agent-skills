@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-outcome-oriented-execution
-description: "Use during a Pstack task or when explicitly requested. Apply during planned rewrites and migrations with explicit phase boundaries. Converge on the target architecture; don't preserve smooth intermediate states with throwaway compatibility code."
+description: "Apply during planned rewrites and migrations with explicit phase boundaries. Converge on the target architecture; don't preserve smooth intermediate states with throwaway compatibility code."
 ---
 
 # Outcome-Oriented Execution
@@ -18,5 +18,6 @@ Optimize for the intended, verifiable end state rather than preserving smooth in
 
 - Use this for planned rewrites and migrations with explicit phase boundaries
 - Declare where temporary breakage is acceptable
+- For migrations with old and new contracts, invoke /pstack-principle-migrate-callers-then-delete-legacy-apis for compatibility strategy and verification-unit gates. Transitional breakage stays inside the declared unit; required release boundaries still pass.
 - Keep high-signal checks for actively touched areas while migrating
 - Require full static and runtime verification at plan completion

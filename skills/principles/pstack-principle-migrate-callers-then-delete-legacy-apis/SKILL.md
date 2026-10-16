@@ -1,19 +1,14 @@
 ---
 name: pstack-principle-migrate-callers-then-delete-legacy-apis
-description: "Use during a Pstack task or when explicitly requested. Apply when introducing a new internal API while old callers still exist. Migrate callers and delete the old API in the same wave instead of preserving compatibility layers."
+description: "Choose migration strategy when an API or schema replaces an old contract: coordinated caller migration and deletion, or staged coexistence for real compatibility or release obligations."
 ---
 
-# Migrate Callers Then Delete Legacy APIs
+# Migrate callers then delete legacy APIs
 
-**Rule:**
+This owner chooses migration strategy and verification boundaries for both Matt's ticket flow and Pstack playbooks.
 
-- Do not keep legacy API paths only because internal callers still exist
-- Inventory callers, migrate them, and delete the old API immediately
-- Treat temporary adapters as exceptional and time-boxed, not default architecture
-- Update tests to assert the new contract, and delete tests that only protect pre-refactor implementation details
-
-**When this applies:**
-
-- No external users depend on backward compatibility
-- The project can absorb coordinated breaking changes
-- The new API is part of a simplification or refactor initiative
+1. Inventory all callers and compatibility obligations, including external consumers, independently deployed versions, stored data, and rollout or rollback requirements. Complete when the old contract's consumers and required lifetime are known.
+2. If callers are internal and the project can absorb a coordinated change, migrate every caller and delete the old API in one verification unit. Existing internal callers alone do not justify a compatibility layer. Several bounded tickets can contribute to that unit on an isolated integration branch. Complete when the plan covers every caller, obsolete-path deletion, and the unit's checks.
+3. Use expand-contract only when a real compatibility obligation or required independently green release makes coexistence necessary. Add the new form, migrate consumers in checked batches, and remove the old form after the obligation ends. Give every temporary adapter a removal condition and an owning ticket. Complete when the reason for coexistence and its exit gate are explicit.
+4. Declare the checks for each ticket or migration phase and the final integration unit. Planned, scoped, reversible breakage may exist inside an isolated unit; passing phase checks can unblock the next ticket inside it. Work outside that unit remains blocked until its full static, runtime, and contract checks pass. Preserve an already-approved rollout contract; seek a decision before changing it. Complete when intermediate progress and final acceptance cannot be confused.
+5. Update tests for the accepted contract. Preserve distinct behavioral regressions while deleting tests that only protect the retired implementation. Complete when the caller inventory is exhausted, required compatibility is honored, obsolete paths are removed at their declared gate, and the final unit's checks pass.

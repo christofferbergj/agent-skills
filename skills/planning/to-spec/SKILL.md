@@ -14,11 +14,13 @@ The issue tracker and triage label vocabulary should have been provided to you. 
 
 1. Explore the repo to understand the current state of the codebase, if you haven't already. Use the project's domain glossary vocabulary throughout the spec, and respect any ADRs in the area you're touching.
 
+Invoke /pstack-principles for the spec-writing phase. Carry accepted design and coding constraints into the existing implementation and testing decisions. Preserve unresolved conflicts as blockers rather than inventing a decision or starting another interview.
+
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
 Reuse already-approved seams. Ask only when a proposed interface or unresolved testing decision changes the accepted contract.
 
-3. Write the spec using the template below, then publish it to the project issue tracker. Apply the `ready-for-agent` triage label - no need for additional triage.
+3. Write the spec using the template below, then publish it to the project issue tracker within the existing action grant. Apply the `ready-for-agent` triage label when no unresolved design or acceptance blocker remains; otherwise report the blocker and leave the spec unready.
 
 <spec-template>
 
@@ -76,4 +78,4 @@ Any further notes about the feature.
 
 </spec-template>
 
-Complete when the spec covers accepted behavior and test decisions, links canonical project artifacts, and is saved locally or published through the existing action grant with its real location reported.
+Recheck /pstack-principles against the finished spec. Complete when it covers accepted behavior, applicable principle decisions, and test evidence requirements, links canonical project artifacts, and is saved locally or published through the existing action grant with its real location and unresolved blockers reported.

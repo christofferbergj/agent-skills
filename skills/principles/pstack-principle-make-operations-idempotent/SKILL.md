@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-make-operations-idempotent
-description: "Use during a Pstack task or when explicitly requested. Apply when designing commands, lifecycle steps, or processing loops that run amid crashes, restarts, and retries. Converge to the same end state regardless of partial prior runs."
+description: "Apply when designing commands, lifecycle steps, or processing loops that run amid crashes, restarts, and retries. Converge to the same end state regardless of partial prior runs."
 ---
 
 # Make Operations Idempotent

@@ -7,7 +7,7 @@ description: "Use for Pstack interface or module design, caller-first sketches, 
 
 ## 1. Ground
 
-Invoke /domain-modeling to read the configured project docs and /codebase-design for architecture vocabulary. Invoke /pstack-how on the surrounding system. Invoke /pstack-why if ownership, layering, or historical constraints will change. Greenfield work can skip existing-system archaeology with a reason. Complete when the relevant callers, invariants, and constraints are explained from evidence.
+Invoke /domain-modeling to read the configured project docs, /codebase-design for architecture vocabulary, and /pstack-principles for design. Invoke /pstack-how on the surrounding system. Invoke /pstack-why if ownership, layering, or historical constraints will change. Greenfield work can skip existing-system archaeology with a reason. Complete when the relevant callers, invariants, and constraints are explained from evidence.
 
 ## 2. Sketch
 
@@ -19,7 +19,7 @@ An initial approval checkpoint is opt-in. If the user requests one, present the 
 
 ## 4. Implement
 
-Fill in the selected shape using the invoking repository's patterns, /tdd at agreed public seams when useful, and relevant /pstack-principle-* dependencies. Reconcile any accepted model change through /domain-modeling. Validate caller behavior and inspect the diff against the sketch. Complete when the implementation and its evidence satisfy the chosen contract.
+Recheck /pstack-principles for implementation, then fill in the selected shape using the invoking repository's patterns and /tdd at agreed public seams when useful. Reconcile any accepted model change through /domain-modeling. Validate caller behavior and inspect the diff against the sketch. Complete when the implementation and its evidence satisfy the chosen contract.
 
 ## 5. Reconsider a failed shape
 

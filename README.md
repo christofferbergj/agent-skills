@@ -15,6 +15,8 @@ npx skills@latest add christofferbergj/agent-skills \
 
 Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the library does not activate Pstack mode. [Usage guide](docs/usage.md).
 
+Matt's interview, spec, ticket, and implementation flow automatically applies relevant Pstack principles through a shared selector. Use the familiar commands; `pstack-mode` is optional.
+
 ## Start here
 
 | You want to                               | Start with                             |
@@ -52,6 +54,7 @@ Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the libr
 - [pstack-figure-it-out](skills/agents/pstack-figure-it-out/SKILL.md)
 - [pstack-help](skills/agents/pstack-help/SKILL.md)
 - [pstack-mode](skills/agents/pstack-mode/SKILL.md)
+- [pstack-principles](skills/agents/pstack-principles/SKILL.md)
 - [pstack-recall](skills/agents/pstack-recall/SKILL.md)
 - [pstack-reflect](skills/agents/pstack-reflect/SKILL.md)
 - [pstack-setup](skills/agents/pstack-setup/SKILL.md)
@@ -157,22 +160,26 @@ Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the libr
 
 Skills CLI does not install dependencies transitively. The complete-library install includes these companions; composed workflows can invoke further helpers.
 
-| Entrypoint                    | Required companions                                                           |
-| ----------------------------- | ----------------------------------------------------------------------------- |
-| `audit-agent-documentation`   | `writing-for-agents`                                                          |
-| `update-dependencies`         | `linting-alignment` when the lint or formatting stack changes                 |
-| `maintain-skills`             | `writing-for-agents`, `pstack-swarm`                                          |
-| `thermos`                     | `thermo-nuclear-review`, `thermo-nuclear-code-quality-review`                 |
-| `grill-me`                    | `grilling`                                                                    |
-| `grill-with-docs`             | `grilling`, `domain-modeling`                                                 |
-| `implement`, `implement-spec` | `tdd`, `code-review`, `domain-modeling`, `pstack-swarm`                       |
-| Pstack architecture           | `codebase-design`, `domain-modeling`, and the Pstack design/execution helpers |
-| `pstack-tdd`                  | `tdd`                                                                         |
-| `tdd`                         | `domain-modeling`                                                             |
-| Pstack PR delivery            | `pr`                                                                          |
-| `research`, `code-review`     | `pstack-swarm`                                                                |
-| `pr`                          | `domain-modeling`                                                             |
-| `setup-pre-commit`            | `linting-alignment` when tool ownership needs resolution                      |
+| Entrypoint                    | Required companions                                                                         |
+| ----------------------------- | ------------------------------------------------------------------------------------------- |
+| `audit-agent-documentation`   | `writing-for-agents`                                                                        |
+| `update-dependencies`         | `linting-alignment` when the lint or formatting stack changes                               |
+| `maintain-skills`             | `writing-for-agents`, `pstack-swarm`                                                        |
+| `thermos`                     | `thermo-nuclear-review`, `thermo-nuclear-code-quality-review`                               |
+| `grill-me`                    | `grilling`                                                                                  |
+| `grill-with-docs`             | `grilling`, `domain-modeling`                                                               |
+| `grilling`                    | `pstack-principles`                                                                         |
+| `to-spec`, `to-tickets`       | `domain-modeling`, `pstack-principles`, `pstack-swarm`                                      |
+| `implement`, `implement-spec` | `tdd`, `code-review`, `domain-modeling`, `pstack-swarm`, `pstack-principles`                |
+| `pstack-principles`           | All `pstack-principle-*` skills, plus the helpers selected owners invoke                    |
+| Pstack architecture           | `codebase-design`, `domain-modeling`, `pstack-principles`, and the Pstack helpers           |
+| `pstack-tdd`                  | `tdd`                                                                                       |
+| `tdd`                         | `domain-modeling`, `pstack-principles`, `pstack-principle-test-behavior-not-implementation` |
+| Pstack PR delivery            | `pr`                                                                                        |
+| `research`                    | `pstack-swarm`                                                                              |
+| `code-review`                 | `pstack-swarm`, `pstack-principles`                                                         |
+| `pr`                          | `domain-modeling`                                                                           |
+| `setup-pre-commit`            | `linting-alignment` when tool ownership needs resolution                                    |
 
 </details>
 

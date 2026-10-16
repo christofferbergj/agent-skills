@@ -13,6 +13,8 @@
 
 ## Local adaptations to preserve
 
+- Keep migration strategy and compatibility exceptions with /pstack-principle-migrate-callers-then-delete-legacy-apis; the review rubric invokes that owner instead of restating a conflicting rule.
+
 - Namespace: `interrogate` maps to `pstack-interrogate`. Preserve the installed name and invocation metadata.
 - Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.

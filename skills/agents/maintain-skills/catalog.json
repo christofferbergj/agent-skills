@@ -230,6 +230,7 @@
     "standardsAndSpecReview": "code-review",
     "pullRequestDescription": "pr",
     "delegation": "pstack-swarm",
+    "principleSelection": "pstack-principles",
     "upstreamMaintenance": "maintain-skills"
   },
   "policy": "Review both upstreams together. Propose eligible additions; preserve removals pending explicit retirement; hold incomplete source and integration baselines."

@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-model-the-domain
-description: "Use during a Pstack task or when explicitly requested. Apply when writing stateful logic, or when code branches a lot or repeats a shape assumption across files."
+description: "Apply when writing stateful logic, or when code branches a lot or repeats a shape assumption across files."
 ---
 
 # Model the Domain

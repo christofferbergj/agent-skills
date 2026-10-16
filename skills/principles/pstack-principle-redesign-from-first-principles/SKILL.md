@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-redesign-from-first-principles
-description: "Use during a Pstack task or when explicitly requested. Apply when integrating a new requirement into an existing design."
+description: "Apply when integrating a new requirement into an existing design."
 ---
 
 # Redesign From First Principles

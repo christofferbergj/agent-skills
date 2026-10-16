@@ -13,6 +13,8 @@
 
 ## Local adaptations to preserve
 
+- Invoke the shared /pstack-principles selector for design and implementation phases without requiring mode activation or starting another coordinator.
+
 - Namespace: `architect` maps to `pstack-architect`. Preserve the installed name and invocation metadata.
 - Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.

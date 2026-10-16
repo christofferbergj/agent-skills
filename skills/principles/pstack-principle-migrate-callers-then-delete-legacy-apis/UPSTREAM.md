@@ -13,6 +13,8 @@
 
 ## Local adaptations to preserve
 
+- Allow shared selection by /pstack-principles in ordinary Matt and Pstack workflows; applicability does not require Pstack mode. Keep this skill as the single owner of its principle rules. Own the choice between coordinated internal migration and justified expand-contract, including caller inventory, real compatibility obligations, bounded migration tickets, phase checks, dependent-work gates, and final acceptance.
+
 - Keep explicit caller inventory, deletion, temporary-adapter and test-migration rules in this callable dependency, with its external-compatibility applicability limits.
 
 - Namespace: `principle-migrate-callers-then-delete-legacy-apis` maps to `pstack-principle-migrate-callers-then-delete-legacy-apis`. Preserve the installed name and invocation metadata.

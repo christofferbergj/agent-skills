@@ -14,6 +14,8 @@
 
 ## Local adaptations to preserve
 
+- Select applicable principles through /pstack-principles for the pinned artifact and explicitly supply their instructions to reviewers while preserving independent Standards/Spec axes and read-only review.
+
 - Pin both axes to one immutable artifact, including relevant untracked files for working reviews. Accept a local spec or task brief, preserve distinct Pstack lenses, and refresh affected coverage after fixes.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.

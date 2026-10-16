@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-boundary-discipline
-description: "Use during a Pstack task or when explicitly requested. Apply when wiring validation, error handling, or framework adapters. Concentrate guards at system boundaries (CLI, config, network, external APIs); trust internal types and keep business logic in pure functions."
+description: "Apply when wiring validation, error handling, or framework adapters. Concentrate guards at system boundaries (CLI, config, network, external APIs); trust internal types and keep business logic in pure functions."
 ---
 
 # Boundary Discipline

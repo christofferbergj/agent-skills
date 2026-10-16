@@ -1,6 +1,6 @@
 ---
 name: pstack-principle-attack-the-premise
-description: "Use during a Pstack task or when explicitly requested. Apply when two or more fixes that share one premise have failed the same gate. Write the premise down and test it directly before you write another fix that assumes it."
+description: "Apply when two or more fixes that share one premise have failed the same gate. Write the premise down and test it directly before you write another fix that assumes it."
 ---
 
 # Attack the Premise

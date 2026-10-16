@@ -17,6 +17,6 @@ Answer the user's help question without starting its underlying task. If they ex
 - Coordinate: /pstack-swarm owns execution and coverage; /pstack-figure-it-out designs a bespoke run; /pstack-show-me-your-work records decisions; /pstack-ketchup catches the user up.
 - Learn: /pstack-recall reconstructs same-repository history, /pstack-reflect proposes source improvements, and the explicitly invoked /pstack-automate-me creates a personal mode.
 - Writing: /pstack-unslop and /pstack-technical-writing refine prose; `/bro` restates the previous reply plainly.
-- Maintenance: invoke /maintain-skills from the source repository with the suite's mapping, including `bro`. Weekly automation prepares reviewed update PRs; merge and installation refresh follow existing authorization.
+- Maintenance: invoke /maintain-skills from the source repository for the whole library. Read the saved maintenance automation for its current cadence and model. Scheduled runs prepare reviewed update PRs; merge and installation refresh follow existing authorization.
 
 For help composing a task, read [prompting guidance](references/prompting.md). For the complete playbook list and principle inventory, point to the explicitly invoked `pstack-mode` entrypoint and its suite index. Complete when the question has a practical next action and known limitations, without claiming an integration was exercised.

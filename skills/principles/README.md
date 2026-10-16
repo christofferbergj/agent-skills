@@ -1,6 +1,6 @@
 # Principles
 
-Reusable Pstack principles for design, implementation, verification, and agent execution. Workflows select them as needed.
+Reusable Pstack principles for design, implementation, verification, and agent execution. Matt and Pstack workflows invoke `/pstack-principles` to select applicable owners from their descriptions. Each skill below owns its rules; using them does not require Pstack mode.
 
 [All categories](../README.md) · [Install](../../README.md#install)
 
@@ -18,7 +18,7 @@ Reusable Pstack principles for design, implementation, verification, and agent e
 | [pstack-principle-guard-the-context-window](pstack-principle-guard-the-context-window/SKILL.md)                                 | Delegate bulk exploration and keep focused summaries.        |
 | [pstack-principle-laziness-protocol](pstack-principle-laziness-protocol/SKILL.md)                                               | Find the smallest change that solves the problem.            |
 | [pstack-principle-make-operations-idempotent](pstack-principle-make-operations-idempotent/SKILL.md)                             | Make retries and restarts converge safely.                   |
-| [pstack-principle-migrate-callers-then-delete-legacy-apis](pstack-principle-migrate-callers-then-delete-legacy-apis/SKILL.md)   | Migrate callers and delete the old API in the same change.   |
+| [pstack-principle-migrate-callers-then-delete-legacy-apis](pstack-principle-migrate-callers-then-delete-legacy-apis/SKILL.md)   | Plan caller migration, compatibility, and deletion gates.    |
 | [pstack-principle-minimize-reader-load](pstack-principle-minimize-reader-load/SKILL.md)                                         | Reduce indirection and hidden state.                         |
 | [pstack-principle-model-the-domain](pstack-principle-model-the-domain/SKILL.md)                                                 | Model valid states before adding branches.                   |
 | [pstack-principle-never-block-on-the-human](pstack-principle-never-block-on-the-human/SKILL.md)                                 | Complete authorized reversible work without waiting.         |
