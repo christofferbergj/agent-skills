@@ -52,4 +52,4 @@ Use /pstack-unslop for prose, /pstack-technical-writing for structured documents
 
 ## Suite maintenance
 
-For upstream upkeep, read [MAINTENANCE.md](MAINTENANCE.md) and invoke /maintain-skills for the combined catalog, including both source families and `bro`. `suite.json` owns the inventory. Skill-local `UPSTREAM.md` records own import history and review decisions. User configuration and generated runtime state live outside installed instruction files.
+For upstream upkeep, read [MAINTENANCE.md](MAINTENANCE.md) and invoke /maintain-skills for the whole repository, including this suite, other upstreams, and first-party skills. `suite.json` owns the Pstack mapping; local discovery determines maintenance coverage. Skill-local `UPSTREAM.md` records own import history and review decisions. User configuration and generated runtime state live outside installed instruction files.

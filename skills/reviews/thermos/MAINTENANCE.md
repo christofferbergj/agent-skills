@@ -4,6 +4,8 @@ Use manual, selective updates. Cursor owns the original Thermos plugin; this rep
 
 To have an agent perform this process, invoke `$maintain-skills` in Codex or `/maintain-skills` in Claude Code from this repository. It discovers these source records and preserves the suite-specific contracts below. The commands in this guide remain available for manual maintenance.
 
+During a repository-wide pass, reuse the coordinator's fetched `cursor/plugins` checkout and immutable candidate for this suite and Pstack. Comparison workers return evidence and proposals; the coordinator owns source records, shared integration, and publication within the run's grant.
+
 ## Sources and ownership
 
 | Local skill                          | Upstream path in `cursor/plugins`                            | Provenance and local differences                                   |

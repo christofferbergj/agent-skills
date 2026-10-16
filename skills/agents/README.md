@@ -9,7 +9,7 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | [audit-agent-documentation](audit-agent-documentation/SKILL.md) | Audit and improve agent documentation.               |
 | [chief-of-staff](chief-of-staff/SKILL.md)                       | Coordinate a long-running goal.                      |
 | [git-guardrails](git-guardrails/SKILL.md)                       | Configure explicit Git-operation guardrails.         |
-| [maintain-skills](maintain-skills/SKILL.md)                     | Maintain the skill library and its upstreams.        |
+| [maintain-skills](maintain-skills/SKILL.md)                     | Delegate library audits and upstream reviews.        |
 | [pstack-automate-me](pstack-automate-me/SKILL.md)               | Create a personal Pstack mode.                       |
 | [pstack-figure-it-out](pstack-figure-it-out/SKILL.md)           | Coordinate large tasks without an existing playbook. |
 | [pstack-help](pstack-help/SKILL.md)                             | Find the right Pstack workflow.                      |

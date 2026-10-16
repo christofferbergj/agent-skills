@@ -1,6 +1,6 @@
 # Pstack adaptation design
 
-The user confirmed this initial Pstack design on 2026-10-15. Its source and host-execution decisions remain in force. The [combined-library decision](adr/0003-compose-shared-skill-disciplines.md) extends artifact ownership, dependencies, and maintenance to include Matt Pocock's skills; the current [combined maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md) governs the single weekly review. The suite validation records report exercised behavior and remaining integration limits.
+The user confirmed this initial Pstack design on 2026-10-15. Its source and host-execution decisions remain in force. The [combined-library decision](adr/0003-compose-shared-skill-disciplines.md) extends artifact ownership and dependencies to include Matt Pocock's skills. As updated on 2026-10-16, the current [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md) governs one review covering every local skill and its upstreams. The suite validation records report exercised behavior and remaining integration limits.
 
 ## Result and scope
 
@@ -10,9 +10,9 @@ The planning baseline is [upstream Pstack 0.15.25 at e5136d82418d2db3165ea1050d1
 
 ## Ownership and maintenance
 
-The [adaptation decision](adr/0001-maintain-an-owned-pstack-adaptation.md) records scope, names, adaptive effort, and autonomy. The [maintenance decision](adr/0002-review-pstack-updates-through-pull-requests.md) records update review, publication boundaries, and the schedule.
+The [adaptation decision](adr/0001-maintain-an-owned-pstack-adaptation.md) records scope, names, adaptive effort, and autonomy. The [maintenance decision](adr/0002-review-pstack-updates-through-pull-requests.md) records update review, publication boundaries, and the schedule's history; saved automation settings own the current schedule and model.
 
-Drive suite maintenance from the upstream-to-local mapping, including the reused `bro` skill. Each adapted skill has a skill-local `UPSTREAM.md` with source paths, tracking policy, immutable import revision, reviewed-through revision, license attribution, local adaptations, and update decisions. Preserve upstream MIT notices with derived content.
+Within repository-wide maintenance, use the upstream-to-local mapping for this suite, including the reused `bro` skill. Discover the full local inventory and all other upstreams independently of that mapping. Each adapted skill has a skill-local `UPSTREAM.md` with source paths, tracking policy, immutable import revision, reviewed-through revision, license attribution, local adaptations, and update decisions. Preserve upstream MIT notices with derived content.
 
 Track upstream `main` within the `pstack/` directory. Compare the previous reviewed source, candidate source, and local adaptation before adopting changes. Preserve the recorded reasons for adapted or excluded behavior. The original imported revision stays fixed; only a completed review advances the reviewed-through revision.
 
@@ -68,7 +68,7 @@ Keep `recall` read-only. Generate or update personal mode instructions in the ag
 
 ## Scheduled maintenance
 
-Use the schedule, authority, time budget, and inventory-change policy in the [maintenance decision](adr/0002-review-pstack-updates-through-pull-requests.md). Scope `/maintain-skills` through the suite mapping rather than a name prefix, so the reused `bro` skill is included.
+Use the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md) and its versioned scheduled prompt for current scope, authority, budget, and inventory-change policy. Saved automation settings own the schedule and model. `/maintain-skills` discovers every local skill and provenance record; the suite mapping supplies Pstack identities and addition policy, including the reused `bro`, without limiting coverage.
 
 Each review checks the whole upstream tree for new, removed, or renamed skills and relevant changes to playbooks, wrappers, scripts, documentation, and licenses. Reuse one fetched source snapshot across the suite. Prepare validated changes on an isolated update branch and update an existing maintenance pull request when appropriate.
 
@@ -84,7 +84,7 @@ Implementation is complete when:
 4. Repository formatting, skill discovery, whitespace, and secret checks pass. Changed helper scripts pass their relevant tests and type checks.
 5. Targeted smoke tests in both hosts exercise routing and delegation, an evidence-based workflow, cross-vendor review and its disclosed fallback, scoped history access, and the changed helper integrations. Optional external integrations use fixtures where practical; actual service behavior remains explicitly unverified until exercised with the required service.
 6. A maintenance dry run verifies suite inventory comparison, selective updates, baseline handling, and checkpoint behavior. The final instructions and schedule reflect the agreed authority boundaries.
-7. After final design confirmation, the local weekly automation is created or an existing matching automation is updated. Verify its saved schedule and prompt and report tested host versions and any remaining runtime limitations.
+7. After final design confirmation, a local maintenance automation is created or an existing matching automation is updated. Verify its saved schedule, model, and prompt and report tested host versions and any remaining runtime limitations. The initial weekly schedule was later replaced by the standalone automation's saved settings.
 
 Broad operating-system compatibility is claimed only for environments actually exercised. Current local CLI availability establishes a macOS baseline.
 
