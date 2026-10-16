@@ -15,6 +15,7 @@
 ## Local adaptations to preserve
 
 - Use configured artifacts and the native execution contract while retaining the upstream verification, label, and agent-brief workflow.
+- Keep the complete rejected-feature example inside its four-backtick fence; the following operating instructions remain Markdown prose.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
 - Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
@@ -28,3 +29,5 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                                           |
 | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures. |
+
+Local maintenance on 2026-10-16 repaired the nested example fences in `OUT-OF-SCOPE.md`. A fence-state check confirms that prior requests stay in the example and naming, checking, writing, and updating guidance renders as instructions. Formatting and repository checks pass. The upstream candidate and reviewed position are unchanged. See the [library review](../../../docs/reviews/2026-10-16-whole-library-maintenance.md).

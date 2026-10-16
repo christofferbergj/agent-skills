@@ -10,6 +10,7 @@ import {
   queryBackoffSeconds,
   readSnapshot,
   runQueued,
+  runSimple,
   selectTierMajorStackDecision,
 } from "./policy.ts";
 import { fakeReader, failedCheck, passingCheck, pendingCheck } from "./fakes.test-helper.ts";
@@ -424,3 +425,328 @@ it("uses the specified retry floor and cap", () => {
   expect(queryBackoffSeconds(1, 2)).toBe(120);
   expect(queryBackoffSeconds(60, 4)).toBe(300);
 });
+
+it("ends a pending poll at its deadline before reading the PR again", async () => {
+  let now = 0;
+  let reads = 0;
+  const base = fakeReader({ fastPath: { kind: "checks", checks: [pendingCheck()] } });
+  const verdict = await runSimple({
+    dependencies: {
+      reader: {
+        ...base,
+        async pullRequest(pr) {
+          reads += 1;
+          return base.pullRequest(pr);
+        },
+      },
+      clock: {
+        now: () => now,
+        observedAt: () => "2026-10-16T00:00:00Z",
+        async sleep(seconds) {
+          now += seconds;
+        },
+      },
+      emit() {},
+    },
+    contexts: [context(1)],
+    mode: "single",
+    statusOnly: false,
+    options: { ...options, interval: 60, timeout: 1 },
+  });
+  expect({ now, reads, kind: verdict.kind }).toEqual({ now: 1, reads: 1, kind: "TIMEOUT" });
+});
+
+it("ends retry backoff at its deadline without another query", async () => {
+  let now = 0;
+  let reads = 0;
+  const retries: ProgressVerdict[] = [];
+  const base = fakeReader();
+  const verdict = await runSimple({
+    dependencies: {
+      reader: {
+        ...base,
+        async pullRequest() {
+          reads += 1;
+          throw new WatcherQueryError({
+            kind: "command-exit",
+            retryable: true,
+            detail: "fixture unavailable",
+            code: 1,
+          });
+        },
+      },
+      clock: {
+        now: () => now,
+        observedAt: () => "2026-10-16T00:00:00Z",
+        async sleep(seconds) {
+          now += seconds;
+        },
+      },
+      emit(verdict) {
+        retries.push(verdict);
+      },
+    },
+    contexts: [context(1)],
+    mode: "single",
+    statusOnly: false,
+    options: { ...options, interval: 60, timeout: 1 },
+  });
+  expect({ now, reads, retries, verdict }).toMatchObject({
+    now: 1,
+    reads: 1,
+    retries: [],
+    verdict: { kind: "TIMEOUT", reason: { kind: "status-unavailable" } },
+  });
+});
+
+it("stops queued polling and partial sweeps before another read after the deadline", async () => {
+  for (const expireDuringRead of [false, true]) {
+    let now = 0;
+    let reads = 0;
+    const base = fakeReader();
+    const verdict = await runQueued({
+      dependencies: {
+        reader: {
+          ...base,
+          async pullRequest(pr) {
+            reads += 1;
+            if (expireDuringRead) now = 2;
+            return base.pullRequest(pr);
+          },
+        },
+        clock: {
+          now: () => now,
+          observedAt: () => "2026-10-16T00:00:00Z",
+          async sleep(seconds) {
+            now += seconds;
+          },
+        },
+        emit() {},
+      },
+      contexts: expireDuringRead ? [context(1), context(2)] : [context(1)],
+      options: { ...options, interval: 60, timeout: 1 },
+    });
+    expect({ now, reads, verdict }).toMatchObject({
+      now: expireDuringRead ? 2 : 1,
+      reads: 1,
+      verdict: {
+        kind: "TIMEOUT",
+        reason: {
+          kind: "queued-stack",
+          frontier: { number: 1 },
+          unmergedCount: expireDuringRead ? 2 : 1,
+        },
+      },
+    });
+  }
+});
+
+it("reports an observed conflict before a partial-sweep deadline without reading the next PR", async () => {
+  let now = 0;
+  const reads: number[] = [];
+  const base = fakeReader({ facts: { mergeable: "CONFLICTING" } });
+  const verdict = await runQueued({
+    dependencies: {
+      reader: {
+        ...base,
+        async pullRequest(pr) {
+          reads.push(pr.number);
+          now = 2;
+          return base.pullRequest(pr);
+        },
+      },
+      clock: {
+        now: () => now,
+        observedAt: () => "2026-10-16T00:00:00Z",
+        async sleep(seconds) {
+          now += seconds;
+        },
+      },
+      emit() {},
+    },
+    contexts: [context(1), context(2)],
+    options: { ...options, timeout: 1 },
+  });
+  expect({ reads, verdict }).toMatchObject({
+    reads: [1],
+    verdict: {
+      kind: "BLOCKER",
+      exitCode: 2,
+      blocker: { kind: "merge-conflicts", pr: { number: 1 } },
+    },
+  });
+});
+
+it("preserves an observed blocker when a later query exhausts the retry deadline", async () => {
+  let now = 0;
+  const reads: number[] = [];
+  const base = fakeReader({ facts: { mergeable: "CONFLICTING" } });
+  const verdict = await runQueued({
+    dependencies: {
+      reader: {
+        ...base,
+        async pullRequest(pr) {
+          reads.push(pr.number);
+          if (pr.number === 2)
+            throw new WatcherQueryError({
+              kind: "command-exit",
+              retryable: true,
+              detail: "fixture unavailable",
+              code: 1,
+            });
+          return base.pullRequest(pr);
+        },
+      },
+      clock: {
+        now: () => now,
+        observedAt: () => "2026-10-16T00:00:00Z",
+        async sleep(seconds) {
+          now += seconds;
+        },
+      },
+      emit() {},
+    },
+    contexts: [context(1), context(2)],
+    options: { ...options, interval: 60, timeout: 1 },
+  });
+  expect({ now, reads, verdict }).toMatchObject({
+    now: 1,
+    reads: [1, 2],
+    verdict: {
+      kind: "BLOCKER",
+      exitCode: 2,
+      blocker: { kind: "merge-conflicts", pr: { number: 1 } },
+    },
+  });
+});
+
+it("ranks all observed blocker tiers and completes the sweep when the deadline is disabled", async () => {
+  for (const timeout of [0, 1]) {
+    let now = 0;
+    const reads: number[] = [];
+    const base = fakeReader();
+    const verdict = await runQueued({
+      dependencies: {
+        reader: {
+          ...base,
+          async pullRequest(pr) {
+            reads.push(pr.number);
+            const facts = await base.pullRequest(pr);
+            if (pr.number === 1) return { ...facts, reviewDecision: "CHANGES_REQUESTED" as const };
+            if (pr.number === 2) {
+              now = 2;
+              return { ...facts, mergeable: "CONFLICTING" as const };
+            }
+            return facts;
+          },
+        },
+        clock: {
+          now: () => now,
+          observedAt: () => "2026-10-16T00:00:00Z",
+          async sleep(seconds) {
+            now += seconds;
+          },
+        },
+        emit() {},
+      },
+      contexts: [context(1), context(2), context(3)],
+      options: { ...options, timeout },
+    });
+    expect({ reads, verdict }).toMatchObject({
+      reads: timeout === 0 ? [1, 2, 3] : [1, 2],
+      verdict: {
+        kind: "BLOCKER",
+        exitCode: 2,
+        blocker: { kind: "merge-conflicts", pr: { number: 2 } },
+      },
+    });
+  }
+});
+
+it("keeps the terminal query-error budget ahead of a known blocker at the deadline", async () => {
+  let now = 0;
+  const base = fakeReader({ facts: { mergeable: "CONFLICTING" } });
+  const verdict = await runQueued({
+    dependencies: {
+      reader: {
+        ...base,
+        async pullRequest(pr) {
+          if (pr.number === 2) {
+            now = 2;
+            throw new WatcherQueryError({
+              kind: "command-exit",
+              retryable: true,
+              detail: "fixture unavailable",
+              code: 1,
+            });
+          }
+          return base.pullRequest(pr);
+        },
+      },
+      clock: {
+        now: () => now,
+        observedAt: () => "2026-10-16T00:00:00Z",
+        async sleep(seconds) {
+          now += seconds;
+        },
+      },
+      emit() {},
+    },
+    contexts: [context(1), context(2)],
+    options: { ...options, timeout: 1, maxQueryErrors: 1 },
+  });
+  expect(verdict).toMatchObject({
+    kind: "BLOCKER",
+    exitCode: 7,
+    blocker: { kind: "status-query", failures: 1 },
+  });
+});
+
+for (const firstRead of ["pending", "retry"] as const) {
+  it(`finishes a capped ${firstRead} wait when the timer wakes fractionally early`, async () => {
+    let now = 0;
+    let reads = 0;
+    const base = fakeReader();
+    const verdict = await runSimple({
+      dependencies: {
+        reader: {
+          ...base,
+          async pullRequest(pr) {
+            reads += 1;
+            if (reads === 1 && firstRead === "retry")
+              throw new WatcherQueryError({
+                kind: "command-exit",
+                retryable: true,
+                detail: "fixture unavailable",
+                code: 1,
+              });
+            return base.pullRequest(pr);
+          },
+          async checksFastPath() {
+            return {
+              kind: "checks" as const,
+              checks: [reads === 1 ? pendingCheck() : passingCheck()],
+            };
+          },
+        },
+        clock: {
+          now: () => now,
+          observedAt: () => "2026-10-16T00:00:00Z",
+          async sleep(seconds) {
+            now += seconds - 0.001;
+          },
+        },
+        emit() {},
+      },
+      contexts: [context(1)],
+      mode: "single",
+      statusOnly: false,
+      options: { ...options, interval: 60, timeout: 1 },
+    });
+    expect({ reads, now, verdict }).toMatchObject({
+      reads: 1,
+      now: 0.999,
+      verdict: { kind: "TIMEOUT", exitCode: 5 },
+    });
+  });
+}

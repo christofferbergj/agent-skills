@@ -136,9 +136,9 @@ function parseUser(input: unknown): User {
 
 Use `safeParse` when failure is an expected branch. Use the equivalent inference helper when the repository uses another schema library. Do not add a new schema dependency for one guard. This rule prefers the schema system the codebase already trusts.
 
-## No `as` casts
+## Unchecked assertions
 
-Every `as` is a potential runtime crash. Cast only after the type system has verified the claim.
+An unchecked assertion can hide an invalid value from the compiler. Validate external data before asserting a type. `as const` preserves literal types and readonly properties; a constructor may assert a brand after validating its invariant, as in `parseAgentId` above.
 
 ```ts
 import { z } from "zod";
@@ -244,16 +244,20 @@ Return-style in value-returning switches, void-style in statement switches.
 
 ## `satisfies` over `as`
 
-`satisfies` validates without widening literal types.
+`satisfies` checks assignability while retaining the expression's inferred type instead of annotating it as the target type. Contextual typing still affects inference: a literal-union property can retain its literal, while a property constrained only to `string` or `number` can widen.
 
 ```ts
+type Config = { theme: "dark" | "light"; cols: number };
+
 // Don't. Widens, loses literal types.
 const config = { theme: "dark", cols: 3 } as Config;
 
-// Do. Validates AND preserves literal types.
+// Do. Checks Config and retains the inferred property types.
 const config = { theme: "dark", cols: 3 } satisfies Config;
-// config.theme is "dark" (literal), not string
+// config.theme is "dark"; config.cols is number, not 3.
 ```
+
+If `Config.theme` were `string`, `config.theme` would be `string` too. Use `as const satisfies Config` when the value also needs readonly properties and literal preservation.
 
 ## Boundary validation
 

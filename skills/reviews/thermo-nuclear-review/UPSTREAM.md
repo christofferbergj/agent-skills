@@ -8,8 +8,8 @@ Correctness, security, developer-experience, and feature-gate review rubric.
 - Original skill: [`thermos/skills/thermo-nuclear-review/SKILL.md`](https://github.com/cursor/plugins/blob/1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def/thermos/skills/thermo-nuclear-review/SKILL.md).
 - Tracking policy: latest commit on the upstream `main` branch.
 - Imported from commit: `1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def`.
-- Reviewed through commit: `1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def`.
-- Last upstream review: 2026-10-12.
+- Reviewed through commit: `f713f14203cd6420cec13cd7c55c32d598dbab68`.
+- Last upstream review: 2026-10-16.
 - License: [MIT, copyright 2026 Cursor](./LICENSE). This copy retains the upstream notice; this repository's root license does not replace it.
 
 - Original reviewer wrapper: [agents/thermo-nuclear-review-subagent.md](https://github.com/cursor/plugins/blob/1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def/thermos/agents/thermo-nuclear-review-subagent.md). Its relevant scope and delegation rules are incorporated locally; the wrapper itself is not installed.
@@ -28,6 +28,7 @@ Follow the [manual upstream-update procedure](../thermos/MAINTENANCE.md). This r
 
 The reviewed-through commit is the comparison baseline for the next review, including changes deliberately skipped below. Advance it only after reviewing the full upstream delta for this skill and its supporting files. Keep the original import commit unchanged.
 
-| Review date | Decision                                                                                                |
-| ----------- | ------------------------------------------------------------------------------------------------------- |
-| 2026-10-12  | Imported the pinned source and applied the local adaptations above. No later upstream changes reviewed. |
+| Review date | Decision                                                                                                                                                                                                                                                                                                                                       |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-12  | Imported the pinned source and applied the local adaptations above. No later upstream changes reviewed.                                                                                                                                                                                                                                        |
+| 2026-10-16  | Reviewed `f713f14203cd6420cec13cd7c55c32d598dbab68`: the complete Thermos tree and this reviewer's wrapper have no delta. Retained the callable, read-only, direct-review adaptation and rubric. Repository checks pass; no runtime behavior changed. See the [library review](../../../docs/reviews/2026-10-16-whole-library-maintenance.md). |

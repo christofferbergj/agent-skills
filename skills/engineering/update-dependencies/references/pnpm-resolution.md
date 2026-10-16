@@ -23,7 +23,7 @@ Verify root and workspace coverage against the inventory. `--workspace` updates 
 
 Batch related dependency names in one update command. Dependency arguments or exclusion patterns select dependencies; `--filter` selects workspace consumers. Use both when a held version belongs to only some consumers. Preserve independent roots and each root's lockfile ownership. Let pnpm perform workspace resolution instead of looping over every package and comparing its peers manually.
 
-Preserve range operators and protocols. Use `--no-save` when policy calls for a lockfile-only refresh. Catalog-aware update support varies by version; confirm that the chosen command updates the owning default or named catalog and keeps `catalog:` consumers intact. If it cannot, edit the catalog declaration once and let pnpm resolve it. A catalog edit affects every consumer, including packages outside an update filter, so account for them in validation.
+Preserve range operators and protocols. Use `--no-save` to preserve manifest ranges. For a lockfile-only refresh, also use the installed version's supported `--lockfile-only` option and verify that it leaves `node_modules` untouched. Catalog-aware update support varies by version; confirm that the chosen command updates the owning default or named catalog and keeps `catalog:` consumers intact. If it cannot, edit the catalog declaration once and let pnpm resolve it. A catalog edit affects every consumer, including packages outside an update filter, so account for them in validation.
 
 Published workspace `peerDependencies` declare support for downstream consumers. Evaluate changes to those support ranges separately from choosing the installed peer provider. Use peer-update flags only when changing that contract is in scope.
 

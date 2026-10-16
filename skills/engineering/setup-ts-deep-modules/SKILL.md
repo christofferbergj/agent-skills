@@ -58,11 +58,11 @@ Copy [`dependency-cruiser.config.cjs`](./dependency-cruiser.config.cjs) to the r
 
 ### 4. Wire it into the checks
 
-- Add a `lint:boundaries` script: `depcruise <packages-root>` (or `depcruise src`).
+- Add a `lint:boundaries` script that scans the packages and every source root that can import them. For the default `src/packages` layout, use `depcruise src`; for separate workspace trees, pass all relevant roots, such as `depcruise packages apps`. Scanning only the packages misses outside importers and cannot enforce `entrypoint-boundary-from-app`.
 - Fold it into the repo's umbrella check command, the one that already runs typecheck (e.g. a `check` / `ci` / `validate` script). Do **not** touch `tsconfig` or add path aliases.
 - If there is no umbrella script, add `lint:boundaries` and tell the user to include it in CI.
 
-**Done when:** `lint:boundaries` exists and runs as part of the same command as typecheck.
+**Done when:** `lint:boundaries` scans the packages and their external importers and runs as part of the same command as typecheck.
 
 ### 5. Scaffold the example package
 
@@ -80,11 +80,11 @@ Keep temporary proof files outside the delivered product. A requested starter is
 
 This is the completion criterion for the whole skill: a config that doesn't fail on a violation is worthless.
 
-1. Run `lint:boundaries`. It must **pass** on the clean example and report the expected source modules and dependencies. Zero scanned files or a missing-transpiler warning is a failed setup even with exit code zero.
-2. Temporarily add a deep import to `tests/example.test.ts` (e.g. `import { thing } from "../lib/impl"`). Run `lint:boundaries` again; it must **fail** with `tests-through-entrypoints`.
-3. Revert the deep import. Run once more, and it must **pass**.
+1. Run `lint:boundaries`. It must **pass** on the clean proof package and report the expected source modules and dependencies across the chosen roots. Zero scanned files or a missing-transpiler warning is a failed setup even with exit code zero.
+2. Temporarily add a deep import to the proof package's test (e.g. `import { thing } from "../lib/impl"`). Run `lint:boundaries`; it must **fail** with `tests-through-entrypoints`. Restore the test, run again, and require a pass.
+3. Temporarily add a deep import from a source file outside the packages root to the proof package's internal file. Use an existing app importer or a disposable fixture within a chosen scanned source root. Run `lint:boundaries`; it must **fail** with `entrypoint-boundary-from-app`, and the output must include that importer. Restore or remove the fixture, run again, and require a pass.
 
-**Done when:** you have observed a pass, then a fail on the deep import, then a pass again. If step 2 does not fail, the rules are not wired correctly, so fix before finishing.
+**Done when:** both intentional deep imports have produced their expected failures, each restoration passes, and the final scan covers the packages and their external importers. If either violation is missed, fix the scan roots or rules before finishing.
 
 ### 7. Document the convention
 
