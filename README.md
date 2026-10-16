@@ -39,7 +39,7 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 | [Writing and explanation](skills/communication/README.md)  | Explain work clearly, write technical documents, and edit prose.                       |
 | [Principles](skills/principles/README.md)                  | Design and coding principles selected by the workflows.                                |
 
-[Repository documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
+[How the library fits together](docs/architecture.md) · [Repository documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 
 <details>
 <summary>All skills by category</summary>

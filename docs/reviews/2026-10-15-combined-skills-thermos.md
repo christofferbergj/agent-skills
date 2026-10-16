@@ -1,5 +1,7 @@
 # Combined skills Thermos review
 
+Historical review of the initial combined port. Inventory, schedule, and PR status below describe that snapshot. See the [library architecture](../architecture.md) for current composition and maintenance ownership.
+
 Reviewed on 2026-10-15. Two independent subagents ran the correctness/security and maintainability rubrics in parallel. Each reviewed the complete branch and the saved weekly maintenance prompt without editing source or delegating further. The parent verified their findings, added one Git-detector finding, and repaired all nine.
 
 Both reviewers then rechecked the same 27-file repair snapshot in parallel and reported no supported remaining findings in that scope. The correctness reviewer independently reran all 76 Bun tests, the 16 catalog and guardrail tests, TypeScript checks, and catalog validation. It also verified that GitHub accepts the immutable-head query. The maintainability reviewer inspected the changed owners and the Wayfinder exercise artifacts.
@@ -41,4 +43,4 @@ The Wayfinder exercise used installed instructions, a local tracker, and two loc
 
 The Git detector remains an accidental-operation guardrail rather than a shell sandbox. Live hook activation, Origin immutable-head compatibility, GitLab tier behavior, production services, external tracker publication, and other operating systems remain unverified. Upstream pins and license notices remain unchanged.
 
-The combined library remains on draft PR #2 until merged into the default branch. This review does not merge it or refresh global installations. The weekly automation retains its deployment prerequisite and does not recreate the unmerged port.
+At delivery, the combined library was on draft PR #2. This review did not merge it or refresh global installations. The weekly automation then retained a deployment prerequisite to avoid recreating the unmerged port.

@@ -1,4 +1,6 @@
-# Combined library validation
+# Combined library validation history
+
+Historical snapshots of the initial port and later maintenance changes. Counts, tool versions, installation state, and deployment prerequisites describe the revisions under review. Use [Contributing](../../../CONTRIBUTING.md) for current checks and [the library architecture](../../../docs/architecture.md) for current composition.
 
 Validated on macOS on 2026-10-15 against Matt Pocock's skills 1.3.1 at `49dd158d1076134a641b33efb035946536778336` and Pstack 0.15.25 at `e5136d82418d2db3165ea1050d17577cd618cc05`.
 
@@ -22,7 +24,7 @@ The wizard helper preserves fake literal values, whole multiline records, file p
 
 An isolated dependency-cruiser 18.6.0 fixture with compatible TypeScript 6 and Node 24.22.0 observes pass, failure on `tests-through-entrypoints`, then pass after removal of the violation, scanning three source modules and two dependencies. An initial incompatible compiler produced zero scanned modules with a successful exit; setup instructions now reject that result and require compiler compatibility.
 
-Run the new focused checks from the source root:
+Focused checks used for this validation, run from the source root:
 
 ```bash
 python3 -m unittest discover -s skills/agents/maintain-skills/scripts/tests -v
@@ -47,9 +49,13 @@ The coordinator inspected actual diffs, reran both projects' tests, and checked 
 
 The [Thermos review record](../../../docs/reviews/2026-10-15-combined-skills-thermos.md) records the independent correctness and maintainability passes, nine verified findings, and their repairs.
 
+## Earlier Thermos smoke evidence
+
+The initial 2026-10-12 smoke test exercised Codex desktop's collaboration tools and Claude Code 2.1.287. Both launched and collected two independent reviewers on an isolated authorization-regression fixture. This does not guarantee every host version or configuration has delegation enabled.
+
 ## Scheduled upkeep and limits
 
-The initial Pstack heartbeat was replaced by the standalone **Combined skill maintenance** automation in the `agent-skills` project. The standalone job runs every other day with GPT-6.1-Sol and maximum reasoning effort; the old heartbeat is paused. Its saved schedule and model remain unchanged by the whole-repository maintenance repair. The review uses a 60-minute budget with wrap-up at minute 50 and prepares one draft update PR within its existing action grant. The [scheduled prompt](references/scheduled-prompt.md) covers every local skill and discovered upstream and actively delegates throughout the pass. Before the expanded helper reaches the default branch, the prompt requires a full-inventory ledger alongside the narrower helper and explicitly reports that limitation.
+The initial Pstack heartbeat was replaced by the standalone **Combined skill maintenance** automation in the `agent-skills` project. At validation, the standalone job ran every other day with GPT-6.1-Sol and maximum reasoning effort; the old heartbeat was paused. The whole-repository maintenance repair preserved those settings. The [scheduled prompt](references/scheduled-prompt.md) covers every local skill and discovered upstream and actively delegates throughout the pass, with a 60-minute budget and wrap-up at minute 50. Saved automation settings own the current cadence and model.
 
 No validation merged a PR, refreshed global skills, changed live host hooks, published tracker items, or configured a production service. Hook adapters use official host schemas; native Codex trust and actual activation must be verified when the setup skill is invoked. Git parsing remains a bounded accidental-operation guardrail. The orchestration frontier reports the optional Origin backend unavailable until its immutable PR-head schema is verified; it never substitutes a local branch SHA as forge proof. GitLab server/tier behavior, external tracker writes, every prototype UI branch, and the initial Pstack record's optional service integrations remain unexercised. Skills declare their prerequisites and preserve explicit gaps when these capabilities are unavailable.
 

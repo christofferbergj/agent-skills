@@ -1,12 +1,14 @@
 # Whole-library maintenance
 
+Historical audit and rebase record. Counts and pending prerequisites describe those snapshots. Later full-inventory and attribution repairs are recorded in the [combined validation history](../../skills/agents/maintain-skills/VALIDATION.md#rebase-on-the-current-library); current ownership is explained in the [library architecture](../architecture.md).
+
 Reviewed all 94 local skills and 517 supporting files from default-branch commit `aa659e21f4484b3be362541cb0435526e235b6e4`. The inventory includes 90 sourced adaptations and four first-party skills. No new or relevant untracked skill was omitted. Three direct native Codex workers used disjoint write boundaries; none started another coordinator.
 
 ## Rebase onto the reorganized library
 
 Rebased onto `6e13dca230ce7d7a2476ae53b609b4ec7a651930` on 2026-10-16. The category moves and explicit retirement of `migrate-to-shoehorn`, `writing-beats`, `writing-fragments`, and `writing-shape` leave 90 installed skills and 501 supporting files, including 86 sourced adaptations and four first-party skills. All 19 original maintenance files retain their exact contents at the new paths before this note was added. The watcher implementation and regression tests are unchanged.
 
-The current suite catalog has 82 mappings. Existing completed coverage carries forward for 88 retained skills; `maintain-skills` and `pr` still await the separate full-inventory and Humanlayer attribution prerequisite. The expanded validator retains exactly the same two ancestry-record problems. The sections below preserve the original 94-skill audit and its evidence; current inventory, integration checks, and fingerprints are recorded in the rebase checkpoint outside installed skills. No source position advances as part of the rebase.
+At this rebase, the suite catalog had 82 mappings. Completed coverage carried forward for 88 retained skills; `maintain-skills` and `pr` awaited the separate full-inventory and Humanlayer attribution prerequisite. The expanded validator then reported the same two ancestry-record problems. The sections below preserve the original 94-skill audit and its evidence; the rebase inventory, integration checks, and fingerprints were recorded in the checkpoint outside installed skills. No source position advanced as part of the rebase.
 
 ## Original audit slices
 

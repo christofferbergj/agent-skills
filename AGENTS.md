@@ -2,6 +2,8 @@
 
 Skills are organized under `skills/<category>/<skill-name>/`.
 
+For project orientation, upstream ownership, or changes spanning skill families, read [the library architecture](docs/architecture.md).
+
 Every published skill must:
 
 - contain a `SKILL.md` with string `name` and `description` fields;

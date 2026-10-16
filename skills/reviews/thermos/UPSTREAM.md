@@ -23,7 +23,7 @@ Orchestrator for the two independent review passes.
 
 ## Maintenance
 
-Follow the [manual upstream-update procedure](./MAINTENANCE.md). This repository owns the installed adaptation. Skills CLI reinstalls this copy; it does not merge future Cursor changes.
+Invoke `/maintain-skills` for whole-library upkeep and use the [Thermos compatibility guide](./MAINTENANCE.md) for suite-specific inputs and checks. Skills CLI reinstalls this adaptation; it does not merge future Cursor changes.
 
 The reviewed-through commit is the comparison baseline for the next review, including changes deliberately skipped below. Advance it only after reviewing the full upstream delta for this skill and its supporting files. Keep the original import commit unchanged.
 

@@ -1,5 +1,7 @@
 # Combined skill maintenance, 2026-10-16
 
+Historical update review at the revisions below. Inventory and delivery state describe that snapshot; the [library architecture](../architecture.md) describes the current setup.
+
 Prototype-only tasks now retain their answer and runnable sources without adopting code into production. Both UI and logic references reach the existing shared capture rule. Authorized implementation remains supported. The Pstack review reference no longer suggests filtering a valid findings list down to five items. A TypeScript example now states that `durationMs: number` still needs boundary validation for negative, infinite and `NaN` values.
 
 The review also adopts selected upstream prose cuts and aligns the Loop Me, TDD and commit-check descriptions with their existing bodies. Installed names, invocation policies, shared owners, license notices and original imports remain intact.
