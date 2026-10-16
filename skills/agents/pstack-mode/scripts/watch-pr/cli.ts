@@ -91,7 +91,12 @@ export function parseArgs(
     .option("--stack-prs <n,...>", "frozen bottom-to-top queue (queued mode only)", stackPrList)
     .option("--interval <seconds>", "poll interval", positiveNumber, 60)
     .option("--sweep-interval <seconds>", "whole-stack sweep interval", positiveNumber, 300)
-    .option("--timeout <seconds>", "deadline; 0 disables it", nonNegativeNumber, 0)
+    .option(
+      "--timeout <seconds>",
+      "polling deadline; in-flight queries finish; 0 disables it",
+      nonNegativeNumber,
+      0,
+    )
     .option("--max-query-errors <count>", "consecutive query-error budget", positiveInteger, 5)
     .option("--status-only", "print one status table and exit 0", false)
     .option("--allow-draft", "do not treat a draft as a merge gate", false)

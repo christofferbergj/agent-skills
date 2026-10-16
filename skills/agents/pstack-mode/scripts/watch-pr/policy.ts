@@ -312,17 +312,27 @@ type StepResult<V> =
   | {
       readonly kind: "sleep";
       readonly seconds: number;
-      readonly onDeadline?: () => V;
+      readonly onDeadline: () => V;
     }
-  | { readonly kind: "continue" };
+  | { readonly kind: "continue"; readonly onDeadline: () => V };
 async function pollUntilTerminal<V>(args: {
   readonly dependencies: RunDependencies;
   readonly options: T.PollingOptions;
   readonly stamp: VerdictStamp;
   readonly step: () => Promise<StepResult<V>>;
+  readonly observedBlocker?: () => T.BlockerVerdict | null;
 }): Promise<V | T.BlockerVerdict | T.TimeoutVerdict> {
   let failures = 0;
   const started = args.dependencies.clock.now();
+  const remainingSeconds = (): number =>
+    args.options.timeout > 0
+      ? Math.max(0, args.options.timeout - (args.dependencies.clock.now() - started))
+      : Infinity;
+  const sleepWithinDeadline = async (seconds: number): Promise<boolean> => {
+    const remaining = remainingSeconds();
+    await args.dependencies.clock.sleep(Math.min(seconds, remaining));
+    return remaining <= seconds;
+  };
   while (true) {
     let result: StepResult<V>;
     try {
@@ -334,33 +344,37 @@ async function pollUntilTerminal<V>(args: {
       if (!error.failure.retryable || failures >= args.options.maxQueryErrors)
         return statusQueryVerdict(args.stamp, failures, error.failure);
       const retryInSeconds = queryBackoffSeconds(args.options.interval, failures);
-      args.dependencies.emit(
+      const onDeadline = () =>
+        args.observedBlocker?.() ??
         args.stamp({
-          kind: "RETRY",
-          terminal: false,
-          failure: error.failure,
-          consecutiveFailures: failures,
-          retryInSeconds,
-        }),
-      );
-      if (deadlinePassed(started, args.options, args.dependencies.clock.now()))
-        return args.stamp({
           kind: "TIMEOUT",
           terminal: true,
           exitCode: 5,
           reason: { kind: "status-unavailable", failure: error.failure },
         });
-      await args.dependencies.clock.sleep(retryInSeconds);
+      if (deadlinePassed(started, args.options, args.dependencies.clock.now())) return onDeadline();
+      if (retryInSeconds < remainingSeconds())
+        args.dependencies.emit(
+          args.stamp({
+            kind: "RETRY",
+            terminal: false,
+            failure: error.failure,
+            consecutiveFailures: failures,
+            retryInSeconds,
+          }),
+        );
+      const consumedBudget = await sleepWithinDeadline(retryInSeconds);
+      if (consumedBudget || deadlinePassed(started, args.options, args.dependencies.clock.now()))
+        return onDeadline();
       continue;
     }
     if (result.kind === "terminal") return result.verdict;
+    if (deadlinePassed(started, args.options, args.dependencies.clock.now()))
+      return result.onDeadline();
     if (result.kind === "sleep") {
-      if (
-        result.onDeadline !== undefined &&
-        deadlinePassed(started, args.options, args.dependencies.clock.now())
-      )
+      const consumedBudget = await sleepWithinDeadline(result.seconds);
+      if (consumedBudget || deadlinePassed(started, args.options, args.dependencies.clock.now()))
         return result.onDeadline();
-      await args.dependencies.clock.sleep(result.seconds);
     }
   }
 }
@@ -648,6 +662,27 @@ export async function runQueued(args: {
 }): Promise<T.QueueTerminalVerdict> {
   let state = createQueueState(args.contexts, args.dependencies.clock.now());
   const stamp = verdictFactory(args.dependencies.clock, "queued-stack");
+  const observedBlocker = (): T.BlockerVerdict | null => {
+    const rows = nonEmpty(activeRows(state));
+    if (rows === null) return null;
+    const decision = selectTierMajorStackDecision(rows, args.options.allowDraft);
+    return decision.kind === "blocker" ? blockerVerdict(stamp, decision.blocker) : null;
+  };
+  const onDeadline = (): T.QueueTerminalVerdict =>
+    observedBlocker() ??
+    stamp({
+      kind: "TIMEOUT",
+      terminal: true,
+      exitCode: 5,
+      reason: {
+        kind: "queued-stack",
+        frontier:
+          state.queue.find((pr) => state.snapshots.get(pr.number)?.kind !== "merged") ??
+          state.queue[0],
+        unmergedCount: state.queue.filter((pr) => state.snapshots.get(pr.number)?.kind !== "merged")
+          .length,
+      },
+    });
   args.dependencies.emit(stamp({ kind: "QUEUE", terminal: false, queue: args.contexts }));
   const step = async (): Promise<StepResult<T.QueueTerminalVerdict>> => {
     state = planQueue(state, args.dependencies.clock.now());
@@ -689,7 +724,7 @@ export async function runQueued(args: {
           rows: applied.completedSweepRows,
         }),
       );
-    if (state.work !== null) return { kind: "continue" };
+    if (state.work !== null) return { kind: "continue", onDeadline };
     const evaluation = evaluateQueue(state, args.dependencies.clock.now(), args.options);
     state = evaluation.state;
     switch (evaluation.kind) {
@@ -719,7 +754,7 @@ export async function runQueued(args: {
             remaining: evaluation.remaining,
           }),
         );
-        return { kind: "continue" };
+        return { kind: "continue", onDeadline };
       case "timeout":
         return {
           kind: "terminal",
@@ -744,7 +779,7 @@ export async function runQueued(args: {
               reason: evaluation.reason,
             }),
           );
-        return { kind: "sleep", seconds: args.options.interval };
+        return { kind: "sleep", seconds: args.options.interval, onDeadline };
       default: {
         const exhaustive: never = evaluation;
         return exhaustive;
@@ -756,5 +791,6 @@ export async function runQueued(args: {
     options: args.options,
     stamp,
     step,
+    observedBlocker,
   });
 }
