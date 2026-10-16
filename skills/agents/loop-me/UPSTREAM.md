@@ -8,7 +8,7 @@
 - Tracking policy: upstream `main`; inspect the entire public skills inventory for additions, removals, category moves, and relevant shared documentation. Exclude personal skills and the recorded user exclusions.
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
 - Reviewed through commit: `49dd158d1076134a641b33efb035946536778336`.
-- Last upstream review: 2026-10-15.
+- Last upstream review: 2026-10-16.
 - Upstream stage: `in-progress`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.
 
@@ -25,6 +25,7 @@
 
 Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its source comparison includes both Pstack and Matt Pocock in one update review. Compare baseline, candidate, and local files; retain intentional adaptations rather than overwriting them. Imported history is immutable. Advance this reviewed-through position only when the relevant delta and shared inputs are resolved and required validation passes.
 
-| Review date | Candidate revision                         | Decision                                                                                                                                                                                                           |
-| ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures. |
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                 |
+| ----------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures.                                                                       |
+| 2026-10-16  | `49dd158d1076134a641b33efb035946536778336` | No upstream delta. Corrected the Codex short description to workflow specification, matching the unchanged spec-only body and explicit invocation policy. Repository and catalog checks pass; see the [combined review](../../../docs/reviews/2026-10-16-combined-skill-maintenance.md). |
