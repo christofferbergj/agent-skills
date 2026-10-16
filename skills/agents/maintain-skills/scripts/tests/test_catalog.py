@@ -1,6 +1,7 @@
 import importlib.util
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -379,35 +380,39 @@ class ActualLibraryCoverage(unittest.TestCase):
 
     def test_every_actual_skill_and_source_family_is_accounted_for(self):
         self.assertTrue(self.inventory['valid'], self.inventory['problems'])
-        self.assertEqual(self.inventory['repositorySkills'], 94)
-        self.assertEqual(self.inventory['mappedSkills'], 86)
-        self.assertEqual(len(self.inventory['sourceGroups']), 3)
+        actual_names = {path.parent.name for path in (self.root / 'skills').rglob('SKILL.md')}
+        self.assertEqual(self.inventory['repositorySkills'], len(actual_names))
+        self.assertEqual(self.inventory['mappedSkills'], len(catalog.entries(self.root, self.registry)))
         names = {item['name'] for item in self.inventory['skills']}
+        self.assertEqual(names, actual_names)
         self.assertTrue({'thermos', 'thermo-nuclear-review', 'thermo-nuclear-code-quality-review', 'test-audit', 'audit-agent-documentation', 'linting-alignment', 'maintain-skills', 'update-dependencies'} <= names)
         cursor = self.inventory['sourceGroups']['github.com/cursor/plugins@branch:main']
         self.assertIn('thermos', cursor['skills'])
         self.assertIn('pstack-mode', cursor['skills'])
         openclaw = self.inventory['sourceGroups']['github.com/openclaw/openclaw@branch:main']['records'][0]
-        self.assertEqual(openclaw['baseline'], '71b5563397e95d67ad902f79a717559519010ac8')
+        source_record = self.root / 'skills/reviews/test-audit/UPSTREAM.md'
+        reviewed = re.search(r'Reviewed through: \[([0-9a-f]{40})\]', source_record.read_text())
+        self.assertIsNotNone(reviewed)
+        self.assertEqual(openclaw['baseline'], reviewed[1])
         self.assertIsNone(openclaw['imported'])
         self.assertTrue(openclaw['historicalImportUnknown'])
         for path in ['.agents/skills/test-audit', '.agents/skills/test-audit/CAMPAIGN.md', '.agents/skills/test-audit/references/audit.md', 'docs/help/testing/writing-tests.md', '.agents/skills/openclaw-testing', 'LICENSE']:
             self.assertIn(path, openclaw['paths'])
 
-    def test_old_eighty_six_skill_coverage_is_incomplete_but_all_ninety_four_can_finish(self):
+    def test_mapped_only_coverage_is_incomplete_but_all_repository_skills_can_finish(self):
         groups = self.inventory['sourceGroups']
         candidates = {key: group['records'][0]['baseline'] for key, group in groups.items()}
         reviews = {key: {'candidate': candidates[key], 'skills': group['skills'], 'inventoryReviewed': True, 'sharedInputsReviewed': True} for key, group in groups.items()}
         mapped = [entry['local'] for entry in catalog.entries(self.root, self.registry)]
+        all_names = [item['name'] for item in self.inventory['skills']]
         result = catalog.checkpoint(self.root, self.registry, candidates, mapped, 50, True, reviews)
         self.assertFalse(result['coverageComplete'])
-        self.assertEqual(len(result['pending']), 8)
+        self.assertEqual(set(result['pending']), set(all_names) - set(mapped))
         self.assertIn('thermos', result['pending'])
         self.assertIn('test-audit', result['pending'])
-        all_names = [item['name'] for item in self.inventory['skills']]
         result = catalog.checkpoint(self.root, self.registry, candidates, all_names, 50, True, reviews)
         self.assertTrue(result['coverageComplete'], result['problems'])
-        self.assertEqual(len(result['completed']), 94)
+        self.assertEqual(set(result['completed']), set(all_names))
         self.assertFalse(result['reviewComplete'])
         self.assertFalse(result['baselinesAdvancedByCheckpoint'])
 

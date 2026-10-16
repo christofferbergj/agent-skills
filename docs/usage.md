@@ -16,7 +16,7 @@ Use `/grill-with-docs` to resolve a design, `/to-spec` to capture an accepted sp
 | Standards and spec review                                                | `/code-review`     |
 | PR description                                                           | `/pr`              |
 | Native delegation, isolated writers, cross-vendor review and fallback    | `/pstack-swarm`    |
-| Upstream and integration maintenance                                     | `/maintain-skills` |
+| Every local skill, its upstreams, and integration changes                | `/maintain-skills` |
 
 Pstack architecture and domain-model work updates the same configured artifacts as Matt's skills. Current defaults are `GLOSSARY.md`, optional `GLOSSARY-MAP.md`, `docs/adr/`, and setup's `docs/agents/domain.md`. Existing `context.md`, `CONTEXT.md`, or domain-model files keep their roles and names. Accepted spec/ticket artifacts remain authoritative; plans and evidence logs link to them. The coordinator owns canonical document edits while delegates return proposals.
 
@@ -34,7 +34,7 @@ Invoke `$pstack-mode` in Codex or `/pstack-mode` in Claude Code for the current 
 
 The suite preserves evidence requirements while scaling parallelism to the task. Draft PRs are the default. Cross-vendor critics use the other authenticated CLI when available; independent native or sequential fallback is labeled. Bun-dependent PR/orchestration commands declare their prerequisites and use a runtime cache outside installed source. The webhook UI requires an existing receiver and defaults to localhost.
 
-Read the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md) for source comparisons, local adaptations, checks, checkpointing, and scheduled review. The [validation record](../skills/agents/pstack-mode/VALIDATION.md) covers tested hosts and integration limits. Each sourced skill retains its own `LICENSE` and `UPSTREAM.md`; the [suite catalog](../skills/agents/maintain-skills/catalog.json) references the Pstack index and includes `bro`. `/maintain-skills` requires `/writing-for-agents`; see the [installation guidance](../README.md#install).
+Read the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md) for source comparisons, local adaptations, checks, checkpointing, and scheduled review. The [validation record](../skills/agents/pstack-mode/VALIDATION.md) covers tested hosts and integration limits. Each sourced skill retains its own `LICENSE` and `UPSTREAM.md`; the [suite catalog](../skills/agents/maintain-skills/catalog.json) references the Pstack index and includes `bro`. Filesystem inventory and skill-local source records determine full review coverage beyond the suite catalog. `/maintain-skills` requires `/writing-for-agents` and `/pstack-swarm`; see the [installation guidance](../README.md#install).
 
 ## Upstream stages
 

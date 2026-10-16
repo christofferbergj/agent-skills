@@ -58,7 +58,7 @@ Preserve one coordinator for canonical artifact writes and one accepted spec/tic
 
 Assign focused repairs to isolated writers and inspect their diffs. A shared-owner change requires auditing affected consumers across the repository, including both Matt and Pstack, and rechecking consequential workflow branches. Preserve experimental/frozen status and exercise changed executable templates with their consuming tools. Keep the local host APIs, task-dependent parallelism, explicit authority boundaries, shared domain artifacts, and existing formatting stack.
 
-Propose straightforward new reusable skills within the existing capability boundary. Apply the catalog's `excludedNames` and `excludedPathComponents` to every discovered skill, including user-retired skills; a category move does not make an excluded skill eligible. A new service, expanded action authority, or incompatible scope change requires a user decision. Record adopted, adapted, excluded, and held changes with reasons; held behavior and incomplete baselines remain intact.
+Propose straightforward new reusable skills within the existing capability boundary. Apply the catalog's `excludedNames` and `excludedPathComponents` to every proposed upstream import, including user-retired names; a category move does not make an excluded skill eligible. A new service, expanded action authority, or incompatible scope change requires a user decision. Record adopted, adapted, excluded, and held changes with reasons; held behavior and incomplete baselines remain intact.
 
 Complete each adopted unit only when its full source delta and affected integration checks are resolved; keep all other units pending.
 

@@ -66,3 +66,14 @@ Validated on 2026-10-16 after repairing the mapped-only review scope:
 - The live automation prompt exactly matches `references/scheduled-prompt.md`. A before/after comparison verifies every saved setting except the prompt and its update timestamp is unchanged, including schedule, model, reasoning effort, project, status, and execution environment. The old heartbeat remains paused.
 
 The helper verifies coverage declarations, source identities and paths, and evidence fingerprints. It cannot establish that a model performed a review merely because a completion assertion was supplied. The workflow requires collected worker evidence and an independent final coverage review before those assertions are accepted.
+
+## Rebase on the current library
+
+Validated on 2026-10-16 against `main` at `75aef21dd08b3e1eef3e9fa5f6c34c0ae8bc8451`, after the category reorganization, four user-retired skills, and the latest skill and watcher updates. Earlier sections describe their original snapshots.
+
+- Discovery and metadata/link/provenance validation cover all 90 current skills: 86 sourced adaptations and four first-party skills. Source groups contain 57 Cursor consumers, 28 Matt consumers, and one OpenClaw consumer. The suite catalog maps 82 skills.
+- Two actual-library tests initially failed because they expected 94 skills. The tests now check the filesystem inventory, current catalog membership, and OpenClaw's recorded reviewed position. All 31 helper tests pass. Mapped-only completion still leaves the exact unmapped skills pending; complete bookkeeping covers the full current inventory without claiming a completed review.
+- The catalog and Pstack index remain identical to the current main branch. All four retired names remain absent and excluded from future imports. Other skill instructions and upstream import/review positions retain main's latest changes; the PR source record only adds the existing inherited-attribution classification.
+- Formatting, Skills CLI discovery, 251 local documentation links, whitespace, and secret checks pass. The scheduled prompt remains identical to the original PR version; this rebase changes no saved automation settings.
+
+The previously recorded workflow and source-comparison exercises remain evidence for unchanged branches. This refresh checks the rebased implementation and packaging; it does not claim a fresh upstream maintenance pass or refresh global installations.
