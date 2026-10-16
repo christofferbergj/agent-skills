@@ -6,7 +6,9 @@
 
 The [combined validation record](../skills/agents/maintain-skills/VALIDATION.md) documents packaging, host exercises, tests, and remaining integration limits. The [Thermos review record](reviews/2026-10-15-combined-skills-thermos.md) records the independent audit and its repairs.
 
-Use `/grill-with-docs` to resolve a design, `/to-spec` to capture an accepted spec, `/to-tickets` to build its dependency graph, and `/implement` or `/implement-spec` to execute it. Invoke `$pstack-mode` in Codex or `/pstack-mode` in Claude Code when you want its coordinated playbooks. Both paths use the same project documents and reusable disciplines; neither starts another coordinator automatically.
+Use `grill-with-docs` to resolve a design, `to-spec` to capture an accepted spec, `to-tickets` to build its dependency graph, and `implement-spec` to execute it. Skip stages that are already settled; `implement` handles a smaller agreed piece of work.
+
+Use `pstack-mode` when you want the agent to choose and drive a workflow, such as an investigation, bug fix, refactor, or performance task. It reuses an accepted spec and ticket graph when present. Both paths use the same project documents and principles.
 
 The Matt flow invokes `/pstack-principles` automatically at each phase and before completion. That shared selector reads the applicable principle owners, carries accepted constraints into the existing spec and tickets, and supplies implementation and review workers with the rules. It does not activate Pstack mode. New installed principles enter selection through their descriptions, without a separate list to update.
 
@@ -31,11 +33,11 @@ Install from this repository to replace eligible Matt command snapshots with the
 
 ## Pstack
 
-The Pstack adaptation covers all 54 registered skills from [Lauren Tan's MIT-licensed Pstack](https://github.com/cursor/plugins/tree/main/pstack): 53 namespaced skills plus the existing `bro`. It includes 24 principles, 23 playbooks, native Codex and Claude Code execution, and a disclosed fallback when cross-vendor review is unavailable. The dormant Benny automation pack is outside this suite.
+The Pstack adaptation covers all 54 registered skills from [Lauren Tan's MIT-licensed Pstack](https://github.com/cursor/plugins/tree/main/pstack): 53 namespaced skills plus the existing `bro`. It includes 24 principles, 23 playbooks, native delegation, and a disclosed fallback when cross-vendor review is unavailable. The dormant Benny automation pack is outside this suite.
 
 Use the [complete-library install](../README.md#install). Pstack's coordinated workflows depend on shared Matt-derived owners as well as their own helpers. Skills CLI does not install dependencies transitively. To install unpublished changes, run the command from the repository root with `.` as the source. Reinstall after source changes because installed copies are snapshots.
 
-Invoke `$pstack-mode` in Codex or `/pstack-mode` in Claude Code for the current conversation. Give it a goal, observable done predicate, proof, and constraints. Use `pstack-help` for routing and `pstack-setup` for personal model roles. Installation does not activate a mode or modify host startup instructions.
+Invoke `pstack-mode` for the current conversation with a goal, observable completion criteria, required proof, and constraints. Use `pstack-help` for routing and `pstack-setup` for personal model roles. Installation does not activate a mode or modify host startup instructions.
 
 The suite preserves evidence requirements while scaling parallelism to the task. Draft PRs are the default. Cross-vendor critics use the other authenticated CLI when available; independent native or sequential fallback is labeled. Bun-dependent PR/orchestration commands declare their prerequisites and use a runtime cache outside installed source. The webhook UI requires an existing receiver and defaults to localhost.
 
@@ -49,4 +51,8 @@ The [catalog's exclusions](../skills/agents/maintain-skills/catalog.json) also r
 
 ## Updating an installation
 
-Published and local-path installs are snapshots. After source changes are merged, rerun the complete install from the main README to refresh both hosts and discover newly added skills. Install from this repository rather than overwriting the adaptations with same-named upstream skills.
+Published and local-path installs are snapshots. After source changes are merged, rerun the complete install from the main README to refresh your selected agents and discover newly added skills. Install from this repository rather than overwriting the adaptations with same-named upstream skills.
+
+## Agent compatibility
+
+Use `$skill-name` in Codex and `/skill-name` in Claude Code. Native delegation and hook adapters are written for these two hosts. Skills CLI offers other agents too; workflows that depend on host-specific tools need a compatible integration. Agent selection during installation does not add that integration.

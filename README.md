@@ -2,42 +2,42 @@
 
 [![skills.sh](https://skills.sh/b/christofferbergj/agent-skills)](https://skills.sh/christofferbergj/agent-skills)
 
-One skill library for Codex and Claude Code, combining adaptations of Matt Pocock, Pstack, Thermos, and OpenClaw with local workflows.
+Personal agent skills for planning, building, reviewing, and explaining software.
 
 ## Install
 
-Install the complete library from one source:
+Install the complete library and choose your agents when prompted:
 
 ```bash
 npx skills@latest add christofferbergj/agent-skills \
-  --skill '*' --global --agent codex claude-code --yes
+  --skill '*' --global
 ```
 
-Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the library does not activate Pstack mode. [Usage guide](docs/usage.md).
-
-Matt's interview, spec, ticket, and implementation flow automatically applies relevant Pstack principles through a shared selector. Use the familiar commands; `pstack-mode` is optional.
+Invoke skills through your agent's skill picker or command syntax. [Usage guide and compatibility](docs/usage.md).
 
 ## Start here
+
+For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Skip stages that are already settled. Relevant Pstack principles apply automatically throughout this flow.
 
 | You want to                               | Start with                             |
 | ----------------------------------------- | -------------------------------------- |
 | Clarify an idea and capture decisions     | `grill-with-docs`                      |
 | Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed |
 | Implement agreed work                     | `implement` or `implement-spec`        |
-| Coordinate a substantial engineering task | `pstack-mode`                          |
+| Let the agent choose and drive a workflow | `pstack-mode`                          |
 | Review a change                           | `code-review` or `thermos`             |
 | Maintain this library                     | `maintain-skills`                      |
 
 ## Browse by task
 
-| Category                                                   | What you will find                                                                                                         |
-| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| [Agent workflows](skills/agents/README.md)                 | Configure agents, coordinate work, maintain skills, and learn from completed sessions.                                     |
-| [Planning and design](skills/planning/README.md)           | Understand a codebase, research a problem, clarify requirements, and choose a design.                                      |
-| [Implementation and tooling](skills/engineering/README.md) | Build and debug software, configure development tools, and verify behavior.                                                |
-| [Reviews](skills/reviews/README.md)                        | Assess code, architecture, tests, performance claims, and the effects of a change.                                         |
-| [Writing and explanation](skills/communication/README.md)  | Explain work clearly, write technical documents, and edit prose.                                                           |
-| [Principles](skills/principles/README.md)                  | Reusable Pstack principles for design, implementation, verification, and agent execution. Workflows select them as needed. |
+| Category                                                   | What you will find                                                                     |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| [Agent workflows](skills/agents/README.md)                 | Configure agents, coordinate work, maintain skills, and learn from completed sessions. |
+| [Planning and design](skills/planning/README.md)           | Understand a codebase, research a problem, clarify requirements, and choose a design.  |
+| [Implementation and tooling](skills/engineering/README.md) | Build and debug software, configure development tools, and verify behavior.            |
+| [Reviews](skills/reviews/README.md)                        | Assess code, architecture, tests, performance claims, and the effects of a change.     |
+| [Writing and explanation](skills/communication/README.md)  | Explain work clearly, write technical documents, and edit prose.                       |
+| [Principles](skills/principles/README.md)                  | Design and coding principles selected by the workflows.                                |
 
 [Repository documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
 

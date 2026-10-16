@@ -1,6 +1,6 @@
 # Principles
 
-Reusable Pstack principles for design, implementation, verification, and agent execution. Matt and Pstack workflows invoke `/pstack-principles` to select applicable owners from their descriptions. Each skill below owns its rules; using them does not require Pstack mode.
+Design and coding principles applied automatically by the planning and implementation workflows. You usually do not need to invoke them individually or activate Pstack mode. The shared `pstack-principles` skill selects the relevant ones.
 
 [All categories](../README.md) · [Install](../../README.md#install)
 

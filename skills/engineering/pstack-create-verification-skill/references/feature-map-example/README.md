@@ -1,6 +1,14 @@
-# Notes verification map
+# Example verification map
 
-This directory is the maintained source for verifying the user-facing behavior of Notes. Read the index before driving the app, then use the matching feature file as the recipe.
+This Notes app example shows how to document repeatable behavior checks. Adapt its commands and preconditions for your project.
+
+## Features
+
+- [Create a note](./create-note.md) covers browser and CLI creation, cancellation, persistence, and cleanup.
+- [Search notes](./search.md) covers toolbar, keyboard, and CLI search with matching, empty, and clear states.
+
+<details>
+<summary>Example setup, driving rules, and proof requirements</summary>
 
 ## Baseline preconditions
 
@@ -41,7 +49,4 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 
 Keep implementation details out of the map. Name only user paths, stable handles, required state, commands, and observable proof.
 
-## Features
-
-- [Create a note](./create-note.md) covers browser and CLI creation, cancellation, persistence, and cleanup.
-- [Search notes](./search.md) covers toolbar, keyboard, and CLI search with matching, empty, and clear states.
+</details>
