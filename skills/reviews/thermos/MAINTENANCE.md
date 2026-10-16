@@ -56,7 +56,7 @@ git -C "$upstream_dir" show \
   > "$upstream_dir/$skill_name-baseline.md"
 git diff --no-index -- \
   "$upstream_dir/$skill_name-baseline.md" \
-  "skills/engineering/$skill_name/SKILL.md"
+  "skills/reviews/$skill_name/SKILL.md"
 ```
 
 `git diff --no-index` exits with status 1 when files differ; that is expected. A missing historical path needs investigation, not an empty replacement file.

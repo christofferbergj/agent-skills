@@ -1,27 +1,18 @@
-# Communication
+# Writing and explanation
 
-Small skills for clearer agent communication.
+Explain work clearly, write technical documents, and shape longer prose.
 
-## User-invoked
+[All categories](../README.md) · [Install](../../README.md#install)
 
-- **[bro](./bro/SKILL.md)** — Restate the last message in plain human language, with no jargon.
-
-## Pstack adaptation
-
-Install the complete dependency group from the [top-level README](../../README.md#pstack). The [suite maintenance owner](../agents/pstack-mode/MAINTENANCE.md) records shared update and validation contracts.
-
-- [pstack-in-your-own-words](./pstack-in-your-own-words/SKILL.md).
-- [pstack-ketchup](./pstack-ketchup/SKILL.md).
-- [pstack-teach](./pstack-teach/SKILL.md).
-- [pstack-technical-writing](./pstack-technical-writing/SKILL.md).
-- [pstack-unslop](./pstack-unslop/SKILL.md).
-
-## Combined Matt Pocock workflows
-
-Install the complete library from the [top-level README](../../README.md#install). Shared artifact and execution owners are documented in its [combined workflow](../../README.md#combined-workflow).
-
-- [pr](./pr/SKILL.md).
-- [writing-beats](./writing-beats/SKILL.md).
-- [writing-fragments](./writing-fragments/SKILL.md).
-- [writing-shape](./writing-shape/SKILL.md).
-- [to-questionnaire](./to-questionnaire/SKILL.md).
+| Skill                                                         | Use it to                                         |
+| ------------------------------------------------------------- | ------------------------------------------------- |
+| [bro](bro/SKILL.md)                                           | Restate the previous message in plain language.   |
+| [pr](pr/SKILL.md)                                             | Write a concise, evidence-based PR description.   |
+| [pstack-in-your-own-words](pstack-in-your-own-words/SKILL.md) | Restate the goal and underlying problem.          |
+| [pstack-ketchup](pstack-ketchup/SKILL.md)                     | Summarize progress since the last user message.   |
+| [pstack-teach](pstack-teach/SKILL.md)                         | Explain how code works and why it has its shape.  |
+| [pstack-technical-writing](pstack-technical-writing/SKILL.md) | Write technical documents for a clear purpose.    |
+| [pstack-unslop](pstack-unslop/SKILL.md)                       | Remove formulaic AI writing.                      |
+| [writing-beats](writing-beats/SKILL.md)                       | Arrange source material into a sequence of beats. |
+| [writing-fragments](writing-fragments/SKILL.md)               | Explore raw writing material.                     |
+| [writing-shape](writing-shape/SKILL.md)                       | Shape source material into an article.            |

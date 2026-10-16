@@ -8,12 +8,12 @@
     {
       "upstream": "architect",
       "local": "pstack-architect",
-      "directory": "skills/engineering/pstack-architect"
+      "directory": "skills/planning/pstack-architect"
     },
     {
       "upstream": "arena",
       "local": "pstack-arena",
-      "directory": "skills/engineering/pstack-arena"
+      "directory": "skills/planning/pstack-arena"
     },
     {
       "upstream": "automate-me",
@@ -23,12 +23,12 @@
     {
       "upstream": "benchmark-checklist",
       "local": "pstack-benchmark-checklist",
-      "directory": "skills/engineering/pstack-benchmark-checklist"
+      "directory": "skills/reviews/pstack-benchmark-checklist"
     },
     {
       "upstream": "blast-radius",
       "local": "pstack-blast-radius",
-      "directory": "skills/engineering/pstack-blast-radius"
+      "directory": "skills/reviews/pstack-blast-radius"
     },
     {
       "upstream": "bro",
@@ -38,7 +38,7 @@
     {
       "upstream": "correct",
       "local": "pstack-correct",
-      "directory": "skills/agents/pstack-correct"
+      "directory": "skills/engineering/pstack-correct"
     },
     {
       "upstream": "create-verification-skill",
@@ -48,12 +48,12 @@
     {
       "upstream": "figure-it-out",
       "local": "pstack-figure-it-out",
-      "directory": "skills/engineering/pstack-figure-it-out"
+      "directory": "skills/agents/pstack-figure-it-out"
     },
     {
       "upstream": "how",
       "local": "pstack-how",
-      "directory": "skills/engineering/pstack-how"
+      "directory": "skills/planning/pstack-how"
     },
     {
       "upstream": "in-your-own-words",
@@ -63,7 +63,7 @@
     {
       "upstream": "interrogate",
       "local": "pstack-interrogate",
-      "directory": "skills/engineering/pstack-interrogate"
+      "directory": "skills/reviews/pstack-interrogate"
     },
     {
       "upstream": "ketchup",
@@ -83,7 +83,7 @@
     {
       "upstream": "no-comments",
       "local": "pstack-no-comments",
-      "directory": "skills/engineering/pstack-no-comments"
+      "directory": "skills/reviews/pstack-no-comments"
     },
     {
       "upstream": "poteto-help",
@@ -113,7 +113,7 @@
     {
       "upstream": "sharpen",
       "local": "pstack-sharpen",
-      "directory": "skills/agents/pstack-sharpen"
+      "directory": "skills/planning/pstack-sharpen"
     },
     {
       "upstream": "show-me-your-work",
@@ -153,127 +153,127 @@
     {
       "upstream": "why",
       "local": "pstack-why",
-      "directory": "skills/engineering/pstack-why"
+      "directory": "skills/planning/pstack-why"
     },
     {
       "upstream": "principle-attack-the-premise",
       "local": "pstack-principle-attack-the-premise",
-      "directory": "skills/engineering/pstack-principle-attack-the-premise"
+      "directory": "skills/principles/pstack-principle-attack-the-premise"
     },
     {
       "upstream": "principle-boundary-discipline",
       "local": "pstack-principle-boundary-discipline",
-      "directory": "skills/engineering/pstack-principle-boundary-discipline"
+      "directory": "skills/principles/pstack-principle-boundary-discipline"
     },
     {
       "upstream": "principle-build-the-lever",
       "local": "pstack-principle-build-the-lever",
-      "directory": "skills/engineering/pstack-principle-build-the-lever"
+      "directory": "skills/principles/pstack-principle-build-the-lever"
     },
     {
       "upstream": "principle-encode-lessons-in-structure",
       "local": "pstack-principle-encode-lessons-in-structure",
-      "directory": "skills/engineering/pstack-principle-encode-lessons-in-structure"
+      "directory": "skills/principles/pstack-principle-encode-lessons-in-structure"
     },
     {
       "upstream": "principle-exhaust-the-design-space",
       "local": "pstack-principle-exhaust-the-design-space",
-      "directory": "skills/engineering/pstack-principle-exhaust-the-design-space"
+      "directory": "skills/principles/pstack-principle-exhaust-the-design-space"
     },
     {
       "upstream": "principle-experience-first",
       "local": "pstack-principle-experience-first",
-      "directory": "skills/engineering/pstack-principle-experience-first"
+      "directory": "skills/principles/pstack-principle-experience-first"
     },
     {
       "upstream": "principle-explain-the-number",
       "local": "pstack-principle-explain-the-number",
-      "directory": "skills/engineering/pstack-principle-explain-the-number"
+      "directory": "skills/principles/pstack-principle-explain-the-number"
     },
     {
       "upstream": "principle-fix-root-causes",
       "local": "pstack-principle-fix-root-causes",
-      "directory": "skills/engineering/pstack-principle-fix-root-causes"
+      "directory": "skills/principles/pstack-principle-fix-root-causes"
     },
     {
       "upstream": "principle-foundational-thinking",
       "local": "pstack-principle-foundational-thinking",
-      "directory": "skills/engineering/pstack-principle-foundational-thinking"
+      "directory": "skills/principles/pstack-principle-foundational-thinking"
     },
     {
       "upstream": "principle-guard-the-context-window",
       "local": "pstack-principle-guard-the-context-window",
-      "directory": "skills/engineering/pstack-principle-guard-the-context-window"
+      "directory": "skills/principles/pstack-principle-guard-the-context-window"
     },
     {
       "upstream": "principle-laziness-protocol",
       "local": "pstack-principle-laziness-protocol",
-      "directory": "skills/engineering/pstack-principle-laziness-protocol"
+      "directory": "skills/principles/pstack-principle-laziness-protocol"
     },
     {
       "upstream": "principle-make-operations-idempotent",
       "local": "pstack-principle-make-operations-idempotent",
-      "directory": "skills/engineering/pstack-principle-make-operations-idempotent"
+      "directory": "skills/principles/pstack-principle-make-operations-idempotent"
     },
     {
       "upstream": "principle-migrate-callers-then-delete-legacy-apis",
       "local": "pstack-principle-migrate-callers-then-delete-legacy-apis",
-      "directory": "skills/engineering/pstack-principle-migrate-callers-then-delete-legacy-apis"
+      "directory": "skills/principles/pstack-principle-migrate-callers-then-delete-legacy-apis"
     },
     {
       "upstream": "principle-minimize-reader-load",
       "local": "pstack-principle-minimize-reader-load",
-      "directory": "skills/engineering/pstack-principle-minimize-reader-load"
+      "directory": "skills/principles/pstack-principle-minimize-reader-load"
     },
     {
       "upstream": "principle-model-the-domain",
       "local": "pstack-principle-model-the-domain",
-      "directory": "skills/engineering/pstack-principle-model-the-domain"
+      "directory": "skills/principles/pstack-principle-model-the-domain"
     },
     {
       "upstream": "principle-never-block-on-the-human",
       "local": "pstack-principle-never-block-on-the-human",
-      "directory": "skills/engineering/pstack-principle-never-block-on-the-human"
+      "directory": "skills/principles/pstack-principle-never-block-on-the-human"
     },
     {
       "upstream": "principle-outcome-oriented-execution",
       "local": "pstack-principle-outcome-oriented-execution",
-      "directory": "skills/engineering/pstack-principle-outcome-oriented-execution"
+      "directory": "skills/principles/pstack-principle-outcome-oriented-execution"
     },
     {
       "upstream": "principle-prove-it-works",
       "local": "pstack-principle-prove-it-works",
-      "directory": "skills/engineering/pstack-principle-prove-it-works"
+      "directory": "skills/principles/pstack-principle-prove-it-works"
     },
     {
       "upstream": "principle-redesign-from-first-principles",
       "local": "pstack-principle-redesign-from-first-principles",
-      "directory": "skills/engineering/pstack-principle-redesign-from-first-principles"
+      "directory": "skills/principles/pstack-principle-redesign-from-first-principles"
     },
     {
       "upstream": "principle-separate-before-serializing-shared-state",
       "local": "pstack-principle-separate-before-serializing-shared-state",
-      "directory": "skills/engineering/pstack-principle-separate-before-serializing-shared-state"
+      "directory": "skills/principles/pstack-principle-separate-before-serializing-shared-state"
     },
     {
       "upstream": "principle-sequence-verifiable-units",
       "local": "pstack-principle-sequence-verifiable-units",
-      "directory": "skills/engineering/pstack-principle-sequence-verifiable-units"
+      "directory": "skills/principles/pstack-principle-sequence-verifiable-units"
     },
     {
       "upstream": "principle-subtract-before-you-add",
       "local": "pstack-principle-subtract-before-you-add",
-      "directory": "skills/engineering/pstack-principle-subtract-before-you-add"
+      "directory": "skills/principles/pstack-principle-subtract-before-you-add"
     },
     {
       "upstream": "principle-test-behavior-not-implementation",
       "local": "pstack-principle-test-behavior-not-implementation",
-      "directory": "skills/engineering/pstack-principle-test-behavior-not-implementation"
+      "directory": "skills/principles/pstack-principle-test-behavior-not-implementation"
     },
     {
       "upstream": "principle-type-system-discipline",
       "local": "pstack-principle-type-system-discipline",
-      "directory": "skills/engineering/pstack-principle-type-system-discipline"
+      "directory": "skills/principles/pstack-principle-type-system-discipline"
     }
   ],
   "excluded": ["automations/benny"],

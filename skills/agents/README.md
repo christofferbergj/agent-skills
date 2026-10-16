@@ -1,40 +1,25 @@
-# Agents
+# Agent workflows
 
-Workflows for authoring and maintaining instructions consumed by agents.
+Configure agents, coordinate work, maintain skills, and learn from completed sessions.
 
-## User-invoked
+[All categories](../README.md) · [Install](../../README.md#install)
 
-- **[audit-agent-documentation](./audit-agent-documentation/SKILL.md)** — Audit and improve agent documentation across a codebase while preserving project contracts. Install `/writing-for-agents` with it.
-- **[maintain-skills](./maintain-skills/SKILL.md)** reviews every skill's writing and current guidance, repairs stale references and practices, and checks sourced skills against upstream. Install `/writing-for-agents` with it.
-
-## Pstack adaptation
-
-Install the complete dependency group from the [top-level README](../../README.md#pstack). The [suite maintenance owner](../agents/pstack-mode/MAINTENANCE.md) records shared update and validation contracts.
-
-- [pstack-automate-me](./pstack-automate-me/SKILL.md).
-- [pstack-correct](./pstack-correct/SKILL.md).
-- [pstack-help](./pstack-help/SKILL.md).
-- [pstack-mode](./pstack-mode/SKILL.md).
-- [pstack-recall](./pstack-recall/SKILL.md).
-- [pstack-reflect](./pstack-reflect/SKILL.md).
-- [pstack-setup](./pstack-setup/SKILL.md).
-- [pstack-sharpen](./pstack-sharpen/SKILL.md).
-- [pstack-show-me-your-work](./pstack-show-me-your-work/SKILL.md).
-- [pstack-swarm](./pstack-swarm/SKILL.md).
-
-## Combined Matt Pocock workflows
-
-Install the complete library from the [top-level README](../../README.md#install). Shared artifact and execution owners are documented in its [combined workflow](../../README.md#combined-workflow).
-
-- [grill-with-docs](./grill-with-docs/SKILL.md).
-- [research](./research/SKILL.md).
-- [retro](./retro/SKILL.md).
-- [setup-matt-pocock-skills](./setup-matt-pocock-skills/SKILL.md).
-- [wizard](./wizard/SKILL.md).
-- [chief-of-staff](./chief-of-staff/SKILL.md).
-- [loop-me](./loop-me/SKILL.md).
-- [git-guardrails](./git-guardrails/SKILL.md).
-- [setup-pre-commit](./setup-pre-commit/SKILL.md).
-- [grill-me](./grill-me/SKILL.md).
-- [grilling](./grilling/SKILL.md).
-- [writing-for-agents](./writing-for-agents/SKILL.md).
+| Skill                                                           | Use it to                                            |
+| --------------------------------------------------------------- | ---------------------------------------------------- |
+| [audit-agent-documentation](audit-agent-documentation/SKILL.md) | Audit and improve agent documentation.               |
+| [chief-of-staff](chief-of-staff/SKILL.md)                       | Coordinate a long-running goal.                      |
+| [git-guardrails](git-guardrails/SKILL.md)                       | Configure explicit Git-operation guardrails.         |
+| [maintain-skills](maintain-skills/SKILL.md)                     | Maintain the skill library and its upstreams.        |
+| [pstack-automate-me](pstack-automate-me/SKILL.md)               | Create a personal Pstack mode.                       |
+| [pstack-figure-it-out](pstack-figure-it-out/SKILL.md)           | Coordinate large tasks without an existing playbook. |
+| [pstack-help](pstack-help/SKILL.md)                             | Find the right Pstack workflow.                      |
+| [pstack-mode](pstack-mode/SKILL.md)                             | Run coordinated Pstack playbooks.                    |
+| [pstack-recall](pstack-recall/SKILL.md)                         | Recover repository-specific work history.            |
+| [pstack-reflect](pstack-reflect/SKILL.md)                       | Propose improvements from session lessons.           |
+| [pstack-setup](pstack-setup/SKILL.md)                           | Configure personal Pstack model roles.               |
+| [pstack-show-me-your-work](pstack-show-me-your-work/SKILL.md)   | Record decisions and execution evidence.             |
+| [pstack-swarm](pstack-swarm/SKILL.md)                           | Delegate work and independent reviews.               |
+| [retro](retro/SKILL.md)                                         | Review a completed coding session.                   |
+| [setup-matt-pocock-skills](setup-matt-pocock-skills/SKILL.md)   | Configure project artifacts and issue tracking.      |
+| [wizard](wizard/SKILL.md)                                       | Guide a human through steps an agent cannot perform. |
+| [writing-for-agents](writing-for-agents/SKILL.md)               | Write effective agent instructions.                  |
