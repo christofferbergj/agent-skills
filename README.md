@@ -161,7 +161,7 @@ Skills CLI does not install dependencies transitively. The complete-library inst
 | ----------------------------- | ----------------------------------------------------------------------------- |
 | `audit-agent-documentation`   | `writing-for-agents`                                                          |
 | `update-dependencies`         | `linting-alignment` when the lint or formatting stack changes                 |
-| `maintain-skills`             | `writing-for-agents`                                                          |
+| `maintain-skills`             | `writing-for-agents`, `pstack-swarm`                                          |
 | `thermos`                     | `thermo-nuclear-review`, `thermo-nuclear-code-quality-review`                 |
 | `grill-me`                    | `grilling`                                                                    |
 | `grill-with-docs`             | `grilling`, `domain-modeling`                                                 |
