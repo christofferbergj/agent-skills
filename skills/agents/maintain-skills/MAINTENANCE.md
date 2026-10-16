@@ -44,7 +44,7 @@ Preserve one coordinator for canonical artifact writes and one accepted spec/tic
 
 A change to a shared owner requires inspecting its consumers in both families and rechecking the consequential workflow branches. Do not restore hard-coded agent counts, Cursor APIs, global snapshot edits, unconditional approval loops, automatic ready-PR/merge behavior, duplicated glossaries, or a second formatting stack. Preserve experimental/frozen status and test executable templates against actual consuming tools.
 
-Propose straightforward new reusable skills within the agreed capability boundary. Continue excluding `handoff`, `claude-handoff`, `teach`, `wait-what`, `ask-matt`, Matt-specific course scaffolding, and personal skills. A new service or expanded authority requires a decision. Preserve skills removed upstream until explicit retirement review; verify continuity before treating a category move or rename as the same source.
+Propose straightforward new reusable skills within the agreed capability boundary. Apply the catalog's `excludedNames` and `excludedPathComponents` to every discovered skill, including user-retired skills; a category move does not make an excluded skill eligible. A new service or expanded authority requires a decision. Preserve skills removed upstream until explicit retirement review; verify continuity before treating a category move or rename as the same source.
 
 Complete each adopted unit only when its source delta and affected integration owners are resolved. Record adopted, adapted, and excluded changes with reasons; leave held behavior intact.
 

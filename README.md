@@ -34,7 +34,7 @@ Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the libr
 | [Planning and design](skills/planning/README.md)           | Understand a codebase, research a problem, clarify requirements, and choose a design.                                      |
 | [Implementation and tooling](skills/engineering/README.md) | Build and debug software, configure development tools, and verify behavior.                                                |
 | [Reviews](skills/reviews/README.md)                        | Assess code, architecture, tests, performance claims, and the effects of a change.                                         |
-| [Writing and explanation](skills/communication/README.md)  | Explain work clearly, write technical documents, and shape longer prose.                                                   |
+| [Writing and explanation](skills/communication/README.md)  | Explain work clearly, write technical documents, and edit prose.                                                           |
 | [Principles](skills/principles/README.md)                  | Reusable Pstack principles for design, implementation, verification, and agent execution. Workflows select them as needed. |
 
 [Repository documentation](docs/README.md) · [Contributing](CONTRIBUTING.md)
@@ -90,7 +90,6 @@ Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the libr
 - [implement](skills/engineering/implement/SKILL.md)
 - [implement-spec](skills/engineering/implement-spec/SKILL.md)
 - [linting-alignment](skills/engineering/linting-alignment/SKILL.md)
-- [migrate-to-shoehorn](skills/engineering/migrate-to-shoehorn/SKILL.md)
 - [pstack-correct](skills/engineering/pstack-correct/SKILL.md)
 - [pstack-create-verification-skill](skills/engineering/pstack-create-verification-skill/SKILL.md)
 - [pstack-maintain-verification-skill](skills/engineering/pstack-maintain-verification-skill/SKILL.md)
@@ -123,9 +122,6 @@ Use `$skill-name` in Codex and `/skill-name` in Claude Code. Installing the libr
 - [pstack-teach](skills/communication/pstack-teach/SKILL.md)
 - [pstack-technical-writing](skills/communication/pstack-technical-writing/SKILL.md)
 - [pstack-unslop](skills/communication/pstack-unslop/SKILL.md)
-- [writing-beats](skills/communication/writing-beats/SKILL.md)
-- [writing-fragments](skills/communication/writing-fragments/SKILL.md)
-- [writing-shape](skills/communication/writing-shape/SKILL.md)
 
 ### Principles
 

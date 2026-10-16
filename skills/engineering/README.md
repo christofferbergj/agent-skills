@@ -10,7 +10,6 @@ Build and debug software, configure development tools, and verify behavior.
 | [implement](implement/SKILL.md)                                                   | Implement an agreed piece of work.                     |
 | [implement-spec](implement-spec/SKILL.md)                                         | Execute a complete spec and its ticket graph.          |
 | [linting-alignment](linting-alignment/SKILL.md)                                   | Align linting and formatting tools.                    |
-| [migrate-to-shoehorn](migrate-to-shoehorn/SKILL.md)                               | Replace test assertions with typed fixture helpers.    |
 | [pstack-correct](pstack-correct/SKILL.md)                                         | Prevent recurring mistakes through structural changes. |
 | [pstack-create-verification-skill](pstack-create-verification-skill/SKILL.md)     | Create a project-specific verification skill.          |
 | [pstack-maintain-verification-skill](pstack-maintain-verification-skill/SKILL.md) | Keep a verification skill and feature map current.     |

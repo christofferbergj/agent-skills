@@ -1,6 +1,0 @@
-interface:
-  display_name: "Writing Fragments"
-  short_description: "Collect concrete fragments before drafting"
-  default_prompt: "Use $writing-fragments to handle this request."
-policy:
-  allow_implicit_invocation: false

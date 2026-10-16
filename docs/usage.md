@@ -38,7 +38,9 @@ Read the [repository maintenance guide](../skills/agents/maintain-skills/MAINTEN
 
 ## Upstream stages
 
-The maintained catalog preserves experimental and frozen upstream status. Experimental Matt workflows include `chief-of-staff`, `loop-me`, `setup-ts-deep-modules`, and the three `writing-*` skills. `git-guardrails`, `migrate-to-shoehorn`, and `setup-pre-commit` come from the frozen upstream misc collection. Their source records retain those distinctions without separating them into another local workflow.
+The maintained catalog preserves experimental and frozen upstream status. The remaining experimental Matt workflows are `chief-of-staff`, `loop-me`, and `setup-ts-deep-modules`. `git-guardrails` and `setup-pre-commit` come from the frozen upstream misc collection. These are reusable workflows; Matt's personal-directory skills are excluded.
+
+The [catalog's exclusions](../skills/agents/maintain-skills/catalog.json) also record user-retired skills. These include the Shoehorn migration and the three experimental article-writing workflows. Maintenance keeps those exclusions even if upstream moves a skill to another category.
 
 ## Updating an installation
 

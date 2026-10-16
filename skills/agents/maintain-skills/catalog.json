@@ -157,33 +157,9 @@
           "stage": "in-progress"
         },
         {
-          "upstream": "skills/in-progress/writing-beats",
-          "local": "writing-beats",
-          "directory": "skills/communication/writing-beats",
-          "stage": "in-progress"
-        },
-        {
-          "upstream": "skills/in-progress/writing-fragments",
-          "local": "writing-fragments",
-          "directory": "skills/communication/writing-fragments",
-          "stage": "in-progress"
-        },
-        {
-          "upstream": "skills/in-progress/writing-shape",
-          "local": "writing-shape",
-          "directory": "skills/communication/writing-shape",
-          "stage": "in-progress"
-        },
-        {
           "upstream": "skills/misc/git-guardrails-claude-code",
           "local": "git-guardrails",
           "directory": "skills/agents/git-guardrails",
-          "stage": "misc"
-        },
-        {
-          "upstream": "skills/misc/migrate-to-shoehorn",
-          "local": "migrate-to-shoehorn",
-          "directory": "skills/engineering/migrate-to-shoehorn",
           "stage": "misc"
         },
         {
@@ -223,7 +199,11 @@
         "wait-what": "User exclusion",
         "ask-matt": "User exclusion",
         "claude-handoff": "Excluded handoff variant",
-        "scaffold-exercises": "Matt-specific course tooling (ai-hero-cli internal lint)"
+        "scaffold-exercises": "Matt-specific course tooling (ai-hero-cli internal lint)",
+        "migrate-to-shoehorn": "User retirement: Shoehorn-specific test migration is outside this library's intended use",
+        "writing-beats": "User retirement: experimental article-writing workflow is outside this library's intended use",
+        "writing-fragments": "User retirement: experimental article-writing workflow is outside this library's intended use",
+        "writing-shape": "User retirement: experimental article-writing workflow is outside this library's intended use"
       },
       "excludedPathComponents": ["personal"],
       "sharedPaths": [
