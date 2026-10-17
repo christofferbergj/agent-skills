@@ -1,3 +1,3 @@
 interface:
   display_name: "Pstack principle fix root causes"
-  short_description: "Apply when debugging workflow for coding agents"
+  short_description: "Trace symptoms and fix their root causes"

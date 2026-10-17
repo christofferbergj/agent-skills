@@ -46,16 +46,18 @@ Non-empty, via a variadic tuple:
 type NonEmpty<T> = [T, ...T[]];
 
 // Don't: T[] plus a length check every caller must repeat
-function pickWinner(entries: string[]): string {
+function firstEntry(entries: string[]): string {
   if (entries.length === 0) throw new Error("no entries");
-  return entries[Math.floor(Math.random() * entries.length)];
+  return entries[0];
 }
 
 // Do: an empty value of the type can't exist
-function pickWinner(entries: NonEmpty<string>): string {
-  return entries[Math.floor(Math.random() * entries.length)];
+function firstEntry(entries: NonEmpty<string>): string {
+  return entries[0];
 }
 ```
+
+The tuple guarantees its first entry. A dynamic numeric index can still produce `undefined` under `noUncheckedIndexedAccess`; narrow the retrieved value before using it.
 
 Where a plain `T[]` arrives, narrow once with a guard. The fact then travels in the type:
 

@@ -14,7 +14,7 @@
 
 ## Local adaptations to preserve
 
-- Retain the writing mechanics and branch-specific reference as the shared instruction-writing dependency, installed from this repository.
+- Retain the writing mechanics and branch-specific reference as the shared instruction-writing dependency, installed from this repository. Shared reference belongs to a model-invoked owner; its consumers invoke that owner rather than linking outside the owning skill.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
 - Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
@@ -28,3 +28,5 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                                           |
 | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures. |
+
+Local maintenance on 2026-10-17: Aligned shared-reference placement with this library's callable-owner contract. The source candidate `49dd158d1076134a641b33efb035946536778336` is unchanged. The affected guidance and consumers were reread; repository checks pass.

@@ -132,9 +132,9 @@ checked for matches.
 
 **Key interfaces:**
 
-- Markdown file format in `.out-of-scope/`: each file should have a
-  `# Concept Name` heading, a `**Decision:**` line, a `**Reason:**` line,
-  and a `**Prior requests:**` list with issue links
+- Markdown file format in `.out-of-scope/`: follow the owning
+  `OUT-OF-SCOPE.md` format, with a concept heading, the rejection and its
+  reason, and a `## Prior requests` list with issue links
 - The triage workflow should read all `.out-of-scope/*.md` files early
   and match incoming issues against them by concept similarity
 

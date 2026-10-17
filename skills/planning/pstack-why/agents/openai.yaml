@@ -1,3 +1,3 @@
 interface:
   display_name: "Pstack why"
-  short_description: "Use for Pstack design rationale, regressions, historical constra"
+  short_description: "Investigate code rationale from historical evidence"

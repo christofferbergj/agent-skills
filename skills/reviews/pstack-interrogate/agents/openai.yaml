@@ -1,3 +1,3 @@
 interface:
   display_name: "Pstack interrogate"
-  short_description: "Use for Pstack adversarial review of a concrete diff or conteste"
+  short_description: "Review concrete changes with independent critics"

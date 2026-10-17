@@ -233,5 +233,5 @@
     "principleSelection": "pstack-principles",
     "upstreamMaintenance": "maintain-skills"
   },
-  "policy": "Review both upstreams together. Propose eligible additions; preserve removals pending explicit retirement; hold incomplete source and integration baselines."
+  "policy": "Review every discovered upstream. Propose eligible additions; preserve removals pending explicit retirement; hold incomplete source and integration baselines."
 }
