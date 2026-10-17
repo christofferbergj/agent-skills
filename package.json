@@ -6,6 +6,6 @@
     "fmt:check": "oxfmt --check"
   },
   "devDependencies": {
-    "oxfmt": "^0.61.0"
+    "oxfmt": "^0.73.0"
   }
 }
