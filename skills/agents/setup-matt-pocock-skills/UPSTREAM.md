@@ -14,7 +14,7 @@
 
 ## Local adaptations to preserve
 
-- Configure one shared project contract for both hosts. Reuse existing domain/tracker/label choices and legacy artifact locations; personal Pstack model-role setup remains optional.
+- Configure one shared project contract for both hosts. Reuse existing domain/tracker/label choices and legacy artifact locations; personal Pstack model-role setup remains optional. Use the GitLab API relation `is_blocked_by` when identifying native blockers; `/blocked_by` remains the quick action.
 - Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
 - Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
 - Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
@@ -28,3 +28,5 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                                           |
 | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures. |
+
+Local maintenance on 2026-10-17: Corrected the GitLab blocker API relation to `is_blocked_by`, verified against the official issue-links API documentation; `/blocked_by` remains the quick action. The source candidate `49dd158d1076134a641b33efb035946536778336` is unchanged. Repository checks pass; live GitLab integration remains unexercised.

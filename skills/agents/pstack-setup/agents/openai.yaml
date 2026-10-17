@@ -1,3 +1,3 @@
 interface:
   display_name: "Pstack setup"
-  short_description: "Use when configuring Pstack model roles, effort budgets, optiona"
+  short_description: "Configure Pstack roles and optional review providers"

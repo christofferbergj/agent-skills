@@ -31,7 +31,7 @@ Scan for:
 
 ## Scope to skills and tools the session actually used
 
-Route findings only to skills, tools, or MCPs this transcript used. A skill counts as used when the transcript shows a `Read` of its `SKILL.md` (under `.agents/skills/`, `~/.agents/skills/`, or `~/.claude/skills/`), a native delegation prompt naming its path, or a tool call (Shell, Grep, MCP, etc.) matching its documented commands. Speculative routings to skills the parent never opened do not count.
+Route findings only to skills, tools, or MCPs this transcript used. A skill counts as used when the transcript shows its instructions were read through the host's file or command tools, explicitly invoked, supplied in a delegate brief, or followed through a matching documented command. Resolve its source from the transcript or supplied skill index, including repository-owned paths and installed Codex or Claude paths. A catalog listing alone establishes visibility, not use. Speculative routings to skills the parent never used do not count.
 
 Two finding shapes are valid:
 

@@ -210,7 +210,13 @@ async function runStore<T>(
     const result = await operation(store);
     emit(io, options.json, result, compact, jsonValue);
   } finally {
-    await store.close();
+    try {
+      await store.close();
+    } catch (error) {
+      io.stderr(
+        `warning: store lock cleanup failed: ${message(error)}. Command result is unchanged; do not rerun a completed write to retry cleanup. Any remaining lease becomes stale after this process exits.\n`,
+      );
+    }
   }
 }
 

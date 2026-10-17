@@ -1,22 +1,13 @@
 import { execFileSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import type { Dirent } from "node:fs";
-import {
-  access,
-  mkdir,
-  open,
-  readFile,
-  readdir,
-  rename,
-  rm,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { access, mkdir, readFile, readdir, rename, rm, writeFile } from "node:fs/promises";
 import { basename, dirname, join, resolve } from "node:path";
+import { acquireLock, LockError, type OpenStoreOptions } from "./lock.ts";
+export type { OpenStoreOptions } from "./lock.ts";
 
 const UNIT_HEADER = "id\ttrack\tstate\tbranch\tpr\tsha\tbrief";
 const LEDGER_HEADER = "pr\tsha\tverdict\tevidence\tverifier\tts";
-const LOCK_FILE = ".orch.lock";
 
 export type Verdict =
   | "live-ui-verified"
@@ -176,12 +167,6 @@ export interface AddStandingParams {
   readonly line: string;
 }
 
-export interface OpenStoreOptions {
-  readonly force?: boolean;
-  readonly onLockStolen?: (holder: string) => void;
-  readonly onStaleLock?: (holder: string) => void;
-}
-
 export interface Store {
   readonly units: {
     readonly add: (params: AddUnitParams) => Promise<Unit>;
@@ -228,6 +213,7 @@ export interface NotFoundOutput {
 
 export class UserError extends Error {}
 export class UsageError extends UserError {}
+
 export class NotFoundError extends UserError {
   public constructor(
     message: string,
@@ -235,6 +221,11 @@ export class NotFoundError extends UserError {
   ) {
     super(message);
   }
+}
+
+function rethrowLockError(error: unknown): never {
+  if (error instanceof LockError) throw new UserError(error.message);
+  throw error;
 }
 
 function errorCode(error: unknown): string | null {
@@ -360,77 +351,6 @@ async function requiredFile(path: string): Promise<string> {
     }
     throw error;
   }
-}
-
-function holderIsDead(holder: string): boolean {
-  const pid = Number.parseInt(holder, 10);
-  if (!Number.isSafeInteger(pid) || pid <= 0 || String(pid) !== holder) {
-    return false;
-  }
-  try {
-    process.kill(pid, 0);
-    return false;
-  } catch (error) {
-    return errorCode(error) === "ESRCH";
-  }
-}
-
-async function acquireLock(store: string, options: OpenStoreOptions): Promise<() => Promise<void>> {
-  const path = join(store, LOCK_FILE);
-  const pid = String(process.pid);
-  const create = async (): Promise<void> => {
-    const handle = await open(path, "wx");
-    await handle.writeFile(`${pid}\n`);
-    await handle.close();
-  };
-
-  const takeOver = async (): Promise<void> => {
-    await unlink(path);
-    try {
-      await create();
-    } catch (retryError) {
-      if (errorCode(retryError) === "EEXIST") {
-        const retryHolder = (await readFile(path, "utf8")).trim() || "unknown";
-        throw new UserError(`store lock held by pid ${retryHolder}`);
-      }
-      throw retryError;
-    }
-  };
-
-  try {
-    await create();
-  } catch (error) {
-    if (errorCode(error) !== "EEXIST") {
-      throw error;
-    }
-    let holder = "unknown";
-    try {
-      holder = (await readFile(path, "utf8")).trim() || "unknown";
-    } catch {
-      holder = "unknown";
-    }
-    if (holderIsDead(holder)) {
-      options.onStaleLock?.(holder);
-      await takeOver();
-    } else if (options.force) {
-      options.onLockStolen?.(holder);
-      await takeOver();
-    } else {
-      throw new UserError(`store lock held by pid ${holder}`);
-    }
-  }
-
-  return async (): Promise<void> => {
-    try {
-      if ((await readFile(path, "utf8")).trim() === pid) {
-        await unlink(path);
-      }
-    } catch (error) {
-      if (errorCode(error) !== "ENOENT") {
-        throw error;
-      }
-    }
-  };
 }
 
 async function readTsv(
@@ -1147,12 +1067,13 @@ function validateFrontierPin({
 
 export function openStore(directory: string, options: OpenStoreOptions = {}): Store {
   const store = resolve(directory);
-  let closed = false;
+  let state: "open" | "closing" | "closed" = "open";
+  let closeRequest: Promise<void> | null = null;
   let releaseLock: (() => Promise<void>) | null = null;
   let lockRequest: Promise<void> | null = null;
 
   const ensureOpen = (): void => {
-    if (closed) {
+    if (state !== "open") {
       throw new UserError("store is closed");
     }
   };
@@ -1163,9 +1084,11 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
       return;
     }
     if (lockRequest === null) {
-      lockRequest = acquireLock(store, options).then((release) => {
-        releaseLock = release;
-      });
+      lockRequest = acquireLock(store, options)
+        .then((release) => {
+          releaseLock = release;
+        })
+        .catch(rethrowLockError);
     }
     try {
       await lockRequest;
@@ -1468,21 +1391,31 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
       return { store };
     },
     close: async () => {
-      if (closed) {
+      if (state === "closed") {
         return;
       }
-      if (lockRequest !== null) {
-        try {
-          await lockRequest;
-        } catch {
-          // A failed acquisition has no lock to release.
-        }
+      if (closeRequest !== null) {
+        return closeRequest;
       }
-      const release = releaseLock;
-      releaseLock = null;
-      closed = true;
-      if (release !== null) {
-        await release();
+      state = "closing";
+      closeRequest = (async () => {
+        if (lockRequest !== null) {
+          try {
+            await lockRequest;
+          } catch {
+            // A failed acquisition has no lock to release.
+          }
+        }
+        if (releaseLock !== null) {
+          await releaseLock().catch(rethrowLockError);
+          releaseLock = null;
+        }
+        state = "closed";
+      })();
+      try {
+        await closeRequest;
+      } finally {
+        closeRequest = null;
       }
     },
   };

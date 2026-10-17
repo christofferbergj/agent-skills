@@ -1,5 +1,5 @@
 interface:
   display_name: "Pstack automate me"
-  short_description: "Create or update a personal Pstack mode from repository-scoped h"
+  short_description: "Create or update a personal Pstack mode"
 policy:
   allow_implicit_invocation: false
