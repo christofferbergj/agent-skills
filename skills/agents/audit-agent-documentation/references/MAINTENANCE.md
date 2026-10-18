@@ -22,6 +22,7 @@ Use small disposable fixtures or existing safe examples. Start with a static wal
 | Documentation repair exposes a runtime bug                         | Report the bug separately unless its repair is within the user's scope.                                                                  |
 | Publish request followed by green hosted checks                    | Produce the requested review artifact; stop before merge unless separately authorized.                                                   |
 | Publication with an existing PR for the same work                  | Continue its branch and update the final description; preserve its base, draft status, and unrelated work unless changes are requested.  |
+| Repository-wide audit delegated to coverage slices                 | Each delegate receives its slice and the already-loaded references; no delegate re-reads the root stack or this skill's references.      |
 | No demonstrated defects                                            | Retain correct guidance without a style rewrite or invented documentation.                                                               |
 
 Complete the review when every relevant case has an observed or static result, all package links and metadata resolve, and repository-required checks have recorded results. An unrun behavioral evaluation remains unverified.
