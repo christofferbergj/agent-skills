@@ -267,7 +267,7 @@ If `Config.theme` were `string`, `config.theme` would be `string` too. Use `as c
 
 Validate once where data crosses in. Trust types inside. See the /pstack-principle-boundary-discipline.
 
-- **Wire formats** (proto, JSON-RPC): parse with `ignoreUnknownFields` so forward-compatible changes don't break old clients.
+- **Wire formats:** follow the protocol and schema's compatibility rules. For ProtoJSON, use the selected parser's supported unknown-field option when the compatibility contract calls for it. JSON-RPC has no protocol-wide `ignoreUnknownFields` setting.
 - **Persisted JSON:** versioned blob with a try/catch around the parse.
 - **Don't re-validate** deep in call chains.
 
@@ -297,7 +297,7 @@ Reach for `Pick`, `Omit`, `Parameters`, `ReturnType`, `Awaited`, `typeof` before
 ## Object args
 
 ```ts
-// Don't. Swap two args, still compiles.
+// Don't.
 openFile(uri, {
   startLineNumber: 10,
   startColumn: 1,

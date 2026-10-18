@@ -1072,14 +1072,25 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
   let releaseLock: (() => Promise<void>) | null = null;
   let lockRequest: Promise<void> | null = null;
 
-  const ensureOpen = (): void => {
-    if (state !== "open") {
-      throw new UserError("store is closed");
-    }
-  };
+  let pendingOperations: Promise<void> = Promise.resolve();
+
+  const serialize =
+    <Args extends unknown[], Result>(
+      operation: (...args: Args) => Promise<Result>,
+    ): ((...args: Args) => Promise<Result>) =>
+    (...args) => {
+      if (state !== "open") {
+        return Promise.reject(new UserError("store is closed"));
+      }
+      const result = pendingOperations.then(() => operation(...args));
+      pendingOperations = result.then(
+        () => undefined,
+        () => undefined,
+      );
+      return result;
+    };
 
   const ensureLock = async (): Promise<void> => {
-    ensureOpen();
     if (releaseLock !== null) {
       return;
     }
@@ -1099,7 +1110,6 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
   };
 
   const beginWrite = async (): Promise<void> => {
-    ensureOpen();
     if (!(await exists(store))) {
       throw new UserError(`store is not initialized at ${store}; run orch init`);
     }
@@ -1108,7 +1118,7 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
 
   return {
     units: {
-      add: async (params) => {
+      add: serialize(async (params: AddUnitParams) => {
         await beginWrite();
         const row: Unit = {
           id: requiredCell(params.id, "unit id"),
@@ -1126,8 +1136,8 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         rows.push(row);
         await saveUnits(store, rows);
         return row;
-      },
-      set: async (params) => {
+      }),
+      set: serialize(async (params: SetUnitParams) => {
         await beginWrite();
         const id = requiredCell(params.id, "unit id");
         const state = requiredCell(params.state, "state");
@@ -1147,18 +1157,16 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         rows[index] = row;
         await saveUnits(store, rows);
         return row;
-      },
-      get: async (id) => {
-        ensureOpen();
+      }),
+      get: serialize(async (id: string) => {
         const cleanId = requiredCell(id, "unit id");
         const row = (await readUnits(store)).find((unit) => unit.id === cleanId);
         if (row === undefined) {
           throw new NotFoundError(`unit ${cleanId} not found`);
         }
         return row;
-      },
-      list: async (params = {}) => {
-        ensureOpen();
+      }),
+      list: serialize(async (params: ListUnitsParams = {}) => {
         const state = params.state === undefined ? undefined : requiredCell(params.state, "state");
         const track = params.track === undefined ? undefined : requiredCell(params.track, "track");
         return (await readUnits(store)).filter(
@@ -1166,14 +1174,13 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
             (state === undefined || unit.state === state) &&
             (track === undefined || unit.track === track),
         );
-      },
-      counts: async () => {
-        ensureOpen();
+      }),
+      counts: serialize(async () => {
         return countValues((await readUnits(store)).map((unit) => unit.state));
-      },
+      }),
     },
     ledger: {
-      record: async (params) => {
+      record: serialize(async (params: RecordLedgerParams) => {
         await beginWrite();
         const verdict = parseVerdict(params.verdict);
         const row: LedgerEntry = {
@@ -1193,9 +1200,8 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         }
         await saveLedger(store, rows);
         return row;
-      },
-      check: async (params) => {
-        ensureOpen();
+      }),
+      check: serialize(async (params: CheckLedgerParams) => {
         const pr = String(positiveInteger(params.pr, "PR"));
         const sha = requiredCell(params.sha, "SHA");
         const row = (await readLedger(store)).find((value) => value.pr === pr && value.sha === sha);
@@ -1206,14 +1212,13 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
           });
         }
         return row;
-      },
-      summary: async () => {
-        ensureOpen();
+      }),
+      summary: serialize(async () => {
         return countValues((await readLedger(store)).map((row) => row.verdict));
-      },
+      }),
     },
     inbox: {
-      push: async (params) => {
+      push: serialize(async (params: PushInboxParams) => {
         await beginWrite();
         const pointer: InboxPointer = {
           ts: new Date().toISOString(),
@@ -1231,8 +1236,8 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         const contents = `${pointerCells(pointer).map(cleanCell).join("\t")}\n`;
         await atomicWrite(join(inbox, filename), contents);
         return { pointer, filename };
-      },
-      drain: async () => {
+      }),
+      drain: serialize(async () => {
         await beginWrite();
         const inbox = join(store, "inbox");
         const rows = await readPointers(inbox);
@@ -1246,18 +1251,16 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         }
         await rm(drained, { recursive: true, force: true });
         return rows;
-      },
-      peek: async () => {
-        ensureOpen();
+      }),
+      peek: serialize(async () => {
         return readPointers(join(store, "inbox"));
-      },
-      count: async () => {
-        ensureOpen();
+      }),
+      count: serialize(async () => {
         return (await readPointers(join(store, "inbox"))).length;
-      },
+      }),
     },
     gates: {
-      park: async (params) => {
+      park: serialize(async (params: ParkGateParams) => {
         await beginWrite();
         const gate: OpenGate = {
           kind: "open",
@@ -1275,12 +1278,11 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         }
         await atomicWrite(join(store, "gates.md"), renderGates(rows));
         return gate;
-      },
-      list: async () => {
-        ensureOpen();
+      }),
+      list: serialize(async () => {
         return (await readGates(store)).filter((gate): gate is OpenGate => gate.kind === "open");
-      },
-      resolve: async (params) => {
+      }),
+      resolve: serialize(async (params: ResolveGateParams) => {
         await beginWrite();
         const id = requiredLine(params.id, "gate id");
         const rows = [...(await readGates(store))];
@@ -1300,10 +1302,10 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         rows[index] = gate;
         await atomicWrite(join(store, "gates.md"), renderGates(rows));
         return gate;
-      },
+      }),
     },
     frontier: {
-      set: async (params) => {
+      set: serialize(async (params: SetFrontierParams) => {
         await beginWrite();
         const repo = resolve(requiredLine(params.repo, "repo directory"));
         const forge = parseForge(params.forge ?? "gh");
@@ -1327,18 +1329,16 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
         };
         await atomicWrite(join(store, "frontier.json"), `${JSON.stringify(value, null, 2)}\n`);
         return value;
-      },
-      show: async () => {
-        ensureOpen();
+      }),
+      show: serialize(async () => {
         return readFrontier(store);
-      },
+      }),
     },
     standing: {
-      show: async () => {
-        ensureOpen();
+      show: serialize(async () => {
         return readStanding(store);
-      },
-      add: async (params) => {
+      }),
+      add: serialize(async (params: AddStandingParams) => {
         await beginWrite();
         const rows = [...(await readStanding(store))];
         const item: StandingLine = {
@@ -1351,10 +1351,10 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
           `${rows.map((row) => `${row.number}. ${row.line}`).join("\n")}\n`,
         );
         return item;
-      },
+      }),
     },
     status: {
-      render: async () => {
+      render: serialize(async () => {
         await beginWrite();
         const unitRows = await readUnits(store);
         const ledgerRows = await readLedger(store);
@@ -1376,10 +1376,9 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
           summary: currentSummary,
           changed: change,
         };
-      },
+      }),
     },
-    init: async () => {
-      ensureOpen();
+    init: serialize(async () => {
       await mkdir(store, { recursive: true });
       await ensureLock();
       await writeIfMissing(join(store, "units.tsv"), `${UNIT_HEADER}\n`);
@@ -1389,7 +1388,7 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
       await writeIfMissing(join(store, "preferences.md"), "");
       await writeIfMissing(join(store, "frontier.json"), "{}\n");
       return { store };
-    },
+    }),
     close: async () => {
       if (state === "closed") {
         return;
@@ -1399,13 +1398,7 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
       }
       state = "closing";
       closeRequest = (async () => {
-        if (lockRequest !== null) {
-          try {
-            await lockRequest;
-          } catch {
-            // A failed acquisition has no lock to release.
-          }
-        }
+        await pendingOperations;
         if (releaseLock !== null) {
           await releaseLock().catch(rethrowLockError);
           releaseLock = null;
