@@ -14,3 +14,4 @@ Explain work clearly, write technical documents, and edit prose.
 | [pstack-teach](pstack-teach/SKILL.md)                         | Explain how code works and why it has its shape. |
 | [pstack-technical-writing](pstack-technical-writing/SKILL.md) | Write technical documents for a clear purpose.   |
 | [pstack-unslop](pstack-unslop/SKILL.md)                       | Remove formulaic AI writing.                     |
+| [reply-shape](reply-shape/SKILL.md)                           | Shape replies for skimming and action.           |

@@ -31,6 +31,18 @@ test("loads the skill's rules within both hosts' hook limits", () => {
   assert.ok(context.length <= 8_000, `${context.length} characters`);
 });
 
+test("loads reply-shape's rules under its own name and within the same limit", () => {
+  const output = run(join(import.meta.dirname, "..", "..", "reply-shape", "SKILL.md"));
+  const context: string = output.hookSpecificOutput.additionalContext;
+
+  assert.equal(output.systemMessage, undefined);
+  assert.match(context, /^These are the user's reply rules from the reply-shape skill\./);
+  assert.match(context, /## Decision card/);
+  assert.doesNotMatch(context, /^name: reply-shape/m);
+  assert.doesNotMatch(context, /## Setup/);
+  assert.ok(context.length <= 8_000, `${context.length} characters`);
+});
+
 test("warns instead of failing the session when the rules are missing", () => {
   const output = run(join(import.meta.dirname, "missing.md"));
 

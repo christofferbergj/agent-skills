@@ -1,12 +1,13 @@
 /**
- * SessionStart hook for Claude Code and Codex: load the next-options rules into each top-level
+ * SessionStart hook for Claude Code and Codex: load a reply skill's rules into each top-level
  * session, including resumes and compactions, so the rules survive both. Native subagents don't run
  * SessionStart, so they don't carry the rules; delegated tasks follow their brief's report shape.
+ * Each hook entry loads one skill, so each stays within its own hook limit.
  *
- * usage: node session-start.ts [rules.md]   (default: the SKILL.md beside this script's directory)
+ * usage: node session-start.ts [SKILL.md]   (default: next-options, the skill beside this script)
  */
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 
 // Claude Code previews context past 10,000 characters and Codex past about 2,500 tokens;
 // 8,000 characters of Markdown stays under both.
@@ -14,6 +15,14 @@ const LIMIT = 8_000;
 const SETUP = /^## Setup\s*$/m;
 
 const path = process.argv[2] ?? join(import.meta.dirname, "..", "SKILL.md");
+// A missing file has no frontmatter, so its directory names the skill in the warning.
+const fallbackName = basename(dirname(path));
+
+/** The skill's frontmatter name, which the hook names in its context and warnings. */
+function skillName(text: string): string {
+  const frontmatter = /^---\n([\s\S]*?)\n---\n/.exec(text)?.[1] ?? "";
+  return /^name:\s*(\S+)/m.exec(frontmatter)?.[1] ?? fallbackName;
+}
 
 /** The rules: the skill body without its frontmatter and the setup pointer that follows them. */
 function rules(text: string): string {
@@ -40,13 +49,14 @@ function output(): HookOutput {
   try {
     text = readFileSync(path, "utf8");
   } catch (error) {
-    const warning = `⚠️ next-options couldn't load its rules from ${path} (${(error as NodeJS.ErrnoException).code}), so replies use the default format.`;
+    const warning = `⚠️ ${fallbackName} couldn't load its rules from ${path} (${(error as NodeJS.ErrnoException).code}), so replies use the default format.`;
     return hookOutput(warning, warning);
   }
-  const context = `These are the user's reply rules from the next-options skill. Follow them on every reply to the user.\n\n${rules(text)}`;
+  const name = skillName(text);
+  const context = `These are the user's reply rules from the ${name} skill. Follow them on every reply to the user.\n\n${rules(text)}`;
   const oversized =
     context.length > LIMIT
-      ? `⚠️ next-options rules are ${context.length.toLocaleString("en")} characters, over the ${LIMIT.toLocaleString("en")}-character hook limit, so they load as a preview.`
+      ? `⚠️ ${name} rules are ${context.length.toLocaleString("en")} characters, over the ${LIMIT.toLocaleString("en")}-character hook limit, so they load as a preview.`
       : undefined;
   return hookOutput(context, oversized);
 }

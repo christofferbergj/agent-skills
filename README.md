@@ -27,6 +27,8 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 | Let the agent choose and drive a workflow | `pstack-mode`                              |
 | Review a change                           | `review-loop`, `code-review`, or `thermos` |
 | End replies with lettered next steps      | `next-options`                             |
+| `reply-shape`                             | `next-options`                             |     |
+| Shape replies for skimming and action     | `reply-shape`                              |
 | Maintain this library                     | `maintain-skills`                          |
 
 ## Browse by task
@@ -130,6 +132,7 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 - [pstack-teach](skills/communication/pstack-teach/SKILL.md)
 - [pstack-technical-writing](skills/communication/pstack-technical-writing/SKILL.md)
 - [pstack-unslop](skills/communication/pstack-unslop/SKILL.md)
+- [reply-shape](skills/communication/reply-shape/SKILL.md)
 
 ### Principles
 

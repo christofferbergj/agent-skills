@@ -29,10 +29,10 @@ Adopted principles:
 
 Departures:
 
-- Only the next-step and Done endings are taken. Reply-shape's Status, Changed, Needs you, Details, decision cards, and picture rules stay out until the user asks for them.
+- Only the next-step and Done endings are taken here. Reply-shape's Status, Changed, Needs you, Details, decision card, and writing rules live in /reply-shape, whose own record tracks them.
 - Oliver's router stops become a list of points only the user can pass, beside /pstack-principle-never-block-on-the-human, which owns working on without asking.
 - A handoff table names the usual next stage in this library's flows.
-- The hook is TypeScript run by Node, reads the installed skill's own `SKILL.md` up to its setup pointer, and warns at 8,000 characters to stay under both hosts' context caps.
+- The hook is TypeScript run by Node, reads an installed reply skill's `SKILL.md` up to its setup pointer, this one by default and /reply-shape in a second entry, names the skill from its frontmatter, and warns at 8,000 characters to stay under both hosts' per-hook context caps.
 - The hook does not read T3 Code's internal state database to skip delegated child tasks. The rules and /pstack-swarm's briefs tell a delegated task to report without options, which avoids depending on an unversioned schema.
 
 `agents/openai.yaml`, `references/setup.md`, the `scripts/` directory, and this record are locally maintained.

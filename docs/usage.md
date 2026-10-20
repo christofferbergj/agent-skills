@@ -16,7 +16,7 @@ Existing project conventions take precedence. Use `/setup-matt-pocock-skills` to
 
 Capability-dependent workflows declare their prerequisites. Bun-backed Pstack tools prepare a runtime cache outside installed source; the `review-loop` and `next-options` scripts run on Node 22.18 or newer. Cross-vendor review runs the other vendor's model, Codex from Claude and Claude Opus from Codex, with an explicit model and effort: as a T3 child task in T3 Code, and through the other authenticated CLI elsewhere. It labels fallback coverage. `/pstack-setup` can override the counterpart's model and effort. The webhook UI needs an existing receiver and defaults to localhost; it does not provide an agent execution service.
 
-`/next-options` ends replies with up to three lettered next steps for the current conversation. To load it in every Claude Code and Codex session, ask it to install its SessionStart hook; that changes host settings only on request.
+`/next-options` ends replies with up to three lettered next steps for the current conversation. To load it in every Claude Code and Codex session, ask it to install its SessionStart hook; that changes host settings only on request. `/reply-shape` lays out the rest of each reply, status line first with folded details, and loads through the same hook.
 
 ## Install and update
 
