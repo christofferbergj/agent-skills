@@ -28,6 +28,8 @@ pnpm check
 
 `scripts/check.sh` lists what it runs and the tools it needs.
 
+`pnpm install` also installs a Husky pre-commit hook that formats staged files with Oxfmt through lint-staged.
+
 ## Upstream maintenance
 
 Use this repository's `/maintain-skills` with `/writing-for-agents` and `/pstack-swarm`. Follow the [adaptation contract](skills/agents/maintain-skills/references/ADAPTATION.md), [maintenance guide](skills/agents/maintain-skills/MAINTENANCE.md), and [provenance convention](skills/agents/maintain-skills/references/PROVENANCE.md). For integration changes, read [how the source families compose](docs/architecture.md). The scheduled prompt owns scheduled budgets and permissions; the scheduled tasks own cadence and model.
