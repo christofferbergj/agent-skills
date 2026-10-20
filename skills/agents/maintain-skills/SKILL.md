@@ -19,7 +19,7 @@ Use /pstack-swarm throughout. Give each worker one slice, such as a source group
 
 ## 1. Resume
 
-Read repository guidance. Open the library worktree the maintenance guide describes and run the helper there. Load the newest checkpoint and the waiting questions from runtime state. Read new owner comments on the open maintenance PRs and on the PRs the waiting questions link to. Run `inventory --resume` with the checkpoint, and reconcile it with the actual `SKILL.md` files, including untracked ones.
+Read the repository's `AGENTS.md`, the adaptation contract, and the maintenance guide. [The validation record](VALIDATION.md) and dated reviews are history; consult them only for earlier evidence. Open the library worktree the maintenance guide describes and run the helper there. Load the newest checkpoint and the waiting questions from runtime state. Read new owner comments on the open maintenance PRs and on the PRs the waiting questions link to. Run `inventory --resume` with the checkpoint, and reconcile it with the actual `SKILL.md` files, including untracked ones.
 
 **Complete when:** you hold the checkpoint, the waiting questions, every new owner comment, and the inventory with its `changedSince` list.
 
@@ -59,7 +59,7 @@ Advance a skill's reviewed-through position only when its whole upstream delta i
 
 ## 5. Deliver
 
-Commit library changes and changes to this skill's own process on their separate maintenance branches, push, and create or update one draft PR for each, within the action grant. Report what changed, decisions the owner must make, failures, and coverage still pending.
+Commit library changes and changes to this skill's own process on their separate maintenance branches, push, and create or update one draft PR for each, within the action grant: the scheduled prompt's grant for a scheduled run, and the user's request for an invoked one. Report what changed, decisions the owner must make, failures, and coverage still pending.
 
 At the time limit's wrap-up point, start no new worklist items: validate, checkpoint, and deliver what is finished, carrying the rest forward.
 

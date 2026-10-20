@@ -2,29 +2,31 @@
 
 Keep skills self-contained and organize them by purpose. Repository rules live in [AGENTS.md](AGENTS.md); category definitions live in [skills/README.md](skills/README.md).
 
-## Add or move a skill
+## Add, move, or remove a skill
 
 Use `skills/<category>/<skill-name>/`. Preserve existing invocation names when moving a skill. Keep its instructions, metadata, references, scripts, assets, licenses, and provenance together.
 
-List every skill in the root and category READMEs. For a category move, update local `directory` entries in the [suite catalog](skills/agents/maintain-skills/catalog.json) and [Pstack index](skills/agents/pstack-mode/suite.json). Upstream paths, imported revisions, and reviewed revisions identify the source and stay unchanged.
+A skill's identity is repeated across files that change with it:
+
+| Change                   | Also update                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Add                      | Root `README.md` (category list, plus a "Start here" row for an entrypoint), the category `README.md`, `agents/openai.yaml`, and a companion row naming the skills it invokes. A sourced skill also needs `UPSTREAM.md`, `LICENSE`, its catalog or `suite.json` mapping, and `/pstack-help` routing when it is a user-facing Pstack entrypoint. |
+| Change the description   | `agents/openai.yaml` `short_description` and both README rows.                                                                                                                                                                                                                                                                                  |
+| Move to another category | Both category READMEs, the root README links, and the local `directory` entries in the [suite catalog](skills/agents/maintain-skills/catalog.json) and [Pstack index](skills/agents/pstack-mode/suite.json). Upstream paths and revisions identify the source and stay unchanged.                                                               |
+| Remove                   | Both README listings and companion rows, a catalog `excludedNames` entry with its reason for a sourced skill, and every `/skill` invocation of it.                                                                                                                                                                                              |
+| Make it a shared owner   | The owners table in [the architecture](docs/architecture.md), the owners list in the [adaptation contract](skills/agents/maintain-skills/references/ADAPTATION.md), and `owners` in the catalog. A test keeps the three equal.                                                                                                                  |
+
+Find a skill's consumers with `git grep -n '/<skill-name>\b'`; Pstack's playbooks under `skills/agents/pstack-mode/` call shared owners too.
 
 ## Validate
 
-Install repository tooling with `pnpm install`, then run:
+Install repository tooling with `pnpm install`, then run every gate with:
 
 ```bash
-pnpm fmt:check
-npx skills@latest add . --list
-python3 skills/agents/maintain-skills/scripts/catalog.py --root . validate
-git diff --check
-gitleaks dir . --redact --no-banner
+pnpm check
 ```
 
-Run focused tests when changing executable behavior. The maintenance helper's tests run with:
-
-```bash
-python3 -m unittest discover -s skills/agents/maintain-skills/scripts/tests -v
-```
+It runs formatting, skill discovery, catalog and provenance validation, every `scripts/tests/` suite, the TypeScript tests, Pstack's Bun tests and typecheck, `git diff --check`, and gitleaks. It needs Python 3, Node 22.18 or newer, Bun, and gitleaks.
 
 ## Upstream maintenance
 
