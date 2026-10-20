@@ -12,6 +12,7 @@
 - Fidelity checked through: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
 - Last upstream review: 2026-10-20.
 - Attribution-only source: https://gist.github.com/olivercederborg/92236670065aaa661db221f22203ded5 is Oliver's handover gist. Its `reply-shape-SKILL.md` matches the tracked file at the imported commit, apart from a catch-up rule that /pstack-ketchup's own rules cover.
+- Attribution-only source: https://github.com/humanlayer/skills holds Dex Horthy's `show-me`, whose smallest-view principle, pseudocode and trees with diffs of them, becomes the Views rule. /pr already carries that catalog through Matt Pocock's adaptation, so neither copy is tracked here.
 - Attribution-only source: https://github.com/ayghri/i-have-adhd is the ancestor of Oliver's `reply-shape`, imported there at `839872f9d1cd634fed642b4589ce7226199cc15f`. Its rules to lead with state, state errors matter-of-factly, cap lists, and drop preambles, recaps, and closers reach this skill through Oliver's version, which is tracked instead.
 - License: [MIT, copyright 2026 Oliver Cederborg, with Ayoub Ghriss's MIT notice for the ancestor](LICENSE). Retain both notices with derived material.
 
@@ -30,6 +31,7 @@ Departures:
 
 - The ending belongs to /next-options, so this skill keeps only the closing rule above it and defines no next-step or Done format of its own.
 - The views and pictures references and the Mermaid checker are left out to keep the rules small enough to load at every session start; the picture rule and the decision card's view keep one line each.
+- Oliver's code rule, a small diff after the prose, becomes a Views rule taken from `show-me`: pseudocode and trees, with a diff of that view for a change, and real code only when most of it is new or copyable.
 - The Skills line is left out, since it adds a line to every reply without helping the user act on it.
 - The rules load through /next-options' SessionStart hook in a second entry with its own hook budget, rather than a second script.
 
