@@ -20,13 +20,13 @@ Find a skill's consumers with `git grep -n '/<skill-name>\b'`; Pstack's playbook
 
 ## Validate
 
-Install repository tooling with `pnpm install`, then run every gate with:
+Install the tools pinned in `mise.toml` with `mise install`, then run `pnpm install` and every gate with:
 
 ```bash
 pnpm check
 ```
 
-`scripts/check.sh` lists what it runs and the tools it needs.
+`scripts/check.sh` lists what it runs.
 
 `pnpm install` also installs a Husky pre-commit hook that formats staged files with Oxfmt through lint-staged.
 

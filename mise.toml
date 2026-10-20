@@ -1,0 +1,7 @@
+# Python stays at 3.9: macOS's system python3 and the oldest the scripts support.
+[tools]
+bun = "1"
+gitleaks = "8"
+node = "24"
+pnpm = "12"
+python = "3.9"
