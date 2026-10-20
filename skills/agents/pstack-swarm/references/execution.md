@@ -26,11 +26,11 @@ Prefer the counterpart, the other vendor's model, for independent judgment, revi
 
 A caller that runs its own counterpart pass, such as /review-loop, can ask for same-model critics for the rest of its review.
 
-Take the counterpart's model and effort from the active host section's `review` entry, such as `{"claude-code": {"review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol", "effort": {"full": "xhigh", "delta": "xhigh"}}}}`, and fill anything it leaves out from this table. A full review covers a whole artifact; a delta review covers the changes since a reviewed head. Pass both on every route, because a model's default effort can be `low`. GPT models never run above `xhigh`: treat a configured `max` or `ultra` as `xhigh`.
+Take the counterpart's model and effort from the active host section's `review` entry, such as `{"claude-code": {"review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol", "effort": {"full": "xhigh", "delta": "high"}}}}`, and fill anything it leaves out from this table. A full review covers a whole artifact; a delta review covers the changes since a reviewed head. Pass both on every route, because a model's default effort can be `low`. GPT models never run above `xhigh`: treat a configured `max` or `ultra` as `xhigh`.
 
 | Running in  | Counterpart | Model                             | Full review | Delta review |
 | ----------- | ----------- | --------------------------------- | ----------- | ------------ |
-| Claude Code | Codex       | `model` in `~/.codex/config.toml` | `xhigh`     | `xhigh`      |
+| Claude Code | Codex       | `model` in `~/.codex/config.toml` | `xhigh`     | `high`       |
 | Codex       | Claude      | the newest Opus model available   | `xhigh`     | `high`       |
 
 The table sets the counterpart only; same-model critics inherit the session's model and effort unless the user configured them.
