@@ -78,10 +78,10 @@ async function isT3DelegatedTask(sessionId: unknown): Promise<boolean> {
       const threads = db
         .prepare(
           `select distinct thread_id from orchestration_v2_projection_provider_threads
-           where json_extract(payload_json, '$.nativeThreadRef.nativeId') = ?1
-              or json_extract(payload_json, '$.nativeConversationHeadRef.nativeId') = ?1`,
+           where json_extract(payload_json, '$.nativeThreadRef.nativeId') = ?
+              or json_extract(payload_json, '$.nativeConversationHeadRef.nativeId') = ?`,
         )
-        .all(sessionId);
+        .all(sessionId, sessionId);
       return (
         threads.length === 1 && String(threads[0].thread_id).startsWith("thread:delegated-task:")
       );
