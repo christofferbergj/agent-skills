@@ -55,10 +55,10 @@ class ReviewRestrictions(unittest.TestCase):
         self.assertEqual(command[command.index('--effort')+1],'xhigh')
         responses=[subprocess.CompletedProcess([],0,'--sandbox\n--ephemeral\n--output-last-message\n--strict-config\n-m, --model <MODEL>',''),subprocess.CompletedProcess([],0,'logged in',''),subprocess.CompletedProcess([],0,'apps stable true\nplugins stable true\nhooks stable true\nbrowser_use stable true\ncomputer_use stable true','')]
         with patch.object(review.shutil,'which',return_value='/fixture/codex'),patch.object(review,'run',side_effect=responses):
-            _,command,reason=review.prepare('claude-code',Path('.'),'gpt-6.1-sol','max')
+            _,command,reason=review.prepare('claude-code',Path('.'),'gpt-6.1-sol','xhigh')
         self.assertIsNone(reason)
         self.assertEqual(command[command.index('--model')+1],'gpt-6.1-sol')
-        self.assertIn('model_reasoning_effort="max"',command)
+        self.assertIn('model_reasoning_effort="xhigh"',command)
 
     def test_unsupported_model_override_is_unavailable_rather_than_dropped(self):
         help_text='\n'.join(['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format'])

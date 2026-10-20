@@ -30,7 +30,7 @@ Adopted principles:
 Departures:
 
 - The same-model pass is /code-review's Standards and Spec axes, not a second generic reviewer with a byte-identical prompt, so the library's review rubric, smell baseline, and selected principles keep one owner.
-- Effort scales with scope: full reviews run at `max` for Codex and `xhigh` for Claude, delta reviews at `xhigh` and `high`. The source uses `high` for every round.
+- Effort is explicit per vendor: Codex runs at `xhigh` for every round and never above it, and Claude at `xhigh` for full reviews and `high` for delta reviews. The source uses `high` for every round.
 - The loop is the final review of /implement, /implement-spec, and Pstack's implementation playbooks, through a library-wide adaptation, instead of a separate step after a verify-work skill.
 - A script builds the packet with pinned revisions, a working-tree snapshot commit, and excluded lockfiles, binaries, and generated or vendored files. Packets live in a temporary directory: plan-mode T3 children of both vendors read it there, and a route that cannot, such as the restricted Claude CLI, gets the packet pasted into its brief.
 - Outside T3 Code, /pstack-swarm's other routes keep the loop working: the bounded CLI wrapper, then a labeled same-model critic.

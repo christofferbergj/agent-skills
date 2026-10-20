@@ -78,7 +78,7 @@ def main():
     parser.add_argument('--output', type=Path)
     parser.add_argument('--timeout', type=int, default=300)
     parser.add_argument('--model', help="The counterpart's model; omit to keep the CLI's configured model")
-    parser.add_argument('--effort', help="The counterpart's reasoning effort, such as max or xhigh")
+    parser.add_argument('--effort', help="The counterpart's reasoning effort, such as xhigh or high")
     parser.add_argument('--preflight', action='store_true')
     args = parser.parse_args()
     result = {'vendor': None, 'status': 'unavailable', 'review': None, 'models': []}

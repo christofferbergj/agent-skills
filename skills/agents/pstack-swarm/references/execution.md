@@ -26,11 +26,11 @@ Prefer the counterpart, the other vendor's model, for independent judgment, revi
 
 A caller that runs its own counterpart pass, such as /review-loop, can ask for same-model critics for the rest of its review.
 
-Take the counterpart's model and effort from the active host section's `review` entry, such as `{"claude-code": {"review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol", "effort": {"full": "max", "delta": "xhigh"}}}}`, and fill anything it leaves out from this table. A full review covers a whole artifact; a delta review covers the changes since a reviewed head. Pass both on every route, because a model's default effort can be `low`.
+Take the counterpart's model and effort from the active host section's `review` entry, such as `{"claude-code": {"review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol", "effort": {"full": "xhigh", "delta": "xhigh"}}}}`, and fill anything it leaves out from this table. A full review covers a whole artifact; a delta review covers the changes since a reviewed head. Pass both on every route, because a model's default effort can be `low`. GPT models never run above `xhigh`: treat a configured `max` or `ultra` as `xhigh`.
 
 | Running in  | Counterpart | Model                             | Full review | Delta review |
 | ----------- | ----------- | --------------------------------- | ----------- | ------------ |
-| Claude Code | Codex       | `model` in `~/.codex/config.toml` | `max`       | `xhigh`      |
+| Claude Code | Codex       | `model` in `~/.codex/config.toml` | `xhigh`     | `xhigh`      |
 | Codex       | Claude      | the newest Opus model available   | `xhigh`     | `high`       |
 
 For the CLI route, check executable availability, authentication, supported options, and process/network access. Use `python3 scripts/review.py --parent <codex|claude-code> --repo <repo> --prompt-file <brief> --output <result.json> --model <model> --effort <effort>` from this skill directory. `--preflight` checks readiness without launching a model. The wrapper reads the prompt from a file, restricts reviewer tools, uses the provider's existing credentials, and enforces a timeout. Claude uses safe mode, read tools, and an empty strict MCP configuration. Codex keeps the CLI's other settings while replacing MCP configuration, disabling apps, plugins, hooks, web and computer tools, and using its read-only sandbox with no approvals. CLI flags and Codex feature controls are checked before launch; unsupported restrictions or model and effort options produce an explicit unavailable result. Process-group timeout handling requires a POSIX host. Only macOS was exercised for this adaptation.

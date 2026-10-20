@@ -20,6 +20,6 @@ A SessionStart hook in each host runs [`session-start.ts`](../scripts/session-st
 
    Quote paths that contain spaces. Remove a duplicate copy of the rules from global instructions with the user's agreement. **Complete when:** each file parses and holds exactly one entry for the script.
 
-4. Verify each host. Codex runs a new or changed hook only after the user reviews and trusts it in `/hooks`; report that step as pending until they do, and never bypass it. In a fresh session, answer a read-only question and check that the reply ends with `**Next**`. **Complete when:** a fresh session on each host shows the rules, or the remaining step is reported.
+4. Verify each host. Codex runs a new or changed hook only after it is trusted. The user trusts it in `/hooks`; when they ask you to, make the same app-server calls `/hooks` makes: `hooks/list` for the entry's `key` and `currentHash`, then `config/batchWrite` upserting `hooks.state.<key>.trusted_hash`. Never bypass trust with `--dangerously-bypass-hook-trust`. In a fresh session, answer a read-only question and check that the reply ends with `**Next**`. **Complete when:** a fresh session on each host shows the rules, or the remaining step is reported.
 
 To turn the rules off, remove the entry. Skills CLI updates replace the installed `SKILL.md`, so new sessions pick up rule changes without editing the hook.
