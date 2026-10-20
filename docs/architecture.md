@@ -24,19 +24,20 @@ Both flows end implementation with `/review-loop`. The **counterpart**, the othe
 
 `pstack-mode` is an explicit alternative coordinator for choosing and executing a task playbook. It uses the same selector and shared owners. It can implement an existing accepted spec and ticket graph, so switching coordinators does not start another planning process. Installation or an individual helper invocation does not activate the mode.
 
-| Responsibility                                            | Shared owner             |
-| --------------------------------------------------------- | ------------------------ |
-| Agent instructions and skill mechanics                    | `/writing-for-agents`    |
-| Project vocabulary, domain artifacts, and qualifying ADRs | `/domain-modeling`       |
-| Architecture vocabulary and interface depth               | `/codebase-design`       |
-| Red/green testing mechanics                               | `/tdd`                   |
-| Standards and spec review                                 | `/code-review`           |
-| Cross-model review rounds and their fixes                 | `/review-loop`           |
-| Correctness and security audit                            | `/thermo-nuclear-review` |
-| PR descriptions                                           | `/pr`                    |
-| Host delegation, writer isolation, and review fallback    | `/pstack-swarm`          |
-| Principle selection and composition                       | `/pstack-principles`     |
-| Whole-library upkeep and upstream review                  | `/maintain-skills`       |
+| Responsibility                                            | Shared owner                    |
+| --------------------------------------------------------- | ------------------------------- |
+| Agent instructions and skill mechanics                    | `/writing-for-agents`           |
+| Project vocabulary, domain artifacts, and qualifying ADRs | `/domain-modeling`              |
+| Architecture vocabulary and interface depth               | `/codebase-design`              |
+| Red/green testing mechanics                               | `/tdd`                          |
+| Standards and spec review                                 | `/code-review`                  |
+| Cross-model review rounds and their fixes                 | `/review-loop`                  |
+| Correctness and security audit                            | `/thermo-nuclear-review`        |
+| PR descriptions                                           | `/pr`                           |
+| Reply layout and lettered endings                         | `/reply-shape`, `/next-options` |
+| Host delegation, writer isolation, and review fallback    | `/pstack-swarm`                 |
+| Principle selection and composition                       | `/pstack-principles`            |
+| Whole-library upkeep and upstream review                  | `/maintain-skills`              |
 
 Principles operate within the calling phase and accepted scope. An interview retains its confirmation boundary; planning does not become implementation. Migration strategy belongs to `/pstack-principle-migrate-callers-then-delete-legacy-apis`, and test-quality criteria belong to `/pstack-principle-test-behavior-not-implementation`; workflow owners defer to them rather than prescribing competing rules. Runtime proof uses the actual user or caller path through available tools, including browser or Computer Use controls when available. Missing proof remains an explicit gap.
 
