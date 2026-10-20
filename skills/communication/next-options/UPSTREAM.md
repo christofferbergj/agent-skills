@@ -25,7 +25,7 @@ Adopted principles:
 - `a` names every push, post, or issue it creates and changes no PR or issue state the user didn't ask for.
 - The agent does what a CLI, Executor, an MCP server, or computer control can do; waiting work offers independent work or a watch; filler and options passed over twice drop out.
 - Items keep fixed numbers, and short answers such as `3`, `skip 3`, and `?` work without option lines.
-- A SessionStart hook loads the rules into every top-level session in both hosts, including resumes and compactions. Both hosts' hook documentation gives native subagents their own SubagentStart event, so they skip the rules; the hook has not been installed or exercised in a live session yet.
+- A SessionStart hook loads the rules into every top-level session in both hosts, including resumes and compactions. Both hosts' hook documentation gives native subagents their own SubagentStart event, so they skip the rules; on 2026-10-20 a fresh T3 Code Claude session received the installed hook's rules and recognized the delegated-task exemption, while Codex skips the hook until the user trusts it in `/hooks`.
 
 Departures:
 
