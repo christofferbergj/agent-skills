@@ -4,7 +4,7 @@
 
 ## Choose a workflow
 
-For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Skip stages that are already settled; `implement` handles a smaller agreed piece of work. Relevant Pstack principles apply automatically throughout the Matt flow, including implementation and review. Implementation ends with `review-loop`: the other vendor's model reviews the change alongside `code-review`, and the agent fixes what holds and re-reviews until clean. Invoke `review-loop` directly for a second opinion on any branch, PR, or plan.
+For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Skip stages that are already settled; `implement` handles a smaller agreed piece of work. Relevant Pstack principles apply automatically throughout the Matt flow, including implementation and review. Implementation ends with `review-loop`: the other vendor's model reviews the change alongside the main model's own reviewers, and the agent fixes what holds and re-reviews until clean. Invoke `review-loop` directly for a second opinion on any branch, PR, or plan.
 
 Use `pstack-mode` when you want the agent to choose and drive a playbook for an investigation, bug fix, feature, refactor, or performance task. Give it a goal, observable completion criteria, required proof, and constraints. You can hand it an accepted spec and ticket graph from the Matt flow; it reuses them. Invoke it explicitly for the current conversation. Installation and individual helper invocations do not activate the mode.
 

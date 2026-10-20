@@ -7,7 +7,7 @@ description: "Use for a cross-model second opinion on a diff, branch, PR, or pla
 
 Review a change with both models, verify what they report, fix it, and re-review until nothing actionable remains. The **counterpart** is the other vendor's model: Codex when Claude runs this skill, Claude Opus when Codex does. It catches the blind spots of the model that wrote the change. This skill coordinates: it verifies, merges, reports, and fixes, and adds no findings of its own.
 
-/code-review owns the Standards and Spec rubric, /pstack-swarm owns dispatch and the counterpart route, and /pstack-principles selects the principles reviewers apply. Read [the reviewer brief](references/reviewer-brief.md) before dispatching a round.
+/code-review owns the Standards and Spec rubric, /thermo-nuclear-review the correctness and security audit, /pstack-swarm dispatch and the counterpart route, and /pstack-principles selects the principles reviewers apply. Read [the reviewer brief](references/reviewer-brief.md) before dispatching a round.
 
 ## Authority
 
@@ -23,13 +23,16 @@ For a code target, build the packet from this skill's directory with `node scrip
 
 ## 2. Review
 
-Round 1 is a full review by both models. A plan target gets only the counterpart's review, since /code-review assesses code.
+Round 1 is a full review by both models. A plan target gets only the counterpart's review, since the same-model passes assess code.
 
 1. Dispatch the counterpart first, asynchronously and at full-review effort, through /pstack-swarm's counterpart route, with the brief filled in.
-2. Meanwhile, invoke /code-review on the packet's revisions, passing the resolved intent and standards, with its axes run by same-model critics. Skip it when equivalent /code-review evidence already covers this head and scope.
+2. Meanwhile, run both same-model passes in parallel on the packet's revisions, passing the resolved intent and standards. Skip a pass when equivalent evidence already covers this head and scope.
+   - Invoke /code-review, with its Standards and Spec axes run by same-model critics.
+   - Dispatch a same-model correctness and security critic through /pstack-swarm with /thermo-nuclear-review's rubric.
+
 3. Collect the counterpart's report. Every reviewer belongs to the round, so wait for each one before reporting.
 
-When the counterpart fails after the route's retry and fallbacks, continue with the same-model pass and label the round **single model**, with the reason.
+When the counterpart fails after the route's retry and fallbacks, continue with the same-model passes and label the round **single model**, with the reason.
 
 **Complete when:** every reviewer returned a terminal report or a recorded failure for the same revisions.
 
@@ -37,7 +40,7 @@ When the counterpart fails after the route's retry and fallbacks, continue with 
 
 Reviewers make false claims. Check each finding against the code at the head, or for a plan, against the plan and the code it cites: trace the path from a real input to the failure, confirm the cited rule or requirement, and check that the proposed fix fits the repository's conventions and the selected principles, since a true finding can carry a wrong fix. Drop a finding that does not hold, with a one-line reason. Agreement between reviewers raises attention, not certainty.
 
-Group verified findings by root cause and number them; numbers continue across rounds. Record who raised each (counterpart, Standards, Spec, or several), its severity from the brief, and any severity disagreement as it stands. Give each a call:
+Group verified findings by root cause and number them; numbers continue across rounds. Record who raised each (counterpart, Standards, Spec, Correctness, a PR commenter a pass quoted, or several), its severity on the brief's scale, mapping a pass's own priorities onto it, and any severity disagreement as it stands. Give each a call:
 
 - **fix**: in this change.
 - **follow-up**: outside this change's scope; it goes in the PR description's open items.
@@ -58,7 +61,7 @@ End with the next step: fixing and re-reviewing while findings remain, or delive
 ## 5. Fix and re-review
 
 1. Apply each **fix** on the branch that owns it and run the focused checks, or edit the plan. When commits are authorized, commit each fix on its own.
-2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`; this round also refreshes /code-review's affected axes. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
+2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes run in round 1 only; the counterpart's delta review covers their ground on the fixed lines. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
 3. Report only what is new or still open.
 
 Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /pstack-principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.

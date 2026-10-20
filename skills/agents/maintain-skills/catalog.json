@@ -261,6 +261,7 @@
     "behaviorTests": "tdd",
     "standardsAndSpecReview": "code-review",
     "crossModelReview": "review-loop",
+    "correctnessAudit": "thermo-nuclear-review",
     "pullRequestDescription": "pr",
     "delegation": "pstack-swarm",
     "principleSelection": "pstack-principles",

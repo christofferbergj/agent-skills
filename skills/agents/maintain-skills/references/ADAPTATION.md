@@ -11,7 +11,7 @@ Every source:
 - **Hosts:** Codex and Claude Code. Translate host-specific execution, such as Cursor plugin registration, named Cursor agents, and fixed host model mappings, into each host's native tools. /pstack-swarm owns delegation, isolated writers, and cross-vendor review.
 - **Packaging:** install with the Skills CLI from this repository. Each skill's locally owned `agents/openai.yaml` mirrors its invocation mode: user-invoked skills set `disable-model-invocation: true` and `policy.allow_implicit_invocation: false`. Dependencies are `/skill-name` invocations, and the README lists required companions.
 - **Coordination:** one coordinator writes canonical artifacts while delegates return proposals, and each effort keeps one accepted spec and ticket graph. Scale effort and parallelism to the task's scope and budget, and keep each workflow's outcomes and evidence.
-- **Review:** a workflow's final review of its own implementation runs through /review-loop, which keeps /code-review's axes and adds the counterpart model's review and the fix rounds.
+- **Review:** a workflow's final review of its own implementation runs through /review-loop, which keeps /code-review's axes and adds /thermo-nuclear-review's correctness audit, the counterpart model's review, and the fix rounds.
 - **Authority:** honor the invoking repository's conventions and the user's existing authorization. Pull requests default to drafts, and learning-driven edits to source skills are prepared for review.
 - **Licenses:** keep each upstream notice with the material it covers.
 
@@ -38,6 +38,7 @@ One skill owns each shared discipline. Other skills invoke the owner rather than
 - /pr owns PR description shape; Pstack owns its delivery playbook and evidence mechanics.
 - /pstack-swarm owns native host execution, isolation, bounded cross-vendor review, its T3 Code route, and disclosed fallback.
 - /review-loop owns cross-model review rounds, finding verification, and the fix-and-re-review loop.
+- /thermo-nuclear-review owns the correctness and security audit that /thermos and /review-loop run.
 - /pstack-principles selects the principles for each phase in both suites, keeping each principle's rules in that principle.
 - /maintain-skills owns library upkeep and coverage accounting.
 

@@ -29,7 +29,7 @@ Adopted principles:
 
 Departures:
 
-- The same-model pass is /code-review's Standards and Spec axes, not a second generic reviewer with a byte-identical prompt, so the library's review rubric, smell baseline, and selected principles keep one owner.
+- The same-model pass is /code-review's Standards and Spec axes plus a correctness and security critic on /thermo-nuclear-review's rubric, not a second generic reviewer with a byte-identical prompt. Each rubric keeps its one owner, and bugs get both models' review. Thermos's maintainability rubric stays a manual /thermos audit, because its presumptive structural blockers would become unrequested refactors in an automatic fix loop (user decision, 2026-10-20). The first round 1 in this shape, on the change that introduced it, ran Codex at `xhigh` beside the two /code-review axes and the correctness critic: Codex found nothing, the Claude reviewers raised nine verified Cleanup or Optional findings, all fixed without a delta round, and three suggestions were skipped with reasons.
 - Effort is explicit per vendor: Codex runs at `xhigh` for every round and never above it, and Claude at `xhigh` for full reviews and `high` for delta reviews. The source uses `high` for every round.
 - The loop is the final review of /implement, /implement-spec, and Pstack's implementation playbooks, through a library-wide adaptation, instead of a separate step after a verify-work skill.
 - A script builds the packet with pinned revisions, a working-tree snapshot commit, and excluded lockfiles, binaries, and generated or vendored files. Packets live in a temporary directory: plan-mode T3 children of both vendors read it there, and a route that cannot, such as the restricted Claude CLI, gets the packet pasted into its brief.
