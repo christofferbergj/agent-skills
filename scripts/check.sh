@@ -2,7 +2,7 @@
 #
 # Runs every repository gate: formatting, skill discovery, catalog and
 # provenance validation, every Python, Node, and Bun test suite, whitespace,
-# and secrets. Needs Python 3, Node 22.18 or newer, Bun, and gitleaks.
+# and secrets. Needs Python 3.9 or newer, Node 22.18 or newer, Bun, and gitleaks.
 # Test suites are discovered from tracked files, so a new suite runs without
 # editing this script.
 

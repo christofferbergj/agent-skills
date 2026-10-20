@@ -10,28 +10,33 @@ permissions:
 
 concurrency:
   group: check-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Python 3.9 builds exist for Ubuntu 24.04 but not 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
+      # pnpm's version comes from packageManager in package.json.
       - uses: pnpm/setup@v3
         with:
-          version: 11
-          runtime: node@24
+          runtime: node@22.18
           cache: true
           install: false
 
-      # The oldest Python the scripts support: macOS's system python3.
+      # The minimum versions the scripts support; Python 3.9 is macOS's system python3.
       - uses: actions/setup-python@v7
         with:
           python-version: "3.9"
 
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.3
 
       - name: Install gitleaks
         env:
@@ -41,8 +46,9 @@ jobs:
           archive="$RUNNER_TEMP/gitleaks.tar.gz"
           curl -sSfL -o "$archive" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           echo "$GITLEAKS_SHA256  $archive" | sha256sum --check --strict
-          tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
+          mkdir -p "$RUNNER_TEMP/bin"
+          tar -xzf "$archive" -C "$RUNNER_TEMP/bin" gitleaks
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - run: pnpm install --frozen-lockfile
 
