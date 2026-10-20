@@ -18,7 +18,7 @@ from pathlib import Path
 
 
 def git(*args):
-    return subprocess.run(['git', *args], capture_output=True, text=True, check=True).stdout
+    return subprocess.run(['git', *args], stdout=subprocess.PIPE, text=True, check=True).stdout
 
 
 def main():
@@ -30,7 +30,11 @@ def main():
 
     os.chdir(git('rev-parse', '--show-toplevel').strip())
     # Skills CLI records GitHub sources as owner/name.
-    slug = re.search(r'github\.com[:/](.+?)(?:\.git)?$', git('remote', 'get-url', 'origin').strip())[1]
+    origin = git('remote', 'get-url', 'origin').strip().rstrip('/')
+    match = re.search(r'github\.com[:/](.+?)(?:\.git)?$', origin)
+    if not match:
+        parser.error(f'origin is not a GitHub URL: {origin}')
+    slug = match[1]
     trees = {}
     for path in git('ls-tree', '-r', '--name-only', arguments.ref, 'skills').splitlines():
         if path.endswith('/SKILL.md') and path.count('/') == 3:
