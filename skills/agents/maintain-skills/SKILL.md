@@ -32,17 +32,17 @@ The coordinator fetches each distinct source repository once with enough baselin
 
 ## 3. Repair what is stale
 
-Dispatch focused repairs to isolated writers using /writing-for-agents. Incorporate relevant upstream changes while preserving local intent, host support, attribution, and licenses. Inspect each returned diff and reconcile affected consumers through their shared owners. Keep dependency and installation documentation consistent. Avoid rewriting good skills for uniformity or adding speculative rules.
+Dispatch focused repairs to isolated writers using /writing-for-agents. Incorporate relevant upstream changes while preserving local intent, host support, attribution, and licenses. Check each adapted skill's **fidelity** rule by rule against its candidate text: every upstream rule survives locally, or the skill's local adaptations name the divergence (dropped, softened, or reversed rule, or changed invocation mode) and its reason. Inspect each returned diff and reconcile affected consumers through their shared owners. Keep dependency and installation documentation consistent. Avoid rewriting good skills for uniformity or adding speculative rules.
 
 Resolve routine differences from the evidence. If source access, missing history, or an incompatible upstream change prevents a confident repair, leave the affected behavior and baseline intact, report the conflict, and continue with independent fixes. If Writing for Agents is unavailable, complete the factual checks and report the writing pass as incomplete.
 
-**Complete when:** each issue is repaired, deliberately retained with a reason, or blocked with a concrete explanation.
+**Complete when:** each issue is repaired, deliberately retained with a reason, or blocked with a concrete explanation, and every adapted skill passes its fidelity check.
 
 ## 4. Validate and finish
 
-Read changed instructions end to end. Run the repository's formatting, skill-discovery, link, metadata, diff, and integrity checks. Exercise changed scripts or tool workflows on a small isolated example when the required host is available; otherwise state which behavior remains unverified. Do not execute every skill just to check its prose.
+Read changed instructions end to end. Run the repository's formatting, skill-discovery, link, metadata, diff, and integrity checks. Exercise changed scripts or tool workflows on a small isolated example when the required host is available; otherwise state which behavior remains unverified. Confirm each new regression test fails with its repair reverted before claiming failing-before evidence. Do not execute every skill just to check its prose.
 
-Dispatch an independent final review of the exact resulting artifact, source decisions, checks, and complete coverage ledger. Collect every worker's terminal result, inspect its evidence, and record failures or dropouts as gaps. Re-enumerate local skills before finishing so newly added skills enter coverage. Complete a skill only after its local audit, every source comparison, adopted or excluded decisions, and affected integration checks are resolved; retain all other skills as pending.
+Dispatch an independent final review of the exact resulting artifact, adapted-skill fidelity, source decisions, checks, and complete coverage ledger. Collect every worker's terminal result, inspect its evidence, and record failures or dropouts as gaps. Re-enumerate local skills before finishing so newly added skills enter coverage. Complete a skill only after its local audit, every source comparison, adopted or excluded decisions, and affected integration checks are resolved; retain all other skills as pending.
 
 For sourced skills, preserve import history and record the review date, candidate revision, adopted or excluded changes, and validation results. Advance a reviewed-through baseline only after the relevant upstream delta is fully resolved and required checks pass. Avoid duplicate records for an unchanged review.
 

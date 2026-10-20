@@ -62,7 +62,7 @@ Assign focused repairs to isolated writers and inspect their diffs. A shared-own
 
 Propose straightforward new reusable skills within the existing capability boundary. Apply the catalog's `excludedNames` and `excludedPathComponents` to every proposed upstream import, including user-retired names; a category move does not make an excluded skill eligible. A new service, expanded action authority, or incompatible scope change requires a user decision. Record adopted, adapted, excluded, and held changes with reasons; held behavior and incomplete baselines remain intact.
 
-Complete each adopted unit only when its full source delta and affected integration checks are resolved; keep all other units pending.
+Complete each adopted unit only when its full source delta, fidelity check, and affected integration checks are resolved; keep all other units pending.
 
 ## 4. Validate and checkpoint
 
@@ -80,7 +80,7 @@ Exercise changed scripts and host branches using focused fixtures. Python owners
 
 For domain integration, exercise affected current glossary/ADR and configured legacy context/domain layouts. Verify Matt and Pstack entrypoints consume the same artifacts and truthfully report action, review, and fallback state when those branches change. Optional unavailable service checks remain named integration limits.
 
-Dispatch an independent final reviewer over the exact resulting files, provenance decisions, whole-repository coverage, and required checks. Reconcile every worker result and reread changed instructions. Re-enumerate local skills before checkpointing so additions made during the pass start pending rather than disappearing from coverage.
+Dispatch an independent final reviewer over the exact resulting files, provenance decisions, adapted-skill fidelity, whole-repository coverage, and required checks. Reconcile every worker result and reread changed instructions. Re-enumerate local skills before checkpointing so additions made during the pass start pending rather than disappearing from coverage.
 
 Prepare `candidate-shas.json` with every discovered source-group key and its immutable SHA. Prepare `source-reviews.json` with each reviewed group's candidate, `inventoryReviewed`, `sharedInputsReviewed`, and `skills` array of source-compared local names. Set those acknowledgements only from collected evidence. For example, one entry has this shape:
 
