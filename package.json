@@ -4,9 +4,12 @@
   "scripts": {
     "check": "bash scripts/check.sh",
     "fmt": "oxfmt",
-    "fmt:check": "oxfmt --check"
+    "fmt:check": "oxfmt --check",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.6.0",
     "oxfmt": "^0.73.0"
   }
 }
