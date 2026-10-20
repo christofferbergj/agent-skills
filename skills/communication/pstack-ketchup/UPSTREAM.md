@@ -14,6 +14,8 @@
 ## Local adaptations to preserve
 
 - Namespace: `ketchup` maps to `pstack-ketchup`. Preserve the installed name and invocation metadata.
+- Remain model-invoked during Pstack tasks; upstream is user-invoked. Render visuals with the host's available tools, falling back to links or plain text; upstream names `/visualize`.
+- Keep upstream's per-item budget of about 30 words; the former blanket 150-word cap is gone.
 - Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
 - Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.

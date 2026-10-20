@@ -23,6 +23,8 @@
 - Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
 - This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
+Local maintenance on 2026-10-20: Route environment-fact investigations through /pstack-swarm, investigating directly when it or delegation is unavailable. This local repair leaves the upstream reviewed-through position unchanged.
+
 ## Maintenance
 
 Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its source comparison includes both Pstack and Matt Pocock in one update review. Compare baseline, candidate, and local files; retain intentional adaptations rather than overwriting them. Imported history is immutable. Advance this reviewed-through position only when the relevant delta and shared inputs are resolved and required validation passes.

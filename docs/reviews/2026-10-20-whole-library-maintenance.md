@@ -1,13 +1,15 @@
 # Whole-library maintenance, 2026-10-20
 
-Reviewed the proposed library based on `main` at `0badc1640f35c9aa8881a71d19e9a8ebcda61d87`, continuing draft PR #7. The inventory contains 93 skills: 88 sourced adaptations and five first-party owners. All 518 skill-local files are accounted for. The catalog maps 84 skills and does not limit coverage.
+Reviewed the proposed library based on `main` at `0badc1640f35c9aa8881a71d19e9a8ebcda61d87`, continuing PR #7. The inventory contains 93 skills: 88 sourced adaptations and five first-party owners. All 518 skill-local files are accounted for. The catalog maps 84 skills and does not limit coverage.
 
 ## Changes
 
-- Checkpoint reuse now includes the writing owner, its skill mechanics, architecture, contribution guidance and category definitions. Five omitted-input branches fail before the repair. Matching evidence still resumes, an unrelated edit invalidates only its owner, and a missing required writing owner fails validation.
+- Checkpoint reuse now includes the writing owner, its skill mechanics, architecture, contribution guidance and category definitions. The three repository-guidance branches fail against the previous helper; the writing owner enters checkpoint fingerprints through the catalog's `agentWriting` owner, and a real-library test keeps the catalog, architecture table and maintenance guide naming the same owners. Matching evidence still resumes, an unrelated edit invalidates only its owner, and a missing required writing owner fails validation.
 - Added the explicitly invoked `pstack-maintain-formal-verification-skill`. It reconciles covered-code changes, moves and new state writers; separates code defects from stale verification; and preserves inconclusive, draft and dirty-content boundaries. The generator records a confirmed sync only after semantic proof, restoration and cleanup. Generated-input testing remains distinct from formal proof.
 - Chief-of-staff memory uses indexed, dated, commit-cited task notes. Test cleanup checks observable async completion and existing unused-support tooling. Local tracker type metadata, established domain names in architecture reports and wizard Readline interpolation are consistent with their owners.
 - The branch retains its earlier same-handle Store admission queue and close-draining repair, formal generator, complete catch-up decisions and parser guidance. Twelve Store regressions fail before the queue repair and pass afterward.
+
+- Review follow-up restored upstream rules the first adaptation pass had dropped: chief-of-staff agrees a new wiki location with the user and keeps history-only claims and unedited sources; formal upkeep keeps its four outcomes, unweakened failing properties, step-by-step counterexamples, uncommitted reproductions and stale-pass reporting; ketchup keeps its per-item budget. The remaining divergences (TLA+ as one option rather than the default, model-invoked ketchup and Sharpen) are now listed under each skill's local adaptations.
 
 ## Sources and decisions
 

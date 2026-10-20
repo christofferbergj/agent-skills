@@ -1,5 +1,5 @@
 interface:
-  display_name: "Pstack formal verification skill"
+  display_name: "Pstack create formal verification skill"
   short_description: "Generate a reusable formal property check"
 policy:
   allow_implicit_invocation: false

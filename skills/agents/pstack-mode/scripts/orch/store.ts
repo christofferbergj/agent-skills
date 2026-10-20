@@ -1070,8 +1070,6 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
   let state: "open" | "closing" | "closed" = "open";
   let closeRequest: Promise<void> | null = null;
   let releaseLock: (() => Promise<void>) | null = null;
-  let lockRequest: Promise<void> | null = null;
-
   let pendingOperations: Promise<void> = Promise.resolve();
 
   const serialize =
@@ -1091,21 +1089,8 @@ export function openStore(directory: string, options: OpenStoreOptions = {}): St
     };
 
   const ensureLock = async (): Promise<void> => {
-    if (releaseLock !== null) {
-      return;
-    }
-    if (lockRequest === null) {
-      lockRequest = acquireLock(store, options)
-        .then((release) => {
-          releaseLock = release;
-        })
-        .catch(rethrowLockError);
-    }
-    try {
-      await lockRequest;
-    } catch (error) {
-      lockRequest = null;
-      throw error;
+    if (releaseLock === null) {
+      releaseLock = await acquireLock(store, options).catch(rethrowLockError);
     }
   };
 

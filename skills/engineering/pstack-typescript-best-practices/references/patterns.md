@@ -297,7 +297,7 @@ Reach for `Pick`, `Omit`, `Parameters`, `ReturnType`, `Awaited`, `typeof` before
 ## Object args
 
 ```ts
-// Don't.
+// Don't. Mixes a positional `uri` with named options.
 openFile(uri, {
   startLineNumber: 10,
   startColumn: 1,

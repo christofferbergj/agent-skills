@@ -46,6 +46,7 @@ Complete when every source group's inventory and shared inputs, every sourced sk
 
 Adopt useful upstream changes while preserving the shared owner contract:
 
+- /writing-for-agents owns agent-instruction writing and skill mechanics.
 - /domain-modeling owns configured vocabulary, domain relationships, and qualifying ADR updates, including existing legacy context/domain files.
 - /codebase-design owns architectural vocabulary and seam reasoning.
 - /tdd owns behavior-test discipline; Pstack's bug-fix adapter adds before/after evidence.

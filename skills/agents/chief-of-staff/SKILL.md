@@ -25,15 +25,21 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 ## Wiki memory
 
-Keep durable goal knowledge in the task's existing wiki or notes location. Otherwise choose and state a task-owned location within the authorized workspace, following project conventions. Keep private sources within their existing access boundary and link canonical project documents rather than duplicating their rules.
+Keep durable goal knowledge in a **wiki**: interlinked Markdown pages that outlive this session. Use the goal's existing wiki or notes location. If it has none, agree a location with the user before the first write, following project conventions within the authorized workspace.
 
-Use an `index.md` with a link and one-line summary for every topic page. Each page covers one decision, recurring problem, subsystem, or user preference and links related pages and its sources.
+- `index.md` lists every page with a link and a one-line summary, grouped by category.
+- Each other page covers one decision, recurring problem, subsystem, or user preference, and links related pages.
+- Pages cite their sources (issues, PRs, transcripts, subagent reports) and canonical project documents; the sources themselves stay unedited, uncopied, and within their existing access boundary.
 
-- **Query:** read the index and relevant pages before a decision.
-- **Ingest:** update every affected page and the index when a durable finding or correction arrives; cite sources rather than copying them.
-- **Lint:** at checkpoints, resolve contradictions, orphan pages, broken links, and claims overtaken by newer evidence. Suggest recurring upkeep only within the user's scheduling grant.
+Three operations keep it alive:
 
-Write dated history. Date each claim; for code, also cite the repository and commit where it was true. When evidence changes, add a dated claim and mark the previous one superseded. Complete the memory checkpoint when durable findings have dated sources, code claims have commit citations, and the index reaches every page.
+- **Query:** before a decision, read the index and the pages it points to. File an answer worth keeping as a page.
+- **Ingest:** when a durable finding or correction arrives, update every page it touches and the index.
+- **Lint:** at checkpoints, resolve contradictions, orphan pages, broken links, and claims overtaken by newer evidence. Suggest a recurring lint schedule only within the user's scheduling grant.
+
+The wiki is a historical record; it describes when something was true, never how things are now. Date every claim. For code, cite the repository and commit where it was true, and write "currently", "now", or "is" about code only beside that date or commit. When evidence changes, add a dated claim and mark the previous one superseded.
+
+Complete the memory checkpoint when durable findings have dated sources, code claims have commit citations, and the index reaches every page.
 
 ## Strategic View
 

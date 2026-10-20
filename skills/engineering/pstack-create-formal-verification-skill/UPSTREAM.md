@@ -17,6 +17,7 @@
 - Preserve explicit user invocation and matching Codex metadata. A routing owner can describe this entrypoint without invoking it implicitly.
 - Keep ordered steps with checkable completion criteria and a model-to-code correspondence, failing control, real code mutation, restoration, evidence, and cleanup.
 - Use /writing-for-agents for generated instructions and the invoking repository's skill conventions. No Cursor plugin registration or fixed verification tool is assumed.
+- Tool choice: upstream `6b78e9f` makes TLA+ the default for event-ordering models in any language. Locally, TLA+ is considered alongside tools the repository already uses, so a project's existing verifier wins when it answers the question at lower cost.
 - Preserve the checker-outcome, code-conformance, and draft-handoff branches owned by `SKILL.md`.
 - Product repairs follow existing authorization; verification generation alone does not authorize them.
 - `agents/openai.yaml` is locally owned.

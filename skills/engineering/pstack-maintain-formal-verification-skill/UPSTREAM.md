@@ -16,6 +16,7 @@
 - Namespace: `maintain-formal-verification-skill` maps to `pstack-maintain-formal-verification-skill`. Preserve explicit user invocation and matching Codex metadata.
 - Discover generated drafts and generated-input fallbacks alongside formal checks; testing evidence remains distinct from proof.
 - Resolve every covered-code delta, moved function and new state writer against the current implementation. Property changes need evidence of an intended promise change.
+- Retain upstream's four outcomes, verification-only edit scope, unweakened failing properties, step-by-step counterexamples with harm, uncommitted reproductions, stale-pass reporting, and a separate verification change. Add ready/draft readiness alongside the outcome.
 - Keep checker outcome, source correspondence and skill readiness separate. Require a real-code semantic control, distinguishable counterexamples, restoration of the updated unmutated result, preserved evidence and owned scratch cleanup.
 - Record exact committed sync points separately from modified or untracked content fingerprints. Blocked or inconclusive checks retain prior sync points; a conclusive code finding never claims the property passed.
 - Use /writing-for-agents for instruction changes and the invoking project's conventions. Product repairs require an existing grant.

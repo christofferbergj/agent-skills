@@ -10,7 +10,7 @@ Verify one property where a defect would harm users and tests rarely reach the f
 
 ## 1. Choose the property from the code
 
-Start with the user's named area or bug. Otherwise inspect the repository for a consequential promise involving concurrency, retries, state machines, parsing, unsafe code, or another difficult case. Choose the strongest useful target rather than the easiest demonstration. State the property and the harm from violating it in one plain sentence each.
+Answer from the codebase, and ask the user only what you cannot observe. Start with the user's named area or bug. Otherwise inspect the repository for a consequential promise involving concurrency, retries, state machines, parsing, unsafe code, or another difficult case. Choose the strongest useful target rather than the easiest demonstration. State the property and the harm from violating it in one plain sentence each.
 
 Complete when one target has source locations, a precise property, and an observable failure condition.
 
@@ -44,7 +44,7 @@ Complete when the generated skill and its supporting artifacts contain every ins
 
 ## 5. Prove the generated skill before handoff
 
-Follow the generated skill as a new agent would. Use an isolated scratch copy or worktree to break the property in the guarded code. Confirm that the documented verification detects the semantic violation, using step 3's failing-control rule. If the check misses it, repair the verification or its connection to the code. A drift-only failure is insufficient. If semantic detection cannot be established, restore the scratch copy, preserve any model-only proof, and hand off the generated skill as a draft at step 6.
+Follow the generated skill as a new agent would. Use an isolated scratch copy or worktree to break the property in the guarded code. Confirm that the documented verification detects the semantic violation, using step 3's failing-control rule. If the check misses it, repair the verification or its connection to the code, never the scratch fault. A drift-only failure is insufficient. If semantic detection cannot be established, restore the scratch copy, preserve any model-only proof, and hand off the generated skill as a draft at step 6.
 
 Restore the scratch copy, rerun, and confirm the original result: passing, or failing only on the findings already recorded. Preserve the evidence after cleanup.
 

@@ -442,6 +442,14 @@ class ActualLibraryCoverage(unittest.TestCase):
         for path in ['.agents/skills/test-audit', '.agents/skills/test-audit/CAMPAIGN.md', '.agents/skills/test-audit/references/audit.md', 'docs/help/testing/writing-tests.md', '.agents/skills/openclaw-testing', 'LICENSE']:
             self.assertIn(path, openclaw['paths'])
 
+    def test_every_documented_shared_owner_governs_checkpoint_reuse(self):
+        owners = set(self.registry['owners'].values())
+        architecture = (self.root / 'docs/architecture.md').read_text()
+        documented = set(re.findall(r'^\|[^|\n]+\| `/([a-z0-9-]+)` +\|$', architecture, re.MULTILINE))
+        self.assertEqual(documented, owners)
+        maintenance = (self.root / 'skills/agents/maintain-skills/MAINTENANCE.md').read_text()
+        self.assertEqual(set(re.findall(r'^- /([a-z0-9-]+) ', maintenance, re.MULTILINE)), owners)
+
     def test_mapped_only_coverage_is_incomplete_but_all_repository_skills_can_finish(self):
         groups = self.inventory['sourceGroups']
         candidates = {key: group['records'][0]['baseline'] for key, group in groups.items()}
