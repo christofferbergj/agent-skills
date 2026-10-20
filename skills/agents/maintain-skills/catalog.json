@@ -263,6 +263,8 @@
     "crossModelReview": "review-loop",
     "correctnessAudit": "thermo-nuclear-review",
     "pullRequestDescription": "pr",
+    "replyLayout": "reply-shape",
+    "replyEndings": "next-options",
     "delegation": "pstack-swarm",
     "principleSelection": "pstack-principles",
     "upstreamMaintenance": "maintain-skills"
