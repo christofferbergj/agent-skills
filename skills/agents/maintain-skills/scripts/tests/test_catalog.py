@@ -613,6 +613,30 @@ class RepositoryCoverage(unittest.TestCase):
         with self.assertRaises(ValueError):
             catalog.checkpoint(self.root, self.registry, {GROUP: self.baseline}, ['alpha'], 1, True, None, None, [report])
 
+    def test_integration_validation_carries_only_while_nothing_changed(self):
+        validated = self.checkpoint(reviews=self.reviews())
+        self.assertTrue(validated['integrationValidated'])
+        quiet = self.checkpoint(reviews=self.reviews(), resume=validated, integrated=False)
+        self.assertTrue(quiet['integrationValidated'])
+        self.assertTrue(quiet['coverageComplete'])
+        instruction = self.directory / 'SKILL.md'
+        instruction.write_text(instruction.read_text() + 'Changed behavior.\n')
+        changed = self.checkpoint(reviews=self.reviews(), resume=validated, integrated=False)
+        self.assertFalse(changed['integrationValidated'])
+
+    def test_compare_cli_runs_every_fetched_group(self):
+        registry = self.base / 'catalog.json'
+        registry.write_text(json.dumps(self.registry))
+        fetched = self.base / 'fetch.json'
+        fetched.write_text(json.dumps({'candidates': {GROUP: self.baseline}, 'checkouts': {GROUP: str(self.upstream)}, 'errors': {}}))
+        result = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'compare', '--fetch', str(fetched), '--output-dir', str(self.base / 'reports')], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        summary = json.loads(result.stdout)[GROUP]
+        self.assertEqual(summary['skills'], {'unchanged': 1})
+        self.assertFalse(summary['sharedChanged'])
+        report = json.loads((self.base / 'reports/github.com-example-library-compare.json').read_text())
+        self.assertEqual(report['candidate'], self.baseline)
+
     def test_checkpoint_cli_accepts_fetch_output_as_candidates(self):
         registry = self.base / 'catalog.json'
         registry.write_text(json.dumps(self.registry))

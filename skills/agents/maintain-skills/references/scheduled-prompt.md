@@ -1,4 +1,4 @@
-Run this repository's /maintain-skills from the default branch in the mode the scheduled task names. Work in a separate worktree for each maintenance branch, and leave the main checkout and its current branch untouched.
+Run the copy of this repository's /maintain-skills on the default branch, in the mode the scheduled task names. Work in a separate worktree for each maintenance branch, and leave the main checkout and its current branch untouched.
 
 - **Upstream mode** runs daily with a 60-minute budget. Start wrapping up at minute 50.
 - **Audit mode** runs weekly with a 90-minute budget. Start wrapping up at minute 75.

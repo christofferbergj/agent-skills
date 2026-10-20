@@ -639,6 +639,8 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
             finished.append(item['name'])
     pending = sorted(names - set(finished))
     source_pending = [key for key, review in coverage.items() if review['pending'] or not review['inventoryReviewed'] or not review['sharedInputsReviewed']]
+    # Integration checks still hold when no skill or governing input changed since a validated checkpoint.
+    integration_validated = integration_validated or (isinstance(resume, dict) and resume.get('integrationValidated') is True and resume.get('skillFingerprints') == fingerprints and resume.get('contextFingerprint') == current['contextFingerprint'])
     return {'schema': 2, 'createdAt': datetime.now(timezone.utc).isoformat(), 'inventoryFingerprint': current['fingerprint'], 'contextFingerprint': current['contextFingerprint'], 'catalogFingerprint': current['catalogFingerprint'], 'skillFingerprints': fingerprints, 'candidates': candidates, 'locallyReviewed': sorted(requested), 'completed': sorted(finished), 'pending': pending, 'sourceCoverage': coverage, 'pendingSources': source_pending, 'invalidated': sorted(invalidated), 'problems': packaging['problems'], 'elapsedMinutes': elapsed_minutes, 'integrationValidated': integration_validated, 'coverageComplete': not pending and not source_pending and not packaging['problems'] and integration_validated, 'reviewComplete': False, 'baselinesAdvancedByCheckpoint': False}
 
 
@@ -656,9 +658,11 @@ def main():
     pull.add_argument('--remote', action='append', default=[], metavar='IDENTITY=URL', help='Fetch IDENTITY (such as github.com/owner/name) from URL without persisting it')
     pull.add_argument('--output', type=Path)
     delta = commands.add_parser('compare', help='Diff one source group or catalog policy from reviewed baselines to a candidate; --resume carries checkpoint progress forward')
-    delta.add_argument('--source', required=True, help='Source group key or catalog source name')
-    delta.add_argument('--upstream', type=Path, required=True, help='Checkout whose origin is the source repository')
-    delta.add_argument('--candidate', required=True)
+    delta.add_argument('--source', help='Source group key or catalog source name')
+    delta.add_argument('--upstream', type=Path, help='Checkout whose origin is the source repository')
+    delta.add_argument('--candidate')
+    delta.add_argument('--fetch', type=Path, help='Fetch output; compares every fetched group instead of --source/--upstream/--candidate')
+    delta.add_argument('--output-dir', type=Path, help='With --fetch, write one <repository>-compare.json per group here')
     delta.add_argument('--resume', type=Path, help='Prior checkpoint whose verified progress replaces record baselines')
     delta.add_argument('--output', type=Path)
     save = commands.add_parser('checkpoint', help='Record verification progress for the current candidates')
@@ -695,7 +699,24 @@ def main():
             result = fetch(root, catalog, arguments.state.resolve(), remotes)
         elif arguments.command == 'compare':
             resume = json.loads(arguments.resume.read_text()) if arguments.resume else None
-            result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate, resume)
+            if arguments.fetch:
+                if not arguments.output_dir:
+                    raise ValueError('compare --fetch needs --output-dir')
+                fetched = json.loads(arguments.fetch.read_text())
+                result = {}
+                for key, sha in sorted(fetched['candidates'].items()):
+                    report = compare(root, catalog, key, Path(fetched['checkouts'][key]), sha, resume)
+                    path = arguments.output_dir / (key.split('@')[0].replace('/', '-') + '-compare.json')
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    path.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+                    statuses = {}
+                    for change in report['skills']:
+                        statuses[change['status']] = statuses.get(change['status'], 0) + 1
+                    result[key] = {'output': str(path), 'skills': statuses, 'suitesChanged': any(suite['added'] or suite['removed'] or suite['possibleMoves'] for suite in report['suites'].values()), 'sharedChanged': any(entry.get('files') or entry.get('status') == 'blocked' for entry in report['sharedInputs'])}
+            elif arguments.source and arguments.upstream and arguments.candidate:
+                result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate, resume)
+            else:
+                raise ValueError('compare needs --fetch with --output-dir, or --source, --upstream, and --candidate')
         elif arguments.command == 'prune':
             result = prune(arguments.state, arguments.keep)
         else:

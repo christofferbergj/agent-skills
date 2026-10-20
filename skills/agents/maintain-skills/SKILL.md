@@ -15,7 +15,7 @@ Run one of two modes:
 
 Only an explicitly named subset of skills narrows either mode.
 
-Use /pstack-swarm throughout. Give each worker one slice, such as a source group, a batch of skills, or a repair, with the exact local revision, the immutable candidate, the adaptation contract, its evidence requirements, and the files it may write. Workers do their slice directly without starting another coordinator. The coordinator fetches sources, owns the coverage ledger, canonical documents, and integration, and collects every worker's result; a failed or missing result stays pending. Without delegation, work sequentially and report the lost independence.
+Use /pstack-swarm throughout. Give each worker one slice, such as a source group, a batch of skills, or a repair, with the exact local revision, the immutable candidate, the adaptation contract, its evidence requirements, and the files it may write. Workers do their slice directly without starting another coordinator. The coordinator fetches sources, owns the coverage ledger, canonical documents, and integration, and collects every worker's result; a failed or missing result stays pending. Without delegation, work sequentially and note the lost independence in the run's report.
 
 ## 1. Resume
 
@@ -25,17 +25,17 @@ Read repository guidance. Open the library worktree the maintenance guide descri
 
 ## 2. Find what changed
 
-Run `fetch`, then `compare` with `--resume` for every source group. Build the worklist in this order, which is also the order of work:
+Run `fetch`, then `compare --fetch` with `--resume`. Save the inventory, fetch result, and compare reports in the run folder. Build the worklist in this order, which is also the order of work:
 
 1. Owner answers and comments not yet applied.
 2. Changed upstream skills and changed shared inputs.
-3. New, removed, or moved upstream skills.
+3. New, removed, or moved upstream skills in the catalog's suites.
 4. Skills in `changedSince`, including new skills.
 5. In audit mode only: the inventory's `fidelityBacklog`, then every skill not yet reviewed against current tools and conventions.
 
 Unfinished items from earlier runs keep their place in this order. In upstream mode, skills the checkpoint lists as pending for other reasons wait for the audit.
 
-When items 1 to 4 are empty in upstream mode, save a checkpoint from the compare reports and stop. A quiet run needs no branch, checks, review, PR, or report.
+When items 1 to 4 are empty in upstream mode, save a checkpoint from the compare reports, prune old runs, and stop. A quiet run needs no branch, checks, review, PR, or report.
 
 **Complete when:** every compare report entry and every `changedSince` skill is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
 
