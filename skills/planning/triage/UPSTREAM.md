@@ -14,13 +14,9 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Use configured artifacts and the native execution contract while retaining the upstream verification, label, and agent-brief workflow.
 - Keep the complete rejected-feature example inside its four-backtick fence; the following operating instructions remain Markdown prose. Keep agent-brief examples consistent with the owning out-of-scope format.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 ## Maintenance
 

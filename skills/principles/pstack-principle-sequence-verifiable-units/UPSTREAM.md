@@ -13,13 +13,8 @@
 
 ## Local adaptations to preserve
 
-- Allow shared selection by /pstack-principles in ordinary Matt and Pstack workflows; applicability does not require Pstack mode. Keep this skill as the single owner of its principle rules. Use the invoking workflow's verified base and declared migration gates. Distinguish intermediate proof commits from independently passing delivery units rather than forcing every worker onto trunk or promising every proof commit is green.
-
-- Namespace: `principle-sequence-verifiable-units` maps to `pstack-principle-sequence-verifiable-units`. Preserve the installed name and invocation metadata.
-- Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
-- Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
-- Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
-- `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Use the invoking workflow's verified base and declared migration gates. Distinguish intermediate proof commits from independently passing delivery units rather than forcing every worker onto trunk or promising every proof commit is green.
 
 ## Maintenance
 

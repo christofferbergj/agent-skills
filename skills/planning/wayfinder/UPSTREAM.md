@@ -14,13 +14,9 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Submit ready research tickets as a batch to the research owner, which dispatches investigators directly; keep canonical map/ticket edits with Wayfinder. Branch publication follows the existing grant.
 - Route prototype tickets to design-prototype; keep one decision map and its configured tracker. Research delegates use the shared research and execution owners.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 Local maintenance on 2026-10-20: Read decision type from the configured tracker representation: remote labels or the local Markdown Type field. This local repair leaves the upstream reviewed-through position unchanged.
 

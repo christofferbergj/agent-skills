@@ -13,15 +13,9 @@
 
 ## Local adaptations to preserve
 
-- Allow shared selection by /pstack-principles in ordinary Matt and Pstack workflows; applicability does not require Pstack mode. Keep this skill as the single owner of its principle rules. Own the choice between coordinated internal migration and justified expand-contract, including caller inventory, real compatibility obligations, bounded migration tickets, phase checks, dependent-work gates, and final acceptance.
-
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Own the choice between coordinated internal migration and justified expand-contract, including caller inventory, real compatibility obligations, bounded migration tickets, phase checks, dependent-work gates, and final acceptance.
 - Keep explicit caller inventory, deletion, temporary-adapter and test-migration rules in this callable dependency, with its external-compatibility applicability limits.
-
-- Namespace: `principle-migrate-callers-then-delete-legacy-apis` maps to `pstack-principle-migrate-callers-then-delete-legacy-apis`. Preserve the installed name and invocation metadata.
-- Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
-- Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
-- Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
-- `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
 
 ## Maintenance
 

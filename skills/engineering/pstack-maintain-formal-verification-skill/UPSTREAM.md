@@ -9,10 +9,12 @@
 - Imported from commit: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
 - Reviewed through commit: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
 - Last upstream review: 2026-10-20.
+- Fidelity checked through: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE), retained from [pstack/LICENSE](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/LICENSE).
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Namespace: `maintain-formal-verification-skill` maps to `pstack-maintain-formal-verification-skill`. Preserve explicit user invocation and matching Codex metadata.
 - Discover generated drafts and generated-input fallbacks alongside formal checks; testing evidence remains distinct from proof.
 - Resolve every covered-code delta, moved function and new state writer against the current implementation. Property changes need evidence of an intended promise change.

@@ -1,6 +1,6 @@
 # Pstack maintenance compatibility entrypoint
 
-Invoke /maintain-skills for repository-wide maintenance, including Pstack, Matt Pocock, other sourced suites, and first-party skills. It discovers local skills and provenance on each pass, delegates coverage in rolling waves, and prepares one validated update PR within the scheduled action grant.
+Invoke /maintain-skills for repository-wide maintenance, including Pstack, Matt Pocock, other sourced suites, and first-party skills. It adopts Pstack's upstream changes by default under its adaptation contract and prepares validated draft PRs within the scheduled action grant.
 
 This skill's `suite.json` remains the authoritative Pstack mapping; the combined catalog references it. Skill-local `UPSTREAM.md` records retain immutable import history and reviewed-through positions. [The original Pstack validation record](VALIDATION.md) documents the initial port; combined validation covers the integrated library.
 

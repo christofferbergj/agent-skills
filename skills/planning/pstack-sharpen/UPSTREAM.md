@@ -13,12 +13,8 @@
 
 ## Local adaptations to preserve
 
-- Namespace: `sharpen` maps to `pstack-sharpen`. Preserve the installed name and invocation metadata.
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Remain model-invoked and execute the sharpened task, keeping one outside correctness check. Upstream is user-invoked (`disable-model-invocation: true`) and, since `88d4751`, returns only a rewritten prompt; both are excluded because the local skill triggers automatically before a Pstack task runs, and prompt-only output would halt the task it was invoked for.
-- Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
-- Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
-- Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
-- `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
 
 ## Maintenance
 

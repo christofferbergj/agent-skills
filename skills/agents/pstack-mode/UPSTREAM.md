@@ -14,13 +14,9 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Local-only files: `MAINTENANCE.md`, `VALIDATION.md`, and `suite.json`, the Pstack mapping that `/maintain-skills` reads.
 - Share phase-specific principle selection with Matt entrypoints through the locally authored /pstack-principles owner. Preserve explicit mode activation and keep suite.json as a source mapping rather than a second selection policy. The refactoring playbook uses the migration owner for compatibility and verification gates.
-
-- Namespace: `poteto-mode` maps to `pstack-mode`. Preserve the installed name and invocation metadata.
-- Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
-- Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
-- Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
-- `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
 - Keep one maintenance engine in `/maintain-skills`; `suite.json` remains this family's data source. Include category/shared files inside upstream skill roots.
 - Preserve explicit review and unknown/blocked merge gates, cycle-safe stack traversal, forge-supplied immutable PR heads, active-over-historical PR selection, and verified trunk resolution. Hold an unverified Origin head API instead of substituting local refs.
 - Keep polling sleeps, retries, and queued partial sweeps within the configured deadline. In-flight queries finish; this option does not cancel subprocesses.
@@ -28,8 +24,6 @@
 - Serialize operations admitted through each Store handle, preserving call-order visibility and draining accepted work before close releases the lease.
 - Keep a failed close retryable without reopening the store to operations. Retain its release identity until cleanup succeeds and share concurrent close attempts. CLI cleanup failures warn without changing the operation result or hiding its primary error.
 - Scope lock ownership to updated cooperating writers on one host. PID reuse or unavailable process probing conservatively blocks automatic guard reclamation.
-
-- Combined-library integration delegates project artifacts to `/domain-modeling`, design vocabulary to `/codebase-design`, behavior testing to `/tdd`, Standards/Spec review to `/code-review`, and PR descriptions to `/pr` as applicable. Preserve these calls and the single-coordinator contract when updating.
 
 ## Maintenance
 

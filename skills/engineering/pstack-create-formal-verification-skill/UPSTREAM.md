@@ -9,10 +9,12 @@
 - Imported from commit: `0b8e952052d482ee6de06deebf14d590d77b1b34`.
 - Reviewed through commit: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
 - Last upstream review: 2026-10-20.
+- Fidelity checked through: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Namespace: `create-formal-verification-skill` maps to `pstack-create-formal-verification-skill`.
 - Preserve explicit user invocation and matching Codex metadata. A routing owner can describe this entrypoint without invoking it implicitly.
 - Keep ordered steps with checkable completion criteria and a model-to-code correspondence, failing control, real code mutation, restoration, evidence, and cleanup.

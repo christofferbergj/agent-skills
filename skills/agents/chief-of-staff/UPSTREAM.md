@@ -9,18 +9,15 @@
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
 - Reviewed through commit: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
 - Last upstream review: 2026-10-20.
+- Fidelity checked through: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
 - Upstream stage: `in-progress`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Bind coordination to an agreed goal and budget with bounded native delegates. Propose environment improvements within scope; goals do not authorize unrelated services, schedules, or external actions.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
 - Wiki memory follows upstream's location agreement, index, history-only claims, and unedited sources. Locally, an existing goal notes location is reused, sources keep their access boundary, the lint schedule needs a scheduling grant, and the memory checkpoint has a completion criterion.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 ## Maintenance
 

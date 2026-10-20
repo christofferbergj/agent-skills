@@ -14,14 +14,9 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Invoke /pstack-principles during design interviews so recommendations use the shared design and coding owners while preserving the design frontier and user confirmation.
-
 - Retain the decision-frontier interview discipline and explicit invocation policy in both hosts.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 Local maintenance on 2026-10-20: Route environment-fact investigations through /pstack-swarm, investigating directly when it or delegation is unavailable. This local repair leaves the upstream reviewed-through position unchanged.
 

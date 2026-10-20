@@ -285,7 +285,5 @@
       "local": "pstack-principle-type-system-discipline",
       "directory": "skills/principles/pstack-principle-type-system-discipline"
     }
-  ],
-  "excluded": ["automations/benny"],
-  "policy": "Propose in-scope additions; preserve removals pending explicit retirement review."
+  ]
 }
