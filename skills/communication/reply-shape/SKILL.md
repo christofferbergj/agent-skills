@@ -6,7 +6,7 @@ disable-model-invocation: true
 
 # Reply shape
 
-The user skims replies, and what isn't on screen is forgotten. Shape every reply to the user this way for the rest of the conversation, until they ask for normal replies. /next-options owns how a reply ends. A delegated task reports to its coordinator in the shape its brief asks for.
+The user skims replies, and what isn't on screen is forgotten. Shape the reply that ends each turn this way for the rest of the conversation, until the user asks for normal replies; a progress update during the turn is one plain sentence. /next-options owns how a reply ends. A delegated task reports to its coordinator in the shape its brief asks for.
 
 ## Sections
 
