@@ -36,7 +36,8 @@ One skill owns each shared discipline. Other skills invoke the owner rather than
 - /tdd owns behavior-test discipline; Pstack's bug-fix adapter adds before-and-after evidence.
 - /code-review owns Standards and Spec review; Pstack's adversarial lenses add coverage of the same artifact.
 - /pr owns PR description shape; Pstack owns its delivery playbook and evidence mechanics.
-- /reply-shape owns the layout of replies to the user, and /next-options owns how they end; a skill's own report format is laid out within them.
+- /reply-shape owns the layout of replies to the user; a skill's own report format is laid out within it.
+- /next-options owns how replies end.
 - /pstack-swarm owns native host execution, isolation, bounded cross-vendor review, its T3 Code route, and disclosed fallback.
 - /review-loop owns cross-model review rounds, finding verification, and the fix-and-re-review loop.
 - /thermo-nuclear-review owns the correctness and security audit that /thermos and /review-loop run.

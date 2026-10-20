@@ -4,6 +4,8 @@ Skills are organized under `skills/<category>/<skill-name>/`.
 
 For project orientation, upstream ownership, or changes spanning skill families, read [the library architecture](docs/architecture.md).
 
+Read skills from this repository's `skills/` tree, not from installed copies, which lag until a refresh. Vocabulary lives in `GLOSSARY.md` and decisions in `docs/adr/`; [the docs index](docs/README.md) separates current guidance from dated evidence. Before adding, moving, removing, or redescribing a skill, read [the change set in Contributing](CONTRIBUTING.md#add-move-or-remove-a-skill).
+
 Every published skill must:
 
 - contain a `SKILL.md` with string `name` and `description` fields;
@@ -11,7 +13,7 @@ Every published skill must:
 - keep conditional reference material inside its own directory;
 - appear in both the top-level `README.md` and its category `README.md`;
 - keep Codex metadata in `agents/openai.yaml` synchronized with its invocation mode; and
-- pass `npx skills@latest add . --list` and `git diff --check` before publication.
+- pass `pnpm check` before publication.
 
 Invocation has two modes:
 

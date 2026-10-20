@@ -1,5 +1,7 @@
 # Review Pstack updates through pull requests
 
+Partly superseded: the [maintenance guide](../../skills/agents/maintain-skills/MAINTENANCE.md) now owns branches and pull requests, and the [scheduled prompt](../../skills/agents/maintain-skills/references/scheduled-prompt.md) owns budgets and the action grant. Saved scheduled tasks replaced the automations named below. Where this record differs, those files are current.
+
 Use scheduled, scoped runs of `/maintain-skills` to prepare validated update pull requests. Compare the whole upstream suite as well as known imports so additions, removals, and renames are discovered.
 
 Maintenance may commit scoped changes, push an update branch, and create or update a draft pull request. Merging to `main` and refreshing installed copies require separate authorization. This preserves human review of changes to workflows that will govern future agent behavior.

@@ -11,7 +11,7 @@ Keep run evidence in `$STATE`, outside installed skills:
 - `runs/<UTC timestamp>-<mode>/`, such as `runs/2026-10-21T080000Z-upstream/`, holds the run's `inventory.json`, `fetch.json`, compare reports, worker assignments and evidence, `checkpoint.json`, and next actions.
 - `questions.json` lists questions waiting on the owner, each with its item, question, date asked, and PR link. Remove a question once its answer is recorded in the repository. A missing file means no questions are waiting.
 
-Resume from the newest `checkpoint.json` under `runs/`; until `runs/` has one, use the newest under the older timestamped folders directly in `$STATE`. After saving the checkpoint, keep the 14 newest runs:
+Resume from the newest `checkpoint.json` under `runs/`. After saving the checkpoint, keep the 14 newest runs:
 
 ```bash
 python3 skills/agents/maintain-skills/scripts/catalog.py --root . prune --state "$STATE" --keep 14
@@ -67,7 +67,7 @@ python3 skills/agents/maintain-skills/scripts/catalog.py --root . checkpoint \
   }
   ```
 
-- `--completed` names the skills whose local review finished this run; `--resume` carries earlier reviews of unchanged skills forward.
+- `--completed` names the skills whose local review finished this run, each as its own argument (in zsh, expand a list with `${=names}`); `--resume` carries earlier reviews of unchanged skills forward.
 - `--elapsed-minutes` is the decimal minutes since the run started.
 - Add `--integration-validated` only after the affected checks pass. When no skill or governing input changed since a validated checkpoint, the resumed validation carries over on its own.
 
@@ -85,16 +85,7 @@ Set every acknowledgement from collected evidence; the helper checks coverage an
 
 ## Checks
 
-```bash
-pnpm fmt:check
-npx skills@latest add . --list
-git diff --check
-gitleaks dir . --redact --no-banner
-python3 skills/agents/maintain-skills/scripts/catalog.py --root . validate
-python3 -m unittest discover -s skills/agents/maintain-skills/scripts/tests
-```
-
-Run the tests of each changed script owner under its `scripts/tests/`, and run each changed TypeScript test with `node --test <file>`, such as `skills/reviews/review-loop/scripts/packet.test.ts`. For Pstack's Bun tools, run `bun skills/agents/pstack-mode/scripts/bootstrap.ts --print-runtime`, then `bun test` and `bun run typecheck` in the returned directory. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes. [The validation record](VALIDATION.md) holds earlier host exercises and known limits.
+Run `pnpm check` from the worktree root; it runs every repository gate and test suite. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes. [The validation record](VALIDATION.md) holds earlier host exercises and known limits.
 
 ## Branches and pull requests
 
