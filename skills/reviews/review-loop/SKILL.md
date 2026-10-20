@@ -40,7 +40,7 @@ When the counterpart fails after the route's retry and fallbacks, continue with 
 
 Reviewers make false claims. Check each finding against the code at the head, or for a plan, against the plan and the code it cites: trace the path from a real input to the failure, confirm the cited rule or requirement, and check that the proposed fix fits the repository's conventions and the selected principles, since a true finding can carry a wrong fix. Drop a finding that does not hold, with a one-line reason. Agreement between reviewers raises attention, not certainty.
 
-Group verified findings by root cause and number them; numbers continue across rounds. Record who raised each (counterpart, Standards, Spec, Correctness, a PR commenter a pass quoted, or several), its severity on the brief's scale, mapping a pass's own priorities onto it, and any severity disagreement as it stands. Give each a call:
+Group verified findings by root cause and number them; numbers continue across rounds. /code-review's own report stays separate by axis, and this grouping is the loop's report across all reviewers. Record who raised each (counterpart, Standards, Spec, Correctness, a PR commenter a pass quoted, or several), its severity on the brief's scale, mapping a pass's own priorities onto it, and any severity disagreement as it stands. Give each a call:
 
 - **fix**: in this change.
 - **follow-up**: outside this change's scope; it goes in the PR description's open items.
