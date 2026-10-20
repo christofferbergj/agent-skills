@@ -16,6 +16,7 @@ Correctness, security, developer-experience, and feature-gate review rubric.
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Removed upstream `disable-model-invocation: true` so `/thermos` can invoke this dependency. Codex metadata allows implicit invocation.
 - Added a review-only boundary: report introduced issues and proposed remedies; edits and published comments need a separate user request.
 - Added direct completion without nested subagents when delegated. The original audit criteria, severity calibration, and requirement to read PR discussion only after the independent audit remain.

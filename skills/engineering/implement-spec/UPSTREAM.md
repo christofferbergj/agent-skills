@@ -14,14 +14,9 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Invoke /pstack-principles before implementation and final verification; explicitly pass selected owner instructions and decisions to workers. Honor migration-owner phase and integration-unit gates without treating transitional progress as full acceptance.
-
 - Use one integration coordinator and existing ticket graph, owned isolated writers, serial accepted merges, and proposed domain edits from workers. Preserve unknown work and real tracker completion boundaries.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 ## Maintenance
 

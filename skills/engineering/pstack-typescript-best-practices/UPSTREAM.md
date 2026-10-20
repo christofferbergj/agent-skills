@@ -13,15 +13,10 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - A duration stored as a plain number still needs boundary validation; preserve the corrected example rather than promising that the field shape excludes negative values.
 - Distinguish unchecked assertions from `as const` and validated brands. Preserve the explicit `Config` type and contextual-inference caveat in the `satisfies` example.
 - Demonstrate the guaranteed first position of a non-empty tuple; dynamic numeric indexes still require narrowing under `noUncheckedIndexedAccess`.
-
-- Namespace: `typescript-best-practices` maps to `pstack-typescript-best-practices`. Preserve the installed name and invocation metadata.
-- Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
-- Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
-- Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
-- `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
 
 ## Maintenance
 

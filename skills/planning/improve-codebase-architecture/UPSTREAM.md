@@ -14,12 +14,8 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Resolve vocabulary/model/ADR paths through domain-modeling instead of hard-coding a second GLOSSARY. Preserve domain-specific names and use the shared arena for interface alternatives.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 Local maintenance on 2026-10-20: Keep established product/domain names in HTML reports while using the shared architectural vocabulary for architectural reasoning. This local repair leaves the upstream reviewed-through position unchanged.
 

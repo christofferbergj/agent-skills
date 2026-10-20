@@ -14,12 +14,8 @@
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Respect existing workspace layout/configuration, do not commit an unsolicited example, and verify Node/TypeScript compatibility and nonzero source scanning. Scan every external importer root as well as the packages. Prove test and app deep-import failures, with a restored pass after each.
-- Preserve the familiar command, except the documented `prototype` to `design-prototype` and `git-guardrails-claude-code` to `git-guardrails` mappings.
-- Share domain artifacts through `/domain-modeling`, architecture vocabulary through `/codebase-design`, behavior tests through `/tdd`, Standards/Spec review through `/code-review`, and PR descriptions through `/pr`.
-- Use `/pstack-swarm` for actual Codex/Claude Code delegation and bounded cross-vendor execution. Preserve explicit user entrypoints and callable dependency metadata.
-- Honor existing project artifacts, approved decisions, and action authorization. Keep draft-PR defaults, isolated writers, and learning changes prepared for review.
-- This skill's `agents/openai.yaml`, provenance, and integration changes are locally owned.
 
 ## Maintenance
 

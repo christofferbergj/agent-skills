@@ -16,6 +16,7 @@ Maintainability, structural simplification, and architecture-boundary review rub
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Removed upstream `disable-model-invocation: true` so `/thermos` can invoke this dependency. Codex metadata allows implicit invocation.
 - Added review-only, diff-scoped reporting and direct completion without nested subagents when delegated.
 - Retained the original structural review criteria, including the 1,000-line threshold, output priorities, and approval bar. Suggestions to restructure code are review recommendations, not authorization to edit.

@@ -14,6 +14,7 @@ Orchestrator for the two independent review passes.
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Replaced Cursor-specific named subagents with native Codex spawning and Claude Code built-in general-purpose agents. No separate custom agent installation is needed.
 - Preserved explicit-only invocation with `disable-model-invocation: true` and Codex `policy.allow_implicit_invocation: false`.
 - Added explicit dependency resolution, rubric delivery to child contexts, shared review scope and evidence, completion handling, and a disclosed sequential fallback.

@@ -13,13 +13,7 @@
 
 ## Local adaptations to preserve
 
-- Namespace: `blast-radius` maps to `pstack-blast-radius`. Preserve the installed name and invocation metadata.
-- Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
-- Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
-- Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
-- `agents/openai.yaml` and local runtime, maintenance, and validation resources are owned here.
-
-- Combined-library integration delegates project artifacts to `/domain-modeling`, design vocabulary to `/codebase-design`, behavior testing to `/tdd`, Standards/Spec review to `/code-review`, and PR descriptions to `/pr` as applicable. Preserve these calls and the single-coordinator contract when updating.
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 
 ## Maintenance
 

@@ -22,6 +22,7 @@ License: [MIT, copyright 2026 OpenClaw Foundation](./LICENSE), retained from the
 
 ## Local adaptations to preserve
 
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Model invocation supports focused or exhaustive audits and cleanup. Existing user authority determines edits and publication; there is no separate authoring mode.
 - Assess contracts, credible failures, independent expectations, refactoring resilience, distinct feedback, and justified cost. Inspect suspicious patterns before deciding; uncertainty preserves tests.
 - Use existing dependency seams and check double fidelity. Production fixes, API changes, and seam removal require separate scope; tests alone do not establish that a public export is obsolete.
