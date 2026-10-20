@@ -12,7 +12,7 @@ For each original source, include:
 - Original imported commit or provider revision, with a permanent source link.
 - Reviewed-through commit or reproducible content snapshot, plus review date. This includes deltas deliberately excluded in the decision history.
 - Retained license location and attribution obligations.
-- Local adaptations to preserve, local-only files, and source-specific maintenance guidance.
+- Local adaptations to preserve: every divergence from the tracked upstream text, including dropped, softened, or reversed rules and a changed invocation mode, each with its reason. Review rows log decisions; they never replace this list. Also record local-only files and source-specific maintenance guidance.
 - Review history naming the candidate revision, adopted/adapted/excluded changes, reasons for exclusions, and validation results. Keep incomplete attempts separate from completed baselines.
 
 When adding a new source record, recover the original import from repository history or other verifiable evidence. Do not label today's upstream head as the historical baseline. If no baseline can be recovered, record the gap and request the missing source/version or authorization for a fresh full reconciliation; other sourced skills can still be updated.
