@@ -45,6 +45,28 @@ class ReviewRestrictions(unittest.TestCase):
         self.assertIn('features.hooks=false',command)
         self.assertIn('approval_policy="never"',command)
 
+    def test_counterpart_model_and_effort_reach_both_clis(self):
+        claude_help='\n'.join(['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format', '--model', '--effort'])
+        responses=[subprocess.CompletedProcess([],0,claude_help,''),subprocess.CompletedProcess([],0,json.dumps({'loggedIn':True}),'')]
+        with patch.object(review.shutil,'which',return_value='/fixture/claude'),patch.object(review,'run',side_effect=responses):
+            _,command,reason=review.prepare('codex',Path('.'),'claude-opus-5-5','xhigh')
+        self.assertIsNone(reason)
+        self.assertEqual(command[command.index('--model')+1],'claude-opus-5-5')
+        self.assertEqual(command[command.index('--effort')+1],'xhigh')
+        responses=[subprocess.CompletedProcess([],0,'--sandbox\n--ephemeral\n--output-last-message\n--strict-config\n-m, --model <MODEL>',''),subprocess.CompletedProcess([],0,'logged in',''),subprocess.CompletedProcess([],0,'apps stable true\nplugins stable true\nhooks stable true\nbrowser_use stable true\ncomputer_use stable true','')]
+        with patch.object(review.shutil,'which',return_value='/fixture/codex'),patch.object(review,'run',side_effect=responses):
+            _,command,reason=review.prepare('claude-code',Path('.'),'gpt-6.1-sol','max')
+        self.assertIsNone(reason)
+        self.assertEqual(command[command.index('--model')+1],'gpt-6.1-sol')
+        self.assertIn('model_reasoning_effort="max"',command)
+
+    def test_unsupported_model_override_is_unavailable_rather_than_dropped(self):
+        help_text='\n'.join(['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format'])
+        with patch.object(review.shutil,'which',return_value='/fixture/claude'),patch.object(review,'run',return_value=subprocess.CompletedProcess([],0,help_text,'')):
+            _,command,reason=review.prepare('codex',Path('.'),'claude-opus-5-5','xhigh')
+        self.assertIsNone(command)
+        self.assertIn('required review restrictions',reason)
+
     def test_unsupported_restriction_is_not_silently_dropped(self):
         with patch.object(review.shutil,'which',return_value='/fixture/claude'),patch.object(review,'run',return_value=subprocess.CompletedProcess([],0,'old CLI','')):
             _,command,reason=review.prepare('codex',Path('.'))

@@ -17,16 +17,17 @@ Invoke skills through your agent's skill picker or command syntax. [Usage guide 
 
 ## Start here
 
-For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Skip stages that are already settled. Relevant Pstack principles apply automatically throughout this flow.
+For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Skip stages that are already settled. Relevant Pstack principles apply automatically throughout this flow, and implementation ends with `review-loop`, where the other vendor's model reviews the change and the agent fixes what holds until a round is clean.
 
-| You want to                               | Start with                             |
-| ----------------------------------------- | -------------------------------------- |
-| Clarify an idea and capture decisions     | `grill-with-docs`                      |
-| Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed |
-| Implement agreed work                     | `implement` or `implement-spec`        |
-| Let the agent choose and drive a workflow | `pstack-mode`                          |
-| Review a change                           | `code-review` or `thermos`             |
-| Maintain this library                     | `maintain-skills`                      |
+| You want to                               | Start with                                 |
+| ----------------------------------------- | ------------------------------------------ |
+| Clarify an idea and capture decisions     | `grill-with-docs`                          |
+| Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed     |
+| Implement agreed work                     | `implement` or `implement-spec`            |
+| Let the agent choose and drive a workflow | `pstack-mode`                              |
+| Review a change                           | `review-loop`, `code-review`, or `thermos` |
+| End replies with lettered next steps      | `next-options`                             |
+| Maintain this library                     | `maintain-skills`                          |
 
 ## Browse by task
 
@@ -113,6 +114,7 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 - [pstack-blast-radius](skills/reviews/pstack-blast-radius/SKILL.md)
 - [pstack-interrogate](skills/reviews/pstack-interrogate/SKILL.md)
 - [pstack-no-comments](skills/reviews/pstack-no-comments/SKILL.md)
+- [review-loop](skills/reviews/review-loop/SKILL.md)
 - [test-audit](skills/reviews/test-audit/SKILL.md)
 - [thermo-nuclear-code-quality-review](skills/reviews/thermo-nuclear-code-quality-review/SKILL.md)
 - [thermo-nuclear-review](skills/reviews/thermo-nuclear-review/SKILL.md)
@@ -121,6 +123,7 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 ### Writing and explanation
 
 - [bro](skills/communication/bro/SKILL.md)
+- [next-options](skills/communication/next-options/SKILL.md)
 - [pr](skills/communication/pr/SKILL.md)
 - [pstack-in-your-own-words](skills/communication/pstack-in-your-own-words/SKILL.md)
 - [pstack-ketchup](skills/communication/pstack-ketchup/SKILL.md)
@@ -180,13 +183,15 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 | `loop-me`                                                                                                                           | `domain-modeling`, `grilling`                                                               | `pstack-swarm` for delegation                                                                                                                                                                    |
 | `to-spec`                                                                                                                           | `domain-modeling`, `pstack-principles`                                                      | `pstack-swarm` for delegation                                                                                                                                                                    |
 | `to-tickets`                                                                                                                        | `domain-modeling`, `pstack-principles`                                                      | `pstack-swarm` for delegation; `pstack-principle-migrate-callers-then-delete-legacy-apis` for coordinated migration tickets                                                                      |
-| `implement`                                                                                                                         | `code-review`, `domain-modeling`, `pstack-principles`                                       | `tdd` where a useful test path exists; `pstack-swarm` for delegation; `pr` for authorized PR delivery                                                                                            |
-| `implement-spec`                                                                                                                    | `tdd`, `code-review`, `domain-modeling`, `pstack-principles`, `pstack-swarm`                | `pr` for authorized PR delivery; `pstack-principle-migrate-callers-then-delete-legacy-apis` for coupled migrations                                                                               |
+| `implement`                                                                                                                         | `review-loop`, `domain-modeling`, `pstack-principles`                                       | `tdd` where a useful test path exists; `pstack-swarm` for delegation; `pr` for authorized PR delivery                                                                                            |
+| `implement-spec`                                                                                                                    | `tdd`, `review-loop`, `domain-modeling`, `pstack-principles`, `pstack-swarm`                | `pr` for authorized PR delivery; `pstack-principle-migrate-callers-then-delete-legacy-apis` for coupled migrations                                                                               |
 | `triage`                                                                                                                            | `domain-modeling`                                                                           | `grilling` for unclear requests; `pstack-swarm` for delegation                                                                                                                                   |
 | `wayfinder`                                                                                                                         | `domain-modeling`, `grilling`                                                               | `research` for research tickets; `design-prototype` for prototype tickets; `pstack-swarm` for delegation                                                                                         |
 | `tdd`                                                                                                                               | `domain-modeling`, `pstack-principles`, `pstack-principle-test-behavior-not-implementation` | `codebase-design` for interface or seam decisions                                                                                                                                                |
 | `code-review`                                                                                                                       | `pstack-swarm`, `pstack-principles`                                                         |                                                                                                                                                                                                  |
+| `review-loop`                                                                                                                       | `code-review`, `pstack-swarm`, `pstack-principles`                                          | `pstack-principle-attack-the-premise` for a repeated class of finding; `pr` for draft PR delivery                                                                                                |
 | `pr`                                                                                                                                | `domain-modeling`                                                                           |                                                                                                                                                                                                  |
+| `next-options`                                                                                                                      |                                                                                             | `pstack-principle-never-block-on-the-human`; the stages its handoff table names                                                                                                                  |
 | `setup-pre-commit`                                                                                                                  |                                                                                             | `linting-alignment` when tool ownership is unclear                                                                                                                                               |
 | `update-dependencies`                                                                                                               |                                                                                             | `linting-alignment` for an included lint or formatting stack update                                                                                                                              |
 | `pstack-mode`                                                                                                                       | `domain-modeling`, `pstack-principles`, `pstack-swarm`                                      | Install the complete library for all playbooks                                                                                                                                                   |

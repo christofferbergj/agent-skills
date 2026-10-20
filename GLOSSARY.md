@@ -24,3 +24,6 @@ The skill responsible for a project document's meaning and update rules, regardl
 
 **Source record**:
 A skill-local record of its upstream identity, immutable import history, completed reviews, and intentional adaptations.
+
+**Counterpart model**:
+The other vendor's model, which reviews work the current model wrote: Codex for Claude, and Claude Opus for Codex.

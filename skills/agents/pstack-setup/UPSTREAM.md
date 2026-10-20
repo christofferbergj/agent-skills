@@ -14,6 +14,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Asks for the counterpart reviewer's provider instance, model, and full and delta effort, which /pstack-swarm's T3 route reads from the host section's `review` entry.
 
 ## Maintenance
 
