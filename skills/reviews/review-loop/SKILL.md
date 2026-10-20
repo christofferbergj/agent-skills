@@ -54,14 +54,14 @@ A finding the change did not cause or worsen is context, not a finding. One that
 
 Lead with the round, the verdict, and reviewer counts, such as `🔴 Round 1: a retry can charge twice. Codex 2 · Claude 3 · both raised 1.` The verdict is **Blocked** with any Blocker, **Needs cleanup** with only Cleanups, and **Clean** when nothing needs fixing. Then list each finding on one line, worst first: number, severity, what breaks in plain words, `path:line`, who raised it, and the call. Fold the checks, one evidence line per finding, and each dropped finding with its reason into a details block. A finding that needs the user, such as a design, scope, or product decision, also gets a short card: what breaks, for whom, and the smallest diff.
 
-End with the next step: fixing and re-reviewing while findings remain, or delivering the draft PR through /pr once a round is Clean.
+End by offering the next step: fixing and re-reviewing while findings remain, or delivering the draft PR through /pr once a round is Clean, when delivery is within the grant.
 
 **Complete when:** the report alone shows what each reviewer found, what held up, and what happens next.
 
 ## 5. Fix and re-review
 
 1. Apply each **fix** on the branch that owns it and run the focused checks, or edit the plan. When commits are authorized, commit each fix on its own.
-2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes run in round 1 only; the counterpart's delta review covers their ground on the fixed lines. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
+2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
 3. Report only what is new or still open.
 
 Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /pstack-principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.
