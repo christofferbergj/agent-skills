@@ -371,6 +371,49 @@ class RepositoryCoverage(unittest.TestCase):
         self.registry['sources'] = {'pstack': {'repository': REPOSITORY, 'manifest': 'pstack.json', 'skillRoot': 'pstack/skills'}}
         self.assertEqual(catalog.entries(self.root, self.registry)[0]['upstream'], 'pstack/skills/source-alpha')
 
+    def test_resume_invalidates_required_writing_owner_and_support(self):
+        self.registry['owners']['agentWriting'] = 'writing-for-agents'
+        self.assertFalse(catalog.validate(self.root, self.registry)['valid'])
+        writing = self.add_skill('writing-for-agents', category='agents')
+        self.assertTrue(catalog.validate(self.root, self.registry)['valid'])
+        mechanics = writing / 'SKILL-MECHANICS.md'
+        mechanics.write_text('Original skill mechanics.\n')
+        for path in [writing / 'SKILL.md', mechanics]:
+            with self.subTest(path=path.name):
+                previous = self.checkpoint(reviews=self.reviews())
+                path.write_text(path.read_text() + 'Changed governing writing rule.\n')
+                result = self.checkpoint(completed=[], resume=previous)
+                self.assertIn('alpha', result['pending'])
+                self.assertIn('alpha', result['invalidated'])
+                self.assertNotEqual(previous['contextFingerprint'], result['contextFingerprint'])
+
+    def test_resume_invalidates_required_repository_guidance(self):
+        for relative in ['docs/architecture.md', 'CONTRIBUTING.md', 'skills/README.md']:
+            with self.subTest(path=relative):
+                path = self.root / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('Original governing policy.\n')
+                previous = self.checkpoint(reviews=self.reviews())
+                path.write_text('Changed governing policy.\n')
+                result = self.checkpoint(completed=[], resume=previous)
+                self.assertIn('alpha', result['pending'])
+                self.assertIn('alpha', result['invalidated'])
+                self.assertNotEqual(previous['contextFingerprint'], result['contextFingerprint'])
+
+    def test_resume_preserves_matching_evidence_and_isolates_unrelated_skill_changes(self):
+        directory = self.add_skill('unrelated-local')
+        previous = self.checkpoint(completed=['alpha', 'unrelated-local'], reviews=self.reviews())
+        matching = self.checkpoint(completed=[], resume=previous)
+        self.assertTrue(matching['coverageComplete'])
+        self.assertEqual(matching['invalidated'], [])
+        instruction = directory / 'SKILL.md'
+        instruction.write_text(instruction.read_text() + 'Changed unrelated behavior.\n')
+        result = self.checkpoint(completed=[], resume=previous)
+        self.assertEqual(result['completed'], ['alpha'])
+        self.assertEqual(result['pending'], ['unrelated-local'])
+        self.assertEqual(result['invalidated'], ['unrelated-local'])
+        self.assertEqual(previous['contextFingerprint'], result['contextFingerprint'])
+
 
 class ActualLibraryCoverage(unittest.TestCase):
     def setUp(self):
@@ -398,6 +441,14 @@ class ActualLibraryCoverage(unittest.TestCase):
         self.assertTrue(openclaw['historicalImportUnknown'])
         for path in ['.agents/skills/test-audit', '.agents/skills/test-audit/CAMPAIGN.md', '.agents/skills/test-audit/references/audit.md', 'docs/help/testing/writing-tests.md', '.agents/skills/openclaw-testing', 'LICENSE']:
             self.assertIn(path, openclaw['paths'])
+
+    def test_every_documented_shared_owner_governs_checkpoint_reuse(self):
+        owners = set(self.registry['owners'].values())
+        architecture = (self.root / 'docs/architecture.md').read_text()
+        documented = set(re.findall(r'^\|[^|\n]+\| `/([a-z0-9-]+)` +\|$', architecture, re.MULTILINE))
+        self.assertEqual(documented, owners)
+        maintenance = (self.root / 'skills/agents/maintain-skills/MAINTENANCE.md').read_text()
+        self.assertEqual(set(re.findall(r'^- /([a-z0-9-]+) ', maintenance, re.MULTILINE)), owners)
 
     def test_mapped_only_coverage_is_incomplete_but_all_repository_skills_can_finish(self):
         groups = self.inventory['sourceGroups']

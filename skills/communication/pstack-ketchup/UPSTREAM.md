@@ -7,13 +7,15 @@
 - Original skill: [`pstack/skills/ketchup/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/ketchup/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Last upstream review: 2026-10-15.
+- Reviewed through commit: `0b8e952052d482ee6de06deebf14d590d77b1b34`.
+- Last upstream review: 2026-10-18.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
 
 - Namespace: `ketchup` maps to `pstack-ketchup`. Preserve the installed name and invocation metadata.
+- Remain model-invoked during Pstack tasks; upstream is user-invoked. Render visuals with the host's available tools, falling back to links or plain text; upstream names `/visualize`.
+- Keep upstream's per-item budget of about 30 words; the former blanket 150-word cap is gone.
 - Support Codex and Claude Code through native tool schemas and explicit dependency invocation. Shared execution is owned by `/pstack-swarm`.
 - Preserve workflow outcomes and evidence; scale effort to scope and budget. Prefer cross-vendor review with a disclosed independent-native fallback.
 - Honor repository conventions and existing authorization. Default to draft pull requests; prepare learning-driven source edits for review.
@@ -25,6 +27,7 @@ Invoke `/maintain-skills` for repository-wide upkeep, including this suite's sup
 
 Keep the original import fixed. Advance the reviewed-through baseline only after the relevant delta is fully resolved and checks pass. Record adopted, adapted, and excluded changes and their reasons.
 
-| Review date | Candidate revision                         | Decision                                                                                                                                                                                      |
-| ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary. |
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ----------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                                                                                                                                                                                                  |
+| 2026-10-18  | `0b8e952052d482ee6de06deebf14d590d77b1b34` | Adapted the complete action-item coverage revision: size the reply to pending decisions, preserve every item and its evidence and risk, and keep the progress story short. Preserved the local name, model invocation, read-only recap scope, and plain-language owner reference. The former blanket 150-word cap is removed. Clarified automatic invocation and host rendering, and kept the recap read-only within an ongoing task. Independent grouped-decision, unavailable-media, and unchanged-state fixtures and repository gates pass. |

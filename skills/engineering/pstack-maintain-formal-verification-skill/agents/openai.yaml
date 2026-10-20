@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pstack maintain formal verification skill"
+  short_description: "Reconcile formal checks with changed code"
+policy:
+  allow_implicit_invocation: false

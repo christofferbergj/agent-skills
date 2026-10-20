@@ -323,7 +323,7 @@ def inventory(root, catalog):
     for item in skills:
         problems.extend(item['name'] + ': ' + problem for problem in item['problems'])
     shared_context = {}
-    for path in [root / 'AGENTS.md', root / 'CLAUDE.md', root / 'README.md', *(root / 'skills').glob('*/README.md')]:
+    for path in [root / 'AGENTS.md', root / 'CLAUDE.md', root / 'README.md', root / 'CONTRIBUTING.md', root / 'docs/architecture.md', root / 'skills/README.md', *(root / 'skills').glob('*/README.md')]:
         if path.is_file():
             shared_context[str(path.relative_to(root))] = hashlib.sha256(path.read_bytes()).hexdigest()
     owner_names = set(catalog.get('owners', {}).values())

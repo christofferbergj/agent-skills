@@ -34,6 +34,7 @@ Swap in the real paths, skills, and done checks. Informal wording works.
 ## Review and ship
 
 - `/pstack-interrogate the whole branch, but skeptically. don't change anything yet. no nitpicks unless it's a real bug or regression.` Read the dismissals too.
+- `/pstack-create-formal-verification-skill verify <property> in <module>, including <retry or interleaving>.` After covered-code changes: explicitly invoke `/pstack-maintain-formal-verification-skill`.
 - `/pstack-swarm check every package under <dir> against its check script. one worker per package. one report.`
 - `/pstack-mode open the pr. small ordered commits, evidence in the description.`
 - `/pstack-mode babysit this pr. get it green.` For status only: `/pstack-mode check on pr <number>. anything outstanding?`

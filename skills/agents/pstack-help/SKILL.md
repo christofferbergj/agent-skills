@@ -14,6 +14,7 @@ Answer the user's help question without starting its underlying task. If they ex
 - Understand: /pstack-how explains behavior, /pstack-why investigates rationale, and /pstack-teach combines them.
 - Design: /pstack-architect sketches interfaces, /pstack-arena compares artifacts, and /pstack-interrogate critiques a concrete diff.
 - Prove: /pstack-create-verification-skill creates an app-driving skill; /pstack-maintain-verification-skill keeps its feature map honest; /pstack-blast-radius and /pstack-benchmark-checklist handle indirect effects and measured claims.
+- Formal verification: explicitly invoke `/pstack-create-formal-verification-skill` to verify one consequential property and generate a project-local check. Explicitly invoke `/pstack-maintain-formal-verification-skill` after covered-code changes to reconcile the verification and distinguish drift from defects.
 - Coordinate: /pstack-swarm owns execution and coverage; /pstack-figure-it-out designs a bespoke run; /pstack-show-me-your-work records decisions; /pstack-ketchup catches the user up.
 - Learn: /pstack-recall reconstructs same-repository history, /pstack-reflect proposes source improvements, and the explicitly invoked /pstack-automate-me creates a personal mode.
 - Writing: /pstack-unslop and /pstack-technical-writing refine prose; `/bro` restates the previous reply plainly.
