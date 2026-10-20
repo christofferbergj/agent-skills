@@ -76,6 +76,11 @@
       "directory": "skills/communication/pstack-ketchup"
     },
     {
+      "upstream": "maintain-formal-verification-skill",
+      "local": "pstack-maintain-formal-verification-skill",
+      "directory": "skills/engineering/pstack-maintain-formal-verification-skill"
+    },
+    {
       "upstream": "maintain-verification-skill",
       "local": "pstack-maintain-verification-skill",
       "directory": "skills/engineering/pstack-maintain-verification-skill"

@@ -16,7 +16,7 @@ Complete when one target has source locations, a precise property, and an observ
 
 ## 2. Let the question choose the tool
 
-Inspect available tools and the repository's constraints. Choose a model checker, proof assistant, SMT-backed verifier, or other suitable tool at the lowest useful cost. Event ordering often suits a small design model. Memory safety, overflow, or data-structure invariants can suit a verifier that checks the code. A property required at every size can need a proof. For concurrent or distributed designs, consider TLA+ alongside tools already used by the repository.
+Inspect available tools and the repository's constraints. Choose a model checker, proof assistant, SMT-backed verifier, or other suitable tool at the lowest useful cost. Event ordering often suits a small design model. Memory safety, overflow, or data-structure invariants can suit a verifier that checks the code. If no verifier supports the language, say so and test the real code with generated inputs; distinguish that evidence from a formal proof. A property required at every size can need a proof. For concurrent or distributed designs, consider TLA+ alongside tools already used by the repository.
 
 Prefer existing tools or a project-local installation developers can rerun. Record its reproducible version, installation command, verification command, and expected cost. Use current primary documentation for any unfamiliar tool. Explain why the tool answers this question.
 
@@ -38,7 +38,7 @@ Complete when the real check has a conclusive recorded result, each claimed prop
 
 Invoke /writing-for-agents for the generated instructions and skill mechanics. Follow the repository's skill location and invocation conventions. Use a lowercase name, a description that identifies relevant changes, and real paths and commands without placeholders.
 
-The generated skill must let a new agent identify whether a change touches the verified property, run the check, distinguish a code defect from a modeling error, and update the verification after an intended change. Include the property, source correspondence, tool version, command, expected outcomes, bounds, assumptions, evidence location, and cleanup. Add a concrete drift check or workflow trigger that requires reviewing the verification when its guarded code changes.
+The generated skill must let a new agent identify whether a change touches the verified property, run the check, distinguish a code defect from a modeling error, and update the verification after an intended change. Include the property, covered files and functions, source correspondence, tool version, command, expected outcomes, bounds, assumptions, evidence location, and cleanup. Record the target committed snapshot and included working changes with their fingerprints. Leave a new check's sync commit pending until step 5 validates it; preserve any existing confirmed baseline. Add a concrete drift check or workflow trigger that requires reviewing the verification when its guarded code changes.
 
 Complete when the generated skill and its supporting artifacts contain every instruction needed to rerun and interpret the check.
 
@@ -48,12 +48,14 @@ Follow the generated skill as a new agent would. Use an isolated scratch copy or
 
 Restore the scratch copy, rerun, and confirm the original result: passing, or failing only on the findings already recorded. Preserve the evidence after cleanup.
 
+Record the sync commit only after source correspondence, a conclusive rerun, semantic control, restoration, and cleanup are established for that exact committed snapshot. A preserved counterexample is a valid conclusive finding, not a property pass. Record reviewed working changes separately; their committed freshness remains pending. A draft retains its prior confirmed baseline or leaves a new sync commit pending.
+
 Complete when a realistic code mutation fails the documented check, restoration reproduces the original result, and owned scratch state is cleaned. A skill that was never run remains a draft.
 
 ## 6. Hand off
 
 Report the checker's outcome separately from the generated skill's readiness. A pass establishes the property within its stated scope; a counterexample is a finding; an inconclusive result establishes neither. The generated skill is ready only after its rerun, semantic negative control, restoration, and cleanup pass. Otherwise label it a draft, including when only a design model has been proved without code conformance.
 
-Return the generated skill when available, the property, tool choice, bounds, assumptions, command, results, counterexamples, and remaining coverage in plain words. For a draft, identify the missing prerequisite or proof and next check. Suggest a second target only when the investigation found a close one.
+Return the generated skill when available, the property, tool choice, bounds, assumptions, command, results, counterexamples, and remaining coverage in plain words. For a draft, identify the missing prerequisite or proof and next check. Tell the user to invoke /pstack-maintain-formal-verification-skill after covered-code changes that skipped the verification. Suggest a second target only when the investigation found a close one.
 
 Complete when the user can distinguish the check's outcome and scope, any findings, and a ready skill from a draft with a concrete next check.

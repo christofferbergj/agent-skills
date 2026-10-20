@@ -21,7 +21,19 @@ Use /pstack-swarm for useful background delegates within available capacity; ret
 
 Use background agents so you can stay in active dialogue with the user.
 
-Communication to and from subagents should be sparse. Communicate primarily through **context pointers**: research notes, previous commits, and others. Don't duplicate information already available via pointers.
+Communication to and from subagents should be sparse. Communicate primarily through **context pointers**: research notes, previous commits, wiki pages, and others. Don't duplicate information already available via pointers.
+
+## Wiki memory
+
+Keep durable goal knowledge in the task's existing wiki or notes location. Otherwise choose and state a task-owned location within the authorized workspace, following project conventions. Keep private sources within their existing access boundary and link canonical project documents rather than duplicating their rules.
+
+Use an `index.md` with a link and one-line summary for every topic page. Each page covers one decision, recurring problem, subsystem, or user preference and links related pages and its sources.
+
+- **Query:** read the index and relevant pages before a decision.
+- **Ingest:** update every affected page and the index when a durable finding or correction arrives; cite sources rather than copying them.
+- **Lint:** at checkpoints, resolve contradictions, orphan pages, broken links, and claims overtaken by newer evidence. Suggest recurring upkeep only within the user's scheduling grant.
+
+Write dated history. Date each claim; for code, also cite the repository and commit where it was true. When evidence changes, add a dated claim and mark the previous one superseded. Complete the memory checkpoint when durable findings have dated sources, code claims have commit citations, and the index reaches every page.
 
 ## Strategic View
 

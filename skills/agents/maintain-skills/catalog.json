@@ -224,6 +224,7 @@
     }
   },
   "owners": {
+    "agentWriting": "writing-for-agents",
     "domainArtifacts": "domain-modeling",
     "architectureVocabulary": "codebase-design",
     "behaviorTests": "tdd",

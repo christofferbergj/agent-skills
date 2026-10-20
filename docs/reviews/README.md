@@ -7,5 +7,6 @@ Dated audit and validation evidence. Counts, commands, deployment states, and pe
 - [Combined skills Thermos review](2026-10-15-combined-skills-thermos.md)
 - [Combined skill maintenance, 2026-10-16](2026-10-16-combined-skill-maintenance.md)
 - [Whole-library maintenance and rebase, 2026-10-16](2026-10-16-whole-library-maintenance.md)
+- [Whole-library maintenance, 2026-10-20](2026-10-20-whole-library-maintenance.md)
 - [Combined validation history](../../skills/agents/maintain-skills/VALIDATION.md)
 - [Initial Pstack validation](../../skills/agents/pstack-mode/VALIDATION.md)

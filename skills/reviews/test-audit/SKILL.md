@@ -79,7 +79,7 @@ Complete when every in-scope test or distinct case group has a decision and evid
 
 Group edits by the behavior or subsystem that owns them. Transfer unique cases before deleting their old home. Choose table-driven cases or shared fixtures for readability and stable setup rather than line reduction alone.
 
-Repair the recorded test defects. Fix flakiness at its cause while preserving assertions and meaningful scenarios; retries are not a substitute for that repair.
+Repair the recorded test defects. Fix flakiness at its cause while preserving assertions and meaningful scenarios; retries are not a substitute for that repair. In asynchronous end-to-end tests, wait for the required observable state using the harness's bounded wait; an action returning does not prove its downstream work completed.
 
 Remove newly unused fixtures, imports, snapshots, helpers, and setup. Preserve support used by other packages. Keep test discovery and existing CI routing correct when moving tests; do not weaken gates or quarantine tests to make the result green.
 
@@ -95,7 +95,7 @@ Keep files stable during validation. Finish or stop the relevant run before edit
 2. Confirm moved tests are discovered and executed, and meaningful parameter cases remain represented.
 3. Delegate the preservation comparison to a subagent that did not propose the affected changes, using Step 2's fallback when needed. Compare the original contracts and cases against surviving assertions. Check unique inputs, errors, boundary cases, security, accessibility, ordering, interactions, integration paths, and CI environments where applicable. Restore missing contracts at their appropriate owner.
 4. Validate repairs against their recorded defects. For high-risk or ambiguous assertions, use a focused negative control or small temporary mutation to show that the retained test catches the intended failure. Work in isolation and restore only the changes made for that check, preserving user edits. Do not require exhaustive mutation testing for routine cleanup.
-5. Run applicable formatting/static checks and inspect the final diff for accidental scope expansion, dead support, weakened assertions, and configuration changes.
+5. Run applicable formatting/static checks and inspect the final diff for accidental scope expansion, dead support, weakened assertions, and configuration changes. Before completing removal batches, run the project's existing unused-file, export, and dependency checks where available. Inspect findings against shared consumers and published contracts; report unavailable checks and propose production or public API removals separately.
 
 Reconcile baseline and final results. Report commands, test selection, outcomes, and unavailable environments accurately. Cached results do not prove newly edited tests ran. Stop optional validation once concrete risks are addressed and required gates are satisfied.
 
