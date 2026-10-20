@@ -629,6 +629,9 @@ class RepositoryCoverage(unittest.TestCase):
         registry.write_text(json.dumps(self.registry))
         fetched = self.base / 'fetch.json'
         fetched.write_text(json.dumps({'candidates': {GROUP: self.baseline}, 'checkouts': {GROUP: str(self.upstream)}, 'errors': {}}))
+        saved = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'inventory', '--output', str(self.base / 'reports/inventory.json')], capture_output=True, text=True)
+        self.assertEqual(saved.returncode, 0, saved.stdout + saved.stderr)
+        self.assertEqual(json.loads((self.base / 'reports/inventory.json').read_text())['repositorySkills'], 1)
         result = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'compare', '--fetch', str(fetched), '--output-dir', str(self.base / 'reports')], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         summary = json.loads(result.stdout)[GROUP]

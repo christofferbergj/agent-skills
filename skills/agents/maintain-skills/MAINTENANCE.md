@@ -24,7 +24,7 @@ Run the helper from the root of the library worktree, so its fingerprints includ
 `inventory` lists every local skill, its provenance records, and source groups. Each group key combines a repository and its tracking choice, such as `github.com/cursor/plugins@branch:main`. `fidelityBacklog` lists sourced skills whose record has no `Fidelity checked through` line. With `--resume`, `changedSince` lists the skills whose files changed since that checkpoint.
 
 ```bash
-python3 skills/agents/maintain-skills/scripts/catalog.py --root . inventory --resume <prior-checkpoint.json>
+python3 skills/agents/maintain-skills/scripts/catalog.py --root . inventory --resume <prior-checkpoint.json> --output "$RUN/inventory.json"
 ```
 
 `fetch` clones or updates every source in `$STATE/sources/` and writes `candidates`, `checkouts`, and `errors`, each keyed by group. It exits non-zero when any source fails. Compare a failed source from its clone at the prior checkpoint's candidate, keep its review pending, and report the failure.

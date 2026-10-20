@@ -652,6 +652,7 @@ def main():
     commands.add_parser('names', help='List installed skill names')
     survey = commands.add_parser('inventory', help='Discover every skill, its provenance records, source groups, and fidelity backlog')
     survey.add_argument('--resume', type=Path, help='Prior checkpoint; lists skills whose files changed since it as changedSince')
+    survey.add_argument('--output', type=Path)
     commands.add_parser('validate', help='Check packaging, listings, links, and catalog mappings')
     pull = commands.add_parser('fetch', help='Clone or update one blobless checkout per source and resolve candidate commits')
     pull.add_argument('--state', type=Path, required=True, help='Machine-local state directory; clones live under sources/')
