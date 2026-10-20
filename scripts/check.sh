@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
 # Runs every repository gate: formatting, skill discovery, catalog and
-# provenance validation, every script test suite, whitespace, and secrets.
+# provenance validation, every Python, Node, and Bun test suite, whitespace,
+# and secrets. Needs Python 3, Node 22.18 or newer, Bun, and gitleaks.
 # Test suites are discovered from tracked files, so a new suite runs without
 # editing this script.
 
@@ -25,7 +26,7 @@ quiet npx -y skills@latest add . --list
 step "catalog and provenance"
 quiet python3 skills/agents/maintain-skills/scripts/catalog.py --root . validate
 
-for suite in $(git ls-files 'skills/*/scripts/tests/test_*.py' | xargs -n1 dirname | sort -u); do
+for suite in $(git ls-files 'skills/*/tests/test_*.py' | xargs -n1 dirname | sort -u); do
   step "python: $suite"
   python3 -m unittest discover -s "$suite"
 done
@@ -39,8 +40,8 @@ runtime=$(bun skills/agents/pstack-mode/scripts/bootstrap.ts --print-runtime | t
 (cd "$runtime" && bun test && bun run typecheck)
 
 step whitespace
-git diff --check
-git diff --cached --check
+# Diffing against the empty tree checks every tracked file as it is on disk.
+git diff --check "$(git hash-object -t tree /dev/null)"
 
 step secrets
 gitleaks dir . --redact --no-banner
