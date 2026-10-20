@@ -2,6 +2,7 @@
   "name": "agent-skills",
   "private": true,
   "scripts": {
+    "check": "bash scripts/check.sh",
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check"
   },
