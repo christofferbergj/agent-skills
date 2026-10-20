@@ -1,5 +1,5 @@
 interface:
   display_name: "Maintain Skills"
-  short_description: "Check skill writing and repair stale tools and guidance"
+  short_description: "Adopt upstream skill changes and audit the library"
 policy:
   allow_implicit_invocation: false

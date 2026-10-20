@@ -28,6 +28,6 @@ python3 -m unittest discover -s skills/agents/maintain-skills/scripts/tests -v
 
 ## Upstream maintenance
 
-Use this repository's `/maintain-skills` with `/writing-for-agents` and `/pstack-swarm`. Follow the [maintenance guide](skills/agents/maintain-skills/MAINTENANCE.md) and [provenance convention](skills/agents/maintain-skills/references/PROVENANCE.md). For integration changes, read [how the source families compose](docs/architecture.md). The scheduled prompt and saved automation settings own scheduled scope and cadence.
+Use this repository's `/maintain-skills` with `/writing-for-agents` and `/pstack-swarm`. Follow the [adaptation contract](skills/agents/maintain-skills/references/ADAPTATION.md), [maintenance guide](skills/agents/maintain-skills/MAINTENANCE.md), and [provenance convention](skills/agents/maintain-skills/references/PROVENANCE.md). For integration changes, read [how the source families compose](docs/architecture.md). The scheduled prompt owns scheduled budgets and permissions; the scheduled tasks own cadence and model.
 
 Keep changes reviewable. Commit, publish, merge, and refresh global installations only within the user's authorization.

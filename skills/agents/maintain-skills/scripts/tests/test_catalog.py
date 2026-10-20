@@ -3,10 +3,12 @@ import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 
-spec = importlib.util.spec_from_file_location('catalog', Path(__file__).resolve().parents[1] / 'catalog.py')
+SCRIPT = Path(__file__).resolve().parents[1] / 'catalog.py'
+spec = importlib.util.spec_from_file_location('catalog', SCRIPT)
 catalog = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(catalog)
 
@@ -30,6 +32,7 @@ class RepositoryCoverage(unittest.TestCase):
         (initial / 'SKILL.md').write_text('initial source')
         (self.upstream / 'LICENSE').write_text('fixture MIT')
         self.commit('Initial')
+        subprocess.run(['git', '-C', str(self.upstream), 'branch', '-qM', 'main'], check=True)
         self.baseline = self.revision()
         self.definition = {
             'repository': REPOSITORY, 'branch': 'main', 'skillRoot': 'skills',
@@ -373,6 +376,7 @@ class RepositoryCoverage(unittest.TestCase):
 
     def test_resume_invalidates_required_writing_owner_and_support(self):
         self.registry['owners']['agentWriting'] = 'writing-for-agents'
+        self.registry['contextOwners'] = ['agentWriting']
         self.assertFalse(catalog.validate(self.root, self.registry)['valid'])
         writing = self.add_skill('writing-for-agents', category='agents')
         self.assertTrue(catalog.validate(self.root, self.registry)['valid'])
@@ -388,7 +392,8 @@ class RepositoryCoverage(unittest.TestCase):
                 self.assertNotEqual(previous['contextFingerprint'], result['contextFingerprint'])
 
     def test_resume_invalidates_required_repository_guidance(self):
-        for relative in ['docs/architecture.md', 'CONTRIBUTING.md', 'skills/README.md']:
+        self.registry['contextPaths'] = ['AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'docs/architecture.md', 'skills/agents/maintain-skills/references/ADAPTATION.md']
+        for relative in self.registry['contextPaths']:
             with self.subTest(path=relative):
                 path = self.root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -415,6 +420,232 @@ class RepositoryCoverage(unittest.TestCase):
         self.assertEqual(previous['contextFingerprint'], result['contextFingerprint'])
 
 
+    def test_resume_ignores_listings_unrelated_owners_and_catalog(self):
+        self.registry['owners'] = {'agentWriting': 'writing-for-agents', 'behaviorTests': 'tdd'}
+        self.registry['contextOwners'] = ['agentWriting']
+        self.add_skill('writing-for-agents', category='agents')
+        tdd = self.add_skill('tdd')
+        (self.root / 'skills/README.md').write_text('Library listing.\n')
+
+        def append(path):
+            with path.open('a') as output:
+                output.write('Changed text.\n')
+        changes = [
+            ('README.md', lambda: append(self.root / 'README.md')),
+            ('skills/README.md', lambda: append(self.root / 'skills/README.md')),
+            ('category README', lambda: append(self.directory.parent / 'README.md')),
+            ('non-writing owner', lambda: append(tdd / 'SKILL.md')),
+            ('catalog', lambda: self.registry.update(policy='Changed policy')),
+        ]
+        for label, change in changes:
+            with self.subTest(change=label):
+                previous = self.checkpoint(completed=['alpha', 'tdd', 'writing-for-agents'], reviews=self.reviews())
+                change()
+                result = self.checkpoint(completed=[], resume=previous)
+                self.assertIn('alpha', result['completed'])
+                self.assertNotIn('alpha', result['invalidated'])
+                self.assertEqual(previous['contextFingerprint'], result['contextFingerprint'])
+
+    def test_excluded_paths_filter_additions_and_shared_lines(self):
+        self.definition['sharedRoot'] = '.'
+        self.definition['excludedPaths'] = {'automations/benny': 'Dormant workflows', 'assets/': 'README images', 'skills/in-progress/draft': 'Held draft'}
+        for path in ['automations/benny/run.md', 'assets/logo.png', 'assets-guide/notes.md', 'docs/guide.md', 'skills/in-progress/draft/SKILL.md', 'skills/in-progress/beta/SKILL.md']:
+            target = self.upstream / path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(path)
+        self.commit('Add excluded and kept inputs')
+        result = catalog.compare(self.root, self.registry, 'matt', self.upstream, self.revision())
+        self.assertEqual(result['added'], ['skills/in-progress/beta'])
+        self.assertIn({'path': 'skills/in-progress/draft', 'reason': 'Held draft'}, result['excluded'])
+        shared = result['sharedInputs'][0]
+        self.assertEqual([line.split('\t')[1] for line in shared['files']], ['assets-guide/notes.md', 'docs/guide.md'])
+        self.assertEqual(shared['excludedFiles'], 2)
+
+    def test_policy_shares_one_diff_from_its_review_position(self):
+        identity = catalog.repository_identity(REPOSITORY)
+        declaration = f'Canonical source: [source](https://{identity}).'
+        plugin = f'Canonical source: [source](https://{identity}), [plugin](https://{identity}/tree/main/plugin).'
+        (self.upstream / 'plugin').mkdir()
+        (self.upstream / 'plugin/manifest.json').write_text('{}')
+        (self.upstream / 'README.md').write_text('Reviewed overview')
+        (self.upstream / 'skills/engineering/beta').mkdir()
+        (self.upstream / 'skills/engineering/beta/SKILL.md').write_text('beta source')
+        self.commit('Add plugin and beta')
+        reviewed = self.revision()
+        (self.upstream / 'LICENSE').write_text('changed license')
+        (self.upstream / 'plugin/manifest.json').write_text('{"changed": true}')
+        self.commit('Change shared inputs')
+        record = self.directory / 'UPSTREAM.md'
+        record.write_text(record.read_text().replace(declaration, plugin))
+        beta = self.add_skill('beta', source=True)
+        (beta / 'UPSTREAM.md').write_text(self.provenance('beta', baseline=reviewed).replace(declaration, plugin))
+        records = catalog.inventory(self.root, self.registry)['sourceGroups'][GROUP]['records']
+        self.assertEqual({record['local']: record['sharedPaths'] for record in records}, {'alpha': ['plugin'], 'beta': ['plugin']})
+        self.definition['sharedReviewedThrough'] = reviewed
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, self.revision())
+        policy = [entry for entry in result['sharedInputs'] if 'suite' in entry]
+        self.assertEqual([(entry['suite'], entry['since'], entry['files']) for entry in policy], [('matt', reviewed, ['M\tLICENSE'])])
+        # Only the uncovered record keeps its own declared plugin diff.
+        self.assertEqual([entry for entry in result['sharedInputs'] if 'paths' in entry], [{'paths': ['plugin'], 'since': reviewed, 'files': ['M\tplugin/manifest.json']}])
+        del self.definition['sharedReviewedThrough']
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, self.revision())
+        self.assertEqual([entry['since'] for entry in result['sharedInputs'] if 'suite' in entry], [self.baseline])
+
+    def test_source_without_policy_compares_only_listed_paths(self):
+        self.registry['sources'] = {}
+        (self.upstream / 'docs').mkdir()
+        (self.upstream / 'docs/unrelated.md').write_text('unrelated')
+        self.commit('Change unlisted files')
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, self.revision())
+        self.assertEqual(result['sharedInputs'], [])
+        self.assertNotIn('inventory', result)
+        self.assertEqual(result['skills'][0]['status'], 'unchanged')
+
+    def advance_alpha_then_overview(self):
+        (self.upstream / 'skills/engineering/alpha/SKILL.md').write_text('reviewed change')
+        self.commit('Change alpha')
+        verified = self.revision()
+        (self.upstream / 'README.md').write_text('later overview')
+        self.commit('Change overview')
+        return verified, self.revision()
+
+    def test_resume_carries_verified_skill_and_shared_progress_forward(self):
+        verified, candidate = self.advance_alpha_then_overview()
+        previous = self.checkpoint(reviews=self.reviews(candidate=verified), candidates={GROUP: verified})
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate, previous)
+        alpha = result['skills'][0]
+        self.assertEqual((alpha['status'], alpha['baseline'], alpha['since'], alpha['carriedForward']), ('unchanged', self.baseline, verified, True))
+        self.assertEqual(result['resumedFrom'], verified)
+        self.assertEqual((result['sharedInputs'][0]['since'], result['sharedInputs'][0]['files']), (verified, ['A\tREADME.md']))
+        fresh = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate)
+        self.assertEqual((fresh['skills'][0]['status'], fresh['skills'][0]['since'], fresh['skills'][0]['carriedForward']), ('changed', self.baseline, False))
+
+    def test_resume_falls_back_without_matching_verified_progress(self):
+        verified, candidate = self.advance_alpha_then_overview()
+        review = self.reviews(candidate=verified)
+        unverified = self.checkpoint(reviews={GROUP: {**review[GROUP], 'skills': [], 'sharedInputsReviewed': False}}, candidates={GROUP: verified})
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate, unverified)
+        self.assertEqual((result['skills'][0]['status'], result['skills'][0]['since'], result['skills'][0]['carriedForward']), ('changed', self.baseline, False))
+        self.assertEqual((result['sharedInputs'][0]['since'], result['sharedInputs'][0]['carriedForward']), (self.baseline, False))
+        unknown = self.checkpoint(reviews=self.reviews(candidate='f' * 40), candidates={GROUP: 'f' * 40})
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate, unknown)
+        self.assertIsNone(result['resumedFrom'])
+        self.assertEqual(result['skills'][0]['since'], self.baseline)
+        previous = self.checkpoint(reviews=review, candidates={GROUP: verified})
+        instruction = self.directory / 'SKILL.md'
+        instruction.write_text(instruction.read_text() + 'Local change after the checkpoint.\n')
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate, previous)
+        self.assertEqual((result['skills'][0]['since'], result['skills'][0]['carriedForward']), (self.baseline, False))
+        self.assertEqual(result['sharedInputs'][0]['since'], verified)
+
+    def test_resume_never_moves_a_baseline_backwards(self):
+        verified, candidate = self.advance_alpha_then_overview()
+        (self.directory / 'UPSTREAM.md').write_text(self.provenance(baseline=verified))
+        older = self.checkpoint(reviews=self.reviews(), candidates={GROUP: self.baseline})
+        result = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate, older)
+        self.assertEqual((result['skills'][0]['since'], result['skills'][0]['carriedForward']), (verified, False))
+
+    def test_fetch_keeps_one_canonical_blobless_clone_and_reports_new_candidates(self):
+        subprocess.run(['git', '-C', str(self.upstream), 'config', 'uploadpack.allowFilter', 'true'], check=True)
+        state = self.base / 'state'
+        remotes = {'github.com/example/library': self.upstream.as_uri()}
+        checkout = state / 'sources/github.com-example-library'
+        self.assertEqual(catalog.fetch(self.root, self.registry, state, remotes), {'candidates': {GROUP: self.baseline}, 'checkouts': {GROUP: str(checkout)}, 'errors': {}})
+
+        def config(*arguments):
+            return subprocess.run(['git', '-C', str(checkout), 'config', *arguments], capture_output=True, text=True).stdout.strip()
+        self.assertEqual(config('remote.origin.url'), REPOSITORY)
+        self.assertEqual(config('remote.origin.partialclonefilter'), 'blob:none')
+        self.assertNotIn('insteadof', config('--local', '--list').lower())
+        (self.upstream / 'README.md').write_text('new candidate')
+        self.commit('Advance source')
+        second = catalog.fetch(self.root, self.registry, state, remotes)
+        self.assertEqual(second['candidates'], {GROUP: self.revision()})
+        result = catalog.compare(self.root, self.registry, GROUP, checkout, second['candidates'][GROUP])
+        self.assertEqual(result['skills'][0]['status'], 'unchanged')
+        self.assertEqual(result['sharedInputs'][0]['files'], ['A\tREADME.md'])
+
+    def test_fetch_reports_a_broken_remote_without_aborting_other_sources(self):
+        self.add_skill('beta', source=True, repository=OTHER)
+        registry = self.base / 'catalog.json'
+        registry.write_text(json.dumps(self.registry))
+        state = self.base / 'state'
+        command = [sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'fetch', '--state', str(state), '--remote', 'github.com/example/library=' + self.upstream.as_uri(), '--remote', 'github.com/example/other=' + (self.base / 'missing').as_uri()]
+        completed = subprocess.run(command, capture_output=True, text=True)
+        self.assertEqual(completed.returncode, 1)
+        result = json.loads(completed.stdout)
+        self.assertEqual(result['candidates'], {GROUP: self.baseline})
+        self.assertEqual(list(result['errors']), [OTHER_GROUP])
+
+    def test_inventory_reports_fidelity_backlog_and_changes_since_a_checkpoint(self):
+        self.assertEqual(catalog.inventory(self.root, self.registry)['fidelityBacklog'], ['alpha'])
+        record = self.directory / 'UPSTREAM.md'
+        record.write_text(record.read_text().replace('License: MIT', f'Fidelity checked through: `{self.baseline}`\nLicense: MIT'))
+        self.assertEqual(catalog.inventory(self.root, self.registry)['fidelityBacklog'], [])
+        previous = self.checkpoint(reviews=self.reviews())
+        self.assertNotIn('changedSince', catalog.inventory(self.root, self.registry))
+        self.assertEqual(catalog.inventory(self.root, self.registry, previous)['changedSince'], [])
+        self.add_skill('beta')
+        instruction = self.directory / 'SKILL.md'
+        instruction.write_text(instruction.read_text() + 'Changed behavior.\n')
+        self.assertEqual(catalog.inventory(self.root, self.registry, previous)['changedSince'], ['alpha', 'beta'])
+
+    def test_checkpoint_counts_unchanged_comparisons_as_reviewed(self):
+        beta = self.upstream / 'skills/engineering/beta'
+        beta.mkdir(parents=True)
+        (beta / 'SKILL.md').write_text('beta source')
+        self.commit('Add beta')
+        added = self.revision()
+        self.definition['skills'].append({'upstream': 'skills/engineering/beta', 'local': 'beta', 'directory': 'skills/engineering/beta'})
+        (self.add_skill('beta', source=True) / 'UPSTREAM.md').write_text(self.provenance('beta', baseline=added))
+        (self.upstream / 'skills/engineering/alpha/SKILL.md').write_text('changed source')
+        self.commit('Change alpha')
+        candidate = self.revision()
+        report = catalog.compare(self.root, self.registry, GROUP, self.upstream, candidate)
+        quiet = catalog.checkpoint(self.root, self.registry, {GROUP: candidate}, ['alpha', 'beta'], 1, True, None, None, [report])
+        self.assertEqual(quiet['sourceCoverage'][GROUP]['skills'], ['beta'])
+        self.assertEqual(quiet['sourceCoverage'][GROUP]['pending'], ['alpha'])
+        self.assertTrue(quiet['sourceCoverage'][GROUP]['sharedInputsReviewed'])
+        decided = {GROUP: {'candidate': candidate, 'skills': ['alpha'], 'inventoryReviewed': True, 'sharedInputsReviewed': True}}
+        merged = catalog.checkpoint(self.root, self.registry, {GROUP: candidate}, ['alpha', 'beta'], 1, True, decided, None, [report])
+        self.assertEqual(merged['sourceCoverage'][GROUP]['skills'], ['alpha', 'beta'])
+        self.assertTrue(merged['coverageComplete'])
+        with self.assertRaises(ValueError):
+            catalog.checkpoint(self.root, self.registry, {GROUP: self.baseline}, ['alpha'], 1, True, None, None, [report])
+
+    def test_checkpoint_cli_accepts_fetch_output_as_candidates(self):
+        registry = self.base / 'catalog.json'
+        registry.write_text(json.dumps(self.registry))
+        fetched = self.base / 'fetch.json'
+        fetched.write_text(json.dumps({'candidates': {GROUP: self.baseline}, 'checkouts': {}, 'errors': {}}))
+        output = self.base / 'checkpoint.json'
+        result = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'checkpoint', '--candidates', str(fetched), '--completed', 'alpha', '--elapsed-minutes', '1', '--output', str(output)], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(json.loads(output.read_text())['candidates'], {GROUP: self.baseline})
+
+    def test_prune_keeps_newest_runs_and_stays_inside_runs(self):
+        state = self.base / 'state'
+        runs = state / 'runs'
+        outside = self.base / 'outside'
+        outside.mkdir()
+        (outside / 'keep.txt').write_text('outside')
+        (state / 'sources/clone').mkdir(parents=True)
+        for name in ['2026-10-18T080000Z-upstream', '2026-10-19T080000Z-upstream', '2026-10-20T080000Z-upstream']:
+            (runs / name).mkdir(parents=True)
+            (runs / name / 'checkpoint.json').write_text('{}')
+        (runs / '2026-10-18T080000Z-upstream/linked').symlink_to(outside)
+        (runs / '2026-10-17T080000Z-link').symlink_to(outside)
+        (runs / '2026-10-16T080000Z-notes.txt').write_text('file')
+        self.assertEqual(catalog.prune(state, 1), {'deleted': ['2026-10-18T080000Z-upstream', '2026-10-19T080000Z-upstream']})
+        self.assertEqual(sorted(path.name for path in runs.iterdir()), ['2026-10-16T080000Z-notes.txt', '2026-10-17T080000Z-link', '2026-10-20T080000Z-upstream'])
+        self.assertEqual((outside / 'keep.txt').read_text(), 'outside')
+        self.assertTrue((state / 'sources/clone').is_dir())
+        linked = self.base / 'linked-state'
+        linked.mkdir()
+        (linked / 'runs').symlink_to(runs)
+        self.assertEqual(catalog.prune(linked, 0), {'deleted': []})
+        self.assertTrue((runs / '2026-10-20T080000Z-upstream').is_dir())
+
 class ActualLibraryCoverage(unittest.TestCase):
     def setUp(self):
         self.root = Path(__file__).resolve().parents[5]
@@ -429,6 +660,8 @@ class ActualLibraryCoverage(unittest.TestCase):
         names = {item['name'] for item in self.inventory['skills']}
         self.assertEqual(names, actual_names)
         self.assertTrue({'thermos', 'thermo-nuclear-review', 'thermo-nuclear-code-quality-review', 'test-audit', 'audit-agent-documentation', 'linting-alignment', 'maintain-skills', 'update-dependencies'} <= names)
+        mapped = {entry['local']: entry['source'] for entry in catalog.entries(self.root, self.registry)}
+        self.assertEqual({mapped.get(name) for name in ['thermos', 'thermo-nuclear-review', 'thermo-nuclear-code-quality-review']}, {'thermos'})
         cursor = self.inventory['sourceGroups']['github.com/cursor/plugins@branch:main']
         self.assertIn('thermos', cursor['skills'])
         self.assertIn('pstack-mode', cursor['skills'])
@@ -447,8 +680,8 @@ class ActualLibraryCoverage(unittest.TestCase):
         architecture = (self.root / 'docs/architecture.md').read_text()
         documented = set(re.findall(r'^\|[^|\n]+\| `/([a-z0-9-]+)` +\|$', architecture, re.MULTILINE))
         self.assertEqual(documented, owners)
-        maintenance = (self.root / 'skills/agents/maintain-skills/MAINTENANCE.md').read_text()
-        self.assertEqual(set(re.findall(r'^- /([a-z0-9-]+) ', maintenance, re.MULTILINE)), owners)
+        adaptation = (self.root / 'skills/agents/maintain-skills/references/ADAPTATION.md').read_text()
+        self.assertEqual(set(re.findall(r'^- /([a-z0-9-]+) ', adaptation, re.MULTILINE)), owners)
 
     def test_mapped_only_coverage_is_incomplete_but_all_repository_skills_can_finish(self):
         groups = self.inventory['sourceGroups']
@@ -459,7 +692,7 @@ class ActualLibraryCoverage(unittest.TestCase):
         result = catalog.checkpoint(self.root, self.registry, candidates, mapped, 50, True, reviews)
         self.assertFalse(result['coverageComplete'])
         self.assertEqual(set(result['pending']), set(all_names) - set(mapped))
-        self.assertIn('thermos', result['pending'])
+        self.assertNotIn('thermos', result['pending'])
         self.assertIn('test-audit', result['pending'])
         result = catalog.checkpoint(self.root, self.registry, candidates, all_names, 50, True, reviews)
         self.assertTrue(result['coverageComplete'], result['problems'])

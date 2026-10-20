@@ -22,7 +22,7 @@ Use the [complete-library install](../README.md#install). Skills CLI does not in
 
 Installations are snapshots. After changes merge, rerun the complete install to refresh your selected agents and discover new skills. Install from this repository rather than overwriting its adaptations with same-named upstream skills. A repository update does not refresh global installations automatically.
 
-For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). It reviews every local skill and discovered upstream together, preserving local adaptations and catalog exclusions. This is separate from refreshing installed copies.
+For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). Daily runs adopt upstream changes while keeping the library's local adaptations; weekly audits also review every skill against current tools and conventions. This is separate from refreshing installed copies.
 
 ## Agent compatibility
 

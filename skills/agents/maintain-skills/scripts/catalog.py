@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Discover, validate, compare, and checkpoint every repository skill."""
+"""Maintain every repository skill against its upstream sources.
+
+Repository records (skill-local UPSTREAM.md files and catalog.json) hold decisions.
+Machine-local state (source clones, checkpoints, run directories) holds verification
+progress: fetch resolves candidates, compare --resume reuses verified progress,
+checkpoint records it, and prune bounds the retained runs.
+"""
 
 import argparse
 from datetime import datetime, timezone
@@ -9,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import sys
 from urllib.parse import urlsplit
@@ -17,15 +24,30 @@ CATALOG = Path(__file__).resolve().parents[1] / 'catalog.json'
 IGNORED = {'.git', '__pycache__', 'node_modules', '.pytest_cache'}
 SHA = r'[0-9a-f]{40}'
 URL = r'https?://[^\s)\]>]+'
+CONTEXT = ['AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'docs/architecture.md']
 SOURCE_LABEL = re.compile(r'(?:source repository|canonical source|original source|^\s*[-*]?\s*(?:source|repository))\s*:', re.I)
 
 
 def git(repository, *arguments):
     environment = {key: value for key, value in os.environ.items() if not key.startswith('GIT_')}
+    environment['GIT_TERMINAL_PROMPT'] = '0'
     result = subprocess.run(['git', '--no-optional-locks', '-C', str(repository), *arguments], capture_output=True, env=environment)
     if result.returncode:
-        raise ValueError('Required Git revision, path, or history is unavailable')
+        detail = result.stderr.decode(errors='replace').strip().splitlines()
+        raise ValueError('Required Git revision, path, or history is unavailable' + (': ' + detail[-1] if detail else ''))
     return result.stdout
+
+
+def is_ancestor(repository, older, newer):
+    try:
+        git(repository, 'merge-base', '--is-ancestor', older, newer)
+        return True
+    except ValueError:
+        return False
+
+
+def name_status(repository, since, candidate, targets):
+    return git(repository, 'diff', '--name-status', '--find-renames', since, candidate, '--', *targets).decode().splitlines()
 
 
 def source_path(root, relative):
@@ -180,6 +202,7 @@ def source_record(identity, block, record_path):
     baseline = next((value for value in reviewed.groups() if value), None) if reviewed else None
     if not baseline:
         problems.append('Missing reproducible reviewed-through revision')
+    fidelity = re.search(r'Fidelity checked through:\s*`(' + SHA + r')`', block, re.I)
     imported = re.search(r'Imported from commit:\s*`(' + SHA + r')`', block, re.I)
     import_gap = bool(re.search(r'(?:original upstream import revision|import(?:ed)? revision):\s*(?:unrecorded|unknown)', block, re.I))
     if not imported and not import_gap:
@@ -215,7 +238,7 @@ def source_record(identity, block, record_path):
         problems.append('Missing license attribution')
     if 'Local adaptations' not in block:
         problems.append('Missing local adaptations to preserve')
-    return {'repository': 'https://' + identity + '.git', 'identity': identity, 'tracking': tracking, 'key': group_key(identity, tracking) if tracking else None, 'baseline': baseline, 'imported': imported[1] if imported else None, 'historicalImportUnknown': import_gap, 'paths': sorted(paths), 'primaryPaths': sorted(set(primary_paths)), 'sharedPaths': sorted(set(shared_paths)), 'record': record_path, 'problems': problems}
+    return {'repository': 'https://' + identity + '.git', 'identity': identity, 'tracking': tracking, 'key': group_key(identity, tracking) if tracking else None, 'baseline': baseline, 'fidelity': fidelity[1] if fidelity else None, 'imported': imported[1] if imported else None, 'historicalImportUnknown': import_gap, 'paths': sorted(paths), 'primaryPaths': sorted(set(primary_paths)), 'sharedPaths': sorted(set(shared_paths)), 'record': record_path, 'problems': problems}
 
 
 def discover_provenance(root, directory, front):
@@ -264,7 +287,7 @@ def discover_provenance(root, directory, front):
     return records, attributions, problems
 
 
-def inventory(root, catalog):
+def inventory(root, catalog, resume=None):
     skills, groups, problems = [], {}, []
     for instruction in sorted((root / 'skills').rglob('SKILL.md')):
         if any(part in IGNORED for part in instruction.relative_to(root).parts):
@@ -322,14 +345,23 @@ def inventory(root, catalog):
         group['fingerprint'] = digest([group['records'], [[item['name'], item['fingerprint']] for item in skills if item['name'] in group['skills']]])
     for item in skills:
         problems.extend(item['name'] + ': ' + problem for problem in item['problems'])
+    # Only governing guidance and its owners invalidate local evidence; listings and the catalog do not.
     shared_context = {}
-    for path in [root / 'AGENTS.md', root / 'CLAUDE.md', root / 'README.md', root / 'CONTRIBUTING.md', root / 'docs/architecture.md', root / 'skills/README.md', *(root / 'skills').glob('*/README.md')]:
+    for relative in catalog.get('contextPaths', CONTEXT):
+        path = source_path(root, relative)
         if path.is_file():
-            shared_context[str(path.relative_to(root))] = hashlib.sha256(path.read_bytes()).hexdigest()
-    owner_names = set(catalog.get('owners', {}).values())
+            shared_context[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
+    owners = catalog.get('owners', {})
+    owner_names = {owners[role] for role in catalog.get('contextOwners', []) if role in owners}
     owner_fingerprints = {item['name']: item['fingerprint'] for item in skills if item['name'] in owner_names}
-    context_fingerprint = digest([catalog, shared_context, owner_fingerprints])
-    return {'schema': 2, 'contextFingerprint': context_fingerprint, 'repositorySkills': len(skills), 'mappedSkills': len(mapped), 'skills': skills, 'sourceGroups': groups, 'problems': problems, 'valid': not problems, 'catalogFingerprint': digest(catalog), 'fingerprint': digest([[item['directory'], item['fingerprint']] for item in skills])}
+    context_fingerprint = digest([shared_context, owner_fingerprints])
+    result = {'schema': 2, 'contextFingerprint': context_fingerprint, 'repositorySkills': len(skills), 'mappedSkills': len(mapped), 'skills': skills, 'sourceGroups': groups, 'problems': problems, 'valid': not problems, 'catalogFingerprint': digest(catalog), 'fingerprint': digest([[item['directory'], item['fingerprint']] for item in skills])}
+    # Records never confirmed complete in both directions await their first fidelity check.
+    result['fidelityBacklog'] = sorted(item['name'] for item in skills if any(not record['fidelity'] for record in item['sources']))
+    if resume is not None:
+        previous = resume.get('skillFingerprints', {}) if isinstance(resume, dict) else {}
+        result['changedSince'] = sorted(item['name'] for item in skills if previous.get(item['name']) != item['fingerprint'])
+    return result
 
 
 def validate(root, catalog):
@@ -339,6 +371,12 @@ def validate(root, catalog):
     for role, owner in catalog.get('owners', {}).items():
         if owner not in names:
             problems.append('Missing shared owner ' + role + ': ' + owner)
+    for role in catalog.get('contextOwners', []):
+        if role not in catalog.get('owners', {}):
+            problems.append('Unknown context owner role: ' + role)
+    for key, definition in catalog.get('sources', {}).items():
+        if 'sharedReviewedThrough' in definition and not re.fullmatch(SHA, str(definition['sharedReviewedThrough'])):
+            problems.append(key + ': sharedReviewedThrough must be a full commit SHA')
     for item in discovered['skills']:
         name = item['name']
         directory = source_path(root, item['directory'])
@@ -370,6 +408,10 @@ def validate(root, catalog):
 
 
 def excluded(path, definition):
+    for prefix, reason in definition.get('excludedPaths', {}).items():
+        prefix = prefix.rstrip('/')
+        if path == prefix or path.startswith(prefix + '/'):
+            return reason
     parts = Path(path).parts
     name = parts[-1]
     if name in definition.get('excludedNames', {}):
@@ -380,7 +422,7 @@ def excluded(path, definition):
     return None
 
 
-def compare(root, catalog, source, upstream, candidate):
+def compare(root, catalog, source, upstream, candidate, resume=None):
     discovered = inventory(root, catalog)
     definitions = sources(root, catalog)
     if source in definitions:
@@ -394,9 +436,10 @@ def compare(root, catalog, source, upstream, candidate):
         records = [record for record in group['records'] if record['local'] in local_names]
         policies = {source: definition}
     else:
+        key = source
         group = discovered['sourceGroups'][source]
         records = group['records']
-        policies = {key: definition for key, definition in definitions.items() if repository_identity(definition['repository']) == group['identity'] and {'kind': 'branch', 'ref': definition.get('branch', 'main')} == group['tracking']}
+        policies = {name: definition for name, definition in definitions.items() if repository_identity(definition['repository']) == group['identity'] and {'kind': 'branch', 'ref': definition.get('branch', 'main')} == group['tracking']}
     # Avoid comparing a valid SHA in a checkout for a different repository.
     try:
         remote = git(upstream, 'remote', 'get-url', 'origin').decode().strip()
@@ -407,25 +450,37 @@ def compare(root, catalog, source, upstream, candidate):
     candidate = git(upstream, 'rev-parse', '--verify', candidate + '^{commit}').decode().strip()
     if group['tracking']['kind'] == 'commit' and candidate != group['tracking']['ref']:
         raise ValueError('Candidate differs from the explicitly pinned source commit')
+    # A prior checkpoint advances baselines only within this comparison; records keep their decisions.
+    coverage = resume.get('sourceCoverage', {}).get(key, {}) if isinstance(resume, dict) and resume.get('schema') == 2 else {}
+    prior = coverage.get('candidate')
+    try:
+        prior = git(upstream, 'rev-parse', '--verify', prior + '^{commit}').decode().strip() if re.fullmatch(SHA, str(prior)) else None
+    except ValueError:
+        prior = None
+    verified = resume.get('skillFingerprints', {}) if prior else {}
+    fingerprints = {item['name']: item['fingerprint'] for item in discovered['skills']}
     paths = git(upstream, 'ls-tree', '-r', '-z', '--name-only', candidate)
     actual = {str(Path(os.fsdecode(path)).parent) for path in paths.split(b'\0') if path.endswith(b'/SKILL.md') or path == b'SKILL.md'}
     changes = []
     for record in records:
+        since, carried = record['baseline'], False
         try:
             if record['problems']:
                 raise ValueError('; '.join(record['problems']))
             for primary in record['primaryPaths']:
-                try:
-                    git(upstream, 'cat-file', '-e', record['baseline'] + ':' + (primary + '/' if primary != '.' else '') + 'SKILL.md')
-                except ValueError:
-                    raise ValueError('Recorded primary skill path is absent at the reviewed baseline: ' + primary) from None
-            delta = git(upstream, 'diff', '--name-status', '--find-renames', record['baseline'], candidate, '--', *record['paths']).decode().splitlines()
+                # Trees answer presence without blobs, so blobless clones stay offline.
+                if not git(upstream, 'ls-tree', '--name-only', record['baseline'], '--', (primary + '/' if primary != '.' else '') + 'SKILL.md').strip():
+                    raise ValueError('Recorded primary skill path is absent at the reviewed baseline: ' + primary)
+            if prior and record['local'] in coverage.get('skills', []) and verified.get(record['local']) == fingerprints.get(record['local']) and is_ancestor(upstream, record['baseline'], prior):
+                since, carried = prior, True
+            delta = name_status(upstream, since, candidate, record['paths'])
             status = 'removed' if not any(primary in actual for primary in record['primaryPaths']) else 'changed' if delta else 'unchanged'
-            changes.append({'local': record['local'], 'upstream': record['paths'], 'baseline': record['baseline'], 'status': status, 'files': delta})
+            changes.append({'local': record['local'], 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': status, 'files': delta})
         except (OSError, ValueError) as error:
-            changes.append({'local': record['local'], 'upstream': record['paths'], 'status': 'blocked', 'reason': str(error)})
+            changes.append({'local': record['local'], 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': 'blocked', 'reason': str(error)})
     suite_results, shared = {}, []
-    for key, definition in policies.items():
+    covered = {entry['local'] for definition in policies.values() for entry in definition.get('skills', [])}
+    for name, definition in policies.items():
         skill_root = definition['skillRoot'].rstrip('/')
         prefix = skill_root + '/'
         suite_inventory = {path for path in actual if skill_root == '.' or path.startswith(prefix)}
@@ -433,43 +488,110 @@ def compare(root, catalog, source, upstream, candidate):
         known = {entry['upstream'] for entry in definition.get('skills', [])}
         removed, added = known - suite_inventory, current - known
         moves = [{'from': old, 'to': candidates[0], 'decision': 'Verify continuity before changing identity or baseline'} for old in sorted(removed) if len(candidates := [new for new in added if Path(new).name == Path(old).name]) == 1]
-        suite_results[key] = {'added': sorted(added), 'removed': sorted(removed), 'possibleMoves': moves, 'excluded': [{'path': path, 'reason': excluded(path, definition)} for path in sorted(suite_inventory - current)]}
-        for baseline in sorted({record['baseline'] for record in records if record['baseline']}):
-            try:
-                targets = [definition['sharedRoot']] if 'sharedRoot' in definition else definition.get('sharedPaths', [])
-                delta = git(upstream, 'diff', '--name-status', '--find-renames', baseline, candidate, '--', *targets).decode().splitlines() if targets else []
-                owned = known | suite_inventory
-                files = [line for line in delta if any(not any(path.startswith(directory + '/') for directory in owned) for path in line.split('\t')[1:])]
-                shared.append({'suite': key, 'baseline': baseline, 'files': files})
-            except ValueError as error:
-                shared.append({'suite': key, 'baseline': baseline, 'status': 'blocked', 'reason': str(error)})
-    # Recorded plugin roots retain wrappers/manifests beyond individual skill directories.
-    scoped_inputs = {(record['baseline'], tuple(record['sharedPaths'])) for record in records if record['baseline'] and record['sharedPaths']}
+        suite_results[name] = {'added': sorted(added), 'removed': sorted(removed), 'possibleMoves': moves, 'excluded': [{'path': path, 'reason': excluded(path, definition)} for path in sorted(suite_inventory - current)]}
+        # One diff per policy from its shared review position, not from every record baseline.
+        mapped = {entry['local'] for entry in definition.get('skills', [])}
+        since, carried = definition.get('sharedReviewedThrough'), False
+        try:
+            if not since:
+                baselines = sorted({record['baseline'] for record in records if record['local'] in mapped and record['baseline']})
+                if not baselines:
+                    raise ValueError('No reviewed-through revision for shared inputs')
+                since = git(upstream, 'rev-list', '--no-walk=sorted', *baselines).decode().split()[0]
+            since = git(upstream, 'rev-parse', '--verify', since + '^{commit}').decode().strip()
+            if prior and coverage.get('sharedInputsReviewed') is True and is_ancestor(upstream, since, prior):
+                since, carried = prior, True
+            targets = [definition['sharedRoot']] if 'sharedRoot' in definition else definition.get('sharedPaths', [])
+            delta = name_status(upstream, since, candidate, targets) if targets else []
+            owned = known | suite_inventory
+            unowned = [line for line in delta if any(not any(path.startswith(directory + '/') for directory in owned) for path in line.split('\t')[1:])]
+            files = [line for line in unowned if not all(excluded(path, definition) for path in line.split('\t')[1:])]
+            shared.append({'suite': name, 'since': since, 'carriedForward': carried, 'files': files, 'excludedFiles': len(unowned) - len(files)})
+        except ValueError as error:
+            shared.append({'suite': name, 'since': since, 'status': 'blocked', 'reason': str(error)})
+    # Records outside every policy keep their declared plugin roots; a policy diff already covers the rest.
+    scoped_inputs = {(record['baseline'], tuple(record['sharedPaths'])) for record in records if record['local'] not in covered and record['baseline'] and record['sharedPaths']}
     for baseline, targets in sorted(scoped_inputs):
         try:
-            delta = git(upstream, 'diff', '--name-status', '--find-renames', baseline, candidate, '--', *targets).decode().splitlines()
-            shared.append({'baseline': baseline, 'paths': list(targets), 'files': delta})
+            shared.append({'paths': list(targets), 'since': baseline, 'files': name_status(upstream, baseline, candidate, targets)})
         except ValueError as error:
-            shared.append({'baseline': baseline, 'paths': list(targets), 'status': 'blocked', 'reason': str(error)})
-    # Generic sources still expose repository-wide shared changes, including unlisted support files.
-    if not policies and not scoped_inputs:
-        for baseline in sorted({record['baseline'] for record in records if record['baseline']}):
-            try:
-                delta = git(upstream, 'diff', '--name-status', '--find-renames', baseline, candidate).decode().splitlines()
-                shared.append({'baseline': baseline, 'files': delta})
-            except ValueError as error:
-                shared.append({'baseline': baseline, 'status': 'blocked', 'reason': str(error)})
+            shared.append({'paths': list(targets), 'since': baseline, 'status': 'blocked', 'reason': str(error)})
     for change in changes:
         original = next((entry['upstream'] for definition in policies.values() for entry in definition.get('skills', []) if entry['local'] == change['local']), None)
         if original and original not in actual and change['status'] != 'blocked':
             change['status'] = 'removed'
-    result = {'source': source, 'candidate': candidate, 'repository': group['repository'], 'tracking': group['tracking'], 'inventory': sorted(actual), 'suites': suite_results, 'skills': changes, 'sharedInputs': shared, 'reviewComplete': False, 'policy': catalog.get('policy')}
+    result = {'source': source, 'candidate': candidate, 'repository': group['repository'], 'tracking': group['tracking'], 'resumedFrom': prior, 'suites': suite_results, 'skills': changes, 'sharedInputs': shared, 'reviewComplete': False, 'policy': catalog.get('policy')}
+    if policies:
+        result['inventory'] = sorted(actual)
     if source in suite_results:
         result.update(suite_results[source])
     return result
 
 
-def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integration_validated, source_reviews=None, resume=None):
+def fetch(root, catalog, state, remotes=None):
+    """Keep one blobless clone per repository identity and resolve each group's tracking choice."""
+    remotes = remotes or {}
+    groups = inventory(root, catalog)['sourceGroups']
+    result, prepared = {'candidates': {}, 'checkouts': {}, 'errors': {}}, {}
+    for key, group in sorted(groups.items()):
+        identity, tracking = group['identity'], group['tracking']
+        checkout = state / 'sources' / identity.replace('/', '-')
+        try:
+            if identity not in prepared:
+                canonical = 'https://' + identity + '.git'
+                # The override reaches the transport only; the clone keeps its canonical origin.
+                rewrite = ['-c', 'url.' + remotes[identity] + '.insteadOf=' + canonical] if identity in remotes else []
+                tags = ['--tags', '--force'] if any(other['identity'] == identity and other['tracking']['kind'] == 'tag' for other in groups.values()) else []
+                try:
+                    if checkout.exists():
+                        if not (checkout / '.git').is_dir() or repository_identity(git(checkout, 'remote', 'get-url', 'origin').decode().strip()) != identity:
+                            raise ValueError('Existing path is not a clone of ' + canonical + ': ' + str(checkout))
+                        git(checkout, *rewrite, 'fetch', '--quiet', '--prune', *tags, 'origin')
+                    else:
+                        checkout.parent.mkdir(parents=True, exist_ok=True)
+                        git(checkout.parent, *rewrite, 'clone', '--quiet', '--filter=blob:none', '--no-checkout', canonical, checkout.name)
+                    prepared[identity] = None
+                except ValueError as error:
+                    prepared[identity] = str(error)
+            if prepared[identity]:
+                raise ValueError(prepared[identity])
+            ref = {'branch': 'refs/remotes/origin/', 'tag': 'refs/tags/', 'commit': ''}[tracking['kind']] + tracking['ref']
+            result['candidates'][key] = git(checkout, 'rev-parse', '--verify', ref + '^{commit}').decode().strip()
+            result['checkouts'][key] = str(checkout)
+        except ValueError as error:
+            result['errors'][key] = str(error)
+    return result
+
+
+def prune(state, keep):
+    """Delete run directories beyond the newest N by name; files and symlinks are left alone."""
+    if keep < 0:
+        raise ValueError('Keep at least zero runs')
+    runs = state / 'runs'
+    if runs.is_symlink() or not runs.is_dir():
+        return {'deleted': []}
+    names = sorted(path.name for path in runs.iterdir() if path.is_dir() and not path.is_symlink())
+    deleted = names[:max(len(names) - keep, 0)]
+    for name in deleted:
+        shutil.rmtree(runs / name)
+    return {'deleted': deleted}
+
+
+def compared_reviews(comparisons, candidates):
+    """Turn compare reports into source reviews: unchanged skills, and empty inventories and shared inputs, need no decision."""
+    reviews = {}
+    for report in comparisons:
+        key = group_key(repository_identity(report['repository']), report['tracking'])
+        if candidates.get(key) != report['candidate']:
+            raise ValueError('Comparison candidate differs from the checkpoint candidate for ' + key)
+        review = reviews.setdefault(key, {'candidate': report['candidate'], 'skills': [], 'inventoryReviewed': True, 'sharedInputsReviewed': True})
+        review['skills'] = sorted(set(review['skills']) | {change['local'] for change in report['skills'] if change['status'] == 'unchanged'})
+        review['inventoryReviewed'] = review['inventoryReviewed'] and not any(suite['added'] or suite['removed'] or suite['possibleMoves'] for suite in report['suites'].values())
+        review['sharedInputsReviewed'] = review['sharedInputsReviewed'] and not any(entry.get('files') or entry.get('status') == 'blocked' for entry in report['sharedInputs'])
+    return reviews
+
+
+def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integration_validated, source_reviews=None, resume=None, comparisons=None):
     current = inventory(root, catalog)
     packaging = validate(root, catalog)
     groups = current['sourceGroups']
@@ -478,7 +600,13 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
     names = {item['name'] for item in current['skills']}
     if not set(completed) <= names or len(completed) != len(set(completed)) or not math.isfinite(elapsed_minutes) or elapsed_minutes < 0:
         raise ValueError('Unknown or duplicate completed skills or invalid elapsed time')
-    reviews = dict(source_reviews or {})
+    reviews = compared_reviews(comparisons or [], candidates)
+    # Explicit reviews record decided changes and override automatic acknowledgements.
+    for key, review in (source_reviews or {}).items():
+        automatic = reviews.get(key, {})
+        if automatic and automatic['candidate'] != review.get('candidate'):
+            raise ValueError('Source review candidate differs from its comparison for ' + key)
+        reviews[key] = {**automatic, **review, 'skills': sorted(set(automatic.get('skills', [])) | set(review.get('skills', [])))}
     if not set(reviews) <= set(groups):
         raise ValueError('Unknown source review group')
     requested = set(completed)
@@ -515,25 +643,36 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--catalog', type=Path, default=CATALOG)
-    parser.add_argument('--root', type=Path, required=True)
-    commands = parser.add_subparsers(dest='command', required=True)
-    for name in ['names', 'inventory', 'validate']:
-        commands.add_parser(name)
-    delta = commands.add_parser('compare')
-    delta.add_argument('--source', required=True)
-    delta.add_argument('--upstream', type=Path, required=True)
+    parser.add_argument('--root', type=Path, required=True, help='Skill library repository root')
+    commands = parser.add_subparsers(dest='command', required=True, metavar='command')
+    commands.add_parser('names', help='List installed skill names')
+    survey = commands.add_parser('inventory', help='Discover every skill, its provenance records, source groups, and fidelity backlog')
+    survey.add_argument('--resume', type=Path, help='Prior checkpoint; lists skills whose files changed since it as changedSince')
+    commands.add_parser('validate', help='Check packaging, listings, links, and catalog mappings')
+    pull = commands.add_parser('fetch', help='Clone or update one blobless checkout per source and resolve candidate commits')
+    pull.add_argument('--state', type=Path, required=True, help='Machine-local state directory; clones live under sources/')
+    pull.add_argument('--remote', action='append', default=[], metavar='IDENTITY=URL', help='Fetch IDENTITY (such as github.com/owner/name) from URL without persisting it')
+    pull.add_argument('--output', type=Path)
+    delta = commands.add_parser('compare', help='Diff one source group or catalog policy from reviewed baselines to a candidate; --resume carries checkpoint progress forward')
+    delta.add_argument('--source', required=True, help='Source group key or catalog source name')
+    delta.add_argument('--upstream', type=Path, required=True, help='Checkout whose origin is the source repository')
     delta.add_argument('--candidate', required=True)
+    delta.add_argument('--resume', type=Path, help='Prior checkpoint whose verified progress replaces record baselines')
     delta.add_argument('--output', type=Path)
-    save = commands.add_parser('checkpoint')
-    save.add_argument('--candidates', type=Path, required=True)
+    save = commands.add_parser('checkpoint', help='Record verification progress for the current candidates')
+    save.add_argument('--candidates', type=Path, required=True, help='Group-to-candidate map, or fetch output containing one')
     save.add_argument('--completed', nargs='*', default=[])
-    save.add_argument('--source-reviews', type=Path)
+    save.add_argument('--source-reviews', type=Path, help='Decided source reviews per group; merged over --compare acknowledgements')
+    save.add_argument('--compare', type=Path, nargs='*', default=[], help='Compare reports whose unchanged skills and empty inventories or shared inputs count as reviewed')
     save.add_argument('--resume', type=Path)
     save.add_argument('--elapsed-minutes', type=float, required=True)
     save.add_argument('--integration-validated', action='store_true')
     save.add_argument('--output', type=Path, required=True)
+    clean = commands.add_parser('prune', help='Delete run directories under --state/runs beyond the newest --keep')
+    clean.add_argument('--state', type=Path, required=True)
+    clean.add_argument('--keep', type=int, required=True)
     arguments = parser.parse_args()
     try:
         root = arguments.root.resolve()
@@ -543,22 +682,37 @@ def main():
             print('\n'.join(sorted(item['name'] for item in result['skills'])))
             return 0 if result['valid'] else 1
         if arguments.command == 'inventory':
-            result = inventory(root, catalog)
+            result = inventory(root, catalog, json.loads(arguments.resume.read_text()) if arguments.resume else None)
         elif arguments.command == 'validate':
             result = validate(root, catalog)
+        elif arguments.command == 'fetch':
+            remotes = {}
+            for item in arguments.remote:
+                identity, separator, url = item.partition('=')
+                if not separator or not url:
+                    raise ValueError('Remote override needs IDENTITY=URL: ' + item)
+                remotes[repository_identity('https://' + identity)] = url
+            result = fetch(root, catalog, arguments.state.resolve(), remotes)
         elif arguments.command == 'compare':
-            result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate)
+            resume = json.loads(arguments.resume.read_text()) if arguments.resume else None
+            result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate, resume)
+        elif arguments.command == 'prune':
+            result = prune(arguments.state, arguments.keep)
         else:
             reviews = json.loads(arguments.source_reviews.read_text()) if arguments.source_reviews else None
             resume = json.loads(arguments.resume.read_text()) if arguments.resume else None
-            result = checkpoint(root, catalog, json.loads(arguments.candidates.read_text()), arguments.completed, arguments.elapsed_minutes, arguments.integration_validated, reviews, resume)
+            candidates = json.loads(arguments.candidates.read_text())
+            # Accept fetch output directly; its candidates map is the checkpoint input.
+            if isinstance(candidates.get('candidates'), dict):
+                candidates = candidates['candidates']
+            result = checkpoint(root, catalog, candidates, arguments.completed, arguments.elapsed_minutes, arguments.integration_validated, reviews, resume, [json.loads(path.read_text()) for path in arguments.compare])
         encoded = json.dumps(result, indent=2) + '\n'
         output = getattr(arguments, 'output', None)
         if output:
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(encoded)
         print(encoded, end='')
-        return 0 if result.get('valid', True) else 1
+        return 0 if result.get('valid', True) and not result.get('errors') else 1
     except (OSError, ValueError, TypeError, KeyError, IndexError) as error:
         print(json.dumps({'error': str(error), 'reviewComplete': False}))
         return 2

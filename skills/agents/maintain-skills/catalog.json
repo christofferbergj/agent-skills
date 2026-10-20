@@ -15,7 +15,13 @@
         "pstack/CHANGELOG.md",
         "pstack/LICENSE"
       ],
-      "sharedRoot": "pstack"
+      "sharedRoot": "pstack",
+      "sharedReviewedThrough": "88d47514b82e7c44f00f2b2a72ff6dd12158038c",
+      "excludedPaths": {
+        "pstack/automations/benny": "Dormant Cursor automation workflows outside this library's hosts",
+        "pstack/assets": "Images for upstream's README",
+        "pstack/docs/guide/images": "Images for upstream's guide"
+      }
     },
     "matt": {
       "repository": "https://github.com/mattpocock/skills.git",
@@ -220,7 +226,32 @@
         "GLOSSARY.md",
         ".out-of-scope"
       ],
-      "sharedRoot": "."
+      "sharedRoot": ".",
+      "sharedReviewedThrough": "5beb35b040e3de97e54fa9e386d7e42d15c295c2"
+    },
+    "thermos": {
+      "repository": "https://github.com/cursor/plugins.git",
+      "branch": "main",
+      "skillRoot": "thermos/skills",
+      "sharedRoot": "thermos",
+      "sharedReviewedThrough": "88d47514b82e7c44f00f2b2a72ff6dd12158038c",
+      "skills": [
+        {
+          "upstream": "thermos/skills/thermos",
+          "local": "thermos",
+          "directory": "skills/reviews/thermos"
+        },
+        {
+          "upstream": "thermos/skills/thermo-nuclear-review",
+          "local": "thermo-nuclear-review",
+          "directory": "skills/reviews/thermo-nuclear-review"
+        },
+        {
+          "upstream": "thermos/skills/thermo-nuclear-code-quality-review",
+          "local": "thermo-nuclear-code-quality-review",
+          "directory": "skills/reviews/thermo-nuclear-code-quality-review"
+        }
+      ]
     }
   },
   "owners": {
@@ -234,5 +265,13 @@
     "principleSelection": "pstack-principles",
     "upstreamMaintenance": "maintain-skills"
   },
-  "policy": "Review every discovered upstream. Propose eligible additions; preserve removals pending explicit retirement; hold incomplete source and integration baselines."
+  "contextPaths": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "docs/architecture.md",
+    "skills/agents/maintain-skills/references/ADAPTATION.md"
+  ],
+  "contextOwners": ["agentWriting"],
+  "policy": "Adopt upstream changes by default. Import eligible new upstream skills. Propose retirement for removed skills. Hold only decisions that need the owner."
 }
