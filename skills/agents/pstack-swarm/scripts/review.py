@@ -36,7 +36,7 @@ def run(args, *, cwd=None, timeout=20, input=None):
     return subprocess.CompletedProcess(args, process.returncode, stdout, stderr)
 
 
-def prepare(parent, repo):
+def prepare(parent, repo, model=None, effort=None):
     vendor = 'claude-code' if parent == 'codex' else 'codex'
     if os.name != 'posix':
         return vendor, None, 'Bounded reviewer process groups require a POSIX host'
@@ -45,6 +45,9 @@ def prepare(parent, repo):
         return vendor, None, 'CLI is not installed'
     help_result = run([binary, '--help'] if vendor == 'claude-code' else [binary, 'exec', '--help'], cwd=repo)
     required = ['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format'] if vendor == 'claude-code' else ['--sandbox', '--ephemeral', '--output-last-message', '--strict-config']
+    # The counterpart's model and effort are part of the review contract, so an unsupported override is unavailable, not dropped.
+    selection = (['--model', model] if model else []) + ((['--effort', effort] if vendor == 'claude-code' else ['-c', f'model_reasoning_effort="{effort}"']) if effort else [])
+    required += [flag for flag in selection if flag in ('--model', '--effort')]
     advertised = set(re.findall(r'^\s*(?:-\w,\s*)?(--[a-z][a-z-]*)(?=[\s=,\[]|$)', help_result.stdout, re.MULTILINE))
     if help_result.returncode or any(flag not in advertised for flag in required):
         return vendor, None, 'Installed CLI lacks required review restrictions'
@@ -56,14 +59,14 @@ def prepare(parent, repo):
             logged_in = False
         if not logged_in:
             return vendor, None, 'CLI authentication is unavailable'
-        return vendor, [binary, '-p', '--safe-mode', '--tools', 'Read,Glob,Grep', '--permission-mode', 'dontAsk', '--permission-prompts', 'none', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--no-session-persistence', '--output-format', 'json'], None
+        return vendor, [binary, '-p', '--safe-mode', '--tools', 'Read,Glob,Grep', '--permission-mode', 'dontAsk', '--permission-prompts', 'none', '--strict-mcp-config', '--mcp-config', '{"mcpServers":{}}', '--no-session-persistence', '--output-format', 'json', *selection], None
     if run([binary, 'login', 'status'], cwd=repo).returncode:
         return vendor, None, 'CLI authentication is unavailable'
     features = run([binary, 'features', 'list'], cwd=repo)
     supported = {line.split()[0] for line in features.stdout.splitlines() if line.split()}
     if features.returncode or not {'apps', 'plugins', 'hooks', 'browser_use', 'computer_use'} <= supported:
         return vendor, None, 'Installed CLI lacks required review feature controls'
-    args = [binary, 'exec', '--strict-config', '--sandbox', 'read-only', '--ephemeral', '-c', 'approval_policy="never"', '-c', 'mcp_servers={}', '-c', 'features.apps=false', '-c', 'features.plugins=false', '-c', 'features.hooks=false', '-c', 'web_search="disabled"', '-c', 'features.browser_use=false', '-c', 'features.computer_use=false']
+    args = [binary, 'exec', '--strict-config', '--sandbox', 'read-only', '--ephemeral', '-c', 'approval_policy="never"', '-c', 'mcp_servers={}', '-c', 'features.apps=false', '-c', 'features.plugins=false', '-c', 'features.hooks=false', '-c', 'web_search="disabled"', '-c', 'features.browser_use=false', '-c', 'features.computer_use=false', *selection]
     return vendor, args, None
 
 
@@ -74,6 +77,8 @@ def main():
     parser.add_argument('--prompt-file', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--timeout', type=int, default=300)
+    parser.add_argument('--model', help="The counterpart's model; omit to keep the CLI's configured model")
+    parser.add_argument('--effort', help="The counterpart's reasoning effort, such as max or xhigh")
     parser.add_argument('--preflight', action='store_true')
     args = parser.parse_args()
     result = {'vendor': None, 'status': 'unavailable', 'review': None, 'models': []}
@@ -83,7 +88,7 @@ def main():
         if not args.preflight and args.prompt_file is None:
             raise ValueError('--prompt-file is required unless --preflight is used')
         prompt = args.prompt_file.read_text() if not args.preflight else None
-        vendor, command, reason = prepare(args.parent, args.repo.resolve())
+        vendor, command, reason = prepare(args.parent, args.repo.resolve(), args.model, args.effort)
         result['vendor'] = vendor
         if reason:
             result['reason'] = reason

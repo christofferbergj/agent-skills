@@ -7,6 +7,7 @@ Explain work clearly, write technical documents, and edit prose.
 | Skill                                                         | Use it to                                        |
 | ------------------------------------------------------------- | ------------------------------------------------ |
 | [bro](bro/SKILL.md)                                           | Restate the previous message in plain language.  |
+| [next-options](next-options/SKILL.md)                         | End replies with lettered next steps.            |
 | [pr](pr/SKILL.md)                                             | Write a concise, evidence-based PR description.  |
 | [pstack-in-your-own-words](pstack-in-your-own-words/SKILL.md) | Restate the goal and underlying problem.         |
 | [pstack-ketchup](pstack-ketchup/SKILL.md)                     | Summarize progress since the last user message.  |

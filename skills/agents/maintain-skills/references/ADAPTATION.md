@@ -1,6 +1,6 @@
 # Adaptation contract
 
-This library tracks Pstack, Matt Pocock's skills, Thermos, and OpenClaw's test audit, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it.
+This library tracks Pstack, Matt Pocock's skills, Thermos, and OpenClaw's test audit, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills are tracked differently, as the source of [principle-derived skills](#principle-derived-skills).
 
 ## Library-wide adaptations
 
@@ -11,6 +11,7 @@ Every source:
 - **Hosts:** Codex and Claude Code. Translate host-specific execution, such as Cursor plugin registration, named Cursor agents, and fixed host model mappings, into each host's native tools. /pstack-swarm owns delegation, isolated writers, and cross-vendor review.
 - **Packaging:** install with the Skills CLI from this repository. Each skill's locally owned `agents/openai.yaml` mirrors its invocation mode: user-invoked skills set `disable-model-invocation: true` and `policy.allow_implicit_invocation: false`. Dependencies are `/skill-name` invocations, and the README lists required companions.
 - **Coordination:** one coordinator writes canonical artifacts while delegates return proposals, and each effort keeps one accepted spec and ticket graph. Scale effort and parallelism to the task's scope and budget, and keep each workflow's outcomes and evidence.
+- **Review:** a workflow's final review of its own implementation runs through /review-loop, which keeps /code-review's axes and adds the counterpart model's review and the fix rounds.
 - **Authority:** honor the invoking repository's conventions and the user's existing authorization. Pull requests default to drafts, and learning-driven edits to source skills are prepared for review.
 - **Licenses:** keep each upstream notice with the material it covers.
 
@@ -35,7 +36,8 @@ One skill owns each shared discipline. Other skills invoke the owner rather than
 - /tdd owns behavior-test discipline; Pstack's bug-fix adapter adds before-and-after evidence.
 - /code-review owns Standards and Spec review; Pstack's adversarial lenses add coverage of the same artifact.
 - /pr owns PR description shape; Pstack owns its delivery playbook and evidence mechanics.
-- /pstack-swarm owns native host execution, isolation, bounded cross-vendor review, and disclosed fallback.
+- /pstack-swarm owns native host execution, isolation, bounded cross-vendor review, its T3 Code route, and disclosed fallback.
+- /review-loop owns cross-model review rounds, finding verification, and the fix-and-re-review loop.
 - /pstack-principles selects the principles for each phase in both suites, keeping each principle's rules in that principle.
 - /maintain-skills owns library upkeep and coverage accounting.
 
@@ -51,6 +53,14 @@ Adopt by default. Taking upstream's improvements is the reason these skills are 
 - **Converge:** when upstream now handles what a divergence was for, or a library-wide adaptation covers it, drop the divergence and take upstream's text.
 
 Import each new upstream skill unless the catalog excludes it or it needs owner approval. Package it like its siblings: provenance record, license, Codex metadata, suite or catalog mapping, README listings, companion rows, and /pstack-help routing for a user-facing Pstack entrypoint. When upstream removes a skill without a successor, propose its retirement and a catalog exclusion with the removal commit as evidence, unless a local skill depends on it; then hold it and name the dependency.
+
+## Principle-derived skills
+
+Some first-party skills take another author's ideas rather than text. Their `UPSTREAM.md` names the source in its tracking policy and lists the adopted principles and the deliberate departures under its local adaptations. For these skills:
+
+- Decide each upstream change to the tracked files by whether it improves the behavior the skill takes from the source. Adopt an improvement in this library's own words and through its shared owners, or exclude it with a reason.
+- The minimal-divergence rule does not apply; the wording is first-party and reviewed with /writing-for-agents.
+- The fidelity check compares ideas in both directions: every adopted principle still exists upstream or is kept on purpose with a reason, and every recorded departure still holds.
 
 ## Minimal divergence
 

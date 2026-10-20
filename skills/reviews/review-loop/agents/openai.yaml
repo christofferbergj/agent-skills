@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review Loop"
+  short_description: "Cross-model review, verify, fix, and re-review"
+  default_prompt: "Use $review-loop to review this change with the other model and fix what holds."

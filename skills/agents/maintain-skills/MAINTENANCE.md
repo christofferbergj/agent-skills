@@ -94,7 +94,7 @@ python3 skills/agents/maintain-skills/scripts/catalog.py --root . validate
 python3 -m unittest discover -s skills/agents/maintain-skills/scripts/tests
 ```
 
-Run the tests of each changed script owner under its `scripts/tests/`. For Pstack's Bun tools, run `bun skills/agents/pstack-mode/scripts/bootstrap.ts --print-runtime`, then `bun test` and `bun run typecheck` in the returned directory. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes. [The validation record](VALIDATION.md) holds earlier host exercises and known limits.
+Run the tests of each changed script owner under its `scripts/tests/`, and run each changed TypeScript test with `node --test <file>`, such as `skills/reviews/review-loop/scripts/packet.test.ts`. For Pstack's Bun tools, run `bun skills/agents/pstack-mode/scripts/bootstrap.ts --print-runtime`, then `bun test` and `bun run typecheck` in the returned directory. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes. [The validation record](VALIDATION.md) holds earlier host exercises and known limits.
 
 ## Branches and pull requests
 
