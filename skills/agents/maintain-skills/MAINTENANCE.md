@@ -85,7 +85,7 @@ Set every acknowledgement from collected evidence; the helper checks coverage an
 
 ## Checks
 
-Run `pnpm check` from the worktree root. It runs every repository gate and test suite, and [Contributing](../../../CONTRIBUTING.md#validate) lists what it covers. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes. [The validation record](VALIDATION.md) holds earlier host exercises and known limits.
+Run `pnpm check` from the worktree root; it runs every repository gate and test suite. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes. [The validation record](VALIDATION.md) holds earlier host exercises and known limits.
 
 ## Branches and pull requests
 

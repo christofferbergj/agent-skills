@@ -26,7 +26,7 @@ Install repository tooling with `pnpm install`, then run every gate with:
 pnpm check
 ```
 
-It runs formatting, skill discovery, catalog and provenance validation, every `scripts/tests/` suite, the TypeScript tests, Pstack's Bun tests and typecheck, `git diff --check`, and gitleaks. It needs Python 3, Node 22.18 or newer, Bun, and gitleaks.
+`scripts/check.sh` lists what it runs and the tools it needs.
 
 ## Upstream maintenance
 
