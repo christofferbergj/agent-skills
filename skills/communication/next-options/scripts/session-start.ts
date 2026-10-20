@@ -53,7 +53,7 @@ function output(): HookOutput {
     return hookOutput(warning, warning);
   }
   const name = skillName(text);
-  const context = `These are the user's reply rules from the ${name} skill. Follow them on every reply to the user.\n\n${rules(text)}`;
+  const context = `These are the user's reply rules from the ${name} skill. Follow them when replying to the user.\n\n${rules(text)}`;
   const oversized =
     context.length > LIMIT
       ? `⚠️ ${name} rules are ${context.length.toLocaleString("en")} characters, over the ${LIMIT.toLocaleString("en")}-character hook limit, so they load as a preview.`
