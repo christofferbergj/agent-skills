@@ -29,7 +29,7 @@ husky lint-staged prettier
 npx husky init
 ```
 
-This creates `.husky/` dir and adds `prepare: "husky"` to package.json.
+This creates `.husky/` dir and adds `prepare: "husky"` to package.json. Husky replaces any existing `prepare` script, so if one existed, restore it and append Husky, as in `"prepare": "<existing command> && husky"`.
 
 ### 4. Create `.husky/pre-commit`
 
@@ -69,9 +69,11 @@ Only create if no Prettier config exists. Use these defaults:
 
 ### 7. Verify
 
+Check the parts this setup installed:
+
 - [ ] `.husky/pre-commit` exists and is executable
 - [ ] `.lintstagedrc` exists
-- [ ] `prepare` script in package.json is `"husky"`
+- [ ] `prepare` script in package.json runs `husky`, after any prior `prepare` command
 - [ ] `prettier` config exists
 - [ ] Run `npx lint-staged` to verify it works
 

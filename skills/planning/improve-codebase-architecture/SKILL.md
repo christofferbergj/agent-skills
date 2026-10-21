@@ -38,6 +38,8 @@ Apply the **deletion test** to anything you suspect is shallow: would deleting i
 
 ### 2. Present candidates as an HTML report
 
+Before grading candidates, invoke /pstack-principles for this planning phase and apply the selected principles to each candidate and to the top recommendation.
+
 Write a self-contained HTML file to the OS temp directory so nothing lands in the repo. Resolve the temp dir from `$TMPDIR`, falling back to `/tmp` (or `%TEMP%` on Windows), and write to `<tmpdir>/architecture-review-<timestamp>.html` so each run gets a fresh file. Open it for the user (`xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on Windows) and tell them the absolute path.
 
 Use inline CSS and HTML/SVG so the report stays readable offline. Tailwind and Mermaid via CDN are optional enhancements; retain text or SVG for the key relationships when a CDN is unavailable. Use Mermaid when relationships are graph-shaped (call graphs, dependencies, sequences), and hand-built divs/SVG when you want something more editorial (mass diagrams, cross-sections, collapse animations). Escape repository and issue text before embedding it. Each candidate gets a **before/after visualisation**. Be visual.
