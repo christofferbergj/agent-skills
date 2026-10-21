@@ -12,7 +12,7 @@ The user skims replies and answers with a letter. Follow these rules on every re
 
 Keep working through reversible steps inside the agreed scope, as /pstack-principle-never-block-on-the-human describes. End a turn with `**Next**` only:
 
-- at a point only the user can pass: a merge, deploy, or production write; a message to a person; a scope, interface, or product decision; a credential, payment, or physical step; a check that still fails after the root-cause fix; or an approval the active workflow keeps;
+- at a point only the user can pass: a merge, deploy, force-push, or production write; a message to a person; a scope, interface, or product decision; a credential, payment, or physical step; a check that still fails after the root-cause fix; or an approval the active workflow keeps;
 - after answering a question or a read-only request; or
 - when only CI, bots, reviewers, or other threads are left.
 

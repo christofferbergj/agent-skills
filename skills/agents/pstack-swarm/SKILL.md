@@ -9,13 +9,13 @@ For every Pstack delegate or cross-vendor review, read [the execution contract](
 
 ## 1. Frame
 
-Name the done predicate, report or artifact, and required coverage. Choose slices, an identical-brief race, or a mix. Declare a race rule before dispatch: first passing result, rank all, or best-of. Choose the smallest useful worker count within the user's budget and host capacity; total jobs can exceed concurrent slots.
+Open a task list with one entry per phase before dispatching anything. Name the done predicate, report or artifact, and required coverage. Choose slices, an identical-brief race, or a mix. Declare a race rule before dispatch: first passing result, rank all, or best-of. For a model race, name each arm's model before dispatch. Choose the smallest useful worker count within the user's budget and host capacity; total jobs can exceed concurrent slots.
 
 Give each writer its own worktree or output directory. A verification or measurement brief names the exact revisions, sample definition, method, and acceptance predicate. Complete when every required slice or arm has an independent brief and output location.
 
 ## 2. Dispatch
 
-Use the host's native delegation tools and actual schema. Start independent jobs before waiting, respecting the available concurrency window. Each brief supplies the goal, boundary, repository guidance, resolved rubric or reference paths, evidence to return, and allowed writes. Prefer cross-vendor critics through the execution contract when available.
+Use the host's native delegation tools and actual schema. Start independent jobs before waiting, respecting the available concurrency window. Each brief supplies the goal, boundary, repository guidance, resolved rubric or reference paths, evidence to return, and allowed writes. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first. Prefer cross-vendor critics through the execution contract when available.
 
 Complete when each job has a handle or an explicit dispatch failure. A dropped worker is a gap, never an implicit success.
 
@@ -27,4 +27,4 @@ Complete when every dispatched job is accounted for and every required slice has
 
 ## 4. Report
 
-Return one compact table of jobs, verdicts, revisions, and evidence, followed by actionable issues, dropouts, and the race result. Disclose sequential execution, same-vendor review, or unavailable delegation. Complete when the report distinguishes actual independent passes from local fallback work.
+Return one compact table of jobs, verdicts, revisions, and evidence, followed by actionable issues, dropouts, and the race result, without pasting raw worker output. Disclose sequential execution, same-vendor review, or unavailable delegation. Complete when the report distinguishes actual independent passes from local fallback work.

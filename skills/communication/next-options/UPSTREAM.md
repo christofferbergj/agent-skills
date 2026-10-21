@@ -8,9 +8,9 @@
 - Supporting sources: [`replies.md`](https://github.com/olivercederborg/skills/blob/e8db4fa3e2468a0b9e0297955367ff6efde28dee/replies.md), which defines the lettered `Next` list, [`hooks/reply-shape-context.py`](https://github.com/olivercederborg/skills/blob/e8db4fa3e2468a0b9e0297955367ff6efde28dee/hooks/reply-shape-context.py), the SessionStart hook that loads it, and [`router.md`](https://github.com/olivercederborg/skills/blob/e8db4fa3e2468a0b9e0297955367ff6efde28dee/router.md), whose stops decide when the list appears.
 - Tracking policy: upstream `main`, reviewed as a principle source under the adaptation contract's [principle-derived skills](../../agents/maintain-skills/references/ADAPTATION.md#principle-derived-skills).
 - Imported from commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
-- Reviewed through commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
-- Fidelity checked through: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
-- Last upstream review: 2026-10-20.
+- Reviewed through commit: `f3e4c1001f8483c2e07d98d452cb5d8466f3358c`.
+- Fidelity checked through: `f3e4c1001f8483c2e07d98d452cb5d8466f3358c`.
+- Last upstream review: 2026-10-21.
 - Attribution-only source: https://gist.github.com/olivercederborg/92236670065aaa661db221f22203ded5 is Oliver's handover gist. Its copies of these three files match the tracked repository at the imported commit, apart from a catch-up rule outside this skill's scope.
 - Attribution-only source: https://github.com/ayghri/i-have-adhd is the ancestor of Oliver's `reply-shape`. This skill takes none of the layout rules that `reply-shape` kept from it, so Oliver's repository is tracked instead.
 - License: [MIT, copyright 2026 Oliver Cederborg](LICENSE). Retain this notice with derived material.
@@ -45,3 +45,4 @@ Invoke `/maintain-skills` for repository-wide upkeep. Decide each upstream chang
 | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-10-20  | `e8db4fa3e2468a0b9e0297955367ff6efde28dee` | Adapted the lettered `Next` list, the Done ending, and the SessionStart loader as principles. Ported the Python hook to TypeScript and replaced its T3 database lookup with brief-level reporting rules. Its two Node tests pass: the rules load within both hosts' limits, and a missing file warns instead of failing the session. |
 | 2026-10-20  | `e8db4fa3e2468a0b9e0297955367ff6efde28dee` | Adopted the T3 delegated-task lookup, without its opt-in, once /reply-shape doubled the rules each delegated task loaded. Six Node tests pass, covering a delegated thread, a user thread, and a changed schema.                                                                                                                     |
+| 2026-10-21  | `f3e4c1001f8483c2e07d98d452cb5d8466f3358c` | No upstream change to the tracked files. Added force-push to the stop list, so the stop that /pstack-principle-never-block-on-the-human requires ends with options, as Oliver's router stops do. Six Node tests pass.                                                                                                                |
