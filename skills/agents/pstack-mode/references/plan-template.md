@@ -47,7 +47,7 @@ Tests alone are not sufficient verification. A PR is verified only when its unit
 - [ ] Run the repo's lint and typecheck once before the PR-facing push. Push with hooks on.
 - [ ] Run a deslop pass before each commit and /pstack-no-comments before review.
 - [ ] Triage every Bugbot and security-reviewer comment per `references/bugbot-triage.md` in the installed pstack-mode skill.
-- [ ] Rebase onto current trunk before the code-ready report and babysit. Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure that comes from a change on trunk.
+- [ ] Rebase onto the selected execution playbook's base, through its topology writer, before the code-ready report and babysit. For Autopilot-stack, the root rebases each link onto its parent and owners never rebase. Keep that merge base in fix rounds. Rebase again only at merge prep, on a `git merge-tree` conflict with trunk, or on a CI failure that comes from a change on trunk.
 
 ### Verdict and merge, for every PR
 
@@ -109,7 +109,7 @@ Each live lane runs in its own isolated environment at the PR head, a cloud VM w
 
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
-- [ ] Rebased onto current trunk after the verdict, patch-id unchanged.
+- [ ] Rebased onto the execution playbook's base by its topology writer after the verdict, patch-id unchanged.
 - [ ] <The owner squash-merges its own PR, or the root appends it to the base-branch stack and the operator lands it bottom-up.>
 
 ## Close the program
