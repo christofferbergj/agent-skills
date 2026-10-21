@@ -4,13 +4,15 @@ description: "Configure this repo for the engineering skills: set up its issue t
 disable-model-invocation: true
 ---
 
-# Set up the combined engineering skills
+# Setup Matt Pocock's Skills
 
 Scaffold the per-repo configuration that the engineering skills assume:
 
 - **Issue tracker**: where issues live (GitHub by default; local markdown is also supported out of the box)
 - **Triage labels**: the strings used for the five canonical triage roles
 - **Domain docs**: where `GLOSSARY.md` and ADRs live, and the consumer rules for reading them
+
+This is a prompt-driven skill, not a deterministic script. Explore, present what you found, confirm with the user, then write.
 
 Configure one project contract for both the Matt and Pstack entrypoints. Reuse existing choices and authorization; ask only about unresolved tracker, label, or document decisions. Prepare the concrete proposed changes before requesting a new decision. Personal model-role overrides remain optional through /pstack-setup.
 

@@ -16,6 +16,9 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Configure one shared project contract for both hosts. Reuse existing domain/tracker/label choices and legacy artifact locations; personal Pstack model-role setup remains optional. Use the GitLab API relation `is_blocked_by` when identifying native blockers; `/blocked_by` remains the quick action.
+- Instruction files: upstream never creates `AGENTS.md` beside `CLAUDE.md` (or the reverse). Locally the existing source stays authoritative, and the smallest host-native pointer or documented symlink lets the other host reach it, because Codex reads `AGENTS.md` and Claude Code reads `CLAUDE.md`. A completion criterion closes step 5.
+- `domain.md` is restructured as a role-based contract: it names authoritative artifacts by role, respects legacy `CONTEXT.md`/`context.md`/`domain.md` files, delegates updates to /domain-modeling and architectural vocabulary to /codebase-design, and keeps canonical edits with the coordinator. Upstream's single- and multi-context file trees are delegated to /domain-modeling, which holds the same layouts. Upstream's read list, silent-absence rule, glossary-vocabulary rule, and ADR-conflict example are kept in its wording.
+- GitHub and GitLab notes preflight the CLI and pass multiline text through UTF-8 body files or JSON API input instead of heredocs and inline `--body`, so issue text never passes through shell quoting. GitHub closing comments are posted with `--body-file` before `gh issue close`, and GitLab's interactive `--description -` editor option is dropped because agents cannot drive an editor. Publishing waits for the task's grant.
 
 ## Maintenance
 
