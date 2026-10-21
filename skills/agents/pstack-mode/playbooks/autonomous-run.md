@@ -1,10 +1,13 @@
-# Autonomous run
+### Autonomous run
 
-Own the exit condition and the handoff.
+**You own the exit condition. Define done, then drive to it without stopping.**
 
-1. Define the goal, scope, countable done predicate, evidence, authority, and agreed limits. Use /pstack-figure-it-out if no existing execution path fits. Complete when progress and completion can be distinguished objectively.
-2. Execute the selected playbook, using /pstack-swarm for useful independent work and /pstack-show-me-your-work for decisions. Prefer fewer broad useful workers over ceremonial fan-out. Complete each unit only with its evidence.
-3. Recheck the predicate and artifacts at meaningful checkpoints. Use a native loop or scheduling tool only when available and authorized; a current-session loop is not a promise of surviving a restart. Preserve a durable checkpoint when a future wake is unavailable. Complete each checkpoint with observed progress and remaining work.
-4. Pivot from failed hypotheses without expanding scope or changing an approved interface silently. Repeated failure needing a decision, a genuine dead end, or the agreed budget triggers a concrete handoff. Complete when the run either proves done or preserves useful partial work without weakening the predicate.
+1. State the exit condition as a checkable predicate before the first iteration (tests green, repro fixed, all N PRs merged, pixel-diff zero).
+2. Pick the wake mechanism using the host's native loop or scheduling tool. An event to watch (CI, a merge, a ref advancing) gets a watcher subagent that wakes you on the event, with a long time-based heartbeat as fallback. No event gets a fixed-interval heartbeat sized to when the result is worth re-checking. When the host has no wake tool, keep driving inside the session and keep the step 5 checkpoint durable. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section.
+3. Each iteration makes the smallest change the evidence justifies, verifies it against the predicate, commits if it advanced, discards changes that didn't help. Belt-and-suspenders that "might help" gets reverted, not left to ride.
+   Sequence the work via /pstack-principle-sequence-verifiable-units, verifying each unit before the next instead of batching checks at the end.
+4. Mid-run discoveries are yours. Address broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, and fixable drift yourself via /pstack-mode. Put out-of-band fixes in their own PR. Do not park reversible work for the human or ask the user. Surface only irreversible actions, genuine product or preference calls no experiment can settle, or a real dead end. Keep the predicate as the main drive, and return to it after each side fix.
+5. Checkpoint every iteration via /pstack-show-me-your-work, a row for what changed and whether the predicate moved.
+6. Stop when the predicate is met. A plateau is not a stop, so keep going and pivot your approach to push past it. Surface a genuine dead end rather than spinning, and never relax the predicate to declare victory.
 
-Return the predicate result, evidence, trail, remaining work, and exact resumption context. An autonomy grant remains bounded by its scope and existing action authorizations.
+**Reply:** the exit condition, iterations run, what landed, what was discarded, final predicate state.

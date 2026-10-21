@@ -5,11 +5,55 @@ description: "Use for Pstack design or artifact bakeoffs, blind judging, base se
 
 # Arena
 
-1. Frame the artifact and derive a small task-specific rubric. Keep the rubric private from candidates. Select at least two useful independent directions, scaling to the task and budget; use /pstack-swarm for execution. Give each writer a separate worktree or output directory. Complete when candidates share the same brief and each has an isolated output.
-2. Launch independent candidates with the task, grounding, and output contract. Request the artifact and a short rationale naming rejected alternatives. Wait for terminal results. Complete when every candidate is available or a dropout is recorded.
-3. After candidate writes stop, send a blind judge the rubric and candidates labeled by neutral identifiers. Prefer a different vendor through /pstack-swarm; disclose the fallback if unavailable. Read every candidate yourself while the judge works. Complete when the judge and coordinator have scored each criterion from the artifacts.
-4. Select the base with the clearest boundaries and smallest sufficient interface. Resolve disagreements by inspecting the competing rationales. Reframe a brief whose candidates solve different problems. Complete when one base and its tradeoffs are explicit.
-5. Inspect each other candidate for specific useful grafts. Integrate them coherently rather than concatenating designs. Converged candidates need no graft. Complete when retained and rejected ideas have reasons.
-6. Verify the synthesized artifact against the rubric and real acceptance behavior. If the brief or criterion was wrong, reframe rather than hide the defect. Complete when the evidence supports the artifact or identifies the remaining failure.
+Open a todolist with one entry per phase (Frame, Fan out, Cross-judge, Pick, Graft, Verify) before launching anything.
 
-Return the artifact, base choice, judge's actual vendor, graft sources, rejected alternatives, dropouts, and verification result.
+## Phase A: Frame
+
+Every candidate gets the same prompt, so the prompt is the contract.
+
+1. State the artifact each candidate is producing.
+2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks like on _this_ task. It is the picker's tool in Phase D. Candidates only see the task.
+3. Pick the runners through /pstack-swarm: by default two, on different models when the host offers them. Spawn more runners when the arena covers multiple design directions. Use the same model N times when the work is generation-bound rather than judgment-sensitive. Pick each subagent's model and effort for the job through /pstack-swarm.
+4. Give each candidate its own output location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per /pstack-principle-separate-before-serializing-shared-state.
+
+Complete when the artifact, the rubric, the runners, and one output location per candidate are named.
+
+## Phase B: Fan out
+
+Spawn all N subagents at once, in the background, through /pstack-swarm, each with the task, the path to the shared grounding, its own output path, and instructions to produce the artifact and a short rationale naming the alternatives it considered and what it rejected.
+
+If a candidate produces no output, proceed with N-1 and note the dropout.
+
+Complete when every candidate has written its artifact and rationale or is noted as a dropout.
+
+## Phase C: Cross-judge
+
+After all Phase B candidates complete, spawn one readonly judge subagent through /pstack-swarm's cross-vendor critic route, preferring a different model family from the parent's. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
+
+Complete when the judge has returned per-criterion scores and a recommended base.
+
+## Phase D: Pick a base
+
+Read every candidate end to end before picking. Score each against the rubric criterion by criterion, not on holistic feel, and compare with the cross-judge. Agreement on the base confirms the pick. Disagreement means one of you is biased or the rubric was ambiguous. Read both rationales before deciding.
+
+Pick the base a future maintainer can extend most easily without breaking invariants. When two feel tied, prefer the cleaner boundary or smaller API, per /pstack-principle-laziness-protocol.
+
+Complete when one base is chosen, with your scores and the judge's compared.
+
+## Phase E: Graft
+
+Walk each losing candidate once more for what is worth porting into the base, usually one or two things per candidate, not most of it. Fold each graft in by hand, per /pstack-principle-redesign-from-first-principles, so the result stays coherent under one mental model. Don't paste mechanically.
+
+If the candidates converge on one shape, that is strong agreement. Note it and ship the consensus shape. No graft is needed. If they wildly diverge, Phase A was under-specified. Reframe and re-run rather than averaging the divergence.
+
+Complete when every losing candidate has been walked and each graft or rejection has a reason.
+
+## Phase F: Verify
+
+Verify the synthesized artifact like any other output, per /pstack-principle-prove-it-works. If verification finds a problem the arena missed, either Phase A was wrong (re-frame and re-run) or a candidate caught it and you missed the graft (go back to Phase E). Don't paper over it.
+
+Complete when the synthesized artifact passes verification.
+
+## Outputs
+
+One synthesized artifact, with a short synthesis note alongside naming the base and why, the cross-judge's verdict, each graft with its source candidate, what was rejected and why, any convergence or dropouts, and the verification result.

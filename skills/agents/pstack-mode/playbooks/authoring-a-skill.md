@@ -1,11 +1,12 @@
-# Author or modify a skill
+### Authoring or modifying a skill
 
-Own predictable behavior in a cold agent context.
+**You own the skill's voice.**
 
-1. Read the repository's skill conventions, existing callers, and source provenance. Use the available skill-authoring workflow and /writing-for-agents when installed. Complete when purpose, invocation, dependencies, and ownership are clear.
-2. Make the smallest change that alters the intended behavior. Keep conditional reference with its owner and use prose skill invocation for dependencies. Preserve stable IDs, supported hosts, and upstream credit. Complete when each ordered phase has a checkable outcome and all required resources are reachable.
-3. Check frontmatter, metadata, references, installation resources, and repository formatting/discovery rules. Complete when static checks pass.
-4. Forward-test consequential instruction or tool changes on an isolated realistic task. Inspect actual tool activity and artifacts, not merely the final answer. Complete when the changed behavior is exercised or its precise unverified branch is disclosed.
-5. Prepare source changes for review; installing a local snapshot and publishing source are separate authorized steps. Complete when the source, evidence, and installation status are clear.
+1. Use /writing-for-agents.
+2. Validate the skill: frontmatter has `name` and `description`, referenced files exist, cross-skill links resolve.
+3. Test cases if structural. Skip if subjective.
+4. Run **Opening a PR**.
 
-Return changed behavior, files, validation, source attribution, and limitations.
+When in doubt, delete. Keep only prose that changes a decision. Tell it to do the thing and skip the reason. Explain only when the rule is confusing without one. Match tone to scope. Point at structural sources (types, READMEs, config) per /pstack-principle-encode-lessons-in-structure. Delegate to other skills by `/skill-name` invocation. Don't restate. A workflow you keep hitting but isn't captured → propose a new skill.
+
+**Reply:** summary of the skill, key design decisions, validation notes.

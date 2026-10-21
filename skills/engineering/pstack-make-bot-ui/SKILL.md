@@ -1,6 +1,7 @@
 ---
 name: pstack-make-bot-ui
-description: "Use when building a Pstack control UI for an existing agent webhook receiver or explicitly exposing it on Tailscale."
+description: Build a local control UI for an existing agent webhook receiver, optionally exposed on Tailscale.
+disable-model-invocation: true
 ---
 
 # Make a webhook control UI

@@ -15,9 +15,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Model-invoked, where upstream is user-invoked: it is a Pstack helper that /pstack-automate-me loads by prose, so its description scopes triggering to Pstack tasks.
 - When the operator corrects you, prepare any agent-instruction change for review instead of adding the rule directly; learning does not silently change the current run's approved rules. This extends the library-wide authority adaptation, which covers source skills, to the repository's instruction file.
-- Adds a closing completion criterion so the procedure ends on a checkable state, per the repository's skill rules.
 
 ## Maintenance
 
@@ -29,3 +27,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | ----------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                              |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change in `pstack/skills/correct/` since `e5136d8`. First fidelity check: restored upstream's numbered order for the four fix levels, which a local bullet list had dropped, and recorded the model-invoked mode, review-gated rule additions, and the added completion criterion. Tools and conventions pass. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                     |

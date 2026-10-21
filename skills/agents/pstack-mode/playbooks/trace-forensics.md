@@ -1,10 +1,14 @@
 # Trace forensics
 
-Own a diagnosis from the supplied capture, with its limits intact.
+**You own the diagnosis from the artifact.**
 
-1. Identify the artifact format, process/build, time range, workload, sampling method, and known symptom. Preserve the original file. Complete when what the capture can and cannot measure is explicit.
-2. Parse with the format's supported tooling. Inspect dominant stacks, timing, allocations, waits, errors, and relevant outliers rather than one attractive frame. Complete when findings cite positions in the artifact and corresponding source where available.
-3. Build competing causal explanations and test them against the capture. Use /pstack-how or /pstack-why for code and rationale. Complete when the supported inference and unresolved gaps are distinct.
-4. Explain what additional live capture or discriminating probe would settle remaining uncertainty. A capture-only request stays read-only. Complete when the user has a useful diagnosis without an invented runtime result.
+Distinct from **Runtime forensics**, which instruments the live process. Here the capture already exists. The artifact is a fixed dataset, read it, don't re-run it. Keep tooling generic: a DevTools or trace parser for cpuprofile and `.json.gz`, a text editor for a spindump, your heap tooling for a heapsnapshot.
 
-Return the finding, artifact evidence, confidence, competing explanations, and next probe.
+1. Identify the format and load it with the right tool. Parse large artifacts in a subagent (/pstack-principle-guard-the-context-window) and keep the reduced finding in the main thread. Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section.
+2. Transform the raw artifact into a form you can query. Dump the trace or heap snapshot into sqlite, one row per sample, frame, or node. Reach the queryable shape before you read.
+3. Narrow to the cause. Query for the frames that hold the most time and walk the call tree to the hot path. For a leak, follow the retainer chain from the leaked object to a GC root. For a spindump, find the thread stuck on-CPU or blocked and its wait reason.
+4. Attribute to source. Map the hot frame to file, symbol, and line via the artifact's own symbols. A frame with no source mapping is not yet a diagnosis. Resolve the symbols, or say plainly the artifact does not carry them.
+5. If you have a paired capture, diff the before and after artifacts to confirm. Otherwise, mark the finding as the strongest hypothesis the artifact supports, not a confirmed cause.
+6. Hand back a cited diagnosis, no fix unless asked. Route to Bug fix or Perf issue once the cause is known. Throughput checkpoint stays one line: `throughput checkpoint: n/a, read-only forensics`.
+
+**Reply:** the artifact and format, the reduced finding, the source location, the artifact paths, and whether a paired capture confirmed it.

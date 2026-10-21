@@ -16,7 +16,6 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Delegate compatibility strategy and verification-unit gates to the migration owner so planned intermediate breakage cannot override required release boundaries.
-- Remain model-invoked; upstream is user-invoked. /pstack-principles discovers installed principle descriptions and applies the matching principles in each phase of both suites, so the principle must stay visible to the model.
 
 ## Maintenance
 
@@ -28,3 +27,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | ----------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                         |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Audit: no upstream change to the skill since `e5136d8`. Compared every upstream rule and recorded divergence in both directions. Recorded the invocation-mode change; the existing migration-owner delegation is still present and needed. No SKILL.md change. Invocations resolve, metadata matches model invocation, and catalog validation passes. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                |

@@ -1,6 +1,6 @@
 # HTML Report Format
 
-Render one HTML file in the OS temp directory. Keep inline styles and a text or SVG explanation of each key relationship so it remains readable offline. Tailwind and Mermaid CDN imports in this scaffold are optional enhancements. Mermaid handles graph-shaped diagrams reliably; hand-built divs and inline SVG handle the more editorial visuals (mass diagrams, cross-sections). Mix the two: don't lean on Mermaid for everything, it'll start to look generic. Escape repository and issue text as data before inserting it into HTML, attributes, or diagram labels.
+The architectural review is rendered as a single self-contained HTML file in the OS temp directory. Tailwind and Mermaid both come from CDNs. Mermaid handles graph-shaped diagrams reliably; hand-built divs and inline SVG handle the more editorial visuals (mass diagrams, cross-sections). Mix the two: don't lean on Mermaid for everything, it'll start to look generic. Escape repository and issue text as data before inserting it into HTML, attributes, or diagram labels.
 
 ## Scaffold
 

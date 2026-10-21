@@ -4,7 +4,7 @@ The prose that ships alongside the type sketch. One page. Sentence-case headings
 
 ## Problem
 
-_One paragraph. What we're trying to do, and what about the existing system or constraints makes the shape non-obvious. If [Ground](../SKILL.md#1-ground) surfaced constraints the design must honor (existing types to interop with, callers we can't break, invariants that crossed our boundary), name them here so the reader sees the same constraints you saw._
+_One paragraph. What we're trying to do, and what about the existing system or constraints makes the shape non-obvious. If [Phase A](../SKILL.md#phase-a-ground-the-problem) surfaced constraints the design must honor (existing types to interop with, callers we can't break, invariants that crossed our boundary), name them here so the reader sees the same constraints you saw._
 
 ## Usage (caller's view)
 
@@ -32,8 +32,4 @@ _Things you noticed during the sketch that the human needs to weigh in on, and r
 
 ## Next implementation step
 
-_The first thing to build against the sketch. One sentence. What you'd start writing immediately after synthesis (or after Phase D sign-off, if a checkpoint was opted into)._
-
-## Canonical project records
-
-_Link the configured vocabulary, domain model, accepted spec/tickets, and any qualifying ADRs maintained through /domain-modeling. Record implementation evidence here without duplicating those artifacts._
+_The first thing to build against the sketch. One sentence. What you'd start writing immediately after synthesis (or after Phase C sign-off, if a checkpoint was opted into)._

@@ -3,7 +3,7 @@ import fs from "node:fs";
 import process from "node:process";
 
 const RULE =
-  "Verification covers applicable unit, live, and performance checks; every omitted check names a reason.";
+  "Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.";
 const LANES = /([1-9][0-9]*) lanes at the PR head/;
 const SUB_BLOCKS = [
   "Depends on.",

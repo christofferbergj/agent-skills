@@ -15,7 +15,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Model-invoked, where upstream is user-invoked, so a Pstack task can restate a long or ambiguous ask before executing it. The description names that trigger instead of the `/in-your-own-words` command.
+- The description names the trigger, a long or ambiguous ask to restate before executing it, instead of upstream's `/in-your-own-words` command.
 
 ## Maintenance
 
@@ -27,3 +27,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8`. First fidelity check: the body is identical to upstream; recorded the model-invoked mode and its description. No text changes.                            |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                        |

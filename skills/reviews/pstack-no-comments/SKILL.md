@@ -5,7 +5,19 @@ description: "Use for Pstack comment review, unnecessary narration, or suppressi
 
 # No comments
 
-1. Resolve the requested files or diff and repository comment conventions. Complete when the critic's scope and applicable contract are fixed.
-2. Use /pstack-swarm to dispatch an independent critic with [the comment-review prompt](references/comment-reviewer.md) and the scope. The critic reads nearby code, preserves required license and public-contract comments, and reports deletions and evidenced refactor targets without changing application code. Complete when each proposed deletion or refactor names a concrete location and reason.
-3. Inspect findings. Preserve comments required by the repository or a verified external constraint. Apply warranted comment changes within scope; refactor only when the task authorizes it. Invoke /pstack-how or /pstack-why to resolve a disputed explanation. Complete when every finding is applied, retained with a reason, or explicitly left outside scope.
-4. Run checks appropriate to the change and report files, deletion count, verified refactor flags, and skips. Complete when cleanup preserves behavior and required explanations.
+Spawn Comment Sicko. Act on accepted findings.
+
+Defer to Comment Sicko's fresh perspective.
+
+## Scope
+
+Use the caller's files or diff. Otherwise use the current diff against the base branch, default `main`, including the working tree. Pass the repository's documented comment conventions with the scope.
+
+## Steps
+
+1. Use /pstack-swarm to spawn Comment Sicko with [its prompt](references/comment-reviewer.md). Pass the scope. Pick each subagent's reasoning level and speed for the job, per /pstack-swarm. Do not restate its rules. Complete when its report returns.
+2. Inspect its report and diff. Reject application-code edits, scope escapes, exception-protected deletions, misstated `MUST KILL` reasons, and flags that treat kept intentional code as guilty. Reshape flags on our-code surprises stay actionable. Do not restore those comments. A keep survives only with proof it is about something we cannot change. Audit missed scoped lint and TypeScript suppressions. Correctness or safety suppressions stay actionable `MUST KILL`s. Restore deletions only with exact exceptions and scoped proof. Before accepting thin `IMPORTANT` or `do not remove` kills or keeps, run /pstack-how or /pstack-why on their symbol. If a kill is ambiguous, do not restore. If a keep is refuted or still ambiguous, delete it. Revert and rerun one rejected report with the failure named. Reject a second, report it open, and fail /pstack-no-comments. Complete when every finding is accepted, rejected, or restored with its reason.
+3. Fix trivial accepted flags directly by deleting a dead path, dropping a parameter, or using the real API. If any fix needs a shape, run /pstack-architect once for the accepted set and surrounding code. Stop at the sketch. Architect shapes. Step 4 implements. Complete when trivial flags are fixed and any needed sketch exists.
+4. Implement the smallest root-cause fix in scope. Remove every named workaround. If the root cause is out of scope, land the smallest in-scope fix and report the rest open. /pstack-principle-fix-root-causes and /pstack-principle-redesign-from-first-principles guide intent only. Neither authorizes widening the fence nor fixing instances outside it. Never bolt on symptom guards. Complete when every accepted flag is fixed in scope or reported open.
+5. Constraint comments say `do not remove`, `do not change wording`, or `talk to X before changing`. Leave keeps about things we cannot change. Offer the cheapest in-scope type, runtime, test, or CI lint. Wait for interactive approval. Unattended and eval require caller pre-approval. If approved, encode then delete. Otherwise delete, report the constraint open, and sketch out-of-scope work. Complete when every constraint comment is kept, encoded, or reported open.
+6. Report the deletion count, restored comments, reruns, architect sketch, fixes, encoding offers, encodings, unenforced constraints, and other open work.

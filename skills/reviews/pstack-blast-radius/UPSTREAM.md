@@ -15,10 +15,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Model-invoked, where upstream is user-invoked: /pstack-mode's playbooks and /pstack-help route to it, so the model must be able to load it.
-- Open with the /domain-modeling invocation that reads the project's configured artifacts and reports documentation drift without edits; that skill is the shared owner of project vocabulary.
 - Point step 1 at the anchor step of /pstack-why, which is step 2 upstream; the local /pstack-why merges upstream's first two steps.
-- End each step with a completion criterion, following the repository's rule that steps end on checkable criteria.
 
 ## Maintenance
 
@@ -30,3 +27,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                                                                                                                       |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8` in `pstack/skills/blast-radius/`. First fidelity check: restored four dropped or softened upstream rules (pull the PR and commits through /pstack-why, spend the time on the one safety fact, the same evidence rules as /pstack-why, and ask more than one model and merge for a big or wide change), and recorded the model-invoked mode, the /domain-modeling preamble, the anchor-step pointer, and the completion criteria. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                              |

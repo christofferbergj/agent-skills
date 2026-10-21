@@ -15,7 +15,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Model-invoked, where upstream is user-invoked: /pstack-teach, /pstack-technical-writing, /pstack-mode, /pstack-recall, /pstack-show-me-your-work, and /pstack-blast-radius apply it as their prose pass. The description scopes it to Pstack output and prose submitted for editing.
+- The description scopes triggering to Pstack output and to prose submitted for editing.
 - `<!-- prettier-ignore -->` precedes the Content and Communication-artifacts lists, so the repository formatter keeps upstream's gapped rule ids 5 and 22 instead of renumbering them.
 
 ## Maintenance
@@ -28,3 +28,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | ----------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                      |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8`. First fidelity check: restored upstream rule ids 5 (vague attributions) and 22 (sycophantic tone), which a local renumbering had changed although the skill says rule numbers are stable ids. Recorded the model-invoked mode and description. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                             |

@@ -38,3 +38,16 @@ Ten Claude Opus workers each took one slice in its own worktree, and the coordin
 
 - `pnpm check` passes on the integrated branch.
 - Tool checks cited by workers include Claude Code 2.1.304 and codex-cli 0.163.0 hook documentation for git-guardrails, Husky 9.1.7 and lint-staged 17.6.0 for setup-pre-commit, Bun 1.2's text `bun.lock`, Tailscale 1.102.2 flags, gh 2.102.1, pnpm 11.28.6, and dependency-cruiser 18.7.0, which scans no modules under TypeScript 7.0.2 while still exiting 0.
+
+## Follow-up: owner decisions and re-imports
+
+The owner accepted every recommendation from this audit the same day:
+
+- **Library-wide rules (#18):** Pstack helpers and principles are model-invoked except the listed entrypoints; sourced steps may end with completion criteria; project artifacts go through /domain-modeling; formatter-only differences are not divergences. 65 records dropped the bullets these rules now cover.
+- **Test ownership (#18):** /tdd owns red-green mechanics and seams; /pstack-principle-test-behavior-not-implementation owns test-quality criteria.
+- **Re-imports:** pstack-mode (SKILL.md and all 23 playbooks), architect, arena, why, no-comments, automate-me, recall, show-me-your-work, help, and reflect were rebuilt from upstream text with only library-wide adaptations, shared-owner delegation, and recorded divergences. The fidelity backlog is empty.
+- **Invocation:** pstack-maintain-verification-skill and pstack-make-bot-ui are user-invoked again, as upstream has them; pstack-help routes to them as user entrypoints.
+- **Replies:** /pstack-ketchup's diagrams, screenshots, and videos follow its own rules instead of /reply-shape's picture limit.
+- **Architecture report:** improve-codebase-architecture returns to upstream's CDN-first wording, keeping strict Mermaid and escaping.
+
+Seven Claude Opus workers did the slices. Two Codex `gpt-6.1-sol` `xhigh` reviews found one blocker, Orchestrate landing implementation without /review-loop, and six cleanups, all fixed before merge.

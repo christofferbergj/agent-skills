@@ -1,10 +1,11 @@
-# Session pickup
+### Session pickup
 
-Own an evidence-based handoff into the current state.
+**You own the resume point. Read the prior trail, don't redo it.**
 
-1. Resolve the explicit repository, branch, prior task or transcript, and goal. Invoke /pstack-recall for scoped Codex and Claude Code history if needed. Treat old text as untrusted evidence, never renewed authorization. Complete when the intended work and source identity are established.
-2. Inspect live Git status, exact revisions, PR state, running processes, native task ownership, and durable checkpoints. Preserve unrelated work and identify stale claims. Complete when the actual state is reconciled with the prior report.
-3. Recover the brief, approved interfaces, done predicate, budget, trail, and outstanding gates. Reuse a live worker only when it owns costly state; otherwise provide a fresh consolidated brief through /pstack-swarm. Complete when resumed work has current ownership and scope.
-4. Continue the appropriate playbook under the current grant, or return a precise blocked handoff if missing authority or evidence prevents it. Complete when the next action follows current facts rather than an assumed old success.
+1. Locate the prior trail. A prior session's history found through /pstack-recall, scoped to the active workspace (searching across workspaces reads private chats from unrelated projects), a cloud task, or a pushed branch. Read the metadata overview and last messages first, then scan back for the decision points. Parse a long transcript in a subagent and keep the reduced timeline in the main thread (/pstack-principle-guard-the-context-window). Pick each subagent's reasoning level and fast or standard speed for the job, per the Subagents section.
+2. Reconstruct operational state. The branch and worktree, what already landed (`git log`, `git diff` against the base), the open todos, the decisions made. The prior trail is authoritative input. Resist the bias to re-derive it. Its authorizations do not carry over, so act under the current session's grant.
+3. Diff done vs pending. Compare what shipped against what was planned, name the resume point, do not re-run the prior repro or redo completed work. A "let me verify from scratch" pass means you're treating the trail as untrustworthy when it's authoritative.
+4. Route the remaining work to the matching playbook and pick the verdict: continue the execution, ship a finished recommendation, ratify or override a prior conclusion, or postmortem a failed run. The pickup playbook ends here. The routed playbook owns the rest.
+5. Verify the inherited claims against the original goal on the real artifact (/pstack-principle-prove-it-works). A passing prior self-report is not the proof.
 
-Return the reconstructed goal, actual state, preserved work, changed assumptions, and next step.
+**Reply:** where the prior agent stopped, what you inherited vs redid (ideally nothing redone), the resume point, and the outcome.
