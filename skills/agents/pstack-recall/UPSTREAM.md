@@ -7,13 +7,16 @@
 - Original skill: [`pstack/skills/recall/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/recall/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Last upstream review: 2026-10-15.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Local-only files: `scripts/history.py`, its tests in `scripts/tests/`, and [`references/history.md`](references/history.md). They replace upstream's Cursor transcript path (`~/.cursor/projects/<slug>/agent-transcripts/`), which neither host has. Codex and Claude Code store sessions under host-specific layouts that do not encode the repository, so discovery must match repository metadata before it emits anything; the script enforces upstream's "never read another project's transcripts" rule and bounds and marks read output as untrusted. Subagents therefore order candidates by the script's last activity instead of `ls -t`, search `--read` output instead of grepping raw files, and cite host and session ID instead of a chat UUID.
+- Adds the read-only rule and the activity-index sentence: /pstack-mode's Worktree cleanup playbook invokes this skill for repository-scoped activity evidence, and that caller needs to know missing history never proves a worktree inactive.
 
 ## Maintenance
 
@@ -21,6 +24,7 @@ Invoke `/maintain-skills` for repository-wide upkeep, including this suite's sup
 
 Keep the original import fixed. Advance the reviewed-through baseline only after the relevant delta is fully resolved and checks pass. Record adopted, adapted, and excluded changes and their reasons.
 
-| Review date | Candidate revision                         | Decision                                                                                                                                                                                      |
-| ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary. |
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ----------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8`. Re-imported from upstream text at the candidate, replacing the condensed rewrite: restored the routing classification, stating the scope back and never turning "all" into "recent N", the parallel fan-out schema, the default shared-record sweep through /pstack-why's investigators, live-state verification, and the output contract. Applied installed names, /pstack-swarm delegation, and completion criteria. Recorded the local history script, its tests and reference, and the worktree-cleanup activity index. Model-invoked mode is covered by the library-wide rule. Tests: 15 passed. |
