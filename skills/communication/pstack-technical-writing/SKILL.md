@@ -1,6 +1,6 @@
 ---
 name: pstack-technical-writing
-description: "Use for Pstack technical documents, readmes, PR descriptions, or commit messages with a clear reader and purpose."
+description: "Use for Pstack technical writing: writing or reviewing docs, RFCs, readmes, PR descriptions, or commit messages with a clear reader and purpose."
 ---
 
 # Technical writing
@@ -15,7 +15,7 @@ Three rules sit above the layers:
 
 The codebase is the word list. Write the real symbol, file, flag, or command name, not a synonym or a description of it.
 
-Don't invent jargon. Use the words a developer would say out loud: "move", "delete", "a budget that only decreases", not "evacuate", "ratchet", or "endgame". A named pattern is fine when the doc says what it means the first time. Propose a new offender and its replacement as a proposed source change to /pstack-unslop's abstract-metaphor rule in your reply, with the diff. Don't edit that skill.
+Don't invent jargon. Use the words a developer would say out loud: "move", "delete", "a budget that only decreases", not "evacuate", "ratchet", or "endgame". A named pattern is fine when the doc says what it means the first time. Propose a new offender and its replacement as an addition to /pstack-unslop's abstract-metaphor rule in your reply, with the diff. Don't edit that skill.
 
 ## Vary the rhythm
 

@@ -7,8 +7,9 @@
 - Original skill: [`pstack/skills/bro/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/bro/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05` for this tracked reconciliation.
-- Reviewed through commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Last upstream review: 2026-10-15.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 The existing `bro` instructions were byte-identical at reconciliation. Their earlier import revision is not recorded; this is the first complete tracked reconciliation, not a claim about the historical import.
@@ -27,3 +28,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                      |
 | ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8`. First fidelity check: the skill text is byte-identical to upstream, the user-invoked mode and Codex policy match, and the only divergence is the local-only `README.md`. No changes. |
