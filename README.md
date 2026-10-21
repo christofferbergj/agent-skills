@@ -26,7 +26,7 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 | Implement agreed work                     | `implement` or `implement-spec`            |
 | Let the agent choose and drive a workflow | `pstack-mode`                              |
 | Review a change                           | `review-loop`, `code-review`, or `thermos` |
-| End replies with lettered next steps      | `next-options`                             |
+| End replies with the next step or choices | `next-options`                             |
 | Shape replies for skimming and action     | `reply-shape`                              |
 | Maintain this library                     | `maintain-skills`                          |
 

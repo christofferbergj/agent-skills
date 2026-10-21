@@ -20,7 +20,7 @@ Matt's `prototype` is named `design-prototype` to coexist with Emil Kowalski's s
 
 Matt's familiar flow is `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Its interview, planning, implementation, testing, and review owners invoke `/pstack-principles` in the current phase and before completion. The selector discovers installed principle descriptions, reads the applicable owners, and passes their resolved instructions to workers. Each principle keeps its rules in one place; the selector does not contain a second rule list.
 
-Both flows end implementation with `/review-loop`. The **counterpart**, the other vendor's model, reviews the change while `/code-review` runs its Standards and Spec axes and a same-model critic runs `/thermo-nuclear-review`'s correctness and security audit; the coordinator verifies every finding, fixes what holds, and re-reviews the delta with the counterpart until a round is clean. In T3 Code the counterpart runs as a tracked child task with an explicit model and effort, through `/pstack-swarm`'s T3 route; elsewhere it uses the other vendor's CLI. `/next-options`, loaded at session start by an opt-in hook, ends replies with lettered next steps that follow these flows' stages; the same hook can load `/reply-shape`, which lays out the rest of each reply.
+Both flows end implementation with `/review-loop`. The **counterpart**, the other vendor's model, reviews the change while `/code-review` runs its Standards and Spec axes and a same-model critic runs `/thermo-nuclear-review`'s correctness and security audit; the coordinator verifies every finding, fixes what holds, and re-reviews the delta with the counterpart until a round is clean. In T3 Code the counterpart runs as a tracked child task with an explicit model and effort, through `/pstack-swarm`'s T3 route; elsewhere it uses the other vendor's CLI. `/next-options`, loaded at session start by an opt-in hook, ends replies with the next step, offering lettered options that follow these flows' stages when the user decides; the same hook can load `/reply-shape`, which lays out the rest of each reply.
 
 `pstack-mode` is an explicit alternative coordinator for choosing and executing a task playbook. It uses the same selector and shared owners. It can implement an existing accepted spec and ticket graph, so switching coordinators does not start another planning process. Installation or an individual helper invocation does not activate the mode.
 
@@ -35,7 +35,7 @@ Both flows end implementation with `/review-loop`. The **counterpart**, the othe
 | Correctness and security audit                            | `/thermo-nuclear-review` |
 | PR descriptions                                           | `/pr`                    |
 | Reply layout                                              | `/reply-shape`           |
-| Lettered reply endings                                    | `/next-options`          |
+| Reply endings and lettered options                        | `/next-options`          |
 | Host delegation, writer isolation, and review fallback    | `/pstack-swarm`          |
 | Principle selection and composition                       | `/pstack-principles`     |
 | Whole-library upkeep and upstream review                  | `/maintain-skills`       |
