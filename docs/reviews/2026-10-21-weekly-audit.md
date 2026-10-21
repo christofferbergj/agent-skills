@@ -17,20 +17,20 @@ The first fidelity audit since the check was added. It started from default-bran
 
 Ten Claude Opus workers each took one slice in its own worktree, and the coordinator cherry-picked their commits. Two Codex `gpt-6.1-sol` reviewers at `xhigh` reviewed the integrated diff.
 
-| Slice                         | Skills                                                                                           | Advanced      | Pending                                                                                  |
-| ----------------------------- | ------------------------------------------------------------------------------------------------ | ------------- | ---------------------------------------------------------------------------------------- |
-| Principles A and B            | 24 Pstack principles                                                                             | 24            | none                                                                                     |
-| Pstack agents                 | mode, figure-it-out, automate-me, help, recall, reflect, show-me-your-work                       | figure-it-out | mode (5 of 22 playbooks repaired), automate-me, help, recall, reflect, show-me-your-work |
-| Pstack communication          | bro, in-your-own-words, ketchup, teach, technical-writing, unslop                                | 6             | none                                                                                     |
-| Pstack engineering            | 8 helpers                                                                                        | 8             | none                                                                                     |
-| Pstack planning and reviews   | architect, arena, how, sharpen, why, benchmark-checklist, blast-radius, interrogate, no-comments | 5             | architect, arena, why, no-comments                                                       |
-| Thermos, review owners, local | 2 Thermos rubrics, test-audit, code-review, pr, 4 first-party skills                             | 5 sourced     | none                                                                                     |
-| Matt planning A and B         | 14 skills                                                                                        | 14            | none                                                                                     |
-| Matt agents and engineering   | 10 skills                                                                                        | 10            | none                                                                                     |
+| Slice                         | Skills                                                                                           | Advanced                          | Pending                                                                                  |
+| ----------------------------- | ------------------------------------------------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------- |
+| Principles A and B            | 24 Pstack principles                                                                             | 24                                | none                                                                                     |
+| Pstack agents                 | mode, figure-it-out, automate-me, help, recall, reflect, show-me-your-work                       | figure-it-out                     | mode (5 of 22 playbooks repaired), automate-me, help, recall, reflect, show-me-your-work |
+| Pstack communication          | bro, in-your-own-words, ketchup, teach, technical-writing, unslop                                | 6                                 | none                                                                                     |
+| Pstack engineering            | 8 helpers                                                                                        | 8                                 | none                                                                                     |
+| Pstack planning and reviews   | architect, arena, how, sharpen, why, benchmark-checklist, blast-radius, interrogate, no-comments | 5                                 | architect, arena, why, no-comments                                                       |
+| Thermos, review owners, local | 2 Thermos rubrics, test-audit, code-review, pr, 4 first-party skills                             | 5 sourced                         | none                                                                                     |
+| Matt planning A and B         | 14 skills                                                                                        | 14                                | none                                                                                     |
+| Matt agents and engineering   | 10 skills                                                                                        | 9; chief-of-staff already checked | none                                                                                     |
 
 ## Patterns
 
-- **Invocation mode:** upstream marks most Pstack skills user-invoked; locally 51 of 56 are model-invoked so other skills can load them. No library-wide rule states this, so each record now repeats it.
+- **Invocation mode:** upstream marks most Pstack skills user-invoked; locally 50 of 56 are model-invoked so other skills can load them. No library-wide rule states this, so each record now repeats it.
 - **Rewrites:** several Pstack skills (pstack-mode's playbooks, architect, arena, why, no-comments, automate-me, recall, show-me-your-work) were condensed into local steps at import and dropped upstream rules without a record. The skills repaired this run restore upstream's wording with only the library-wide adaptations applied.
 - **Completion criteria and the /domain-modeling preamble** were added across many sourced skills to follow AGENTS.md and are recorded per skill.
 
