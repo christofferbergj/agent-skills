@@ -1,6 +1,6 @@
 interface:
   display_name: "Next Options"
-  short_description: "End replies with lettered next steps"
+  short_description: "End replies with the next step or choices"
   default_prompt: "Use $next-options for the rest of this conversation."
 policy:
   allow_implicit_invocation: false
