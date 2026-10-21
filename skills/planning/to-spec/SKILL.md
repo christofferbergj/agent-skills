@@ -18,7 +18,7 @@ Invoke /pstack-principles for the spec-writing phase. Carry accepted design and 
 
 2. Sketch out the seams at which you're going to test the feature. Existing seams should be preferred to new ones. Use the highest seam possible. If new seams are needed, propose them at the highest point you can. The fewer seams across the codebase, the better - the ideal number is one.
 
-Reuse already-approved seams. Ask only when a proposed interface or unresolved testing decision changes the accepted contract.
+Check with the user that these seams match their expectations.
 
 3. Write the spec using the template below, then publish it to the project issue tracker within the existing action grant. Apply the `ready-for-agent` triage label when no unresolved design or acceptance blocker remains; otherwise report the blocker and leave the spec unready.
 
@@ -34,7 +34,7 @@ The solution to the problem, from the user's perspective.
 
 ## User Stories
 
-A numbered list covering every relevant actor, behavior, and acceptance branch. Each user story should be in the format of:
+A LONG, numbered list of user stories. Each user story should be in the format of:
 
 1. As an <actor>, I want a <feature>, so that <benefit>
 
@@ -42,7 +42,7 @@ A numbered list covering every relevant actor, behavior, and acceptance branch. 
 1. As a mobile bank customer, I want to see balance on my accounts, so that I can make better informed decisions about my spending
 </user-story-example>
 
-Cover the feature's actual scope without padding it with invented requirements.
+This list of user stories should be extremely extensive and cover all aspects of the feature.
 
 ## Implementation Decisions
 

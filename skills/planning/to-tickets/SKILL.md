@@ -57,7 +57,7 @@ Ask the user:
 - Are the blocking edges correct: does each ticket only depend on tickets that genuinely gate it?
 - Should any tickets be merged or split further?
 
-Iterate until the breakdown is approved; retain approval already given for the same slices and edges.
+Iterate until the user approves the breakdown; retain approval already given for the same slices and edges.
 
 ### 5. Publish the tickets to the configured tracker
 
