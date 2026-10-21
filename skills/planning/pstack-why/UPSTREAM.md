@@ -7,13 +7,15 @@
 - Original skill: [`pstack/skills/why/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/why/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Last upstream review: 2026-10-15.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- `references/synthesizer-prompt.md` puts upstream's placeholder citation `[PR #123](url)` in a code span, because the repository's link check rejects `url` as a broken link.
 
 ## Maintenance
 
@@ -21,6 +23,7 @@ Invoke `/maintain-skills` for repository-wide upkeep, including this suite's sup
 
 Keep the original import fixed. Advance the reviewed-through baseline only after the relevant delta is fully resolved and checks pass. Record adopted, adapted, and excluded changes and their reasons.
 
-| Review date | Candidate revision                         | Decision                                                                                                                                                                                      |
-| ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary. |
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8` in `pstack/skills/why/`. Re-imported `SKILL.md` and all twelve reference files from upstream at the owner's direction, restoring the operating posture, the seven-category roster with its "Best at" guidance, "Always spawn" source control, the two quoted skip reasons, "do not rewrite the confidence language", the Output Format section list, and Common Failure Modes. Applied only the library-wide adaptations; the references differ from upstream only by formatter output and the placeholder-link divergence. `catalog.py validate` passes. |
