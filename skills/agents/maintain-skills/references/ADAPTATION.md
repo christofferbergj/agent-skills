@@ -14,11 +14,15 @@ Every source:
 - **Review:** a workflow's final review of its own implementation runs through /review-loop, which keeps /code-review's axes and adds /thermo-nuclear-review's correctness audit, the counterpart model's review, and the fix rounds.
 - **Authority:** honor the invoking repository's conventions and the user's existing authorization. Pull requests default to drafts, and learning-driven edits to source skills are prepared for review.
 - **Licenses:** keep each upstream notice with the material it covers.
+- **Steps:** a sourced step may end with a completion criterion, per this repository's skill rules.
+- **Project artifacts:** a sourced skill that reads or changes project vocabulary, domain docs, or ADRs resolves them through /domain-modeling first.
+- **Formatting:** differences the repository formatter makes, such as table padding and list or emphasis markers, are not divergences.
 
 Pstack and Thermos:
 
 - Pstack skills install with a `pstack-` prefix, except `bro`, so every Pstack skill and principle is reachable under one name space. `suite.json` records each mapping, such as `setup-pstack` to `pstack-setup`. /pstack-help routes to the user-facing entrypoints, and /pstack-principles discovers and applies the principles.
 - Each Pstack skill works on its own; only an explicit /pstack-mode invocation activates the mode.
+- Pstack helpers and principles are model-invoked, where upstream marks most of them user-invoked, so playbooks, routers, and other skills can load them; their descriptions scope triggering to Pstack tasks. Entrypoints and skills with outward effects keep upstream's user-invoked mode: /pstack-mode, /pstack-help, /pstack-automate-me, /bro, both formal-verification skills, /pstack-maintain-verification-skill, and /pstack-make-bot-ui.
 - Thermos keeps its names, and its own `MAINTENANCE.md` owns its review contracts.
 
 Matt Pocock:
@@ -33,7 +37,7 @@ One skill owns each shared discipline. Other skills invoke the owner rather than
 - /writing-for-agents owns agent-instruction writing and skill mechanics.
 - /domain-modeling owns project vocabulary, domain relationships, and qualifying ADRs, including existing legacy context and domain files.
 - /codebase-design owns architectural vocabulary and seam reasoning.
-- /tdd owns behavior-test discipline; Pstack's bug-fix adapter adds before-and-after evidence.
+- /tdd owns behavior-test discipline: red-green mechanics and test seams. /pstack-principle-test-behavior-not-implementation owns the test-quality criteria, and Pstack's bug-fix adapter adds before-and-after evidence.
 - /code-review owns Standards and Spec review; Pstack's adversarial lenses add coverage of the same artifact.
 - /pr owns PR description shape; Pstack owns its delivery playbook and evidence mechanics.
 - /reply-shape owns the layout of replies to the user; a skill's own report format is laid out within it.
