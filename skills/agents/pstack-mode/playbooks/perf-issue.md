@@ -13,6 +13,7 @@ Own the measured regression and the limiter behind it. Tie every fix to a measur
    7. Do it cheaper.
 
    When an earlier mantra meets the target, stop. Complete when a hypothesis predicts an observable improvement without changing the required work.
+
 3. Plan the fix from the trace. If it crosses a function boundary, use /pstack-architect first. Delegate implementation through /pstack-swarm to a subagent on your configured perf-issue role, review the diff, and capture a post-fix trace. Apply /pstack-principle-sequence-verifiable-units, verifying each attempt before trying the next. Preserve semantic correctness, errors, and load. Complete when the change addresses the measured limiter.
 4. Parse and compare the baseline and head artifacts with equivalent workloads (JSON to sqlite, diff), interleaved trials where useful, errors and work counts included. "Inconclusive" or wrong-surface is not a pass; flag it. Complete when the speed claim survives the checklist and the user-visible end state improves or the change is rejected.
 5. Run correctness checks, review the change through /review-loop, cite the measurement in the PR, and follow Opening a PR when authorized. Complete when the final report explains both the number and its practical limits.
