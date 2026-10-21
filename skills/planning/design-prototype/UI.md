@@ -102,7 +102,7 @@ Once a variant has won, capture the answer (which variant and why) and the proto
 - **Sub-shape A**: fold the winner into the existing page; drop the losing variants and the switcher from main.
 - **Sub-shape B**: promote the winning variant to a real route; drop the throwaway route and the switcher from main.
 
-Keep the full set of variants together in the scratch location or authorized throwaway branch selected by the shared capture rule.
+The full set of variants is the primary source, so it lands in the scratch location or authorized throwaway branch selected by the shared capture rule, not the bin, since variant components and the switcher left in the main branch rot fast and confuse the next reader.
 
 ## Anti-patterns
 
