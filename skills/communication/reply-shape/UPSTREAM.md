@@ -26,7 +26,7 @@ Adopted principles:
 - Changed, Needs you with Decide, Review, and Do items, and Details folded per topic with a verdict-first summary.
 - A decision card of about twelve lines when a reply exists to get one decision.
 - The writing limits: three sentences per paragraph, five visible list items, one picture per turn, one inline code span per sentence, each piece shown once, and the pre-send check.
-- A skill's own report is laid out in these sections, and a catch-up shows every waiting call and its captured screenshots outside the list and picture limits; /pstack-ketchup owns the catch-up itself.
+- A skill's own report is laid out in these sections, and a catch-up shows every waiting call outside the list limit; its screenshots, videos, and diagrams follow /pstack-ketchup's rules instead of the picture limit, and /pstack-ketchup owns the catch-up itself.
 
 Departures:
 
@@ -46,3 +46,4 @@ Invoke `/maintain-skills` for repository-wide upkeep. Decide each upstream chang
 | ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-20  | `e8db4fa3e2468a0b9e0297955367ff6efde28dee` | Adapted the reply layout, decision card, writing rules, and pre-send check as principles, with the ending deferred to /next-options. Left out the views and pictures references, the Mermaid checker, and the Skills line. The rules load through /next-options' hook within both hosts' per-hook limits. |
 | 2026-10-21  | `f3e4c1001f8483c2e07d98d452cb5d8466f3358c` | No upstream change to the tracked files. Adopted the owner rule that a skill's own report fills these sections, and restored Oliver's catch-up exemption from the list and picture limits, so /pstack-ketchup's full list of calls and its screenshots no longer conflict with the loaded rules.          |
+| 2026-10-21  | `f3e4c1001f8483c2e07d98d452cb5d8466f3358c` | Owner decision: screenshots, videos, and diagrams a catch-up shows follow /pstack-ketchup's rules instead of the one-picture limit. Updated the Pictures rule and the adopted-principle line. The next-options SessionStart tests pass with this skill at 6,391 of 8,000 characters.                      |

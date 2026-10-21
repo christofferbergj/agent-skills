@@ -16,9 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Delegated: upstream's `GLOSSARY.md`/ADR updates while grilling go to /domain-modeling's configured artifacts, the shared vocabulary owner.
 - Keep the complete rejected-feature example inside its four-backtick fence; the following operating instructions remain Markdown prose. Keep agent-brief examples consistent with the owning out-of-scope format. Reason: upstream's three-backtick fence closes at the nested `ts` block, and its AGENT-BRIEF example names `**Decision:**`/`**Reason:**` lines that OUT-OF-SCOPE.md does not use.
-- Added: a closing completion criterion, because the library requires checkable completion criteria.
 
 ## Maintenance
 
@@ -32,3 +30,4 @@ Local maintenance on 2026-10-16 repaired the nested example fences in `OUT-OF-SC
 
 Local maintenance on 2026-10-17: Aligned the agent-brief example with its owning out-of-scope record format. The source candidate `49dd158d1076134a641b33efb035946536778336` is unchanged. Local references and repository checks pass.
 | 2026-10-21 | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | No upstream change since `49dd158`. First fidelity check: SKILL.md, AGENT-BRIEF.md, OUT-OF-SCOPE.md, and Codex metadata compared; no text change. Recorded the domain-modeling delegation, the reasons for the fence and format repairs, and the added completion criterion. |
+| 2026-10-21 | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | Dropped divergences now covered by the library-wide adaptations (#18). |

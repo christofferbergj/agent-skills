@@ -1,6 +1,7 @@
 ---
 name: pstack-maintain-verification-skill
-description: "Use in a Pstack task to audit an existing verification skill, reconcile its feature map, and prove corrections live."
+description: Audit a verification skill and its feature map against the live app, and prove the corrections.
+disable-model-invocation: true
 ---
 
 Invoke /domain-modeling to resolve and read the invoking project's configured artifacts. Read-only investigations and reviews report documentation drift without edits; creation or implementation reconciles accepted model changes through that owner.
