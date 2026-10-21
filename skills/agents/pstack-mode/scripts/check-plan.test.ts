@@ -6,7 +6,7 @@ import { expect, test } from "bun:test";
 
 const checker = join(import.meta.dir, "check-plan.mjs");
 const rule =
-  "Verification covers applicable unit, live, and performance checks; every omitted check names a reason.";
+  "Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked.";
 
 const validPlan = `# Demo
 

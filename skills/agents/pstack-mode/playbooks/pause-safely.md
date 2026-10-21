@@ -1,10 +1,10 @@
-# Pause safely
+### Pause safely
 
-Own a recoverable stop without losing work or evidence.
+**You own a clean stop. Leave a checkpoint a cold-start agent can resume from.** This is explicit only. On "keep going", "going to bed, keep going", or "don't stop", do not pause.
 
-1. On an explicit pause or imminent session end, stop dispatching new work and propagate a zero-writes instruction to active owners through native tools. Complete when each reachable writer has acknowledged or its state is recorded as uncertain.
-2. Preserve scoped work, exact branches and revisions, PR links, output artifacts, current verification, process ownership, and known blockers. Commit or push only under existing authorization. Never reset unrelated work to simplify the handoff. Complete when a replacement can locate every retained artifact.
-3. Stop only processes the run owns, or record why a deliberately retained process is needed. Keep evidence and runtime state. Complete when resource ownership and remaining live activity are explicit.
-4. Write a durable checkpoint with original and later directives, approved interfaces, predicate, next command, unfinished work, and outstanding gates. Use /pstack-show-me-your-work for the decision trail. Complete when Session pickup can resume without trusting an obsolete agent handle.
+1. Stop at a safe boundary. Finish the current atomic step or back out of it. Start nothing new, and cancel any nested subagents.
+2. Take no irreversible action to pause. No PR and no push unless you already had one out.
+3. Make the work durable. Commit uncommitted edits as one clear `wip:` commit on the current branch so nothing is lost. If the tree is broken, say so in the commit body in one line.
+4. Write the resume note off-context. Capture intent, what you were doing, progress and what's verified, current state, next steps, key files, and gotchas. For the compaction trigger write it to a file like `/tmp/<slug>-resume.md`. If a /pstack-show-me-your-work trail exists, point at it instead of duplicating it.
 
-Return checkpoint path, status, artifacts, remaining activity, and the exact next action. An explicit pause ends execution until the user resumes it.
+**Reply:** where you are in the loop, what's on disk versus still in your head (paths, no diff dumps), the commits you made and whether the tree is clean, and the first action on resume. This is a pause, not a final report.
