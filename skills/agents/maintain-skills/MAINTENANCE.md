@@ -27,7 +27,7 @@ Run the helper from the root of the library worktree, so its fingerprints includ
 python3 skills/agents/maintain-skills/scripts/catalog.py --root . inventory --resume <prior-checkpoint.json> --output "$RUN/inventory.json"
 ```
 
-`fetch` clones or updates every source in `$STATE/sources/` and writes `candidates`, `checkouts`, and `errors`, each keyed by group. It exits non-zero when any source fails. Compare a failed source from its clone at the prior checkpoint's candidate, keep its review pending, and report the failure.
+`fetch` clones or updates every source in `$STATE/sources/` and writes `candidates`, `checkouts`, and `errors`, each keyed by group. It exits non-zero when any source fails. Compare a failed source with `--source` from its clone at the prior checkpoint's candidate, keep its review pending, and report the failure. `checkpoint` needs a candidate for every group, so give its `--candidates` a map of `fetch.json`'s `candidates` plus that prior candidate.
 
 ```bash
 python3 skills/agents/maintain-skills/scripts/catalog.py --root . fetch --state "$STATE" --output "$RUN/fetch.json"
@@ -77,8 +77,8 @@ Set every acknowledgement from collected evidence; the helper checks coverage an
 
 `catalog.json` holds a policy for each tracked suite: Matt Pocock, Pstack (its mapping is in `skills/agents/pstack-mode/suite.json`), and Thermos. Each policy maps upstream skills to local ones and sets:
 
-- `excludedNames`, `excludedPathComponents`, and `excludedPaths`: upstream skills and paths left out, each with a reason. Exclusions apply to new imports and shared inputs, never to an existing local skill.
-- `sharedRoot` or `sharedPaths`: suite-wide inputs such as READMEs, guides, and agent wrappers.
+- `excludedNames` and `excludedPaths`: upstream skills and paths left out, each with a reason; `excludedPathComponents`: directory names, such as personal folders, left out wherever they appear. Exclusions apply to new imports and shared inputs, never to an existing local skill.
+- `sharedRoot`, or else `sharedPaths`: suite-wide inputs such as READMEs, guides, and agent wrappers. When both are set, only `sharedRoot` is compared.
 - `sharedReviewedThrough`: the revision through which those shared inputs are decided. Advance it with the same rule as a skill's reviewed-through position.
 
 `owners` names the shared-owner roles; [the adaptation contract](references/ADAPTATION.md) lists the same owners, and a test keeps them equal. `contextPaths` and `contextOwners` name the inputs whose change invalidates earlier local reviews.
@@ -89,7 +89,7 @@ Run `pnpm check` from the worktree root; it runs every repository gate and test 
 
 ## Branches and pull requests
 
-Library changes go on the `skill-maintenance` branch. Changes to this skill's own process files, everything in `skills/agents/maintain-skills/` except `catalog.json`, go on `skill-maintenance-process`. Each branch has at most one open draft PR.
+Library changes go on the `skill-maintenance` branch. Changes to this skill's own process files, everything in `skills/agents/maintain-skills/` except `catalog.json`, go on `skill-maintenance-process`. A shared-owner change edits `catalog.json`'s `owners`, `docs/architecture.md`, and the adaptation contract's shared owners together on `skill-maintenance`, because a test keeps them equal. Each branch has at most one open draft PR.
 
 At the start of every run, point `$STATE/worktrees/library` at `skill-maintenance` while its PR is open, and otherwise at the fetched default branch, detached; create it with `git worktree add` when missing. Create `$STATE/worktrees/process` the same way at the first process edit.
 
