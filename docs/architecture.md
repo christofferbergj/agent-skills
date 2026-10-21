@@ -35,7 +35,7 @@ Both flows end implementation with `/review-loop`. The **counterpart**, the othe
 | Correctness and security audit                            | `/thermo-nuclear-review` |
 | PR descriptions                                           | `/pr`                    |
 | Reply layout                                              | `/reply-shape`           |
-| Reply endings and lettered options                        | `/next-options`          |
+| Reply endings                                             | `/next-options`          |
 | Host delegation, writer isolation, and review fallback    | `/pstack-swarm`          |
 | Principle selection and composition                       | `/pstack-principles`     |
 | Whole-library upkeep and upstream review                  | `/maintain-skills`       |
