@@ -8,9 +8,9 @@
 - Supporting sources: [`reply-shape/references/views.md`](https://github.com/olivercederborg/skills/blob/e8db4fa3e2468a0b9e0297955367ff6efde28dee/reply-shape/references/views.md), [`reply-shape/references/pictures.md`](https://github.com/olivercederborg/skills/blob/e8db4fa3e2468a0b9e0297955367ff6efde28dee/reply-shape/references/pictures.md), and [`reply-shape/scripts/check-mermaid.mjs`](https://github.com/olivercederborg/skills/blob/e8db4fa3e2468a0b9e0297955367ff6efde28dee/reply-shape/scripts/check-mermaid.mjs), reviewed and left out below.
 - Tracking policy: upstream `main`, reviewed as a principle source under the adaptation contract's [principle-derived skills](../../agents/maintain-skills/references/ADAPTATION.md#principle-derived-skills).
 - Imported from commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
-- Reviewed through commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
-- Fidelity checked through: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`.
-- Last upstream review: 2026-10-20.
+- Reviewed through commit: `f3e4c1001f8483c2e07d98d452cb5d8466f3358c`.
+- Fidelity checked through: `f3e4c1001f8483c2e07d98d452cb5d8466f3358c`.
+- Last upstream review: 2026-10-21.
 - Attribution-only source: https://gist.github.com/olivercederborg/92236670065aaa661db221f22203ded5 is Oliver's handover gist. Its `reply-shape-SKILL.md` matches the tracked file at the imported commit, apart from a catch-up rule that /pstack-ketchup's own rules cover.
 - Attribution-only source: https://github.com/humanlayer/skills holds Dex Horthy's `show-me`, whose smallest-view principle, pseudocode and trees with diffs of them, becomes the Views rule. /pr already carries that catalog through Matt Pocock's adaptation, so neither copy is tracked here.
 - Attribution-only source: https://github.com/ayghri/i-have-adhd is the ancestor of Oliver's `reply-shape`, imported there at `839872f9d1cd634fed642b4589ce7226199cc15f`. Its rules to lead with state, state errors matter-of-factly, cap lists, and drop preambles, recaps, and closers reach this skill through Oliver's version, which is tracked instead.
@@ -26,6 +26,7 @@ Adopted principles:
 - Changed, Needs you with Decide, Review, and Do items, and Details folded per topic with a verdict-first summary.
 - A decision card of about twelve lines when a reply exists to get one decision.
 - The writing limits: three sentences per paragraph, five visible list items, one picture per turn, one inline code span per sentence, each piece shown once, and the pre-send check.
+- A skill's own report is laid out in these sections, and a catch-up shows every waiting call and its captured screenshots outside the list and picture limits; /pstack-ketchup owns the catch-up itself.
 
 Departures:
 
@@ -44,3 +45,4 @@ Invoke `/maintain-skills` for repository-wide upkeep. Decide each upstream chang
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                  |
 | ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-20  | `e8db4fa3e2468a0b9e0297955367ff6efde28dee` | Adapted the reply layout, decision card, writing rules, and pre-send check as principles, with the ending deferred to /next-options. Left out the views and pictures references, the Mermaid checker, and the Skills line. The rules load through /next-options' hook within both hosts' per-hook limits. |
+| 2026-10-21  | `f3e4c1001f8483c2e07d98d452cb5d8466f3358c` | No upstream change to the tracked files. Adopted the owner rule that a skill's own report fills these sections, and restored Oliver's catch-up exemption from the list and picture limits, so /pstack-ketchup's full list of calls and its screenshots no longer conflict with the loaded rules.          |

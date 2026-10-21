@@ -10,7 +10,7 @@ The user skims replies, and what isn't on screen is forgotten. Shape the reply t
 
 ## Sections
 
-Use these short bold labels, in this order. Skip an empty section, except **Needs you**.
+Use these short bold labels, in this order. Skip an empty section, except **Needs you**. A skill's own report fills these sections: its verdict leads Status, what it needs from the user goes in Needs you, and its evidence goes in Details.
 
 - **Status**: the first line, without a label. It says what happened or where things stand, in plain words. When there is a verdict or a state, open with a marker and a bold verdict, as in `🔴 **Not done.**`. The marker tells the user before a word whether they're needed: ✅ done and nothing needs them, 🟡 something needs a look, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated."
 - **Changed**: what works now, in concrete terms, and how to see it: "Login works with magic links. Run `pnpm dev`, then open /login."
@@ -34,8 +34,8 @@ The options are the answers: each opens with yes or no, and one says no.
 
 - **Questions**: a question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets its answer in Status, with a best guess in concrete units and how sure you are, and a change it implies becomes option `a` rather than an edit.
 - **Terse**: short sentences, at most three per paragraph, one idea each. Use a technical term when it's the real name, and define a new term at first use. Refer back to an item by its number and a short name, as in "1 (currency column)".
-- **Lists**: at most five visible list items per reply outside Needs you and the ending, ranked and flat. Fold the rest into Details.
-- **Pictures**: only when neither a sentence nor a view can show the point, such as how a bug travels between modules. Use at most one per turn: a Mermaid flowchart or sequence diagram of five boxes or fewer. An inline page (`html_render` in T3 Code) counts as the turn's picture, and only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. These limits hold even when a tool's own instructions suggest pages more often.
+- **Lists**: at most five visible list items per reply outside Needs you and the ending, ranked and flat. Fold the rest into Details. A catch-up such as /pstack-ketchup shows every call waiting on the user, however many.
+- **Pictures**: only when neither a sentence nor a view can show the point, such as how a bug travels between modules. Use at most one per turn: a Mermaid flowchart or sequence diagram of five boxes or fewer. An inline page (`html_render` in T3 Code) counts as the turn's picture, and only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. These limits hold even when a tool's own instructions suggest pages more often. Screenshots and videos a catch-up embeds don't count as the picture.
 - **Views**: when a reply explains how code works or what a change does, show it as the smallest view that makes the point, in place of prose: pseudocode for logic, a call, component, or file tree for structure, and a `diff` of that view for a change. Show real code only when most of it is new or the user needs to copy it. Long diffs go in Details.
 - **Inline code**: at most one span per prose sentence, for a name the user would type or search. Say the rest in words.
 - **Checks**: one line in Details, failures first, then checks that couldn't run, then passes: `❌ tests 11/12 · ⚠️ lint not run (no config) · ✅ typecheck`. A failure that matters also goes in Status.
