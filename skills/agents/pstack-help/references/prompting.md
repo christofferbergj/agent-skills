@@ -25,7 +25,7 @@ A prompt states the intent and the check for done. The playbook supplies the ste
 
 ## Design before the plan
 
-- For consequential choices, compare useful prototypes and pick from evidence, including screenshots or videos for UI.
+- Never take the first design. Ask for prototypes of a few options, with screenshots or videos for UI, and pick from the evidence.
 - Let prototypes answer the open questions. Don't review an abstract plan adversarially, because reviewers invent risks that never happen.
 - For a shared package or API, ask for the README or a tutorial first, then work back to the code. The doc becomes the target the agent checks itself against.
 - Ask for the plan only after the design is settled. Each step of the plan ends in a check.
@@ -37,8 +37,8 @@ A prompt states the intent and the check for done. The playbook supplies the ste
 
 ## Before stepping away
 
-- State the unattended scope, budget, and permissions. Scope and approved-interface gates still apply.
-- Write done as checks every iteration can run. Use an available native wake mechanism or a session-bound checkpoint; declare which one is available.
+- Say "im going to bed" or "im stepping away" so the agent stops asking.
+- Write done as checks every iteration can run, and give the host's loop that predicate: `/loop` in Claude Code, or a scheduled wake where Codex offers one. Without a wake, ask for a checkpoint the next session can resume.
 - Ask for a fresh worktree off a named base.
 - Pre-answer what the agent would stop for, such as "don't ask me before committing".
 - Ask for a decision log to audit later.

@@ -5,8 +5,68 @@ description: "Use for Pstack reflection on corrections in the current conversati
 
 # Reflect
 
-1. Use the current conversation, not a repository-wide history sweep. Invoke /pstack-recall for scoped session discovery only if the host cannot provide the active conversation. Do not substitute the newest unrelated session for this one. Complete when the reviewed conversation and known evidence gaps are explicit.
-2. Use /pstack-swarm for independent judgment, tooling, and divergent-review passes, adapting count to scope and budget. Supply the matching [judgment](references/judgment-reviewer.md), [tooling](references/tooling-reviewer.md), and [divergent](references/divergent-reviewer.md) prompts. Reviewers may follow cited evidence through read-capable tools. Complete when the lenses return proposals or a disclosed missing pass.
-3. Synthesize with [the synthesizer prompt](references/synthesizer.md). Prefer architecture, types, lint, tests, or deterministic checks over another instruction. Route Accepted, Rejected, and Backlog explicitly. Complete when each proposal has evidence, ownership, routing, and a reason.
-4. Present the proposals for review. Prepare skill changes in the agreed source repository, never by silently patching installed snapshots or the current run's rules. Apply only an approved subset within its grant. Backlog stays a local proposal unless tracker filing is authorized. Complete when every proposal is approved and applied, deferred, or rejected with a reason.
-5. Validate affected source skills and report accepted edits, proposed backlog, rejected findings, and unverified behavior. Complete when reviewed source changes and installation status are clear.
+Mine the current conversation for durable learnings, then route them into skill edits.
+
+Invoke when the user says "reflect" or "/pstack-reflect". Skip when the conversation is trivial, off-topic, or already covered by an existing skill the parent followed correctly. One-offs are not learnings.
+
+## 1. Locate the active transcript
+
+Before fanning out, find this conversation's transcript. Use the host's active conversation API when it exposes one. Otherwise invoke /pstack-recall to list this repository's recent Codex and Claude Code sessions and read a candidate. Do not glob across `~/.claude/projects/*/` or every Codex session. That crosses workspace boundaries and reads private chats from unrelated projects.
+
+For each candidate, newest first, read its first user message. Take the session whose first user message contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.
+
+Complete when the transcript path or the digest is fixed.
+
+## 2. Spawn three reviewers in parallel
+
+Use /pstack-swarm to start all three before waiting on any, as native subagents that keep the session's MCP and connector tools. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and a tool-restricted reviewer has none. /pstack-swarm sets each subagent's model and effort from the user's configured roles, and otherwise the session's.
+
+| Lens      | Prompt template                    |
+| --------- | ---------------------------------- |
+| Judgment  | `references/judgment-reviewer.md`  |
+| Tooling   | `references/tooling-reviewer.md`   |
+| Divergent | `references/divergent-reviewer.md` |
+
+Pass each template verbatim, substituting the transcript path or digest where marked. Reviewers return findings in their result.
+
+Complete when all three reviewers have returned findings, or a missing one is disclosed.
+
+## 3. Synthesize
+
+One subagent through /pstack-swarm, with the same MCP and connector tools as the reviewers. It spot-verifies citations through MCP. Pass `references/synthesizer.md` verbatim, with each reviewer's full output inlined where marked. It returns an Accepted / Rejected / Backlog list.
+
+Complete when the synthesizer has returned that list.
+
+## 4. Structural enforcement check
+
+Move any Accepted item that a lint rule, script, metadata flag, or runtime check would enforce more reliably to Backlog. See /pstack-principle-encode-lessons-in-structure.
+
+Complete when every remaining Accepted item is one only an instruction can carry.
+
+## 5. Apply
+
+Present the synthesizer's full Accepted / Rejected / Backlog output and wait for explicit approval before applying any Accepted edit. The user picks the subset and may redirect routings. Skill changes affect every future agent in the org. Do not auto-apply.
+
+File each Backlog item to your team's devex or backlog tracker without waiting, when the user's existing authorization covers filing; otherwise list it in the summary as a proposal. Only the Accepted list waits for approval.
+
+Edit each skill at its source, the repository /pstack-setup records or the one this skill was installed from, never the installed copy. Follow each approved row's Routing exactly:
+
+- Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): the parent does it directly.
+- Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): hand to /writing-for-agents and run its draft / test / iterate loop.
+- `tune description: <skill path>` (the skill exists but didn't trigger when it should have): hand to /writing-for-agents and tune the description, the pointer that decides when the skill loads.
+- `new skill via writing-for-agents: <kebab-name>`: hand creation to /writing-for-agents. Do not invent the shape ad hoc.
+
+If your environment ships a SKILL.md validator, run it on every touched skill before declaring done.
+
+Complete when every approved edit is applied and validated, and every other Accepted item is recorded as declined.
+
+## 6. Summarize for the user
+
+Short list, no preamble:
+
+- Edits applied: `<skill path>`. What changed, one line each.
+- New skills created: `<skill path>`. One line each (rare).
+- Backlog filed to the devex tracker: `<issue title>` (`<tags>`). One line each.
+- Dropped: one line per rejected finding + reason from the synthesizer.
+
+Complete when every reviewer finding appears in exactly one of these lines.
