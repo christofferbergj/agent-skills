@@ -26,6 +26,6 @@ jobs:
           # Resolve published releases after a three-day stability window.
           minimum_release_age: 3d
 
-      - run: pnpm install --frozen-lockfile
+      - run: bash scripts/setup.sh
 
       - run: pnpm check

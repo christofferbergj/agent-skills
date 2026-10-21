@@ -20,7 +20,9 @@ Find a skill's consumers with `git grep -n '/<skill-name>\b'`; Pstack's playbook
 
 ## Validate
 
-Install the tools pinned in `mise.toml` with `mise install`, then run `pnpm install` and every gate with:
+Run `bash scripts/setup.sh` to install the pinned tools and dependencies; the script lists what it installs. In T3 Code, import the **Setup worktree** action from `t3.json` into the project's actions once, and each new worktree runs the script before its agent starts.
+
+Run every gate with:
 
 ```bash
 pnpm check
@@ -28,7 +30,7 @@ pnpm check
 
 `scripts/check.sh` lists what it runs.
 
-`pnpm install` also installs a Husky pre-commit hook that formats staged files with Oxfmt through lint-staged.
+Commits format staged files with Oxfmt through a Husky pre-commit hook and lint-staged.
 
 ## Upstream maintenance
 

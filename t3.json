@@ -3,7 +3,7 @@
   "scripts": [
     {
       "name": "Setup worktree",
-      "command": "mise trust && mise install && mise exec -- pnpm install --frozen-lockfile",
+      "command": "bash scripts/setup.sh",
       "icon": "configure",
       "runOnWorktreeCreate": true,
       "async": false
