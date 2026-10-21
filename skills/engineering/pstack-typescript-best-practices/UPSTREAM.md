@@ -7,8 +7,9 @@
 - Original skill: [`pstack/skills/typescript-best-practices/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/typescript-best-practices/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `0b8e952052d482ee6de06deebf14d590d77b1b34`.
-- Last upstream review: 2026-10-18.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -17,6 +18,10 @@
 - A duration stored as a plain number still needs boundary validation; preserve the corrected example rather than promising that the field shape excludes negative values.
 - Distinguish unchecked assertions from `as const` and validated brands. Preserve the explicit `Config` type and contextual-inference caveat in the `satisfies` example.
 - Demonstrate the guaranteed first position of a non-empty tuple; dynamic numeric indexes still require narrowing under `noUncheckedIndexedAccess`.
+- Model-invoked, where upstream is user-invoked with `paths: ["**/*.ts", "**/*.tsx"]`: /pstack-principle-type-system-discipline loads it for TypeScript examples whatever files are open, and Codex has no path activation, so the description scopes it to TypeScript design work in Pstack tasks and `paths` is dropped.
+- A brand may come from a constructor that validates and then asserts, as in `parseAgentId`; upstream requires a verifying type guard and never `as`. The compiler trusts user-defined guards equally, so the guard-only rule adds no correctness guarantee.
+- The start-plus-duration `TimeRange` example and its `rangeEnd()` helper are dropped with the duration correction above; the rule to expose readings on top of the unconstructable representation stays with `pairs.flat()`.
+- Wire formats follow the protocol's compatibility rules: ProtoJSON uses the chosen parser's unknown-field option, and JSON-RPC has no protocol-wide `ignoreUnknownFields`. The object-args counterexample names its real fault, a positional `uri` mixed with named options, rather than an argument swap that the example cannot show.
 
 ## Maintenance
 
@@ -30,5 +35,6 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-16  | `f713f14203cd6420cec13cd7c55c32d598dbab68` | No upstream file delta. Corrected the duration example: a plain number admits negative, infinite and NaN values, which require boundary validation. Compiled and executed all three counterexamples; retained other concrete type guidance. Repository and catalog checks pass; see the [combined review](../../../docs/reviews/2026-10-16-combined-skill-maintenance.md).                                                                                                                                                                                                                                                                                                              |
 | 2026-10-17  | `101b274dd991f694e1f7024be2157e5f3adf07de` | No skill-resource delta. Retained the local type rules after reviewing shared source changes. Replaced random indexing in the non-empty tuple example with its guaranteed first position and explained unchecked dynamic indexing. The exact good snippet fails before with TS2322 and compiles after under TypeScript 7.0.2 with strict and noUncheckedIndexedAccess. Repository checks pass.                                                                                                                                                                                                                                                                                          |
 | 2026-10-18  | `0b8e952052d482ee6de06deebf14d590d77b1b34` | Reviewed the upstream verifying-type-guard branding example and guard-only policy. Retained the validated constructor assertion because it follows a real boundary check and is an equally valid TypeScript pattern; the compiler trusts user-defined guards too, so requiring a guard adds no correctness guarantee. Preserved the stricter indexing correction and the local numeric-range, satisfies, schema, and boundary adaptations. Clarified parser-specific ProtoJSON compatibility options and removed a false argument-swap comment. Both brand variants compile under TypeScript 7.0.2 with strict unchecked indexing. Repository gates and independent native review pass. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change in `pstack/skills/typescript-best-practices/` since `0b8e952`. First fidelity check: restored two dropped constructive-modeling rules (keep `durationMs` a plain number and brand it only when a raw number could be mixed up; expose readings on top of the unconstructable representation). Recorded the model-invoked mode and dropped `paths`, the validated-constructor brand, the dropped TimeRange example, and the wire-format and object-args corrections, which earlier review rows logged but the adaptations list lacked. Claude Code's skills docs confirm `paths` limits automatic loading to matching files. |
 
 Further local maintenance on 2026-10-16 corrected the assertion and `satisfies` guidance. TypeScript 7.0.2 declarations and Node execution confirm const assertions, validated brands, and the distinct literal-union versus broad-string inference. Repository checks pass; the already reviewed candidate is unchanged. See the [library review](../../../docs/reviews/2026-10-16-whole-library-maintenance.md).

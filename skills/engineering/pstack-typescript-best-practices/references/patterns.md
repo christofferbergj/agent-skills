@@ -73,7 +73,9 @@ Even length, as pairs:
 type Pairs<T> = [T, T][];
 ```
 
-A time range expressed as `start` plus `durationMs: number` still admits negative, infinite, or `NaN` durations. Validate those constraints at the input boundary; changing the fields alone does not establish them. See /pstack-principle-boundary-discipline.
+A time range expressed as `start` plus `durationMs: number` still admits negative, infinite, or `NaN` durations. Validate those constraints at the input boundary; changing the fields alone does not establish them. See /pstack-principle-boundary-discipline. Keep `durationMs` a plain number. Brand it (per Branded types) only if a raw number could be passed where a duration is expected, not by reflex.
+
+Pick the representation that makes the bad state unconstructable, then expose the reading you need on top (`pairs.flat()`).
 
 ## Simplest total type
 
