@@ -7,14 +7,16 @@
 - Original skill: [`pstack/skills/principle-sequence-verifiable-units/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/principle-sequence-verifiable-units/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Last upstream review: 2026-10-15.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Use the invoking workflow's verified base and declared migration gates. Distinguish intermediate proof commits from independently passing delivery units rather than forcing every worker onto trunk or promising every proof commit is green.
+- Use the invoking workflow's verified base and declared migration gates, and invoke /pstack-principle-migrate-callers-then-delete-legacy-apis to define units and gates for coupled migrations. Distinguish intermediate proof commits from independently passing delivery units rather than forcing every worker onto trunk or promising every proof commit is green. Reason: delegates work on isolated branches from a coordinator's integration revision, and a failing-test-first commit cannot pass on its own.
+- Remain model-invoked; upstream is user-invoked. /pstack-principles discovers installed principle descriptions and applies the matching principles in each phase of both suites, so the principle must stay visible to the model.
 
 ## Maintenance
 
@@ -25,3 +27,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                      |
 | ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Audit: no upstream change to the skill since `e5136d8`. Compared every upstream rule and recorded divergence in both directions. Recorded the invocation-mode change; named the migration-owner delegation and added the reason to the existing divergence. No SKILL.md change. Invocations resolve, metadata matches model invocation, and catalog validation passes. |
