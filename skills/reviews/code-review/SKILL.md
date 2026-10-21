@@ -10,7 +10,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-Read configured tracker and project artifacts when the spec requires them; a local spec or the accepted task brief does not require tracker setup. Invoke /pstack-swarm for host-native independent review and disclosed fallback.
+Read configured tracker and project artifacts when the spec requires them; a local spec or the accepted task brief does not require tracker setup. If the spec requires a tracker that was not provided, tell the user to run `/setup-matt-pocock-skills`. Invoke /pstack-swarm for host-native independent review and disclosed fallback.
 
 ## Process
 
