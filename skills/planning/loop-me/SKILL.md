@@ -31,6 +31,6 @@ A workflow spec is done when an implementer agent could build it without asking 
 ## The workspace
 
 - `workflows/*.md`: one spec per workflow.
-- `NOTES.md`: raw observations about the user's world, tools, channels, and language. When it is empty or thin, interview them about their world before specifying anything. Settled project terms belong in the configured vocabulary through /domain-modeling; notes link to that record rather than becoming a second glossary.
+- `NOTES.md`: raw notes on the user's world, the tools they use, the channels they process, and their own terminology for both. When it is empty or thin, interview them about their world before specifying anything. Settled project terms belong in the configured vocabulary through /domain-modeling; notes link to that record rather than becoming a second glossary.
 
 Complete when each requested workflow has a saved spec with its trigger, behavior, required human decisions, and observable completion condition resolved. Creating or scheduling the workflow is a separate action.

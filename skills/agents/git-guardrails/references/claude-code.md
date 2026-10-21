@@ -21,6 +21,6 @@ Merge a command hook into the agreed project `.claude/settings.json` or user `~/
 }
 ```
 
-Quote the resolved script path safely when it contains spaces. The detector reads the documented `tool_input.command` string and returns a `hookSpecificOutput.permissionDecision: deny` JSON response for its configured operations. Exit zero with no decision leaves normal host permissions in place.
+Copy the detector to `.claude/hooks/block-dangerous-git.py` for a project or `~/.claude/hooks/block-dangerous-git.py` for all projects. For the project file, use `python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/block-dangerous-git.py` as the command so the committed setting resolves in every checkout. Quote the resolved script path safely when it contains spaces. The detector reads the documented `tool_input.command` string and returns a `hookSpecificOutput.permissionDecision: deny` JSON response for its configured operations. Exit zero with no decision leaves normal host permissions in place.
 
 Verify the actual host loads the selected settings and fires the hook on a harmless fixture command. Managed policies may constrain user hooks; expose an unavailable activation step rather than claiming protection. See the current [official Claude Code hooks reference](https://code.claude.com/docs/en/hooks).

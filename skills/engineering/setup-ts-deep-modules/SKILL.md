@@ -23,7 +23,7 @@ src/packages/
 
 The public surface is the package's **root files**, not one designated `index.ts`. By convention implementation lives in `lib/` and tests in `tests/`, giving every package the same two-folder shape. The rule itself is general, though: _anything_ in _any_ subfolder is private, so you never extend the config to add a folder.
 
-Five configured checks implement these policy families:
+Five configured checks, all `error`, implement these policy families:
 
 1. **Entry-point boundary**: code outside a package (app code or another package) may import only that package's entry points (its root files), never anything in its subfolders.
 2. **Intra-package freedom**: a package's own files import each other freely.

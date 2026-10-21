@@ -1,6 +1,6 @@
 # Example verification map
 
-This Notes app example shows how to document repeatable behavior checks. Adapt its commands and preconditions for your project.
+This Notes app example shows how to document repeatable behavior checks. Adapt its commands and preconditions for your project. Read the index before driving the app, then use the matching feature file as the recipe.
 
 ## Features
 

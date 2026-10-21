@@ -132,7 +132,7 @@ def main():
     except (ValueError, TypeError):
         reason = 'Git guardrail could not inspect this hook input'
     if reason:
-        message = 'Blocked by configured guardrail: ' + reason
+        message = 'BLOCKED by configured guardrail: ' + reason + '. The user has prevented you from doing this.'
         print(json.dumps({'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': message}}))
         print(message, file=sys.stderr)
         return 2

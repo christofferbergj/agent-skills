@@ -92,7 +92,7 @@ Complete when every authorized decision is applied or explicitly blocked, unique
 Keep files stable during validation. Finish or stop the relevant run before editing its inputs, preserving unrelated processes and working changes.
 
 1. Run the smallest affected suite, then relevant sibling and cross-package consumers and repository-required gates. Use commands discovered from the project.
-2. Confirm moved tests are discovered and executed, and meaningful parameter cases remain represented.
+2. Confirm moved tests are discovered and executed, and meaningful parameter cases remain represented. Where a removed source scan or plan assertion guarded a script or command, exercise its owning executable or dry run.
 3. Delegate the preservation comparison to a subagent that did not propose the affected changes, using Step 2's fallback when needed. Compare the original contracts and cases against surviving assertions. Check unique inputs, errors, boundary cases, security, accessibility, ordering, interactions, integration paths, and CI environments where applicable. Restore missing contracts at their appropriate owner.
 4. Validate repairs against their recorded defects. For high-risk or ambiguous assertions, use a focused negative control or small temporary mutation to show that the retained test catches the intended failure. Work in isolation and restore only the changes made for that check, preserving user edits. Do not require exhaustive mutation testing for routine cleanup.
 5. Run applicable formatting/static checks and inspect the final diff for accidental scope expansion, dead support, weakened assertions, and configuration changes. Before completing removal batches, run the project's existing unused-file, export, and dependency checks where available. Inspect findings against shared consumers and published contracts; report unavailable checks and propose production or public API removals separately.
@@ -121,6 +121,8 @@ Search for these leads, then apply Step 3 before deciding:
 
 - Expected values computed by the same code under test; assertions comparing a declaration with a copy of itself.
 - Mocks or fixtures that supply the behavior or result the production path should produce.
+- Persistence asserted against a store path the production code never writes.
+- Capability flags asserted instead of the promised delivery or acknowledgement.
 - Assertion-free execution with no meaningful success/failure contract; account for implicit assertions such as "does not throw."
 - Source scans, snapshots, whole-object comparisons, counts, private calls, or incidental copy that detect edits without identifying a broken contract.
 - Duplicate cases or layers with no distinct value.

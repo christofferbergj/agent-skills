@@ -1,6 +1,6 @@
 ---
 name: domain-modeling
-description: "Resolve shared project domain artifacts, sharpen terminology and relationships, and record accepted model changes or ADRs during design and implementation."
+description: Build and sharpen a project's domain model. Use when discussing codebase terminology, writing or editing a GLOSSARY.md or legacy context file, recording or editing an ADR, or when another skill needs the project's domain artifacts resolved.
 ---
 
 # Domain Modeling

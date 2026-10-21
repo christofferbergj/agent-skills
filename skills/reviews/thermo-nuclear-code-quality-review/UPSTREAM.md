@@ -8,11 +8,12 @@ Maintainability, structural simplification, and architecture-boundary review rub
 - Original skill: [`thermos/skills/thermo-nuclear-code-quality-review/SKILL.md`](https://github.com/cursor/plugins/blob/1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def/thermos/skills/thermo-nuclear-code-quality-review/SKILL.md).
 - Tracking policy: latest commit on the upstream `main` branch.
 - Imported from commit: `1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def`.
-- Reviewed through commit: `f713f14203cd6420cec13cd7c55c32d598dbab68`.
-- Last upstream review: 2026-10-16.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
 - License: [MIT, copyright 2026 Cursor](./LICENSE). This copy retains the upstream notice; this repository's root license does not replace it.
 
-- Original reviewer wrapper: [agents/thermo-nuclear-code-quality-review-subagent.md](https://github.com/cursor/plugins/blob/1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def/thermos/agents/thermo-nuclear-code-quality-review-subagent.md). Its relevant scope and delegation rules are incorporated locally; the wrapper itself is not installed.
+- Original reviewer wrapper: [agents/thermo-nuclear-code-quality-review-subagent.md](https://github.com/cursor/plugins/blob/1b6d44ff26d4e242f4e8f68c391e6d2f7ca16def/thermos/agents/thermo-nuclear-code-quality-review-subagent.md). Its relevant scope and delegation rules are incorporated locally; the wrapper itself is not installed. Its Cursor `Task` orchestration and missing-skill fallback are replaced by the consumers' native delegation and rubric delivery (/thermos, /review-loop), and its output shape, prioritized findings with file and line evidence, is set by each consumer's reviewer task. Its "unless the user or parent explicitly asks" exception to nested delegation is dropped, because the Thermos contract keeps reviewers from delegating further.
 
 ## Local adaptations to preserve
 
@@ -29,7 +30,8 @@ Invoke `/maintain-skills` for whole-library upkeep and use the [Thermos compatib
 
 The reviewed-through commit is the comparison baseline for the next review, including changes deliberately skipped below. Advance it only after reviewing the full upstream delta for this skill and its supporting files. Keep the original import commit unchanged.
 
-| Review date | Decision                                                                                                                                                                                                                                                                                                                                                    |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-12  | Imported the pinned source and applied the local adaptations above. No later upstream changes reviewed.                                                                                                                                                                                                                                                     |
-| 2026-10-16  | Reviewed `f713f14203cd6420cec13cd7c55c32d598dbab68`: the complete Thermos tree and this reviewer's wrapper have no delta. Retained the callable, read-only, direct-review adaptation and structural criteria. Repository checks pass; no runtime behavior changed. See the [library review](../../../docs/reviews/2026-10-16-whole-library-maintenance.md). |
+| Review date | Decision                                                                                                                                                                                                                                                                                                                                                             |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-12  | Imported the pinned source and applied the local adaptations above. No later upstream changes reviewed.                                                                                                                                                                                                                                                              |
+| 2026-10-16  | Reviewed `f713f14203cd6420cec13cd7c55c32d598dbab68`: the complete Thermos tree and this reviewer's wrapper have no delta. Retained the callable, read-only, direct-review adaptation and structural criteria. Repository checks pass; no runtime behavior changed. See the [library review](../../../docs/reviews/2026-10-16-whole-library-maintenance.md).          |
+| 2026-10-21  | Fidelity check at `190d28736eff128ec94f502a22c7fe0c4b56cd37`: the complete Thermos tree has no delta since import. Compared the skill and its wrapper in both directions; every local difference is a recorded adaptation or formatting. Recorded where the wrapper's orchestration, fallback, output shape, and nested-delegation exception went. No rubric change. |

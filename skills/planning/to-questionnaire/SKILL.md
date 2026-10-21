@@ -52,5 +52,3 @@ _Why this matters: it decides whether we provision for burst traffic now or defe
 A closing catch-all: anything we didn't ask that we should know?
 
 </questionnaire-template>
-
-Complete when the questionnaire captures the unresolved decisions from its source material, offers actionable choices without inventing answers, and is saved at the requested destination.

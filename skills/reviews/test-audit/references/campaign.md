@@ -42,6 +42,8 @@ Complete when every suspected gap is restored or rejected with evidence, and rem
 
 If the working revision changed, inspect added or modified tests and update the inventory before closing the campaign. Follow repository branch policy and preserve contracts introduced by concurrent changes.
 
+Propose durable test-ownership rules for the subsystem's agent instructions, drawn from mistakes this campaign actually found.
+
 Run final relevant suites and required gates against the final edits. Reconcile inventory totals with ledger decisions, distinguishing parameter declarations from expanded cases. Report reviewed, excluded, unresolved, and unreviewed counts separately from executed, skipped, failed, and unexecuted tests.
 
-Complete when the inventory accounts for every in-scope declaration or distinct case group, validation reflects the final edits, and the main skill's report includes the ledger, blockers, and remaining work. Apply its completion criteria before describing cleanup as complete.
+Complete when the inventory accounts for every in-scope declaration or distinct case group, validation reflects the final edits, and the main skill's report includes the ledger, blockers, proposed ownership rules, and remaining work. Apply its completion criteria before describing cleanup as complete.

@@ -7,9 +7,9 @@
 - Original skill: [`pstack/skills/maintain-formal-verification-skill/SKILL.md`](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/skills/maintain-formal-verification-skill/SKILL.md).
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
-- Reviewed through commit: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
-- Last upstream review: 2026-10-20.
-- Fidelity checked through: `88d47514b82e7c44f00f2b2a72ff6dd12158038c`.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE), retained from [pstack/LICENSE](https://github.com/cursor/plugins/blob/88d47514b82e7c44f00f2b2a72ff6dd12158038c/pstack/LICENSE).
 
 ## Local adaptations to preserve
@@ -31,3 +31,4 @@ Invoke /maintain-skills for whole-library upkeep and the source/shared-input com
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 2026-10-20  | `88d47514b82e7c44f00f2b2a72ff6dd12158038c` | Imported the complete eligible formal-upkeep companion within the established verification scope. Adapted portable project-local discovery, explicit invocation, exact freshness accounting, draft/fallback routing, source-driven property updates, real-code controls and checkable completion. Cold native fixtures expose a new recovery writer after a code move, preserve the resulting code finding, distinguish a second semantic counterexample, and retain blocked/inconclusive/dirty/pending boundaries. Repository gates and independent native review pass. |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change in `pstack/skills/maintain-formal-verification-skill/` since `88d4751`, so the fidelity check at `88d4751` holds at this candidate. Tools and conventions pass: no fixed tool commands; /writing-for-agents and the formal-verification companions resolve; explicit user invocation matches `agents/openai.yaml`.                                                                                                                                                                                                                                    |

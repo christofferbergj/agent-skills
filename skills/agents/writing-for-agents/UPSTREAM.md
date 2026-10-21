@@ -7,8 +7,9 @@
 - Original skill and resources: [`skills/productivity/writing-for-agents`](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/productivity/writing-for-agents).
 - Tracking policy: upstream `main`; inspect the entire public skills inventory for additions, removals, category moves, and relevant shared documentation. Exclude personal skills and the recorded user exclusions.
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
-- Reviewed through commit: `49dd158d1076134a641b33efb035946536778336`.
-- Last upstream review: 2026-10-15.
+- Reviewed through commit: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
+- Fidelity checked through: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
+- Last upstream review: 2026-10-21.
 - Upstream stage: `productivity`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.
 
@@ -16,13 +17,15 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Retain the writing mechanics and branch-specific reference as the shared instruction-writing dependency, installed from this repository. Shared reference belongs to a model-invoked owner; its consumers invoke that owner rather than linking outside the owning skill.
+- A closing completion criterion follows the pruning rules, so an edit made with this owner ends on a checkable condition.
 
 ## Maintenance
 
 Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its source comparison includes both Pstack and Matt Pocock in one update review. Compare baseline, candidate, and local files; retain intentional adaptations rather than overwriting them. Imported history is immutable. Advance this reviewed-through position only when the relevant delta and shared inputs are resolved and required validation passes.
 
-| Review date | Candidate revision                         | Decision                                                                                                                                                                                                           |
-| ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures. |
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                    |
+| ----------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures.                                                                                          |
+| 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | No upstream delta. Compared SKILL.md, `SKILL-MECHANICS.md`, and Codex metadata in both directions: the body matches upstream except the recorded shared-reference reversal in `SKILL-MECHANICS.md` and the closing completion criterion, now recorded. No owner text changed, so consumers need no recheck. |
 
 Local maintenance on 2026-10-17: Aligned shared-reference placement with this library's callable-owner contract. The source candidate `49dd158d1076134a641b33efb035946536778336` is unchanged. The affected guidance and consumers were reread; repository checks pass.
