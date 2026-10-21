@@ -52,7 +52,7 @@ File each Backlog item to your team's devex or backlog tracker without waiting, 
 Edit each skill at its source, the repository /pstack-setup records or the one this skill was installed from, never the installed copy. Follow each approved row's Routing exactly:
 
 - Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): the parent does it directly.
-- Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): hand to /writing-for-agents and run its draft / test / iterate loop.
+- Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): draft it with /writing-for-agents, exercise it on a representative case, and revise until the case passes.
 - `tune description: <skill path>` (the skill exists but didn't trigger when it should have): hand to /writing-for-agents and tune the description, the pointer that decides when the skill loads.
 - `new skill via writing-for-agents: <kebab-name>`: hand creation to /writing-for-agents. Do not invent the shape ad hoc.
 

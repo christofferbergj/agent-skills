@@ -48,7 +48,7 @@ Complete when each slice has returned patterns with session pointers, or its gap
 
 Mining misses intent that hasn't come up yet. Use the host's structured multiple-choice question tool rather than asking the user to type from scratch.
 
-Shape: one or two questions with 4-6 options each, allowing multiple selections for category questions. Start broad ("Which areas matter most?"), then follow up on selected areas with specific options. After the structured rounds, one free-form chat question catches anything the options missed.
+Shape: one or two questions with 4-6 options each, allowing multiple selections for category questions. When the host's tool takes one choice per question or none exists, ask the same options as a numbered list and accept several numbers in one reply. Start broad ("Which areas matter most?"), then follow up on selected areas with specific options. After the structured rounds, one free-form chat question catches anything the options missed.
 
 Don't dump 20 questions.
 
