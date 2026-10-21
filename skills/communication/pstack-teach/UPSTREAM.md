@@ -17,6 +17,7 @@
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Model-invoked, where upstream is user-invoked, so a Pstack task can explain code when the user asks to understand it. The description names that trigger.
 - Run /pstack-how and /pstack-why in parallel through /pstack-swarm, and use the host's image-generation tool only when it has one; upstream assumes parallel skill runs and an image tool.
+- When an active reply layout such as /reply-shape limits pictures per turn, the diagram build-up continues one diagram per turn instead of all in one reply, because /reply-shape owns reply layout.
 
 ## Maintenance
 
