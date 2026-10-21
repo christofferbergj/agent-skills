@@ -17,10 +17,10 @@ Keep working through reversible steps inside the agreed scope, as /pstack-princi
 **The user** moves next when the work waits for their answer. End with lettered options, by Format:
 
 - at a point only the user can pass: a merge, deploy, force-push, or production write; a message to a person; a scope, interface, or product decision; a credential, payment, or physical step; a check that still fails after the root-cause fix; or an approval the active workflow keeps;
-- after answering a question or a read-only request; or
+- after answering a question or a read-only request, when a follow-up needs their choice; or
 - when only CI, bots, other people's reviews, or threads you didn't start are left, and nothing you started will wake you.
 
-When the user's answer is needed while your own work runs, end with the options and say in one line what is still running.
+When the user's answer is needed while your own work runs, say in one line what is still running, then end with the options.
 
 **Nobody** moves next when the work is finished. End with **Done**: one line for a small task, or a few bullets of what is finished and what is still open. Add options after it only when a next step follows naturally.
 
