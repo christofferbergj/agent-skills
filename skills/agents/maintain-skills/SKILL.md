@@ -19,7 +19,7 @@ Use /pstack-swarm throughout. Give each worker one slice, such as a source group
 
 ## 1. Resume
 
-Read the repository's `AGENTS.md`, the adaptation contract, and the maintenance guide. Open the library worktree the maintenance guide describes and run the helper there. Load the newest checkpoint and the waiting questions from runtime state. Read new owner comments on the open maintenance PRs and on the PRs the waiting questions link to. Run `inventory --resume` with the checkpoint, and reconcile it with the actual `SKILL.md` files, including untracked ones.
+Read the repository's `AGENTS.md`, the adaptation contract, and the maintenance guide. Open the library worktree the maintenance guide describes and run the helper there. Load the newest checkpoint and the waiting questions from runtime state. Read new owner comments on the open maintenance PRs and on the PRs the waiting questions link to. Run `inventory --resume` with the checkpoint.
 
 **Complete when:** you hold the checkpoint, the waiting questions, every new owner comment, and the inventory with its `changedSince` list.
 
@@ -37,7 +37,7 @@ Unfinished items from earlier runs keep their place in this order. In upstream m
 
 When items 1 to 4 are empty in upstream mode, save a checkpoint from the compare reports, prune old runs, and stop. A quiet run needs no branch, checks, review, PR, or report.
 
-**Complete when:** every compare report entry and every `changedSince` skill is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
+**Complete when:** every unapplied owner answer, compare report entry, and `changedSince` skill, and in audit mode every `fidelityBacklog` record and not-yet-reviewed skill, is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
 
 ## 3. Decide and repair
 
