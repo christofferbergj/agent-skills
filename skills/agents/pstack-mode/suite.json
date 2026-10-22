@@ -131,6 +131,11 @@
       "directory": "skills/agents/pstack-show-me-your-work"
     },
     {
+      "upstream": "statechart",
+      "local": "pstack-statechart",
+      "directory": "skills/engineering/pstack-statechart"
+    },
+    {
       "upstream": "swarm",
       "local": "pstack-swarm",
       "directory": "skills/agents/pstack-swarm"

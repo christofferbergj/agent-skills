@@ -101,6 +101,7 @@ For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `impleme
 - [pstack-maintain-formal-verification-skill](skills/engineering/pstack-maintain-formal-verification-skill/SKILL.md)
 - [pstack-maintain-verification-skill](skills/engineering/pstack-maintain-verification-skill/SKILL.md)
 - [pstack-make-bot-ui](skills/engineering/pstack-make-bot-ui/SKILL.md)
+- [pstack-statechart](skills/engineering/pstack-statechart/SKILL.md)
 - [pstack-tdd](skills/engineering/pstack-tdd/SKILL.md)
 - [pstack-typescript-best-practices](skills/engineering/pstack-typescript-best-practices/SKILL.md)
 - [setup-pre-commit](skills/engineering/setup-pre-commit/SKILL.md)

@@ -1,0 +1,3 @@
+interface:
+  display_name: "Pstack statechart"
+  short_description: "Chart user-visible behavior from a TLA+ model"
