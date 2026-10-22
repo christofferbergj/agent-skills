@@ -1,0 +1,31 @@
+# pstack-statechart: source and local adaptations
+
+## Source and credit
+
+- Original author: Lauren Tan, known as Poteto.
+- Canonical source: [cursor/plugins, Pstack](https://github.com/cursor/plugins/tree/main/pstack).
+- Original skill: [`pstack/skills/statechart/SKILL.md`](https://github.com/cursor/plugins/blob/eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10/pstack/skills/statechart/SKILL.md), including its skill-local resources in `scripts/`.
+- Tracking policy: upstream `main`, scoped to `pstack/`.
+- Imported from commit: `eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10`.
+- Reviewed through commit: `eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10`.
+- Fidelity checked through: `eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10`.
+- Last upstream review: 2026-10-22.
+- License: [MIT, copyright 2026 Lauren Tan](LICENSE), retained from [pstack/LICENSE](https://github.com/cursor/plugins/blob/eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10/pstack/LICENSE). Retain this notice with derived material.
+
+## Local adaptations to preserve
+
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Namespace: `statechart` maps to `pstack-statechart`.
+- Invocation: model-invoked, where upstream sets `disable-model-invocation: true`. The contract makes Pstack helpers model-invoked, and this skill is not one of its user-invoked entrypoints or outward-effect skills: it writes only to a scratch folder outside the repository. The description is rewritten in the Pstack-scoped helper style and names its three branches: spec to chart, chart to TLA+ skeleton, and auditing code against an existing spec. Upstream's description triggers `/statechart` and "show the PM the bug" are covered by typing `/pstack-statechart` and by the first branch. Its legend for gray, red, and green states is in `scripts/statechart.mjs --help`, which the body sends the agent to for reading a chart.
+
+## Maintenance
+
+Invoke `/maintain-skills` for repository-wide upkeep, including this suite's supporting files and shared consumers. Reinstalling from this repository refreshes the adaptation; it does not merge Cursor's originals.
+
+`scripts/` is upstream's tree copied verbatim, apart from the repository formatter's line wrapping in `scripts/lib.mjs`. On an upstream change, copy the tree again, run `npx oxfmt` on it, and run `node --test skills/engineering/pstack-statechart/scripts/test/*.test.mjs`, which is upstream's command. `pnpm check` discovers only `*.test.ts` files, so it does not run this suite. Tests that need TLC skip unless `TLA2TOOLS` names `tla2tools.jar` and `JAVA` or `java` is Java 11 or later.
+
+Keep the original import fixed. Advance the reviewed-through baseline only after the relevant delta is fully resolved and checks pass. Record adopted, adapted, and excluded changes and their reasons.
+
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-22  | `eb4db2b55b2b7dec3d9282754cddf0a56bf4ff10` | Imported the new upstream skill (#741): SKILL.md body unchanged, `scripts/` verbatim with one formatter-wrapped line, and Pstack's license. Adapted the name and the invocation mode, with the Pstack-scoped description, as recorded above. The body references no other skills and no Cursor mechanics, so it needs no host translation; it invokes no skills, so it has no companion row. Fidelity passes in both directions. Upstream tests: 27 passed, 31 skipped for missing TLC, 0 failed. |

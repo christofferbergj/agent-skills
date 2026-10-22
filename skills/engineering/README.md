@@ -16,6 +16,7 @@ Build and debug software, configure development tools, and verify behavior.
 | [pstack-maintain-formal-verification-skill](pstack-maintain-formal-verification-skill/SKILL.md) | Reconcile formal checks with changed code.             |
 | [pstack-maintain-verification-skill](pstack-maintain-verification-skill/SKILL.md)               | Keep a verification skill and feature map current.     |
 | [pstack-make-bot-ui](pstack-make-bot-ui/SKILL.md)                                               | Build controls for an existing agent receiver.         |
+| [pstack-statechart](pstack-statechart/SKILL.md)                                                 | Chart user-visible behavior from a TLA+ model.         |
 | [pstack-tdd](pstack-tdd/SKILL.md)                                                               | Prove a bug fix with a regression test.                |
 | [pstack-typescript-best-practices](pstack-typescript-best-practices/SKILL.md)                   | Apply TypeScript type and boundary discipline.         |
 | [setup-pre-commit](setup-pre-commit/SKILL.md)                                                   | Configure commit-time checks with existing tools.      |

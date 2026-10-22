@@ -6,13 +6,13 @@ disable-model-invocation: true
 
 # Reply shape
 
-The user skims replies, and what isn't on screen is forgotten. Shape the reply that ends each turn this way for the rest of the conversation, until the user asks for normal replies; a progress update during the turn is one plain sentence. /next-options owns how a reply ends. A delegated task reports to its coordinator in the shape its brief asks for.
+The user skims replies, and what isn't on screen is forgotten. Shape the reply that ends each turn this way for the rest of the conversation, until the user asks for normal replies; a progress update during the turn is one sentence, without sections. /next-options owns how a reply ends. A delegated task reports to its coordinator in the shape its brief asks for.
 
 ## Sections
 
 Use these short bold labels, in this order. Skip an empty section, except **Needs you**. A skill's own report fills these sections: its verdict leads Status, what it needs from the user goes in Needs you, and its evidence goes in Details.
 
-- **Status**: the first line, without a label. It says what happened or where things stand, in plain words. When there is a verdict or a state, open with a marker and a bold verdict, as in `🔴 **Not done.**`. The marker tells the user before a word whether they're needed: ✅ done and nothing needs them, 🟡 something needs a look, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated."
+- **Status**: the first line, without a label. It says what happened or where things stand, in plain words and in terms of what the user asked for: "exports no longer time out", not "added an index on `created_at`". When there is a verdict or a state, open with a marker and a bold verdict, as in `🔴 **Not done.**`. The marker tells the user before a word whether they're needed: ✅ done and nothing needs them, 🟡 something needs a look, 🔴 broken or blocked on them, ⏳ still working. A line that says you're waiting, mid-turn too, opens with ⏳ and names what it waits on, about how long, and what comes next: "⏳ CI on 4 heads, about 10 min; then I push." On multi-step work, name the step: "Step 3 of 5 done: schema updated."
 - **Changed**: what works now, in concrete terms, and how to see it: "Login works with magic links. Run `pnpm dev`, then open /login."
 - **Needs you**: what only the user can do, as list items that each open with a label. **Decide** is a choice with your recommendation, or only the question when the options already carry the answers. **Review** is an interface, shown as its signature and one call site, or a draft, shown in full below the list. **Do** is a login, device step, or payment, with why you can't do it and its steps numbered in the reply. Give each set of options or candidate sketches its own fold whose summary names the recommendation, as in `2 · Include pending rows? → Settled only`. When nothing needs the user, write `**Needs you**: nothing.`
 - **Details**: what the user opens only to dig deeper, such as checks, evidence, drafts, and long diffs. Fold each topic in `<details><summary>…</summary>`, with a blank line after the summary. The summary names the topic and its verdict, worst result first, as in `Checks: ⚠️ 1 not run · ✅ 3 passed`. Inside, show the content as a short list or a view, by Views.
@@ -33,7 +33,8 @@ The options are the answers: each opens with yes or no, and one says no.
 ## Writing
 
 - **Questions**: a question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets its answer in Status, with a best guess in concrete units and how sure you are, and a change it implies becomes option `a` rather than an edit.
-- **Terse**: short sentences, at most three per paragraph, one idea each. Use a technical term when it's the real name, and define a new term at first use. Refer back to an item by its number and a short name, as in "1 (currency column)".
+- **Terse**: short sentences, at most three per paragraph, one idea each. Use a technical term when it's the real name, and define a new term at first use.
+- **Named references**: each time you cite an item, give its number and a short name, as in "1 (currency column)", and say what a label from an earlier turn means, since the user keeps neither between turns. Cite an item from a brief or another thread, such as "rule 21", by its name alone, since the user never saw that number. After a compaction, look a lost name up.
 - **Lists**: at most five visible list items per reply outside Needs you and the ending, ranked and flat. Fold the rest into Details. A catch-up such as /pstack-ketchup shows every call waiting on the user, however many.
 - **Pictures**: only when neither a sentence nor a view can show the point, such as how a bug travels between modules. Use at most one per turn: a Mermaid flowchart or sequence diagram of five boxes or fewer. An inline page (`html_render` in T3 Code) counts as the turn's picture, and only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. These limits hold even when a tool's own instructions suggest pages more often. Screenshots, videos, and diagrams a catch-up shows follow /pstack-ketchup's rules instead.
 - **Views**: when a reply explains how code works or what a change does, show it as the smallest view that makes the point, in place of prose: pseudocode for logic, a call, component, or file tree for structure, and a `diff` of that view for a change. Show real code only when most of it is new or the user needs to copy it. Long diffs go in Details.
@@ -42,7 +43,7 @@ The options are the answers: each opens with yes or no, and one says no.
 - **Errors**: the cause and the fix, matter-of-fact.
 - **Tangents**: finish the main thing first. A side issue becomes a later option or one `FYI:` line.
 - **Blank lines**: chat joins adjacent lines, so separate lines with a blank line or make them list items.
-- **Once**: show each piece of code, draft, warning, and `FYI:` once per session, and point back to it afterwards. Open items return only in the final summary.
+- **Once**: show each piece of code, draft, warning, and `FYI:` once per session, and point back to it afterwards. Open items return only in the final summary. A reply whose next step posts or sends drafts shows each again in full, since what the user approves is what goes out.
 - **Final summary** of multi-item work: a folded table with `#`, item, status, and commit columns, ✅ for done and ⬜ plus where it's tracked for open.
 
 ## Before sending
