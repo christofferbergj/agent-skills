@@ -10,7 +10,7 @@ Complete when you hold the target: `run: "codex"` with its model, effort, and sp
 
 ## 2. Write the brief
 
-The child sees only the brief and acts on the user's real desktop, so the brief is its whole scope. Fill in:
+The child sees only the brief and acts on the user's real desktop and browser, with their signed-in sessions, so the brief is its whole scope. Fill in:
 
 - the goal, and the URL or app to open;
 - the steps, and the pass check as an observable state, such as visible text, a URL, or a saved record;
@@ -24,10 +24,10 @@ Complete when every item above is filled in.
 ## 3. Dispatch
 
 - **T3 Code**, when the session exposes `delegate_task`: follow [the T3 route](t3.md) with `role: "test"` and the default interaction mode, because the child acts.
-- **Elsewhere**: write the brief to a file and run the Codex CLI as a background command with a timeout. Drop each `-m` or `-c` pair whose target field is absent:
+- **Elsewhere**: write the brief to a file and run the Codex CLI as a background command with a timeout. Computer Use opens a page only under full access with approvals off, the access a T3 child gets, so the brief's limits are the guard. Drop each `-m` or `-c` pair whose target field is absent:
 
   ```bash
-  codex exec --ephemeral --skip-git-repo-check -C <evidence dir> -s workspace-write -m <model> -c model_reasoning_effort="<effort>" -c service_tier="<serviceTier>" -o <evidence dir>/report.md - < <brief file>
+  codex exec --ephemeral --skip-git-repo-check -C <evidence dir> -s danger-full-access -c approval_policy="never" -m <model> -c model_reasoning_effort="<effort>" -c service_tier="<serviceTier>" -o <evidence dir>/report.md - < <brief file>
   ```
 
 Complete when the child or command has returned a terminal report or a recorded failure.
