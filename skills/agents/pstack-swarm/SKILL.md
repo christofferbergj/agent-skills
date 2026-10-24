@@ -7,6 +7,8 @@ description: "Use for Pstack delegation or independent review; organize coverage
 
 For every Pstack delegate or cross-vendor review, read [the execution contract](references/execution.md). It owns native host APIs, model settings, isolation, review restrictions, and disclosed fallback. A caller can use that contract for one delegate without starting a coverage swarm.
 
+To hand a check that needs Computer Use to Codex, follow [the Computer Use route](references/computer-use.md).
+
 ## 1. Frame
 
 Open a task list with one entry per phase before dispatching anything. Name the done predicate, report or artifact, and required coverage. Choose slices, an identical-brief race, or a mix. Declare a race rule before dispatch: first passing result, rank all, or best-of. For a model race, name each arm's model before dispatch. Choose the smallest useful worker count within the user's budget and host capacity; total jobs can exceed concurrent slots.

@@ -36,17 +36,20 @@ def run(args, *, cwd=None, timeout=20, input=None):
     return subprocess.CompletedProcess(args, process.returncode, stdout, stderr)
 
 
-def prepare(parent, repo, model=None, effort=None):
+def prepare(parent, repo, model=None, effort=None, service_tier=None):
     vendor = 'claude-code' if parent == 'codex' else 'codex'
     if os.name != 'posix':
         return vendor, None, 'Bounded reviewer process groups require a POSIX host'
     binary = shutil.which('claude' if vendor == 'claude-code' else 'codex')
     if not binary:
         return vendor, None, 'CLI is not installed'
+    if service_tier and vendor == 'claude-code':
+        return vendor, None, 'Claude CLI has no service tier option'
     help_result = run([binary, '--help'] if vendor == 'claude-code' else [binary, 'exec', '--help'], cwd=repo)
     required = ['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format'] if vendor == 'claude-code' else ['--sandbox', '--ephemeral', '--output-last-message', '--strict-config']
-    # The counterpart's model and effort are part of the review contract, so an unsupported override is unavailable, not dropped.
+    # The counterpart's model, effort, and speed are part of the review contract, so an unsupported override is unavailable, not dropped.
     selection = (['--model', model] if model else []) + ((['--effort', effort] if vendor == 'claude-code' else ['-c', f'model_reasoning_effort="{effort}"']) if effort else [])
+    selection += ['-c', f'service_tier="{service_tier}"'] if service_tier else []
     required += [flag for flag in selection if flag in ('--model', '--effort')]
     advertised = set(re.findall(r'^\s*(?:-\w,\s*)?(--[a-z][a-z-]*)(?=[\s=,\[]|$)', help_result.stdout, re.MULTILINE))
     if help_result.returncode or any(flag not in advertised for flag in required):
@@ -79,6 +82,7 @@ def main():
     parser.add_argument('--timeout', type=int, default=300)
     parser.add_argument('--model', help="The counterpart's model; omit to keep the CLI's configured model")
     parser.add_argument('--effort', help="The counterpart's reasoning effort, such as xhigh or high")
+    parser.add_argument('--service-tier', help="Codex's speed, such as priority or default")
     parser.add_argument('--preflight', action='store_true')
     args = parser.parse_args()
     result = {'vendor': None, 'status': 'unavailable', 'review': None, 'models': []}
@@ -88,7 +92,7 @@ def main():
         if not args.preflight and args.prompt_file is None:
             raise ValueError('--prompt-file is required unless --preflight is used')
         prompt = args.prompt_file.read_text() if not args.preflight else None
-        vendor, command, reason = prepare(args.parent, args.repo.resolve(), args.model, args.effort)
+        vendor, command, reason = prepare(args.parent, args.repo.resolve(), args.model, args.effort, args.service_tier)
         result['vendor'] = vendor
         if reason:
             result['reason'] = reason
