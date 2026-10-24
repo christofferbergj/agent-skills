@@ -1,24 +1,61 @@
 #!/usr/bin/env python3
-"""Resolve a cross-vendor delegate's model, effort, and speed, stepping down as Codex usage runs low."""
+"""Resolve a cross-vendor delegate's model, effort, and speed, stepping down as Codex usage runs low.
+
+Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
+
+  {"codexUsage": {"fastWhileLeft": 40, "skipWhenLeft": 5},
+   "claude-code": {
+     "review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
+                "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
+     "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
+                     "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"}},
+   "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
+
+codexUsage thresholds are percent of Codex usage left: below fastWhileLeft a Codex
+target drops to serviceTier "default", and below skipWhenLeft it becomes run "fallback".
+Usage comes from the newest snapshots in $CODEX_HOME/sessions, so the check stays local.
+"""
 
 import argparse
 from datetime import datetime, timezone
+from itertools import islice
 import json
+import math
 import os
 from pathlib import Path
 import re
 import sys
 import time
 
-ROLES = {'review-full': ('review', 'full'), 'review-delta': ('review', 'delta'), 'computer-use': ('computerUse', 'routine'), 'computer-use-hard': ('computerUse', 'hard')}
-EFFORTS = {'review': {'full': 'xhigh', 'delta': 'high'}, 'computerUse': {'routine': 'medium', 'hard': 'high'}}
+# role: (config entry, effort key, default effort)
+ROLES = {
+    'review-full': ('review', 'full', 'xhigh'),
+    'review-delta': ('review', 'delta', 'high'),
+    'computer-use': ('computerUse', 'routine', 'medium'),
+    'computer-use-hard': ('computerUse', 'hard', 'high'),
+}
 THRESHOLDS = {'fastWhileLeft': 40, 'skipWhenLeft': 5}
-# Usage is read from local session logs only, so the check costs milliseconds and never waits on the network.
-DAYS, FILES, TAIL = 3, 8, 256 * 1024
+# Bounds that keep the usage scan to a few small reads.
+DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
 
 
-def codex_home():
-    return Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
+def table(value):
+    return value if isinstance(value, dict) else {}
+
+
+def text(value):
+    return value if isinstance(value, str) and value else None
+
+
+def number(value):
+    return value if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) else None
+
+
+def load_config(path):
+    try:
+        return table(json.loads(path.read_text()))
+    except (OSError, ValueError):
+        return {}
 
 
 def configured_codex_model(home):
@@ -34,98 +71,123 @@ def configured_codex_model(home):
     return None
 
 
-def latest_rate_limits(sessions):
-    days = sorted(sessions.glob('*/*/*'), reverse=True)[:DAYS]
-    logs = sorted((path for day in days for path in day.glob('*.jsonl')), key=lambda path: path.stat().st_mtime, reverse=True)[:FILES]
-    for log in logs:
-        with log.open('rb') as stream:
-            stream.seek(max(0, stream.seek(0, os.SEEK_END) - TAIL))
-            text = stream.read().decode('utf-8', 'replace')
-        end = len(text)
-        while True:
-            found = text.rfind('"rate_limits":', 0, end)
-            if found < 0:
-                break
-            start = text.rfind('\n', 0, found) + 1
-            stop = text.find('\n', found)
-            try:
-                event = json.loads(text[start:stop if stop >= 0 else len(text)])
-                limits = event['payload']['rate_limits']
-                if isinstance(limits, dict):
-                    return limits, event.get('timestamp')
-            except (ValueError, KeyError, TypeError):
-                pass
-            end = found
-    return None, None
+def modified(path):
+    try:
+        return path.stat().st_mtime
+    except OSError:
+        return 0
+
+
+def recent_logs(sessions):
+    """Return the most recently written logs from the newest day folders that hold any."""
+    days = (day for day in sorted(sessions.glob('*/*/*'), reverse=True) if any(day.glob('*.jsonl')))
+    logs = [path for day in islice(days, DAY_DIRS) for path in day.glob('*.jsonl') if path.is_file()]
+    return sorted(logs, key=modified, reverse=True)[:LOGS]
+
+
+def last_snapshot(log):
+    """Return the last Codex rate-limit snapshot in the log's tail as (timestamp, limits)."""
+    with log.open('rb') as stream:
+        stream.seek(max(0, stream.seek(0, os.SEEK_END) - TAIL_BYTES))
+        tail = stream.read().decode('utf-8', 'replace')
+    end = len(tail)
+    while True:
+        found = tail.rfind('"rate_limits":', 0, end)
+        if found < 0:
+            return None
+        start = tail.rfind('\n', 0, found) + 1
+        stop = tail.find('\n', found)
+        end = start
+        try:
+            event = json.loads(tail[start : stop if stop >= 0 else len(tail)])
+        except ValueError:
+            continue
+        limits = table(table(table(event).get('payload')).get('rate_limits'))
+        if limits and limits.get('limit_id') in (None, 'codex'):
+            return text(event.get('timestamp')) or '', limits
 
 
 def window_left(window, now):
-    resets = window.get('resets_at')
-    # A window whose reset time has passed starts fresh.
-    return 100 if resets and resets <= now else max(0, 100 - window['used_percent'])
+    used, resets = number(window.get('used_percent')), number(window.get('resets_at'))
+    if used is None:
+        return None
+    return 100 if resets is not None and resets <= now else max(0, 100 - used)
 
 
-def usage_left(limits, now):
-    """Return the percent left in the tightest window and that window's reset time."""
-    windows = [window for window in (limits.get('primary'), limits.get('secondary')) if isinstance(window, dict) and isinstance(window.get('used_percent'), (int, float))]
+def read_usage(sessions, now):
+    """Return (percent left in the tightest window, its reset time, snapshot time) from the newest snapshot, or None."""
+    snapshots = []
+    for log in recent_logs(sessions):
+        try:
+            snapshot = last_snapshot(log)
+        except OSError:
+            continue
+        if snapshot:
+            snapshots.append(snapshot)
+    if not snapshots:
+        return None
+    seen, limits = max(snapshots, key=lambda snapshot: snapshot[0])
+    windows = [(window_left(window, now), window) for window in (table(limits.get('primary')), table(limits.get('secondary')))]
+    windows = [(left, window) for left, window in windows if left is not None]
     if not windows:
-        return None, None
-    tightest = min(windows, key=lambda window: window_left(window, now))
-    left = 0 if limits.get('rate_limit_reached_type') else window_left(tightest, now)
-    return round(left), tightest.get('resets_at')
+        return None
+    left, window = min(windows, key=lambda pair: pair[0])
+    # A reached limit lifts once its window resets.
+    if limits.get('rate_limit_reached_type') and left < 100:
+        left = 0
+    return round(left), number(window.get('resets_at')), seen
 
 
 def describe(left, resets):
-    until = f" until {datetime.fromtimestamp(resets, timezone.utc).strftime('%Y-%m-%dT%H:%MZ')}" if resets else ''
+    try:
+        until = f" until {datetime.fromtimestamp(resets, timezone.utc).strftime('%Y-%m-%dT%H:%MZ')}" if resets else ''
+    except (OverflowError, OSError, ValueError):
+        until = ''
     return f'Codex usage {left}% left{until}'
 
 
-def resolve(parent, role, config, home, now):
-    section, size = ROLES[role]
-    if section == 'computerUse' and parent == 'codex':
-        return {'role': role, 'run': 'self', 'reason': 'Codex runs computer use itself'}
-    host = config.get(parent) if isinstance(config.get(parent), dict) else {}
-    entry = host.get(section) if isinstance(host.get(section), dict) else {}
+def resolve(parent, role, config, codex_model, usage):
+    entry_name, effort_key, default_effort = ROLES[role]
+    entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
-    effort = (entry.get('effort') or {}).get(size) if isinstance(entry.get('effort'), dict) else None
-    effort = effort or EFFORTS[section][size]
-    target = {'role': role, 'run': vendor, 'providerInstanceId': entry.get('providerInstanceId'), 'model': entry.get('model'), 'effort': effort, 'serviceTier': entry.get('serviceTier')}
+    effort = text(table(entry.get('effort')).get(effort_key)) or default_effort
+    target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': text(entry.get('model')), 'effort': effort}
+    # Claude has no speed option, so only a Codex target carries one.
     if vendor == 'claude-code':
         return target
-    target['model'] = target['model'] or configured_codex_model(home)
     # GPT models never run above xhigh.
-    if effort in ('max', 'ultra'):
-        target['effort'] = 'xhigh'
-    thresholds = dict(THRESHOLDS, **(config.get('codexUsage') if isinstance(config.get('codexUsage'), dict) else {}))
-    try:
-        limits, seen = latest_rate_limits(home / 'sessions')
-    except OSError:
-        limits, seen = None, None
-    left, resets = usage_left(limits, now) if limits else (None, None)
-    if left is None:
+    target.update(model=target['model'] or codex_model, effort='xhigh' if effort in ('max', 'ultra') else effort, serviceTier=text(entry.get('serviceTier')))
+    if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
+    left, resets, seen = usage
+    configured = table(config.get('codexUsage'))
+    thresholds = {key: default if number(configured.get(key)) is None else configured[key] for key, default in THRESHOLDS.items()}
     target['usage'] = {'left': left, 'seenAt': seen}
     if left < thresholds['skipWhenLeft']:
         return {'role': role, 'run': 'fallback', 'reason': describe(left, resets), 'usage': target['usage']}
     if left < thresholds['fastWhileLeft']:
-        target['serviceTier'] = 'default'
-        target['note'] = f'Standard speed: {describe(left, resets)}'
+        target.update(serviceTier='default', note=f'Standard speed: {describe(left, resets)}')
     return target
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('role', choices=sorted(ROLES))
     parser.add_argument('--parent', choices=['codex', 'claude-code'], required=True, help='The host running this session')
     args = parser.parse_args()
-    path = Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json')
-    try:
-        config = json.loads(path.read_text())
-        config = config if isinstance(config, dict) else {}
-    except (OSError, ValueError):
-        config = {}
-    target = resolve(args.parent, args.role, config, codex_home(), time.time())
+    if args.parent == 'codex' and args.role.startswith('computer-use'):
+        parser.error('Codex runs computer use itself')
+    config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
+    home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
+    codex_model, usage = None, None
+    if args.parent == 'claude-code':
+        codex_model = configured_codex_model(home)
+        try:
+            usage = read_usage(home / 'sessions', time.time())
+        except (OSError, ValueError):
+            usage = None
+    target = resolve(args.parent, args.role, config, codex_model, usage)
     print(json.dumps({key: value for key, value in target.items() if value is not None}, ensure_ascii=False))
     return 0
 
