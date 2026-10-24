@@ -67,12 +67,12 @@ class TargetResolution(unittest.TestCase):
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
         self.assertIn('9% left until',result['reason'])
 
-    def test_reached_limit_falls_back_until_its_window_resets(self):
+    def test_spent_window_falls_back_until_it_resets_whatever_the_reached_flag_says(self):
         self.log('a.jsonl',event(100,reached='rate_limit_reached'))
         self.assertEqual(self.run_target('review-full')['run'],'fallback')
-        self.log('a.jsonl',event(100,resets=NOW-1,reached='rate_limit_reached'))
+        self.log('a.jsonl',event(100,resets=NOW-1,reached='rate_limit_reached',secondary={'used_percent':20,'window_minutes':300,'resets_at':NOW+60}))
         result=self.run_target('review-full')
-        self.assertEqual((result['serviceTier'],result['usage']['left']),('priority',100))
+        self.assertEqual((result['serviceTier'],result['usage']['left']),('priority',80))
 
     def test_tightest_window_decides(self):
         self.log('a.jsonl',event(10,secondary={'used_percent':70,'window_minutes':300,'resets_at':NOW+60}))
@@ -100,6 +100,9 @@ class TargetResolution(unittest.TestCase):
         self.log('a.jsonl',event(62,resets='soon'))
         result=self.run_target('review-full')
         self.assertEqual((result['model'],result['effort'],result['serviceTier'],result['usage']['left']),('gpt-configured','xhigh','default',38))
+        self.config.write_text(json.dumps({'codexUsage':{'fastWhileLeft':10**400}}))
+        self.log('a.jsonl',event(62,resets=10**400))
+        self.assertEqual(self.run_target('review-full')['usage']['left'],38)
         self.config.write_text('{not json')
         self.assertEqual(self.run_target('review-delta')['effort'],'high')
 

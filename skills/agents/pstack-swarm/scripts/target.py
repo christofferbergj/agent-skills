@@ -48,7 +48,12 @@ def text(value):
 
 
 def number(value):
-    return value if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        return value if math.isfinite(value) else None
+    except OverflowError:
+        return None
 
 
 def load_config(path):
@@ -131,10 +136,9 @@ def read_usage(sessions, now):
     windows = [(left, window) for left, window in windows if left is not None]
     if not windows:
         return None
+    # Windows alone decide: rate_limit_reached_type is an account-wide reason with no reset time,
+    # and a live usage-limit error already sends the caller to its fallback.
     left, window = min(windows, key=lambda pair: pair[0])
-    # A reached limit lifts once its window resets.
-    if limits.get('rate_limit_reached_type') and left < 100:
-        left = 0
     return round(left), number(window.get('resets_at')), seen
 
 
