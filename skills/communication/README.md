@@ -11,6 +11,7 @@ Explain work clearly, write technical documents, and edit prose.
 | [pr](pr/SKILL.md)                                             | Write a concise, evidence-based PR description.  |
 | [pstack-in-your-own-words](pstack-in-your-own-words/SKILL.md) | Restate the goal and underlying problem.         |
 | [pstack-ketchup](pstack-ketchup/SKILL.md)                     | Summarize progress since the last user message.  |
+| [pstack-ketchup-video](pstack-ketchup-video/SKILL.md)         | Catch up with a short silent video of slides.    |
 | [pstack-teach](pstack-teach/SKILL.md)                         | Explain how code works and why it has its shape. |
 | [pstack-technical-writing](pstack-technical-writing/SKILL.md) | Write technical documents for a clear purpose.   |
 | [pstack-unslop](pstack-unslop/SKILL.md)                       | Remove formulaic AI writing.                     |

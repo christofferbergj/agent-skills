@@ -7,9 +7,9 @@
 - Original skill: [`pstack/skills/swarm/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/swarm/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Last upstream review: 2026-10-21.
+- Reviewed through commit: `9580c23696ac8d7abed0c166f2f9918800afb819`.
+- Fidelity checked through: `9580c23696ac8d7abed0c166f2f9918800afb819`.
+- Last upstream review: 2026-10-24.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -31,6 +31,7 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-16  | `f713f14203cd6420cec13cd7c55c32d598dbab68` | Reviewed the upstream cuts; retained the already-adapted host, budget, isolation and terminal-evidence contract. Native delegates and restricted Claude synthesis exercised the current owner without restoring Cursor cloud or model defaults. Repository and catalog checks pass; see the [combined review](../../../docs/reviews/2026-10-16-combined-skill-maintenance.md).                                                               |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `f713f14` in `pstack/skills/swarm/` or since `e8db4fa` in the tracked Oliver files. First fidelity check: restored four dropped upstream rules (a task list per phase, naming each model-race arm, listing every provable issue, and no raw worker output in the report), and recorded the model-invoked mode and the local-only execution contract and review wrapper. The Oliver T3 route passes both directions. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                       |
+| 2026-10-24  | `9580c23696ac8d7abed0c166f2f9918800afb819` | Upstream `e73df47` (#807) renumbers Phase A's steps and says "a result table" in Phase D. No local change: the local Frame step has no numbered list or step cross-reference, and Report already returns one compact table. Fidelity holds in both directions.                                                                                                                                                                               |
 
 Local maintenance on 2026-10-17 clarified the restricted reviewer's evidence scope. The Claude wrapper exposes `Read,Glob,Grep` without a shell, and its restricted session denied external runtime paths. Supply relevant snapshots inline and recorded checks; use a native critic for independent execution. The reviewed source candidate is `101b274dd991f694e1f7024be2157e5f3adf07de`; portable host behavior and source exclusions are retained.
 
