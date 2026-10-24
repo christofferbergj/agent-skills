@@ -19,7 +19,7 @@
 - Effort is a separate option checked against the host's supported values, not a slug suffix, so the four budget labels and the slug-ladder fallback become a task budget mapped through those options.
 - Panel role lists and the arena cross-judge pool are not configured here. /pstack-arena and its callers choose runners and a different-vendor judge through /pstack-swarm.
 - Adds an optional review timeout and keeps credentials in the providers' stores.
-- Asks for the counterpart reviewer's provider instance, model, and full and delta effort. /pstack-swarm reads them from the host section's `review` entry on every counterpart route; only the provider instance is specific to its T3 route.
+- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex usage thresholds. /pstack-swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route.
 
 ## Maintenance
 

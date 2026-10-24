@@ -15,9 +15,9 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Local-only files: `references/execution.md`, the host execution contract that replaces Cursor's Task-tool and model-rule mechanics, and `scripts/review.py` with its tests, the bounded cross-vendor CLI wrapper.
+- Local-only files: `references/execution.md`, the host execution contract that replaces Cursor's Task-tool and model-rule mechanics; `scripts/review.py` with its tests, the bounded cross-vendor CLI wrapper; `scripts/target.py` with its tests, which resolves a delegate's model, effort, and speed from the personal configuration and the remaining Codex usage; and `references/computer-use.md`, which hands checks that need Computer Use from Claude to Codex.
 - Match review briefs to the restricted reviewer's readable scope. Supply recorded checks and inline snapshots for inaccessible evidence; use a native critic when independent execution or broader evidence access is required.
-- Route counterpart critics through T3 Code child tasks when the session exposes `delegate_task`, before the CLI wrapper, and pass an explicit counterpart model and scope-scaled effort on every route ([T3 route](references/t3.md)). The T3 route is principle-derived from the second source below.
+- Route counterpart critics through T3 Code child tasks when the session exposes `delegate_task`, before the CLI wrapper, and pass the resolved target's model, scope-scaled effort, and speed on every route ([T3 route](references/t3.md)). The T3 route is principle-derived from the second source below.
 
 ## Maintenance
 
@@ -32,6 +32,8 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `f713f14` in `pstack/skills/swarm/` or since `e8db4fa` in the tracked Oliver files. First fidelity check: restored four dropped upstream rules (a task list per phase, naming each model-race arm, listing every provable issue, and no raw worker output in the report), and recorded the model-invoked mode and the local-only execution contract and review wrapper. The Oliver T3 route passes both directions. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                       |
 | 2026-10-24  | `9580c23696ac8d7abed0c166f2f9918800afb819` | Upstream `e73df47` (#807) renumbers Phase A's steps and says "a result table" in Phase D. No local change: the local Frame step has no numbered list or step cross-reference, and Report already returns one compact table. Fidelity holds in both directions.                                                                                                                                                                               |
+
+Local maintenance on 2026-10-24 added usage-aware targets and the Computer Use delegate; [ADR 0004](../../../docs/adr/0004-review-across-vendors-and-offer-next-options.md) records why.
 
 Local maintenance on 2026-10-17 clarified the restricted reviewer's evidence scope. The Claude wrapper exposes `Read,Glob,Grep` without a shell, and its restricted session denied external runtime paths. Supply relevant snapshots inline and recorded checks; use a native critic for independent execution. The reviewed source candidate is `101b274dd991f694e1f7024be2157e5f3adf07de`; portable host behavior and source exclusions are retained.
 

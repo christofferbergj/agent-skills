@@ -60,6 +60,17 @@ class ReviewRestrictions(unittest.TestCase):
         self.assertEqual(command[command.index('--model')+1],'gpt-6.1-sol')
         self.assertIn('model_reasoning_effort="xhigh"',command)
 
+    def test_codex_speed_reaches_the_cli_and_claude_rejects_it(self):
+        responses=[subprocess.CompletedProcess([],0,'--sandbox\n--ephemeral\n--output-last-message\n--strict-config',''),subprocess.CompletedProcess([],0,'logged in',''),subprocess.CompletedProcess([],0,'apps stable true\nplugins stable true\nhooks stable true\nbrowser_use stable true\ncomputer_use stable true','')]
+        with patch.object(review.shutil,'which',return_value='/fixture/codex'),patch.object(review,'run',side_effect=responses):
+            _,command,reason=review.prepare('claude-code',Path('.'),None,'xhigh','priority')
+        self.assertIsNone(reason)
+        self.assertIn('service_tier="priority"',command)
+        with patch.object(review.shutil,'which',return_value='/fixture/claude'):
+            _,command,reason=review.prepare('codex',Path('.'),None,'xhigh','priority')
+        self.assertIsNone(command)
+        self.assertIn('service tier',reason)
+
     def test_unsupported_model_override_is_unavailable_rather_than_dropped(self):
         help_text='\n'.join(['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format'])
         with patch.object(review.shutil,'which',return_value='/fixture/claude'),patch.object(review,'run',return_value=subprocess.CompletedProcess([],0,help_text,'')):
