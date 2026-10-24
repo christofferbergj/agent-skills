@@ -47,7 +47,7 @@ def prepare(parent, repo, model=None, effort=None, service_tier=None):
         return vendor, None, 'Claude CLI has no service tier option'
     help_result = run([binary, '--help'] if vendor == 'claude-code' else [binary, 'exec', '--help'], cwd=repo)
     required = ['--safe-mode', '--strict-mcp-config', '--tools', '--permission-mode', '--permission-prompts', '--mcp-config', '--no-session-persistence', '--output-format'] if vendor == 'claude-code' else ['--sandbox', '--ephemeral', '--output-last-message', '--strict-config']
-    # The counterpart's model and effort are part of the review contract, so an unsupported override is unavailable, not dropped.
+    # The counterpart's model, effort, and speed are part of the review contract, so an unsupported override is unavailable, not dropped.
     selection = (['--model', model] if model else []) + ((['--effort', effort] if vendor == 'claude-code' else ['-c', f'model_reasoning_effort="{effort}"']) if effort else [])
     selection += ['-c', f'service_tier="{service_tier}"'] if service_tier else []
     required += [flag for flag in selection if flag in ('--model', '--effort')]
