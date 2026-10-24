@@ -16,7 +16,7 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Namespace: `ketchup-video` maps to `pstack-ketchup-video`, and its references to `/ketchup` name `/pstack-ketchup`.
-- Invocation: model-invoked, where upstream sets `disable-model-invocation: true`. The contract makes Pstack helpers model-invoked, and this skill is not one of its user-invoked entrypoints or outward-effect skills: it writes only the video outside the repository. The description follows /pstack-ketchup's Pstack-scoped style.
+- Invocation: model-invoked, where upstream sets `disable-model-invocation: true`. The contract makes Pstack helpers model-invoked, and this skill is not one of its user-invoked entrypoints or outward-effect skills: it writes only the video outside the repository. The description triggers only on a requested video catch-up in a Pstack task, so the model does not render a video where /pstack-ketchup's text catch-up would do.
 - Embedding: the reply links the video file where the host cannot embed one, because a terminal host such as Claude Code's CLI shows no inline video. Upstream assumes an embedding host.
 
 ## Maintenance

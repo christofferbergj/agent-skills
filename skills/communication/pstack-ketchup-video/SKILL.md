@@ -1,6 +1,6 @@
 ---
 name: pstack-ketchup-video
-description: "Use during a Pstack task or when explicitly requested. Catch the user up like /pstack-ketchup, with a short silent video of slides for what happened and the waiting calls as text under it. Use for /pstack-ketchup-video."
+description: "Use when the user asks for a video catch-up in a Pstack task. Catch the user up like /pstack-ketchup, with a short silent video of slides for what happened and the waiting calls as text under it. Use for /pstack-ketchup-video."
 ---
 
 # Ketchup video
