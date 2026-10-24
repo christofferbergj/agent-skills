@@ -571,24 +571,31 @@ describe("Store", () => {
     });
   });
 
-  it("selects the active PR over closed history and rejects ambiguous active rows", async () => {
+  it("selects the active PR over closed or merged history and rejects ambiguous active rows", async () => {
+    const row = { head: "stack/open", base: "stack/closed" };
+    for (const historicalState of ["closed", "merged"] as const) {
+      const { directory, store } = await initializedStore();
+      const stack = await makeGitStack(directory);
+      await withFakeForge({
+        directory,
+        forge: "gh",
+        currentRows: forgeRows(stack.repo, [
+          { number: 9, state: historicalState, head: "stack/open", base: "main" },
+          { ...row, number: 11, state: "open" },
+        ]),
+        operation: async () => {
+          const frontier = await store.frontier.set({ repo: stack.repo });
+          expect(frontier.prs.map((row) => row.pr)).toEqual([10, 13, 11, 14]);
+          expect(frontier.lowestUnmerged).toBe(11);
+        },
+      });
+    }
     const { directory, store } = await initializedStore();
     const stack = await makeGitStack(directory);
-    const row = { head: "stack/open", base: "stack/closed" };
     const history = [
       { ...row, number: 5, state: "closed" as const },
       { ...row, number: 11, state: "open" as const },
     ];
-    await withFakeForge({
-      directory,
-      forge: "gh",
-      currentRows: forgeRows(stack.repo, history),
-      operation: async () => {
-        expect((await store.frontier.set({ repo: stack.repo })).prs.map((row) => row.pr)).toEqual([
-          10, 13, 11, 14,
-        ]);
-      },
-    });
     await withFakeForge({
       directory,
       forge: "gh",

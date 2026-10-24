@@ -49,7 +49,9 @@ Present the synthesizer's full Accepted / Rejected / Backlog output and wait for
 
 File each Backlog item to your team's devex or backlog tracker without waiting, when the user's existing authorization covers filing; otherwise list it in the summary as a proposal. Only the Accepted list waits for approval.
 
-Edit each skill at its source, the repository /pstack-setup records or the one this skill was installed from, never the installed copy. Follow each approved row's Routing exactly:
+Edit each skill at its source, the repository /pstack-setup records or the one this skill was installed from, never the installed copy. Before approval, show each skill's destination. Never open a PR or push.
+
+Follow each approved row's Routing exactly:
 
 - Trivial existing-skill edit (a one-line bullet, a tightened sentence, a stale fact corrected): the parent does it directly.
 - Substantive existing-skill edit (a new section, a new pattern table, more than ~10 lines): draft it with /writing-for-agents, exercise it on a representative case, and revise until the case passes.
