@@ -18,7 +18,7 @@ Also compare the complete `thermos/` tree, including `agents/` wrappers, plugin 
 
 Preserve these contracts when adopting upstream changes:
 
-- The two rubrics are model-invoked dependencies; `thermos` is user-invoked. Frontmatter and Codex invocation metadata agree. `/review-loop` also runs `thermo-nuclear-review` as its same-model correctness critic, so check that consumer when the rubric's scope, review-only rule, or output changes.
+- The two rubrics are model-invoked dependencies; `thermos` is user-invoked. Frontmatter and Codex invocation metadata agree. `/review-loop` also runs `thermo-nuclear-review` as its same-model correctness critic and its Codex correctness pass, so check that consumer when the rubric's scope, review-only rule, or output changes.
 - Both reviewers receive the same scope and accessible evidence, plus their full rubric or resolved path. Child skill discovery is not assumed.
 - Execution uses the host's actual native tools. Cursor's named subagents and plugin installation are not prerequisites.
 - Both reviewers start before either is awaited. Results disclose failed or sequential passes. Reviewers do not delegate further.
