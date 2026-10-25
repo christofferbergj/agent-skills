@@ -82,6 +82,10 @@ def history_files(directory, pattern):
                 yield Path(root) / name
 
 
+def claude_workflow_journal(path):
+    return path.name == 'journal.jsonl' and path.parent.parent.name == 'workflows'
+
+
 def record_workspace(item, current):
     if item.get('type') == 'event_msg' and object_record(item.get('payload', {})).get('type') in ['task_started', 'turn_started']:
         return None
@@ -127,6 +131,8 @@ def index_history(repo, codex_home, claude_home, days):
                 directories.append(archived)
             paths = (path for folder in directories for path in history_files(folder, 'rollout-*.jsonl' if host == 'codex' else '*.jsonl'))
             for path in paths:
+                if host == 'claude-code' and claude_workflow_journal(path):
+                    continue
                 try:
                     modified = path.stat().st_mtime
                     if modified < cutoff:

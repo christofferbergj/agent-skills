@@ -49,6 +49,15 @@ class ScopedHistory(unittest.TestCase):
         self.assertNotIn(str(self.foreign),json.dumps(result))
         self.assertIn(str(selected),json.dumps(result))
 
+    def test_claude_workflow_journal_is_not_a_coverage_gap(self):
+        run=self.claude/'projects/project/session/subagents/workflows/run'
+        run.mkdir(parents=True)
+        (run/'journal.jsonl').write_text('\n'.join(json.dumps(item) for item in [{'type':'launched'},{'type':'started','agentId':'worker','key':'k','label':'l','phase':'p'}])+'\n')
+        (run/'agent-worker.jsonl').write_text(json.dumps({'type':'user','cwd':str(self.repo),'sessionId':'worker','message':{'role':'user','content':'hello'}})+'\n')
+        result=history.index_history(self.repo,self.codex,self.claude,7)
+        self.assertTrue(result['coverage']['claude-code']['complete'])
+        self.assertEqual([s['id'] for s in result['sessions']],['worker'])
+
     def test_foreign_read_is_rejected(self):
         path=self.codex_session('foreign',self.foreign,[self.message('PRIVATE')])
         with self.assertRaises(ValueError):
