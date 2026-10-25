@@ -154,6 +154,27 @@ class ScopedHistory(unittest.TestCase):
         self.assertTrue(result['coverage']['codex']['complete'])
         self.assertEqual([(s['id'],s['cwd']) for s in result['sessions']],[('agent',str(self.repo))])
 
+    def test_missing_directory_inside_a_live_worktree_checkout_is_a_coverage_gap(self):
+        foreign=self.repo/'.claude/worktrees/live-foreign'
+        foreign.mkdir(parents=True)
+        subprocess.run(['git','init','-q',str(foreign)],check=True)
+        path=self.codex_session('foreign',foreign/'deleted',[self.message('FOREIGN PRIVATE TEXT')])
+        result=history.index_history(self.repo,self.codex,self.claude,7)
+        self.assertFalse(result['coverage']['codex']['complete'])
+        self.assertEqual(result['sessions'],[])
+        with self.assertRaises(ValueError):
+            history.read_session(path,self.repo,self.codex,self.claude,1000)
+
+    def test_missing_directory_inside_a_registered_agent_worktree_is_a_coverage_gap(self):
+        git=['git','-C',str(self.repo),'-c','user.name=test','-c','user.email=test@example.com']
+        subprocess.run([*git,'commit','-q','--allow-empty','-m','base'],check=True)
+        registered=self.repo/'.claude/worktrees/registered'
+        subprocess.run([*git,'worktree','add','-q',str(registered)],check=True)
+        self.codex_session('nested',registered/'deleted')
+        result=history.index_history(self.repo,self.codex,self.claude,7)
+        self.assertFalse(result['coverage']['codex']['complete'])
+        self.assertEqual(result['sessions'],[])
+
     def test_trailing_repository_whitespace_is_preserved(self):
         root=self.base/'trailing repo '
         subprocess.run(['git','init','-q',str(root)],check=True)

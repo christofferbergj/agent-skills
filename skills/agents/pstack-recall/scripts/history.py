@@ -36,7 +36,7 @@ def workspace(value):
 
 def removed_agent_worktree(cwd, root):
     parts = cwd.relative_to(root).parts
-    return len(parts) >= 3 and parts[:2] == ('.claude', 'worktrees') and not cwd.exists()
+    return len(parts) >= 3 and parts[:2] == ('.claude', 'worktrees') and not root.joinpath(*parts[:3]).exists()
 
 
 def scoped_workspace(cwd, roots):
@@ -44,9 +44,9 @@ def scoped_workspace(cwd, roots):
         return cwd
     if cwd is None or not any(cwd.is_relative_to(root) for root in roots):
         return None
-    for root in sorted(roots):
-        if cwd.is_relative_to(root) and removed_agent_worktree(cwd, root):
-            return root
+    nearest = max((root for root in roots if cwd.is_relative_to(root)), key=lambda root: len(root.parts))
+    if removed_agent_worktree(cwd, nearest):
+        return nearest
     result = git(cwd, 'rev-parse', '--show-toplevel')
     if result.returncode:
         raise ValueError('Historical workspace inside this repository cannot be resolved')
