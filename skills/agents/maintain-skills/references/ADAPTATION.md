@@ -22,7 +22,7 @@ Pstack and Thermos:
 
 - Pstack skills install with a `pstack-` prefix, except `bro`, so every Pstack skill and principle is reachable under one name space. `suite.json` records each mapping, such as `setup-pstack` to `pstack-setup`. /pstack-help routes to the user-facing entrypoints, and /pstack-principles discovers and applies the principles.
 - Each Pstack skill works on its own; only an explicit /pstack-mode invocation activates the mode.
-- Pstack helpers and principles are model-invoked, where upstream marks most of them user-invoked, so playbooks, routers, and other skills can load them; their descriptions scope triggering to Pstack tasks. Entrypoints and skills with outward effects keep upstream's user-invoked mode: /pstack-mode, /pstack-help, /pstack-automate-me, /bro, both formal-verification skills, /pstack-maintain-verification-skill, and /pstack-make-bot-ui.
+- Pstack helpers and principles are model-invoked, where upstream marks most of them user-invoked, so playbooks, routers, and other skills can load them. Helper descriptions scope triggering to Pstack tasks; principle descriptions keep upstream's triggers, because /pstack-principles selects principles by description in both suites. Entrypoints and skills with outward effects keep upstream's user-invoked mode: /pstack-mode, /pstack-help, /pstack-automate-me, /bro, both formal-verification skills, /pstack-maintain-verification-skill, and /pstack-make-bot-ui.
 - Thermos keeps its names, and its own `MAINTENANCE.md` owns its review contracts.
 
 Matt Pocock:
