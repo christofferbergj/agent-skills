@@ -26,14 +26,14 @@ For a code target, build the packet from this skill's directory with `node scrip
 Round 1 is a full review by both models. A plan target gets only the counterpart's review, since the same-model passes assess code.
 
 1. Dispatch the counterpart first, asynchronously and at full-review effort, through /pstack-swarm's counterpart route, with the brief filled in.
-2. When Codex is the counterpart and the diff changes code that runs, not only prose, docs, or skill text, dispatch the **counterpart correctness** pass at the same time: a second Codex task with the same resolved target and route, and the brief's Correctness line. Codex raises most of round 1's Blockers, so bugs and security get a second Codex reading, and the pass covers less than the full review, so it does not lengthen the round. Skip it when the target's `run` is `fallback`, since the same-model correctness critic already covers that ground.
+2. When Codex is the counterpart and the diff changes code that runs, not only prose, docs, or skill text, dispatch the **Codex correctness** pass beside it: its own asynchronous task with the full review's model, effort, and speed and the brief's Codex correctness line, under its own `clientRequestId` in T3 Code, or its own prompt and output files through the CLI. It runs beside passes the round already waits for. Retry it once on its route and take no other route, since the same-model correctness critic already covers that ground; skip it when /pstack-swarm resolves the counterpart to `fallback`.
 3. Meanwhile, run both same-model passes in parallel on the packet's revisions, passing the resolved intent and standards. Skip a pass when equivalent evidence already covers this head and scope.
    - Invoke /code-review, with its Standards and Spec axes run by same-model critics.
    - Dispatch a same-model correctness and security critic through /pstack-swarm with /thermo-nuclear-review's rubric.
 
 4. Collect the counterpart's reports. Every reviewer belongs to the round, so wait for each one before reporting.
 
-When the counterpart fails after the route's retry and fallbacks, continue with the same-model passes and label the round **single model**, with the reason. A failed counterpart correctness pass is a recorded gap, and the round goes on without it.
+When the counterpart's review fails after the route's retry and fallbacks, continue with the other passes and record it missing; label the round **single model**, with the reason, when no counterpart pass returned. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
 
 **Complete when:** every reviewer returned a terminal report or a recorded failure for the same revisions.
 
@@ -41,7 +41,7 @@ When the counterpart fails after the route's retry and fallbacks, continue with 
 
 Reviewers make false claims. Check each finding against the code at the head, or for a plan, against the plan and the code it cites: trace the path from a real input to the failure, confirm the cited rule or requirement, and check that the proposed fix fits the repository's conventions and the selected principles, since a true finding can carry a wrong fix. Drop a finding that does not hold, with a one-line reason. Agreement between reviewers raises attention, not certainty.
 
-Group verified findings by root cause and number them; numbers continue across rounds. /code-review's own report stays separate by axis, and this grouping is the loop's report across all reviewers. Record who raised each (counterpart, counterpart correctness, Standards, Spec, Correctness, a PR commenter a pass quoted, or several), its severity on the brief's scale, mapping a pass's own priorities onto it, and any severity disagreement as it stands. Give each a call:
+Group verified findings by root cause and number them; numbers continue across rounds. /code-review's own report stays separate by axis, and this grouping is the loop's report across all reviewers. Record who raised each (counterpart, Codex correctness, Standards, Spec, Correctness, a PR commenter a pass quoted, or several), its severity on the brief's scale, mapping a pass's own priorities onto it, and any severity disagreement as it stands. Give each a call:
 
 - **fix**: in this change.
 - **follow-up**: outside this change's scope; it goes in the PR description's open items.
@@ -62,7 +62,7 @@ End by offering the next step: fixing and re-reviewing while findings remain, or
 ## 5. Fix and re-review
 
 1. Apply each **fix** on the branch that owns it and run the focused checks, or edit the plan. When commits are authorized, commit each fix on its own.
-2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the counterpart correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
+2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the Codex correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
 3. Report only what is new or still open.
 
 Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /pstack-principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.
