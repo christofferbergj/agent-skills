@@ -148,6 +148,12 @@ class ScopedHistory(unittest.TestCase):
         result=history.index_history(self.repo,self.codex,self.claude,7)
         self.assertFalse(result['coverage']['codex']['complete'])
 
+    def test_removed_agent_worktree_counts_as_repository_activity(self):
+        self.codex_session('agent',self.repo/'.claude/worktrees/agent-1/package')
+        result=history.index_history(self.repo,self.codex,self.claude,7)
+        self.assertTrue(result['coverage']['codex']['complete'])
+        self.assertEqual([(s['id'],s['cwd']) for s in result['sessions']],[('agent',str(self.repo))])
+
     def test_trailing_repository_whitespace_is_preserved(self):
         root=self.base/'trailing repo '
         subprocess.run(['git','init','-q',str(root)],check=True)
