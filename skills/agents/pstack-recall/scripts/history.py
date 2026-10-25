@@ -36,7 +36,13 @@ def workspace(value):
 
 def removed_agent_worktree(cwd, root):
     parts = cwd.relative_to(root).parts
-    return len(parts) >= 3 and parts[:2] == ('.claude', 'worktrees') and not root.joinpath(*parts[:3]).exists()
+    if len(parts) < 3 or parts[:2] != ('.claude', 'worktrees') or root.joinpath(*parts[:3]).exists():
+        return False
+    ancestor = root.joinpath(*parts[:2])
+    while not ancestor.exists():
+        ancestor = ancestor.parent
+    result = git(ancestor, 'rev-parse', '--show-toplevel')
+    return not result.returncode and Path(os.fsdecode(result.stdout).removesuffix('\n')).resolve() == root
 
 
 def scoped_workspace(cwd, roots):

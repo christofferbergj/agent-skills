@@ -2,6 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -164,6 +165,22 @@ class ScopedHistory(unittest.TestCase):
         self.assertEqual(result['sessions'],[])
         with self.assertRaises(ValueError):
             history.read_session(path,self.repo,self.codex,self.claude,1000)
+
+    def test_removed_child_of_a_foreign_checkout_ancestor_is_a_coverage_gap(self):
+        for ancestor in ['.claude/worktrees','.claude']:
+            with self.subTest(ancestor=ancestor):
+                foreign=self.repo/ancestor
+                foreign.mkdir(parents=True)
+                try:
+                    subprocess.run(['git','init','-q',str(foreign)],check=True)
+                    path=self.codex_session('foreign',self.repo/'.claude/worktrees/deleted',[self.message('FOREIGN PRIVATE TEXT')])
+                    result=history.index_history(self.repo,self.codex,self.claude,7)
+                    self.assertFalse(result['coverage']['codex']['complete'])
+                    self.assertEqual(result['sessions'],[])
+                    with self.assertRaises(ValueError):
+                        history.read_session(path,self.repo,self.codex,self.claude,1000)
+                finally:
+                    shutil.rmtree(self.repo/'.claude')
 
     def test_missing_directory_inside_a_registered_agent_worktree_is_a_coverage_gap(self):
         git=['git','-C',str(self.repo),'-c','user.name=test','-c','user.email=test@example.com']
