@@ -8,8 +8,8 @@
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
 - Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Last upstream review: 2026-10-21.
+- Fidelity checked through: `99b609a72323b70204eab407c622f436e858e112`.
+- Last upstream review: 2026-10-25.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -18,6 +18,7 @@
 - Keep migration strategy and compatibility exceptions with /pstack-principle-migrate-callers-then-delete-legacy-apis; the review rubric invokes that owner instead of restating a conflicting rule.
 - For a code diff, invoke /code-review for Standards/Spec coverage and keep its reports as separate axes in the verdict; /code-review is the shared owner of Standards and Spec review, and this skill adds the adversarial lens.
 - Verify each finding against the code before bucketing it, and treat agreement as signal rather than proof.
+- Package the originating spec and relevant tests with the code under review, so reviewers check the stated intent and the rubric's Verification lens against evidence. Kept from the original adaptation; the first fidelity check left it unrecorded.
 
 ## Maintenance
 
@@ -31,3 +32,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-16  | `f713f14203cd6420cec13cd7c55c32d598dbab68` | Adopted the lead-judgment cuts, including removal of the five-finding quota. The caller retains evidence-based dismissal and separate Standards/Spec axes. Current and legacy synthesis fixtures retain seven supported findings and disclose sequential coverage. Repository and catalog checks pass; see the [combined review](../../../docs/reviews/2026-10-16-combined-skill-maintenance.md).                                                                                                                                                |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `f713f14` in `pstack/skills/interrogate/`. First fidelity check: restored upstream's model-diversity framing and no-auto-apply rule, the scope bullets, the intent paragraph with its ask-if-unsure rule, the synthesis rules, the four bucket definitions, and the output template; the reference files differ only in the recorded rubric delegation and blank lines. Recorded the model-invoked mode, the /domain-modeling preamble, the /code-review delegation, finding verification, and the completion criteria. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| 2026-10-25  | `99b609a72323b70204eab407c622f436e858e112` | No upstream change since `190d287` in `pstack/skills/interrogate/`. Fidelity check in both directions found one unrecorded divergence, the originating spec and relevant tests packaged with the scope, and recorded it. Every other difference is a recorded divergence or a library-wide adaptation. No text change.                                                                                                                                                                                                                           |
