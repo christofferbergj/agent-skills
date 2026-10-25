@@ -13,7 +13,7 @@ Invoke when the user says "reflect" or "/pstack-reflect". Skip when the conversa
 
 Before fanning out, find this conversation's transcript. Use the host's active conversation API when it exposes one. Otherwise invoke /pstack-recall to list this repository's recent Codex and Claude Code sessions and read a candidate. Do not glob across `~/.claude/projects/*/` or every Codex session. That crosses workspace boundaries and reads private chats from unrelated projects.
 
-For each candidate, newest first, read its first user message. Take the session whose first user message contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.
+For each candidate, newest first, read its first user prompt, past host-injected context such as the AGENTS.md instructions Codex records as the first user message. Take the session whose first user prompt contains the conversation's opening user prompt. If none matches, pass a tight digest of the session instead.
 
 Complete when the transcript path or the digest is fixed.
 

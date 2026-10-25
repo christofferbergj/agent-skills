@@ -77,7 +77,7 @@ Let them edit unresolved choices before writing. Existing agreed values do not r
 
 - If `CLAUDE.md` exists, edit it.
 - Else if `AGENTS.md` exists, edit it.
-- If neither exists, ask the user which one to create; don't pick for them.
+- If neither exists, recommend creating `AGENTS.md`, since both Codex and Claude Code read it, and create it once the user agrees.
 
 Preserve the existing instruction source. When only one host reads it, add the smallest host-native pointer or documented symlink so Codex and Claude Code reach the same project contract; do not duplicate the rules. If both files exist, synchronize their pointers while keeping unrelated content intact. Verify both hosts can resolve the contract.
 

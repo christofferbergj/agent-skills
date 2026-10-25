@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Treat dependency maintenance as a **sweep**: inventory owned version declarations, let the repository's package manager resolve the package graph, then validate and account for the result.
 
-Invoke with `/update-dependencies Update dependencies` for a repository or its entire monorepo. Add `and open a pull request` to publish, or request an audit, selected packages, or latest major versions to change the scope. Infer workspace coverage from the repository.
+Default to every package-manager root and workspace in the repository. A request can narrow the sweep to selected packages or extend it to latest major versions.
 
 Infer the authorization mode from the request:
 

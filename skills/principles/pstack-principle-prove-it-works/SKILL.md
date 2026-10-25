@@ -15,7 +15,7 @@ Check the real thing, not a proxy:
 - Read the actual value, not a cached or derived representation
 - When verification fails, suspect the observation method before suspecting the system
 
-For changed runtime behavior, drive the real user or caller path through the project's verification skill or available browser, Computer Use, CLI, or service tools. Inspect promised durable effects as well as the response. Tests provide supporting evidence; report a blocked real-path check as a gap rather than treating a unit-test pass as its substitute. For planning or review phases, the real artifact is the spec, graph, or reviewed diff; this principle does not start implementation.
+For changed runtime behavior, drive the real user or caller path through the project's verification skill or available browser, Computer Use, CLI, or service tools. A Claude session without a Computer Use tool hands a check that needs one to Codex through /pstack-swarm's Computer Use route. Inspect promised durable effects as well as the response. Tests provide supporting evidence; report a blocked real-path check as a gap rather than treating a unit-test pass as its substitute. For planning or review phases, the real artifact is the spec, graph, or reviewed diff; this principle does not start implementation.
 
 ## Script the check when you can
 

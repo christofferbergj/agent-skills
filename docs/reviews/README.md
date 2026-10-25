@@ -9,5 +9,6 @@ Dated audit and validation evidence. Counts, commands, deployment states, and pe
 - [Whole-library maintenance and rebase, 2026-10-16](2026-10-16-whole-library-maintenance.md)
 - [Whole-library maintenance, 2026-10-20](2026-10-20-whole-library-maintenance.md)
 - [Weekly audit, 2026-10-21](2026-10-21-weekly-audit.md)
+- [Weekly audit, 2026-10-25](2026-10-25-weekly-audit.md)
 - [Combined validation history](../../skills/agents/maintain-skills/VALIDATION.md)
 - [Initial Pstack validation](../../skills/agents/pstack-mode/VALIDATION.md)

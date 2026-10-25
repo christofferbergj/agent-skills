@@ -1,4 +1,4 @@
 interface:
-  display_name: "Tdd"
+  display_name: "TDD"
   short_description: "Build behavior through red and green test cycles"
   default_prompt: "Use $tdd to handle this request."

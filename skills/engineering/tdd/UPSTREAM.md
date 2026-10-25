@@ -9,7 +9,7 @@
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
 - Reviewed through commit: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
 - Fidelity checked through: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
-- Last upstream review: 2026-10-21.
+- Last upstream review: 2026-10-25.
 - Upstream stage: `engineering`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.
 
@@ -30,3 +30,4 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 | 2026-10-16  | `49dd158d1076134a641b33efb035946536778336` | No upstream delta. Corrected the Codex short description to red/green cycles, matching the unchanged owner and Pstack adapter. Authorized prototype implementation retained four independent contract tests with observed failing-before/passing-after results. Repository and catalog checks pass; see the [combined review](../../../docs/reviews/2026-10-16-combined-skill-maintenance.md).                               |
 | 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | No upstream delta. Compared SKILL.md, `tests.md`, `mocking.md`, and Codex metadata in both directions: every dropped or softened rule maps to a recorded divergence or to the delegated principle, which still states the implementation-coupled and tautological checks; recorded that delegation and the slice completion criterion explicitly. No owner text changed, so consumers need no recheck. Dependencies resolve. |
 | 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                       |
+| 2026-10-25  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | No upstream delta. Restored upstream's `TDD` display name in `agents/openai.yaml`, which read `Tdd`. Rechecked SKILL.md, `tests.md`, and `mocking.md` in both directions: every recorded divergence is present and still needed, and no owner rule changed, so consumers (/implement, /implement-spec, /pstack-tdd, /pstack-architect, /pstack-principles) need no recheck.                                                  |
