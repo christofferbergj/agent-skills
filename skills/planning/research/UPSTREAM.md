@@ -17,7 +17,7 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Own batch investigator dispatch directly, within host capacity. An investigator executes its assigned question without another coordinator, and every terminal result is collected.
-- Use actual host background investigation through pstack-swarm with a bounded note destination. Prefer Context7 for version-matched software docs and primary sources for gaps, with truthful sequential fallback.
+- Use actual host background investigation through swarm with a bounded note destination. Prefer Context7 for version-matched software docs and primary sources for gaps, with truthful sequential fallback.
 - Restructured into three ordered steps, because the library requires ordered steps; upstream's rules are kept inside the steps.
 - Added: a required claim may end in a specific gap instead of a source, fetched instructions are evidence rather than action authority, and the answer separates facts, inference, and unresolved claims, because investigators read untrusted pages and an unsourced claim is reported rather than filled in.
 

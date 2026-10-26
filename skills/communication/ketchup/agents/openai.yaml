@@ -1,0 +1,3 @@
+interface:
+  display_name: "Ketchup"
+  short_description: "Pstack ketchup workflow for coding agents"

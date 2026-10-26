@@ -10,7 +10,7 @@ Answer the user's question about pstack, hand them a prompt they can send, and l
 
 A message that asks for work, such as "use pstack to fix this bug", is not a help question. Read /pstack-mode, do the work under it, and mention once that `/pstack-mode` (`$pstack-mode` in Codex) starts it directly next time.
 
-This file maps questions to the skills and guide pages that hold the answers. Those files own the details. Read the file you route to before you quote it, and trust it when it disagrees with this map. The skills are installed copies the user may not be able to open, so give the user the file's public copy: [this library's README](https://github.com/christofferbergj/agent-skills/blob/main/README.md) links every skill. The guide pages are pstack's upstream guide, `https://github.com/cursor/plugins/blob/main/pstack/docs/guide/` followed by the page. It is written for Cursor, so its skill names lack the `pstack-` prefix and its Cursor features don't apply here.
+This file maps questions to the skills and guide pages that hold the answers. Those files own the details. Read the file you route to before you quote it, and trust it when it disagrees with this map. The skills are installed copies the user may not be able to open, so give the user the file's public copy: [this library's README](https://github.com/christofferbergj/agent-skills/blob/main/README.md) links every skill. The guide pages are pstack's upstream guide, `https://github.com/cursor/plugins/blob/main/pstack/docs/guide/` followed by the page. It is written for Cursor, so its Cursor features don't apply here, and where it names `/poteto-mode`, `/poteto-help`, `/setup-pstack`, or `/tdd`, this library installs `/pstack-mode`, `/pstack-help`, `/pstack-setup`, or `/pstack-tdd`.
 
 ## Find out what they need
 
@@ -25,8 +25,8 @@ Infer the need from the message and the conversation. A named situation, such as
 Check the state that changes the answer, and mention it only when it does:
 
 - No `~/.config/pstack/config.json`, and no file at `PSTACK_CONFIG`, means `/pstack-setup` hasn't run for this user, so every role inherits the session's model.
-- No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/pstack-create-verification-skill` when the question is about proving a change works.
-- No formal verification skill in the project means no property is checked past what tests reach. Mention `/pstack-create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/pstack-maintain-formal-verification-skill` if the question touches that code.
+- No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
+- No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
 
 When the configuration is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
@@ -43,9 +43,9 @@ Installing changes nothing until a skill loads. Entrypoints, such as `/pstack-mo
 
 If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Rerun `/pstack-setup` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. Save `/pstack-mode` for work that needs rigor.
 
-pstack is built for Cursor. This library adapts it to Codex and Claude Code: type `$pstack-mode` in Codex or `/pstack-mode` in Claude Code, and the same for every other skill. Delegation, model roles, and cross-vendor review run through `/pstack-swarm` on each host's native tools, and a step that needs a Cursor-only feature, such as Bugbot or Automations, is translated or skipped with a one-line note.
+pstack is built for Cursor. This library adapts it to Codex and Claude Code: type `$pstack-mode` in Codex or `/pstack-mode` in Claude Code, and the same for every other skill. Delegation, model roles, and cross-vendor review run through `/swarm` on each host's native tools, and a step that needs a Cursor-only feature, such as Bugbot or Automations, is translated or skipped with a one-line note.
 
-Other tools can read the skills, because they use the Agent Skills format. But most workflow skills, including `/pstack-mode`, `/pstack-how`, `/pstack-why`, and `/pstack-teach`, spawn subagents through `/pstack-swarm`, which targets Codex and Claude Code, so those parts may not work there.
+Other tools can read the skills, because they use the Agent Skills format. But most workflow skills, including `/pstack-mode`, `/how`, `/why`, and `/teach`, spawn subagents through `/swarm`, which targets Codex and Claude Code, so those parts may not work there.
 
 ## Start a task with `/pstack-mode`
 
@@ -53,7 +53,7 @@ Other tools can read the skills, because they use the Agent Skills format. But m
 
 Invoking `/pstack-mode` activates it for the current conversation only. Installing it or invoking a helper directly doesn't activate it, and it doesn't carry into other chats, so start each new chat's task with `/pstack-mode`.
 
-Mid-chat, "new task" makes the mode match a fresh playbook. `/pstack-mode` briefs the subagents its playbook steps spawn through `/pstack-swarm`. To get the same brief and model roles for a subagent of your own, ask for it through `/pstack-swarm`.
+Mid-chat, "new task" makes the mode match a fresh playbook. `/pstack-mode` briefs the subagents its playbook steps spawn through `/swarm`. To get the same brief and model roles for a subagent of your own, ask for it through `/swarm`.
 
 ## Pick a skill
 
@@ -61,53 +61,53 @@ The default answer is `/pstack-mode`, which runs most of the others when its ste
 
 Rows marked _user entrypoint_ load only when the user types them. Give the user the command to type, and don't load one to do its work yourself, apart from `/pstack-mode` for a work request, as above.
 
-| The user wants to                                                                                                                                                                                    | Skill                                                            |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| Do any non-trivial task with rigor                                                                                                                                                                   | `/pstack-mode` (_user entrypoint_)                               |
-| Check that the agent understood their goal and the problem before it starts                                                                                                                          | `/pstack-in-your-own-words`                                      |
-| Get a prompt rewritten deeper, not bigger, before sending it: what a top professional would add, their raw material and methods, and an outside check. It returns the prompt and doesn't do the task | `/pstack-sharpen`                                                |
-| Know how code works now, or where new code should live                                                                                                                                               | `/pstack-how`                                                    |
-| Know why code is shaped this way, or where a number came from                                                                                                                                        | `/pstack-why`                                                    |
-| Understand a change or subsystem, explained plainly                                                                                                                                                  | `/pstack-teach`                                                  |
-| Catch up on their own recent work on a topic                                                                                                                                                         | `/pstack-recall`                                                 |
-| Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone                          | `/pstack-ketchup`                                                |
-| Catch up like `/pstack-ketchup`, in a short silent video of slides, with the waiting calls as text under it                                                                                          | `/pstack-ketchup-video`                                          |
-| Know what a small diff could break outside itself                                                                                                                                                    | `/pstack-blast-radius`                                           |
-| Settle types and module shape before code that crosses a function boundary                                                                                                                           | `/pstack-architect`                                              |
-| Get several attempts at one brief, merged into the best one                                                                                                                                          | `/pstack-arena`                                                  |
-| Run parallel checks over slices, or race workers, as subagents                                                                                                                                       | `/pstack-swarm`                                                  |
-| Have different models review a diff and try to break it                                                                                                                                              | `/pstack-interrogate`                                            |
-| Fix a bug test-first when a cheap local test exists                                                                                                                                                  | `/pstack-tdd`                                                    |
-| Apply TypeScript rules to `.ts` or `.tsx` work                                                                                                                                                       | `/pstack-typescript-best-practices`                              |
-| Strip comments before review, using a reviewer that didn't write them                                                                                                                                | `/pstack-no-comments`                                            |
-| Clean AI tells out of prose                                                                                                                                                                          | `/pstack-unslop`                                                 |
-| Write docs, an RFC, a README, a PR description, or a commit message to a standard                                                                                                                    | `/pstack-technical-writing`                                      |
-| Hear the last reply again in plain words                                                                                                                                                             | `/bro` (_user entrypoint_)                                       |
-| Give agents a scripted way to drive the app and prove behavior                                                                                                                                       | `/pstack-create-verification-skill`                              |
-| Bring a verification skill and its feature map back in line with the app                                                                                                                             | `/pstack-maintain-verification-skill` (_user entrypoint_)        |
-| Formally verify a race, invariant, or other property that tests rarely reach                                                                                                                         | `/pstack-create-formal-verification-skill` (_user entrypoint_)   |
-| Bring a formal verification back in line after the code it covers changed, and learn whether a failure is drift or a bug                                                                             | `/pstack-maintain-formal-verification-skill` (_user entrypoint_) |
-| Show a PM or designer what the user sees as a chart checked by a model, with each bug drawn as a numbered path, turn an agreed chart into a TLA+ skeleton, or audit the code against its TLA+ spec   | `/pstack-statechart`                                             |
-| Vet a performance number before reporting or acting on it                                                                                                                                            | `/pstack-benchmark-checklist`                                    |
-| Run a large or cross-cutting change, or one to review after stepping away                                                                                                                            | `/pstack-figure-it-out`                                          |
-| Keep a decision log during a run, and review it afterward                                                                                                                                            | `/pstack-show-me-your-work`                                      |
-| Pick a model for each role and a reasoning budget                                                                                                                                                    | `/pstack-setup`                                                  |
-| Turn their own working habits into a personal mode skill                                                                                                                                             | `/pstack-automate-me` (_user entrypoint_)                        |
-| Turn what a finished task taught into skill edits                                                                                                                                                    | `/pstack-reflect`                                                |
-| Stop agents from repeating the same mistakes in this repo                                                                                                                                            | `/pstack-correct`                                                |
-| Build a page whose buttons wake an existing agent webhook receiver                                                                                                                                   | `/pstack-make-bot-ui` (_user entrypoint_)                        |
-| Find their way around pstack                                                                                                                                                                         | `/pstack-help` (_user entrypoint_)                               |
+| The user wants to                                                                                                                                                                                    | Skill                                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| Do any non-trivial task with rigor                                                                                                                                                                   | `/pstack-mode` (_user entrypoint_)                        |
+| Check that the agent understood their goal and the problem before it starts                                                                                                                          | `/in-your-own-words`                                      |
+| Get a prompt rewritten deeper, not bigger, before sending it: what a top professional would add, their raw material and methods, and an outside check. It returns the prompt and doesn't do the task | `/sharpen`                                                |
+| Know how code works now, or where new code should live                                                                                                                                               | `/how`                                                    |
+| Know why code is shaped this way, or where a number came from                                                                                                                                        | `/why`                                                    |
+| Understand a change or subsystem, explained plainly                                                                                                                                                  | `/teach`                                                  |
+| Catch up on their own recent work on a topic                                                                                                                                                         | `/recall`                                                 |
+| Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone                          | `/ketchup`                                                |
+| Catch up like `/ketchup`, in a short silent video of slides, with the waiting calls as text under it                                                                                                 | `/ketchup-video`                                          |
+| Know what a small diff could break outside itself                                                                                                                                                    | `/blast-radius`                                           |
+| Settle types and module shape before code that crosses a function boundary                                                                                                                           | `/architect`                                              |
+| Get several attempts at one brief, merged into the best one                                                                                                                                          | `/arena`                                                  |
+| Run parallel checks over slices, or race workers, as subagents                                                                                                                                       | `/swarm`                                                  |
+| Have different models review a diff and try to break it                                                                                                                                              | `/interrogate`                                            |
+| Fix a bug test-first when a cheap local test exists                                                                                                                                                  | `/pstack-tdd`                                             |
+| Apply TypeScript rules to `.ts` or `.tsx` work                                                                                                                                                       | `/typescript-best-practices`                              |
+| Strip comments before review, using a reviewer that didn't write them                                                                                                                                | `/no-comments`                                            |
+| Clean AI tells out of prose                                                                                                                                                                          | `/unslop`                                                 |
+| Write docs, an RFC, a README, a PR description, or a commit message to a standard                                                                                                                    | `/technical-writing`                                      |
+| Hear the last reply again in plain words                                                                                                                                                             | `/bro` (_user entrypoint_)                                |
+| Give agents a scripted way to drive the app and prove behavior                                                                                                                                       | `/create-verification-skill`                              |
+| Bring a verification skill and its feature map back in line with the app                                                                                                                             | `/maintain-verification-skill` (_user entrypoint_)        |
+| Formally verify a race, invariant, or other property that tests rarely reach                                                                                                                         | `/create-formal-verification-skill` (_user entrypoint_)   |
+| Bring a formal verification back in line after the code it covers changed, and learn whether a failure is drift or a bug                                                                             | `/maintain-formal-verification-skill` (_user entrypoint_) |
+| Show a PM or designer what the user sees as a chart checked by a model, with each bug drawn as a numbered path, turn an agreed chart into a TLA+ skeleton, or audit the code against its TLA+ spec   | `/statechart`                                             |
+| Vet a performance number before reporting or acting on it                                                                                                                                            | `/benchmark-checklist`                                    |
+| Run a large or cross-cutting change, or one to review after stepping away                                                                                                                            | `/figure-it-out`                                          |
+| Keep a decision log during a run, and review it afterward                                                                                                                                            | `/show-me-your-work`                                      |
+| Pick a model for each role and a reasoning budget                                                                                                                                                    | `/pstack-setup`                                           |
+| Turn their own working habits into a personal mode skill                                                                                                                                             | `/automate-me` (_user entrypoint_)                        |
+| Turn what a finished task taught into skill edits                                                                                                                                                    | `/reflect`                                                |
+| Stop agents from repeating the same mistakes in this repo                                                                                                                                            | `/correct`                                                |
+| Build a page whose buttons wake an existing agent webhook receiver                                                                                                                                   | `/make-bot-ui` (_user entrypoint_)                        |
+| Find their way around pstack                                                                                                                                                                         | `/pstack-help` (_user entrypoint_)                        |
 
-If an installed `pstack-` skill is missing from the table, read its frontmatter and route by its description. A skill whose frontmatter sets `disable-model-invocation: true` is a user entrypoint. The `pstack-principle-*` skills are covered under principles below.
+If an installed Pstack skill, one whose description names Pstack, is missing from the table, read its frontmatter and route by its description. A skill whose frontmatter sets `disable-model-invocation: true` is a user entrypoint. The `principle-*` skills are covered under principles below.
 
 Close calls:
 
-- `/pstack-how` explains what the code does. `/pstack-why` explains the reasons. `/pstack-teach` runs one or both and explains the result plainly.
-- `/pstack-arena` gives every worker the same brief and merges the best parts. `/pstack-swarm` splits work into slices or a race and returns one report.
-- `/pstack-architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
-- `/pstack-interrogate` reviews the diff. `/pstack-blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
-- `/pstack-recall` rebuilds context across recent chats. `/pstack-ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
-- `/pstack-figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
+- `/how` explains what the code does. `/why` explains the reasons. `/teach` runs one or both and explains the result plainly.
+- `/arena` gives every worker the same brief and merges the best parts. `/swarm` splits work into slices or a race and returns one report.
+- `/architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
+- `/interrogate` reviews the diff. `/blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
+- `/recall` rebuilds context across recent chats. `/ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
+- `/figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
 
 Not in pstack:
 
@@ -127,9 +127,9 @@ Playbooks are step lists inside `/pstack-mode`, not skills, so they have no slas
 
 Without `/pstack-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. `/pstack-mode` lists every playbook and when it applies. Guide page 6, `06-verify-and-ship.md`, covers opening, babysitting, and landing a PR.
 
-pstack has no planning skill. The host's plan mode works alongside it. For work that spans phases or stacked PRs, asking `/pstack-mode` for a plan runs its Multi-phase plan playbook, which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `/pstack-architect` settles it in code first.
+pstack has no planning skill. The host's plan mode works alongside it. For work that spans phases or stacked PRs, asking `/pstack-mode` for a plan runs its Multi-phase plan playbook, which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `/architect` settles it in code first.
 
-Principles are one-rule skills that `/pstack-mode` reads through `/pstack-principles` and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Typing `/pstack-principle-<name>` still loads one on demand. Guide page 8, `08-principles.md`, lists them.
+Principles are one-rule skills that `/pstack-mode` reads through `/principles` and cites in its replies. The user rarely invokes one. They steer with the names instead, as in "apply prove it works. show me the real output." Typing `/principle-<name>` still loads one on demand. Guide page 8, `08-principles.md`, lists them.
 
 ## Fix a run that went wrong
 
@@ -140,7 +140,7 @@ Principles are one-rule skills that `/pstack-mode` reads through `/pstack-princi
 | A new model choice had no effect                         | Check that `/pstack-setup`'s file reads back with the choice in the current host's section. A model the host rejects falls back to its default, with a note.                                                      |
 | Runs cost more than expected                             | See the cost paragraph under Get set up.                                                                                                                                                                          |
 | A skill didn't load on its own                           | Entrypoints load only when the user types them. Helpers load when a Pstack task matches their description, principles when any task does, and both when `/pstack-mode` runs them, and it doesn't run every skill. |
-| Parallel agents overwrote each other                     | Give each agent its own worktree. `/pstack-swarm` does this for every writer.                                                                                                                                     |
+| Parallel agents overwrote each other                     | Give each agent its own worktree. `/swarm` does this for every writer.                                                                                                                                            |
 | An overnight run moved but finished nothing              | A loop needs a check that can pass or fail, not a duration. See guide page 7, `07-overnight.md`.                                                                                                                  |
 | The reply claims success from a green build              | Ask for the real command, flow, stored value, or profile. That's the prove-it-works principle.                                                                                                                    |
 
@@ -148,8 +148,8 @@ For a run that drifts, [`references/prompting.md`](references/prompting.md) has 
 
 ## Make pstack my own
 
-- `/pstack-automate-me` drafts a personal mode skill from the user's own history, to use alongside `/pstack-mode`.
-- `/pstack-reflect` after a session turns its lessons into skill edits the user approves.
+- `/automate-me` drafts a personal mode skill from the user's own history, to use alongside `/pstack-mode`.
+- `/reflect` after a session turns its lessons into skill edits the user approves.
 - `/pstack-mode write a skill for <workflow>` runs the authoring playbook. The eval playbook tests a skill change blind.
 - Fix a misbehaving skill in its own PR, not inside the feature work where it went wrong.
 - `/maintain-skills`, run from this library's source repository, updates the whole library from upstream and audits it. Read the saved maintenance automation for its current cadence and model.

@@ -16,8 +16,8 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Make pstack my own adds a /maintain-skills bullet that reads cadence and model from the saved maintenance automation. This library updates its own adaptation from upstream, where Cursor users update the plugin, so help needs a route to that upkeep.
-- The routing table marks every user-invoked entrypoint as one the user types, and the agent does not load it to do its work, apart from /pstack-mode for a work request as upstream says. Owner decision 2026-10-21: /pstack-maintain-verification-skill and /pstack-make-bot-ui became user-invoked, and help offers every such entrypoint as a command for the user.
-- Skills are named with `/pstack-` invocations instead of relative links, and guide pages are named under upstream's public guide URL. Installed skills sit in a flat directory while the repository groups them by category, and the library doesn't ship upstream's `docs/guide`, which is written for Cursor.
+- The routing table marks every user-invoked entrypoint as one the user types, and the agent does not load it to do its work, apart from /pstack-mode for a work request as upstream says. Owner decision 2026-10-21: /maintain-verification-skill and /make-bot-ui became user-invoked, and help offers every such entrypoint as a command for the user.
+- Skills are named with `/skill-name` invocations instead of relative links, and guide pages are named under upstream's public guide URL. Installed skills sit in a flat directory while the repository groups them by category, and the library doesn't ship upstream's `docs/guide`, which is written for Cursor.
 
 ## Maintenance
 

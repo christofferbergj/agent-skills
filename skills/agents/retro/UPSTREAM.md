@@ -16,7 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Default to the current conversation; use scoped pstack-recall for other history. Prepare evidence-backed learning changes for review rather than broad environment mutations.
+- Default to the current conversation; use scoped recall for other history. Prepare evidence-backed learning changes for review rather than broad environment mutations.
 
 ## Maintenance
 

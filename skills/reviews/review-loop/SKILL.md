@@ -7,7 +7,7 @@ description: "Use for a cross-model second opinion on a diff, branch, PR, or pla
 
 Review a change with both models, verify what they report, fix it, and re-review until nothing actionable remains. The **counterpart** is the other vendor's model: Codex when Claude runs this skill, Claude Opus when Codex does. It catches the blind spots of the model that wrote the change. This skill coordinates: it verifies, merges, reports, and fixes, and adds no findings of its own.
 
-/code-review owns the Standards and Spec rubric, /thermo-nuclear-review the correctness and security audit, /pstack-swarm dispatch and the counterpart route, and /pstack-principles selects the principles reviewers apply. Read [the reviewer brief](references/reviewer-brief.md) before dispatching a round.
+/code-review owns the Standards and Spec rubric, /thermo-nuclear-review the correctness and security audit, /swarm dispatch and the counterpart route, and /principles selects the principles reviewers apply. Read [the reviewer brief](references/reviewer-brief.md) before dispatching a round.
 
 ## Authority
 
@@ -15,7 +15,7 @@ Inside an implementation workflow, such as /implement, /implement-spec, or a Pst
 
 ## 1. Pin the target
 
-Resolve one target: a PR, branch, commit range, or file set the user names; a plan or spec; the current branch against its stack parent or its merge-base with the default branch; or the working changes. Read the intent from the spec and tickets, the PR description, or the accepted request. List the repository's standards documents, and invoke /pstack-principles in review mode for the applicable owners.
+Resolve one target: a PR, branch, commit range, or file set the user names; a plan or spec; the current branch against its stack parent or its merge-base with the default branch; or the working changes. Read the intent from the spec and tickets, the PR description, or the accepted request. List the repository's standards documents, and invoke /principles in review mode for the applicable owners.
 
 For a code target, build the packet from this skill's directory with `node scripts/packet.ts --repo <repo>`, adding `--base <ref>`, `--since <ref>`, `--head <ref>`, or `--working` as the target needs (`--help` explains each; Bun also runs it). The packet pins immutable revisions, snapshots working changes into a commit without touching the index or stash, and lists lockfiles, binaries, and generated or vendored files while leaving them out of the diff. A bad ref or an empty diff stops here.
 
@@ -25,11 +25,11 @@ For a code target, build the packet from this skill's directory with `node scrip
 
 Round 1 is a full review by both models. A plan target gets only the counterpart's review, since the same-model passes assess code.
 
-1. Dispatch the counterpart first, asynchronously and at full-review effort, through /pstack-swarm's counterpart route, with the brief filled in.
-2. When Codex is the counterpart and the diff changes code that runs, not only prose, docs, or skill text, dispatch the **Codex correctness** pass beside it: its own asynchronous task with the full review's model, effort, and speed and the brief's Codex correctness line, under its own `clientRequestId` in T3 Code, or its own prompt and output files through the CLI. It runs beside passes the round already waits for. Retry it once on its route when /pstack-swarm's execution contract allows a retry, and take no other route, since the same-model correctness critic already covers that ground; skip it when /pstack-swarm resolves the counterpart to `fallback`.
+1. Dispatch the counterpart first, asynchronously and at full-review effort, through /swarm's counterpart route, with the brief filled in.
+2. When Codex is the counterpart and the diff changes code that runs, not only prose, docs, or skill text, dispatch the **Codex correctness** pass beside it: its own asynchronous task with the full review's model, effort, and speed and the brief's Codex correctness line, under its own `clientRequestId` in T3 Code, or its own prompt and output files through the CLI. It runs beside passes the round already waits for. Retry it once on its route when /swarm's execution contract allows a retry, and take no other route, since the same-model correctness critic already covers that ground; skip it when /swarm resolves the counterpart to `fallback`.
 3. Meanwhile, run both same-model passes in parallel on the packet's revisions, passing the resolved intent and standards. Skip a pass when equivalent evidence already covers this head and scope.
    - Invoke /code-review, with its Standards and Spec axes run by same-model critics.
-   - Dispatch a same-model correctness and security critic through /pstack-swarm with /thermo-nuclear-review's rubric.
+   - Dispatch a same-model correctness and security critic through /swarm with /thermo-nuclear-review's rubric.
 
 4. Collect the counterpart's reports. Every reviewer belongs to the round, so wait for each one before reporting.
 
@@ -65,6 +65,6 @@ End by offering the next step: fixing and re-reviewing while findings remain, or
 2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the Codex correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
 3. Report only what is new or still open.
 
-Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /pstack-principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.
+Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.
 
 **Complete when:** a round is Clean, the user has fixed, deferred, or dropped every remaining finding, or the round cap is reached with the open findings reported; and every applied fix is committed when commits are authorized, and the packet directories are gone.

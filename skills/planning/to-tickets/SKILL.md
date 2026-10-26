@@ -4,7 +4,7 @@ description: Break a plan, spec, or the current conversation into a set of trace
 disable-model-invocation: true
 ---
 
-Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /pstack-swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
+Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
 
 # To Tickets
 
@@ -24,7 +24,7 @@ If you have not already explored the codebase, do so to understand the current s
 
 Look for opportunities to prefactor the code to make the implementation easier. "Make the change easy, then make the easy change."
 
-Invoke /pstack-principles for ticket planning. Carry the selected owners' design constraints, preparation, and proof requirements into the existing dependency graph without expanding the accepted feature scope.
+Invoke /principles for ticket planning. Carry the selected owners' design constraints, preparation, and proof requirements into the existing dependency graph without expanding the accepted feature scope.
 
 ### 3. Draft vertical slices
 
@@ -41,7 +41,7 @@ Break the work into **tracer bullet** tickets.
 
 Give each ticket its **blocking edges**: the other tickets that must complete before it can start. A ticket with no blockers can start immediately.
 
-**Wide refactors can need coordinated verification units instead of independent vertical slices.** Invoke /pstack-principle-migrate-callers-then-delete-legacy-apis to choose the migration strategy, caller coverage, and completion gates. Represent those gates and any compatibility requirement in the tickets and blocking edges; keep the strategy's rules with that owner.
+**Wide refactors can need coordinated verification units instead of independent vertical slices.** Invoke /principle-migrate-callers-then-delete-legacy-apis to choose the migration strategy, caller coverage, and completion gates. Represent those gates and any compatibility requirement in the tickets and blocking edges; keep the strategy's rules with that owner.
 
 ### 4. Quiz the user
 
@@ -108,4 +108,4 @@ The end-to-end behaviour this ticket makes work, from the user's perspective, no
 
 In either form, avoid specific file paths or code snippets: they go stale fast. Exception: if a prototype produced a snippet that encodes a decision more precisely than prose can (state machine, reducer, schema, type shape), inline it and note briefly that it came from a prototype. Trim to the decision-rich parts, not a working demo, just the important bits.
 
-Recheck /pstack-principles against the finished graph. Complete when every accepted slice has one canonical ticket, valid blocking edges, applicable design constraints, and observable acceptance criteria, with migration verification units and publication state reported accurately.
+Recheck /principles against the finished graph. Complete when every accepted slice has one canonical ticket, valid blocking edges, applicable design constraints, and observable acceptance criteria, with migration verification units and publication state reported accurately.

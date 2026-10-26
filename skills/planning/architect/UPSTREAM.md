@@ -1,0 +1,32 @@
+# architect: source and local adaptations
+
+## Source and credit
+
+- Original author: Lauren Tan, known as Poteto.
+- Canonical source: [cursor/plugins, Pstack](https://github.com/cursor/plugins/tree/main/pstack).
+- Original skill: [`pstack/skills/architect/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/architect/SKILL.md), including its skill-local resources.
+- Tracking policy: upstream `main`, scoped to `pstack/`.
+- Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
+- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
+- Last upstream review: 2026-10-21.
+- License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
+
+## Local adaptations to preserve
+
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Phase B compares interface depth in /codebase-design's vocabulary: that skill is the shared owner of depth and seam reasoning, and its design-it-twice guidance relies on this skill invoking it and folds its constraints into this run instead of starting a second arena.
+- Phase D writes behavior tests through /tdd at the sketch's public seams when a practical test path exists: /tdd is the shared owner of behavior-test discipline, and Phase D is where this skill writes production code against those seams.
+- Phase C adds the approved-interface gate: once the human has signed off on an interface, an incompatible change from a Phase D deviation or a Phase E scrap goes back to them before more code builds on it. [ADR 0001](../../../docs/adr/0001-maintain-an-owned-pstack-adaptation.md) requires pausing when an approved interface changes, and /pstack-mode and its playbooks rely on the gate; upstream re-runs Phase B without asking.
+- `references/rationale-template.md` says "Phase C sign-off" where upstream says "Phase D sign-off"; the checkpoint is Phase C, so upstream's text points at the wrong phase.
+
+## Maintenance
+
+Invoke `/maintain-skills` for repository-wide upkeep, including this suite's supporting files and shared consumers. Reinstalling from this repository refreshes the adaptation; it does not merge Cursor's originals.
+
+Keep the original import fixed. Advance the reviewed-through baseline only after the relevant delta is fully resolved and checks pass. Record adopted, adapted, and excluded changes and their reasons.
+
+| Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| ----------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8` in `pstack/skills/architect/`. Re-imported `SKILL.md` and its three references from upstream text at the owner's request: restored the phase todolist, the Phase A to E structure, design it twice, red-flag screening, the next-contributor-is-an-agent heuristic, interface depth, scaffold-first and /pstack-interrogate, pushback as new evidence, deviations as signal, all of Phase E, and Outputs. Translated runner selection to /pstack-swarm and the runner prompt's one-model-per-runner line to model diversity when available. Dropped the unrecorded /pstack-principles invocation (upstream names each principle where it applies) and the rationale template's canonical-records section (the /domain-modeling preamble covers it). Recorded the /codebase-design and /tdd delegations, the ADR 0001 gate, and the template phase fix. `design-red-flags.md` matches upstream. |

@@ -15,7 +15,7 @@ Run one of two modes:
 
 Only an explicitly named subset of skills narrows either mode.
 
-Use /pstack-swarm throughout. Give each worker one slice, such as a source group, a batch of skills, or a repair, with the exact local revision, the immutable candidate, the adaptation contract, its evidence requirements, and the files it may write. Workers do their slice directly without starting another coordinator. The coordinator fetches sources, owns the coverage ledger, canonical documents, and integration, and collects every worker's result; a failed or missing result stays pending. Without delegation, work sequentially and note the lost independence in the run's report.
+Use /swarm throughout. Give each worker one slice, such as a source group, a batch of skills, or a repair, with the exact local revision, the immutable candidate, the adaptation contract, its evidence requirements, and the files it may write. Workers do their slice directly without starting another coordinator. The coordinator fetches sources, owns the coverage ledger, canonical documents, and integration, and collects every worker's result; a failed or missing result stays pending. Without delegation, work sequentially and note the lost independence in the run's report.
 
 ## 1. Resume
 

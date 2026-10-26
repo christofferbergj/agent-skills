@@ -11,7 +11,7 @@
 - Reviewed through commit: `da75c37f81a8e8184fdea5b72885fa59c2fdd2ab`.
 - Fidelity checked through: `da75c37f81a8e8184fdea5b72885fa59c2fdd2ab`.
 - Last upstream review: 2026-10-25.
-- Attribution-only source: https://gist.github.com/olivercederborg/92236670065aaa661db221f22203ded5 is Oliver's handover gist. Its `reply-shape-SKILL.md` matches the tracked file at the imported commit, apart from a catch-up rule that /pstack-ketchup's own rules cover.
+- Attribution-only source: https://gist.github.com/olivercederborg/92236670065aaa661db221f22203ded5 is Oliver's handover gist. Its `reply-shape-SKILL.md` matches the tracked file at the imported commit, apart from a catch-up rule that /ketchup's own rules cover.
 - Attribution-only source: https://github.com/humanlayer/skills holds Dex Horthy's `show-me`, whose smallest-view principle, pseudocode and trees with diffs of them, becomes the Views rule. /pr already carries that catalog through Matt Pocock's adaptation, so neither copy is tracked here.
 - Attribution-only source: https://github.com/ayghri/i-have-adhd is the ancestor of Oliver's `reply-shape`, imported there at `839872f9d1cd634fed642b4589ce7226199cc15f`. Its rules to lead with state, state errors matter-of-factly, cap lists, and drop preambles, recaps, and closers reach this skill through Oliver's version, which is tracked instead.
 - License: [MIT, copyright 2026 Oliver Cederborg, with Ayoub Ghriss's MIT notice for the ancestor](LICENSE). Retain both notices with derived material.
@@ -28,7 +28,7 @@ Adopted principles:
 - A decision card of about twelve lines when a reply exists to get one decision.
 - The writing limits: three sentences per paragraph, five visible list items, one picture per turn, inline code only for a name the user would type or search, each piece shown once except drafts shown again in full in the reply that posts or sends them, and the pre-send check.
 - Named references: every citation gives the item's number and a short name, an earlier turn's label is explained, a number the user never saw is replaced by the name, and a name lost to compaction is looked up.
-- A skill's own report is laid out in these sections, and a catch-up shows every waiting call outside the list limit; its screenshots, videos, and diagrams follow /pstack-ketchup's rules instead of the picture limit, and /pstack-ketchup owns the catch-up itself.
+- A skill's own report is laid out in these sections, and a catch-up shows every waiting call outside the list limit; its screenshots, videos, and diagrams follow /ketchup's rules instead of the picture limit, and /ketchup owns the catch-up itself.
 
 Departures:
 
@@ -40,7 +40,7 @@ Departures:
 - The rules load through /next-options' SessionStart hook in a second entry with its own hook budget, rather than a second script.
 - A Decide item still carries a choice that doesn't shape code or the plan, with its options folded, and the decision card stays for one that does. Upstream now turns every Decide item into a one-line pointer to its own queued card, to settle a conflict with the card in its `shared/format.md`, which this library doesn't have; here that would spend a turn on each small choice.
 - Named references keep the full rule, with earlier labels explained and lost names looked up. Upstream cut it to one line because its `bare_references.py` hook now catches bare numbers, and this library ships no such hook.
-- The catch-up exemption from the list and picture limits stays (owner decision, 2026-10-21). Upstream removed its copy because ketchup's own skill states those rules, but without it the loaded five-item and one-picture limits would contradict /pstack-ketchup's rules in every session.
+- The catch-up exemption from the list and picture limits stays (owner decision, 2026-10-21). Upstream removed its copy because ketchup's own skill states those rules, but without it the loaded five-item and one-picture limits would contradict /ketchup's rules in every session.
 
 `agents/openai.yaml` and this record are locally maintained.
 

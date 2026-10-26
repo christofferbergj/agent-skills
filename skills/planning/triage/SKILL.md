@@ -4,7 +4,7 @@ description: Move issues and external PRs through a state machine of triage role
 disable-model-invocation: true
 ---
 
-Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /pstack-swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
+Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
 
 # Triage
 

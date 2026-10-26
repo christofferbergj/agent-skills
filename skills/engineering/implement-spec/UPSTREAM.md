@@ -16,7 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Invoke /pstack-principles before implementation and final verification; explicitly pass selected owner instructions and decisions to workers. Honor migration-owner phase and integration-unit gates without treating transitional progress as full acceptance.
+- Invoke /principles before implementation and final verification; explicitly pass selected owner instructions and decisions to workers. Honor migration-owner phase and integration-unit gates without treating transitional progress as full acceptance.
 - Use one integration coordinator and existing ticket graph, owned isolated writers, serial accepted merges, and proposed domain edits from workers. Preserve unknown work and real tracker completion boundaries.
 - Without a configured tracker, local artifacts carry the graph while the user runs /setup-matt-pocock-skills, so setup does not block implementation; nothing is published externally until authorized.
 

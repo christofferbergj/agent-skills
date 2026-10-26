@@ -1,0 +1,3 @@
+interface:
+  display_name: "Principle test behavior not implementation"
+  short_description: "Apply when you write, change, or keep a test"

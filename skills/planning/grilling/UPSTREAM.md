@@ -16,9 +16,9 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Invoke /pstack-principles during design interviews so recommendations use the shared design and coding owners while preserving the design frontier and user confirmation.
+- Invoke /principles during design interviews so recommendations use the shared design and coding owners while preserving the design frontier and user confirmation.
 
-Local maintenance on 2026-10-20: Route environment-fact investigations through /pstack-swarm, investigating directly when it or delegation is unavailable. This local repair leaves the upstream reviewed-through position unchanged.
+Local maintenance on 2026-10-20: Route environment-fact investigations through /swarm, investigating directly when it or delegation is unavailable. This local repair leaves the upstream reviewed-through position unchanged.
 
 ## Maintenance
 

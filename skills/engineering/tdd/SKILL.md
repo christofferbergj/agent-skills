@@ -9,11 +9,11 @@ TDD is the red → green loop. This skill is the reference that makes that loop 
 
 Resolve and read the configured vocabulary and relevant ADRs through /domain-modeling so test names and interfaces match the project's domain language.
 
-Invoke /pstack-principles for the testing and implementation work in this slice before changing code. Recheck when a new design constraint or failure changes the applicable owners; continue the same red/green loop.
+Invoke /principles for the testing and implementation work in this slice before changing code. Recheck when a new design constraint or failure changes the applicable owners; continue the same red/green loop.
 
 ## What a good test is
 
-Invoke /pstack-principle-test-behavior-not-implementation for the authoritative test-quality criteria. This owner supplies the red/green mechanics and seam selection.
+Invoke /principle-test-behavior-not-implementation for the authoritative test-quality criteria. This owner supplies the red/green mechanics and seam selection.
 
 See [tests.md](tests.md) for examples and [mocking.md](mocking.md) for mocking guidelines.
 

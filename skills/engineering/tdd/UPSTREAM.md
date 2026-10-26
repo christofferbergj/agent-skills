@@ -16,9 +16,9 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Select coding and testing principles through /pstack-principles and keep test-quality criteria with /pstack-principle-test-behavior-not-implementation. Preserve contract-observable external effects and separate verified prefactoring from the red/green cycle.
+- Select coding and testing principles through /principles and keep test-quality criteria with /principle-test-behavior-not-implementation. Preserve contract-observable external effects and separate verified prefactoring from the red/green cycle.
 - Reuse already-approved public seams and acceptance criteria, avoid repeated approval gates, and disclose unavailable regression paths. Pstack adds evidence without starting a second test loop.
-- Upstream's "What a good test is" paragraph and its implementation-coupled and tautological anti-patterns are delegated to /pstack-principle-test-behavior-not-implementation, which holds both imagined-edit checks and the independent-expected-value rule.
+- Upstream's "What a good test is" paragraph and its implementation-coupled and tautological anti-patterns are delegated to /principle-test-behavior-not-implementation, which holds both imagined-edit checks and the independent-expected-value rule.
 
 ## Maintenance
 

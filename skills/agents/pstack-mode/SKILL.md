@@ -6,38 +6,38 @@ disable-model-invocation: true
 
 # Pstack mode
 
-This mode runs for the current conversation once the user invokes /pstack-mode. Invoking a Pstack helper directly does not activate it. Pstack skills install under `pstack-` names. Resolve each skill's installed path through the host's skill index, and put the resolved paths of this file and of every skill a delegate needs in its brief.
+This mode runs for the current conversation once the user invokes /pstack-mode. Invoking a Pstack helper directly does not activate it. Pstack skills install under their upstream names, apart from the renames `suite.json` records. Resolve each skill's installed path through the host's skill index, and put the resolved paths of this file and of every skill a delegate needs in its brief.
 
 When the task reads or changes project vocabulary, domain docs, or ADRs, resolve them through /domain-modeling first. Reuse the effort's accepted spec and ticket graph rather than starting another.
 
 ## Non-negotiables
 
-Invoke /pstack-principles in each phase and before completion. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
+Invoke /principles in each phase and before completion. In your reply, name each principle that shaped a decision and the specific choice it changed. Cite only principles whose leaf SKILL.md you read this session.
 
 Remaining triggers:
 
-- Nontrivial change, architecture decision, or "are we sure?" → /pstack-how.
+- Nontrivial change, architecture decision, or "are we sure?" → /how.
 - About to ask the user a "which approach", "how should I", or "what should this do" fork → classify it before you ask. If the answer is a fact you could observe by running something (behavior, timing, layout, output, perf, even whether an eval separates), it is not the human's to answer. Sketch it via the Prototype playbook (`playbooks/prototype.md`) and let the result decide. If the task is a read-only Investigation whose deliverable is a cited answer, stay in it and answer from the evidence rather than building a sketch. Reserve the question for a genuine product or preference call no experiment can settle. Under a full-autonomy grant, decide a call the grant covers, act on it, and report it, with no reply word and no offer. Under the grant, for a call only the operator can make, apply a default, report it with a full explanation, and say in plain words what the operator could tell you to do instead. The operator answers in their own words. Never give a shorthand token to type back. Gates the operator named and the Always-pause list in Autonomy still need the operator.
-- Any code → name the data shape first, and choose its organizing structure per /pstack-principle-model-the-domain.
-- Code crossing a function boundary → /pstack-architect, parallel design exploration before implementing.
-- Parallel fan-out → /pstack-swarm for coverage matrices, races, gauntlets, and exploration partitions. Use /pstack-arena for design or code bakeoffs with base selection and grafting.
-- Contested design → /pstack-interrogate (multi-model adversarial) before shipping.
+- Any code → name the data shape first, and choose its organizing structure per /principle-model-the-domain.
+- Code crossing a function boundary → /architect, parallel design exploration before implementing.
+- Parallel fan-out → /swarm for coverage matrices, races, gauntlets, and exploration partitions. Use /arena for design or code bakeoffs with base selection and grafting.
+- Contested design → /interrogate (multi-model adversarial) before shipping.
 - Nontrivial multi-step → write the throughput checkpoint (Feature step 3).
-- Any prose surface, your reply to the user included → /pstack-unslop. Write the reply per **Writing the reply**. Agent-facing prose also follows /writing-for-agents.
-- Docs, RFCs, readmes, PR descriptions, or commit messages → /pstack-technical-writing. A PR description takes its shape from /pr.
+- Any prose surface, your reply to the user included → /unslop. Write the reply per **Writing the reply**. Agent-facing prose also follows /writing-for-agents.
+- Docs, RFCs, readmes, PR descriptions, or commit messages → /technical-writing. A PR description takes its shape from /pr.
 - Before commit → a deslop pass over the diff with the repository's or host's cleanup tool, when one exists.
-- Before review → /pstack-no-comments.
-- Shipping UI / IDE / CLI → the matching control surface: the project's verification skill (/pstack-create-verification-skill creates one), or the host's browser and terminal control tools. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
-- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → /pstack-benchmark-checklist before you report or act on the number.
+- Before review → /no-comments.
+- Shipping UI / IDE / CLI → the matching control surface: the project's verification skill (/create-verification-skill creates one), or the host's browser and terminal control tools. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
+- Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → /benchmark-checklist before you report or act on the number.
 - Any PR-status request ("babysit this", "get it green", "address the bugbot comments", and most often "check on PR X" or "anything outstanding on X") → the **Babysit** playbook (`playbooks/babysit.md`), not a host's built-in babysit skill, whose description can match the same words. Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
 - Asked to land or ship a green stack → the **Shipping** playbook (`playbooks/shipping.md`). Green is not safe. Nothing gets armed before an independent per-PR verdict, and only the contiguous verified run from the root lands.
 - Bugbot or the agentic security review commented → skeptical posture. They catch real bugs and also file non-issues and nitpicks, so assess each on its merits and dismiss noise with a concrete reason instead of churning code. Triage fix / dismiss / ask per `references/bugbot-triage.md`.
 - Broken skill mid-task → fix it in its own PR. Don't block. Don't silently work around it.
-- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "/loop until X") → a decision trail via /pstack-show-me-your-work. Commit it when stakes need an auditable record. Keep it local otherwise.
+- Long, autonomous, or multi-phase work, or any task the user steps away from to review later ("going to bed", "trust it when i'm back", "/loop until X") → a decision trail via /show-me-your-work. Commit it when stakes need an auditable record. Keep it local otherwise.
 
 ## Principles
 
-/pstack-principles selects the principles for each phase from the installed `/pstack-principle-*` skills. Read the leaf skill in full for any principle you apply.
+/principles selects the principles for each phase from the installed `/principle-*` skills. Read the leaf skill in full for any principle you apply.
 
 ## Autonomy
 
@@ -51,11 +51,11 @@ Remaining triggers:
 
 ## Subagents
 
-**Spawn every subagent inside a playbook step through /pstack-swarm** (code-writing delegates, ad-hoc helpers). Its execution contract owns the host's native tools, briefs, isolation, and model settings. The chat that receives /pstack-mode runs the playbook. Never spawn a subagent to run the playbook itself. Routed workflow skills (/pstack-how, /pstack-why, /pstack-interrogate, /pstack-reflect, /pstack-swarm) choose their own reviewers for diverse-model review. Respect what the skill prescribes.
+**Spawn every subagent inside a playbook step through /swarm** (code-writing delegates, ad-hoc helpers). Its execution contract owns the host's native tools, briefs, isolation, and model settings. The chat that receives /pstack-mode runs the playbook. Never spawn a subagent to run the playbook itself. Routed workflow skills (/how, /why, /interrogate, /reflect, /swarm) choose their own reviewers for diverse-model review. Respect what the skill prescribes.
 
-**Defaults for every spawn.** Run it in the background where the host supports that, with the tools the job needs (a read-only mode that strips MCP tools fails a job that needs them), file pointers not inlined context, and the model /pstack-setup configured for the role. Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model, whether the task needs judgment on vague intent or is a precisely specified sequence of steps to execute to the letter. Trivial mechanical edits go to your fast code model. Configured roles override these defaults and the model choices in the routed skills (/pstack-how, /pstack-why, /pstack-arena, /pstack-swarm, /pstack-architect, /pstack-interrogate, /pstack-reflect). A role with no configured choice inherits, and a role set to `inherit-parent` or `auto` runs on the parent chat model. Each code playbook's model comes from its role (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`.
+**Defaults for every spawn.** Run it in the background where the host supports that, with the tools the job needs (a read-only mode that strips MCP tools fails a job that needs them), file pointers not inlined context, and the model /pstack-setup configured for the role. Code delegates tier by difficulty. The hardest changes (cross-cutting design, gnarly concurrency, subtle algorithms) go to your strongest judgment model, whether the task needs judgment on vague intent or is a precisely specified sequence of steps to execute to the letter. Trivial mechanical edits go to your fast code model. Configured roles override these defaults and the model choices in the routed skills (/how, /why, /arena, /swarm, /architect, /interrogate, /reflect). A role with no configured choice inherits, and a role set to `inherit-parent` or `auto` runs on the parent chat model. Each code playbook's model comes from its role (`feature, refactoring`, `bug-fix`, `perf-issue`, or `hillclimb`), and the hardest changes read `hardest tasks`. Prose and judgment read `judgment and prose`.
 
-**Match the model to the job.** Before each spawn, start from the role's configured choice and pick the reasoning level and speed the job needs, through the options the host supports. The /pstack-setup budget sets each role's starting level. Raise it one step, up to max, for the hardest or subtlest work. Lower it one step for judgment and two or more steps for routine work. A cross-vendor critic or Computer Use check keeps the model, effort, and speed that /pstack-swarm's target resolves. For other spawns, use fast mode only when the job is urgent, meaning CI or trunk is red or a person is blocked on the result right now. Otherwise use standard speed. Verification is the exception and stays on the `swarm workers` role's model and speed. Change only the effort level and speed, and keep the family the role names, so a diverse panel stays diverse. A role on `auto` or `inherit-parent` stays on the parent model. If the host rejects the adjusted setting, do not try another adjusted setting. Use the role's configured choice and say so.
+**Match the model to the job.** Before each spawn, start from the role's configured choice and pick the reasoning level and speed the job needs, through the options the host supports. The /pstack-setup budget sets each role's starting level. Raise it one step, up to max, for the hardest or subtlest work. Lower it one step for judgment and two or more steps for routine work. A cross-vendor critic or Computer Use check keeps the model, effort, and speed that /swarm's target resolves. For other spawns, use fast mode only when the job is urgent, meaning CI or trunk is red or a person is blocked on the result right now. Otherwise use standard speed. Verification is the exception and stays on the `swarm workers` role's model and speed. Change only the effort level and speed, and keep the family the role names, so a diverse panel stays diverse. A role on `auto` or `inherit-parent` stays on the parent model. If the host rejects the adjusted setting, do not try another adjusted setting. Use the role's configured choice and say so.
 
 You own every subagent's work. Review the diff and write your own summary, don't pass through what it said. A second opinion is the same prompt against a different model. Agreement is high-signal.
 
@@ -83,7 +83,7 @@ Comments follow the same rule as the reply. Write them clean as you go. Keep a c
 
 Open a todolist whose first items are the matched playbook's steps, copied in verbatim, before any task-specific todos. A step you choose not to do stays in the list with a one-line `skip: <reason>`. Match the task to a playbook below and open its full steps at `playbooks/<title>.md`, with the title in kebab case, hyphens kept and other punctuation dropped, unless the entry gives its file. Copy its steps in verbatim.
 
-A large or cross-cutting effort (a migration across many call sites, an ambitious multi-part change), or work the user steps away from to trust later, routes to /pstack-figure-it-out even when a narrower playbook like Feature fits. Use /pstack-figure-it-out whenever no bundled playbook fits. It designs a bespoke, rigorous playbook for the task. A standing project-scale program (multi-day, many stacked PRs, a fleet of subagents under one coordinator) routes to **Orchestrate** instead. figure-it-out designs one bespoke run, orchestrate runs the program.
+A large or cross-cutting effort (a migration across many call sites, an ambitious multi-part change), or work the user steps away from to trust later, routes to /figure-it-out even when a narrower playbook like Feature fits. Use /figure-it-out whenever no bundled playbook fits. It designs a bespoke, rigorous playbook for the task. A standing project-scale program (multi-day, many stacked PRs, a fleet of subagents under one coordinator) routes to **Orchestrate** instead. figure-it-out designs one bespoke run, orchestrate runs the program.
 
 - **Investigation.** Read-only question: how does X work, why was Y built this way, are we sure about Z, should we do X or Y.
 - **Bug fix.** A reported defect to reproduce, root-cause, and fix with runtime evidence.

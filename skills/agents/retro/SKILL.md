@@ -4,7 +4,7 @@ description: "Conduct a retrospective on a coding session."
 disable-model-invocation: true
 ---
 
-Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /pstack-swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
+Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
 
 The user has asked for a **retrospective**. You are suggesting improvements to the coding agent's **environment** to improve future runs.
 
@@ -12,7 +12,7 @@ The user has asked for a **retrospective**. You are suggesting improvements to t
 
 1. invoke /writing-for-agents for the writing style guide.
 
-2. Read the primary sources for the session the user specifies. Default to the current conversation. Invoke /pstack-recall for requested history from other sessions, preserving its explicit repository and time scope.
+2. Read the primary sources for the session the user specifies. Default to the current conversation. Invoke /recall for requested history from other sessions, preserving its explicit repository and time scope.
 
 3. Look for candidates for improvement in these categories.
 

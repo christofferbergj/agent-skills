@@ -1,4 +1,0 @@
-interface:
-  display_name: "Pstack principles"
-  short_description: "Apply shared principles inside the current workflow"
-  default_prompt: "Use $pstack-principles to handle this request."

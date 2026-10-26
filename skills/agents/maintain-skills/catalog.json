@@ -88,7 +88,8 @@
           "upstream": "skills/engineering/prototype",
           "local": "design-prototype",
           "directory": "skills/planning/design-prototype",
-          "stage": "engineering"
+          "stage": "engineering",
+          "renamed": "Collides with Emil Kowalski's separate prototype skill."
         },
         {
           "upstream": "skills/engineering/research",
@@ -166,7 +167,8 @@
           "upstream": "skills/misc/git-guardrails-claude-code",
           "local": "git-guardrails",
           "directory": "skills/agents/git-guardrails",
-          "stage": "misc"
+          "stage": "misc",
+          "renamed": "Names one host; the local skill covers both Codex and Claude Code."
         },
         {
           "upstream": "skills/misc/setup-pre-commit",
@@ -265,8 +267,8 @@
     "pullRequestDescription": "pr",
     "replyLayout": "reply-shape",
     "replyEndings": "next-options",
-    "delegation": "pstack-swarm",
-    "principleSelection": "pstack-principles",
+    "delegation": "swarm",
+    "principleSelection": "principles",
     "upstreamMaintenance": "maintain-skills"
   },
   "contextPaths": [

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Principles"
+  short_description: "Apply shared principles inside the current workflow"
+  default_prompt: "Use $principles to handle this request."

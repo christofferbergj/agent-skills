@@ -10,7 +10,7 @@ The user skims replies and answers a choice with a letter. Follow these rules on
 
 ## Pick the ending
 
-Keep working through reversible steps inside the agreed scope, as /pstack-principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit. When the turn ends, pick its ending by who moves next.
+Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit. When the turn ends, pick its ending by who moves next.
 
 **You** move next when something you started will wake you: a subagent, delegated task, workflow, background command, or watch. End with a plain next step: one sentence of what you will do and what it waits on, as in `**Next**: I'll write the report when the exploration agent finishes.` Add `Nothing needed from you.` unless the reply already says so. When nothing will wake you, keep working in this turn.
 
