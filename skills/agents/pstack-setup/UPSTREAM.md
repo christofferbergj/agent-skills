@@ -17,9 +17,9 @@
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Writes personal JSON at `~/.config/pstack/config.json`, or `PSTACK_CONFIG`, with one section per host, instead of Cursor's always-applied `pstack-models.mdc` rule. Repository overrides apply only when explicitly configured. Both hosts read the file; neither has always-applied rules.
 - Effort is a separate option checked against the host's supported values, not a slug suffix, so the four budget labels and the slug-ladder fallback become a task budget mapped through those options.
-- Panel role lists and the arena cross-judge pool are not configured here. /pstack-arena and its callers choose runners and a different-vendor judge through /pstack-swarm.
+- Panel role lists and the arena cross-judge pool are not configured here. /arena and its callers choose runners and a different-vendor judge through /swarm.
 - Adds an optional review timeout and keeps credentials in the providers' stores.
-- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex usage thresholds. /pstack-swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route.
+- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex usage thresholds. /swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route.
 
 ## Maintenance
 

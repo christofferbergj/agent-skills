@@ -4,15 +4,15 @@ Explain work clearly, write technical documents, and edit prose.
 
 [All categories](../README.md) · [Install](../../README.md#install)
 
-| Skill                                                         | Use it to                                        |
-| ------------------------------------------------------------- | ------------------------------------------------ |
-| [bro](bro/SKILL.md)                                           | Restate the previous message in plain language.  |
-| [next-options](next-options/SKILL.md)                         | End replies with the next step or choices.       |
-| [pr](pr/SKILL.md)                                             | Write a concise, evidence-based PR description.  |
-| [pstack-in-your-own-words](pstack-in-your-own-words/SKILL.md) | Restate the goal and underlying problem.         |
-| [pstack-ketchup](pstack-ketchup/SKILL.md)                     | Summarize progress since the last user message.  |
-| [pstack-ketchup-video](pstack-ketchup-video/SKILL.md)         | Catch up with a short silent video of slides.    |
-| [pstack-teach](pstack-teach/SKILL.md)                         | Explain how code works and why it has its shape. |
-| [pstack-technical-writing](pstack-technical-writing/SKILL.md) | Write technical documents for a clear purpose.   |
-| [pstack-unslop](pstack-unslop/SKILL.md)                       | Remove formulaic AI writing.                     |
-| [reply-shape](reply-shape/SKILL.md)                           | Shape replies for skimming and action.           |
+| Skill                                           | Use it to                                        |
+| ----------------------------------------------- | ------------------------------------------------ |
+| [bro](bro/SKILL.md)                             | Restate the previous message in plain language.  |
+| [in-your-own-words](in-your-own-words/SKILL.md) | Restate the goal and underlying problem.         |
+| [ketchup](ketchup/SKILL.md)                     | Summarize progress since the last user message.  |
+| [ketchup-video](ketchup-video/SKILL.md)         | Catch up with a short silent video of slides.    |
+| [next-options](next-options/SKILL.md)           | End replies with the next step or choices.       |
+| [pr](pr/SKILL.md)                               | Write a concise, evidence-based PR description.  |
+| [reply-shape](reply-shape/SKILL.md)             | Shape replies for skimming and action.           |
+| [teach](teach/SKILL.md)                         | Explain how code works and why it has its shape. |
+| [technical-writing](technical-writing/SKILL.md) | Write technical documents for a clear purpose.   |
+| [unslop](unslop/SKILL.md)                       | Remove formulaic AI writing.                     |

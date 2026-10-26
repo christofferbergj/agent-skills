@@ -1,0 +1,3 @@
+interface:
+  display_name: "Principle separate before serializing shared state"
+  short_description: "Pstack principle separate before serializing shared state"

@@ -1,3 +1,0 @@
-interface:
-  display_name: "Pstack swarm"
-  short_description: "Coordinate isolated workers and independent review"

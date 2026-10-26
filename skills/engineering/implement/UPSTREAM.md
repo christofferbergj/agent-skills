@@ -16,7 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Apply /pstack-principles before coding and verification and in delegated briefs; preserve accepted scope, shared artifacts, and current review evidence.
+- Apply /principles before coding and verification and in delegated briefs; preserve accepted scope, shared artifacts, and current review evidence.
 - Reuse approved seams and the canonical spec, compose shared TDD and review, reconcile domain changes, and refresh affected review after fixes. Commit and draft-PR delivery follow the invoking grant.
 
 ## Maintenance

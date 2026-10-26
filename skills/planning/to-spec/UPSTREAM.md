@@ -16,7 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Invoke /pstack-principles for synthesis and completion; carry accepted design and proof constraints into the spec and retain unresolved conflicts as blockers without an extra interview.
+- Invoke /principles for synthesis and completion; carry accepted design and proof constraints into the spec and retain unresolved conflicts as blockers without an extra interview.
 - Softened: upstream applies `ready-for-agent` unconditionally; here it applies only when no design or acceptance blocker remains, because a principle conflict leaves the spec unready.
 - Publication runs within the existing action grant, and the closing criterion accepts a locally saved spec when publication is outside it (the Authority adaptation).
 

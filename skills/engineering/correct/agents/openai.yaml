@@ -1,0 +1,3 @@
+interface:
+  display_name: "Correct"
+  short_description: "Pstack correct workflow for coding agents"

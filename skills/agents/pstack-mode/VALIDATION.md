@@ -20,9 +20,9 @@ Run the script checks from the source repository:
 ```bash
 pstack_runtime="$(bun skills/agents/pstack-mode/scripts/bootstrap.ts --print-runtime)"
 (cd "$pstack_runtime" && bun test && bun run typecheck)
-python3 -m unittest discover -s skills/agents/pstack-recall/scripts/tests -v
+python3 -m unittest discover -s skills/agents/recall/scripts/tests -v
 python3 -m unittest discover -s skills/agents/pstack-mode/scripts/tests -v
-python3 -m unittest discover -s skills/agents/pstack-swarm/scripts/tests -v
+python3 -m unittest discover -s skills/agents/swarm/scripts/tests -v
 python3 skills/agents/pstack-mode/scripts/suite.py validate --root .
 ```
 

@@ -10,7 +10,7 @@ Two-axis review of the diff between `HEAD` and a fixed point the user supplies:
 
 Both axes run as **parallel sub-agents** so they don't pollute each other's context, then this skill aggregates their findings.
 
-Read configured tracker and project artifacts when the spec requires them; a local spec or the accepted task brief does not require tracker setup. If the spec requires a tracker that was not provided, tell the user to run `/setup-matt-pocock-skills`. Invoke /pstack-swarm for host-native independent review and disclosed fallback.
+Read configured tracker and project artifacts when the spec requires them; a local spec or the accepted task brief does not require tracker setup. If the spec requires a tracker that was not provided, tell the user to run `/setup-matt-pocock-skills`. Invoke /swarm for host-native independent review and disclosed fallback.
 
 ## Process
 
@@ -22,7 +22,7 @@ Resolve the base and reviewed head to immutable SHAs. For a committed branch use
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
-Invoke /pstack-principles in review mode against this exact artifact. Carry selected owners into the Standards rubric and their accepted design decisions into the Spec brief. Review applicability and concrete evidence; loading a principle is not a pass, and the review does not authorize edits.
+Invoke /principles in review mode against this exact artifact. Carry selected owners into the Standards rubric and their accepted design decisions into the Spec brief. Review applicability and concrete evidence; loading a principle is not a pass, and the review does not authorize edits.
 
 ### 2. Identify the spec source
 
@@ -59,7 +59,7 @@ Each smell reads _what it is_ → _how to fix_; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
-Use /pstack-swarm to issue the two independent briefs within host capacity and collect terminal results. Include resolved rubrics and artifact paths in each brief. If the caller supplies a Pstack adversarial lens, assign it explicitly without replacing either axis; reuse a completed equivalent pass only for the same artifact and scope. Disclose native or sequential fallback.
+Use /swarm to issue the two independent briefs within host capacity and collect terminal results. Include resolved rubrics and artifact paths in each brief. If the caller supplies a Pstack adversarial lens, assign it explicitly without replacing either axis; reuse a completed equivalent pass only for the same artifact and scope. Disclose native or sequential fallback.
 
 **Standards sub-agent prompt** should include:
 

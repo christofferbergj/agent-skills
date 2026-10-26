@@ -18,7 +18,7 @@
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Notes link to /domain-modeling's record of settled project terms instead of recording them in upstream's `NOTES.md`, so the workspace keeps one glossary.
 - Creating or scheduling a workflow stays a separate action, because this skill's only output is specs.
-- The interview's /pstack-principles pass comes through /grilling, which owns it.
+- The interview's /principles pass comes through /grilling, which owns it.
 
 ## Maintenance
 

@@ -16,7 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Select applicable principles through /pstack-principles for the pinned artifact and explicitly supply their instructions to reviewers while preserving independent Standards/Spec axes and read-only review.
+- Select applicable principles through /principles for the pinned artifact and explicitly supply their instructions to reviewers while preserving independent Standards/Spec axes and read-only review.
 - Pin both axes to one immutable artifact, including relevant untracked files for working reviews. Accept a local spec or task brief, preserve distinct Pstack lenses, and refresh affected coverage after fixes.
 - Ask the user for a fixed point or spec only when scope is ambiguous or a missing spec prevents the assessment; otherwise reuse the caller's fixed point, propose the actual merge-base, and disclose "no spec available". Upstream asks whenever either is unspecified; the local form lets /review-loop and other workflows invoke the review without a pause.
 

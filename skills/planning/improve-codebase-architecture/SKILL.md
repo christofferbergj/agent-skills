@@ -4,7 +4,7 @@ description: Scan a codebase for deepening opportunities, present them as a visu
 disable-model-invocation: true
 ---
 
-Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /pstack-swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
+Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
 
 # Improve Codebase Architecture
 
@@ -38,7 +38,7 @@ Apply the **deletion test** to anything you suspect is shallow: would deleting i
 
 ### 2. Present candidates as an HTML report
 
-Before grading candidates, invoke /pstack-principles for this planning phase and apply the selected principles to each candidate and to the top recommendation.
+Before grading candidates, invoke /principles for this planning phase and apply the selected principles to each candidate and to the top recommendation.
 
 Write a self-contained HTML file to the OS temp directory so nothing lands in the repo. Resolve the temp dir from `$TMPDIR`, falling back to `/tmp` (or `%TEMP%` on Windows), and write to `<tmpdir>/architecture-review-<timestamp>.html` so each run gets a fresh file. Open it for the user (`xdg-open <path>` on Linux, `open <path>` on macOS, `start <path>` on Windows) and tell them the absolute path.
 

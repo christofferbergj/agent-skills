@@ -16,9 +16,9 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Reversed: upstream sequences every wide refactor as expand-contract. Local delegates the strategy to /pstack-principle-migrate-callers-then-delete-legacy-apis, which holds both the coordinated branch and upstream's expand-contract batches and integration branch, and the graph represents its verification units and compatibility gates. Reason: /pstack-principles owns principle selection, and internal callers alone do not justify coexistence.
+- Reversed: upstream sequences every wide refactor as expand-contract. Local delegates the strategy to /principle-migrate-callers-then-delete-legacy-apis, which holds both the coordinated branch and upstream's expand-contract batches and integration branch, and the graph represents its verification units and compatibility gates. Reason: /principles owns principle selection, and internal callers alone do not justify coexistence.
 - Approval the user already gave for the same slices and edges is retained, so a rerun does not re-ask. Keep one canonical dependency graph with observable acceptance and truthful local or published state.
-- Invoke /pstack-principles for decomposition and completion.
+- Invoke /principles for decomposition and completion.
 
 ## Maintenance
 

@@ -1,5 +1,0 @@
-interface:
-  display_name: "Pstack make bot ui"
-  short_description: "Build a local UI for an existing agent receiver"
-policy:
-  allow_implicit_invocation: false

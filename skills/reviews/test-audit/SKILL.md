@@ -23,13 +23,13 @@ Complete when the mode, in-scope tests, exclusions, and editing boundary are ide
 
 ## 2. Discover the project and baseline
 
-Read applicable root and scoped instructions, then actively delegate separable discovery through /pstack-swarm. By default, launch three read-only subagents in parallel:
+Read applicable root and scoped instructions, then actively delegate separable discovery through /swarm. By default, launch three read-only subagents in parallel:
 
 - **Test inventory:** Read manifests, runner configuration, CI definitions, and engineering docs. Map test files, shared support, discovery, routing, and commands.
 - **Production behavior:** Trace production owners, entry points, callers, and dependency contracts behind the tests.
 - **Test value:** Inspect assertions, overlapping tests, and maintenance costs. Return evidence for repair, consolidation, and deletion candidates.
 
-Give each subagent the scope, applicable instructions, and Step 3 criteria. Require file references, evidence, and unresolved questions. The parent reconciles results into one inventory and ledger and owns final decisions, edits, and validation. Use fewer subagents for narrow scopes or limited capacity. If delegation is unavailable or prohibited, follow /pstack-swarm's disclosed fallback: work sequentially and record it.
+Give each subagent the scope, applicable instructions, and Step 3 criteria. Require file references, evidence, and unresolved questions. The parent reconciles results into one inventory and ledger and owns final decisions, edits, and validation. Use fewer subagents for narrow scopes or limited capacity. If delegation is unavailable or prohibited, follow /swarm's disclosed fallback: work sequentially and record it.
 
 Identify unit, component, integration, contract, end-to-end, visual, property, architecture, and tooling tests actually present, including colocated tests and embedded examples executed by CI. Record shared fixtures and cross-package consumers. Exclude generated or vendored files only with a stated reason; inspect their generators or owning tests when relevant.
 
@@ -39,7 +39,7 @@ Complete when discovery results are reconciled and the requested scope has an in
 
 ## 3. Evaluate and record decisions
 
-Use the [candidate patterns](#candidate-patterns) to prioritize inspection. Read each test's setup, assertions, parameter rows, relevant production paths, and overlapping coverage. Investigate callers, dependency contracts, CI routing, and history as needed. Apply /pstack-principle-test-behavior-not-implementation, which owns the test-quality criteria, through these questions. For each test, determine:
+Use the [candidate patterns](#candidate-patterns) to prioritize inspection. Read each test's setup, assertions, parameter rows, relevant production paths, and overlapping coverage. Investigate callers, dependency contracts, CI routing, and history as needed. Apply /principle-test-behavior-not-implementation, which owns the test-quality criteria, through these questions. For each test, determine:
 
 1. **Contract:** What observable behavior, invariant, or independent requirement does it protect?
 2. **Regression:** What credible incorrect implementation would make it fail, and do its assertions detect that failure?
@@ -93,7 +93,7 @@ Keep files stable during validation. Finish or stop the relevant run before edit
 
 1. Run the smallest affected suite, then relevant sibling and cross-package consumers and repository-required gates. Use commands discovered from the project.
 2. Confirm moved tests are discovered and executed, and meaningful parameter cases remain represented. Where a removed source scan or plan assertion guarded a script or command, exercise its owning executable or dry run.
-3. Delegate the preservation comparison through /pstack-swarm to a subagent that did not propose the affected changes, using Step 2's fallback when needed. Compare the original contracts and cases against surviving assertions. Check unique inputs, errors, boundary cases, security, accessibility, ordering, interactions, integration paths, and CI environments where applicable. Restore missing contracts at their appropriate owner.
+3. Delegate the preservation comparison through /swarm to a subagent that did not propose the affected changes, using Step 2's fallback when needed. Compare the original contracts and cases against surviving assertions. Check unique inputs, errors, boundary cases, security, accessibility, ordering, interactions, integration paths, and CI environments where applicable. Restore missing contracts at their appropriate owner.
 4. Validate repairs against their recorded defects. For high-risk or ambiguous assertions, use a focused negative control or small temporary mutation to show that the retained test catches the intended failure. Work in isolation and restore only the changes made for that check, preserving user edits. Do not require exhaustive mutation testing for routine cleanup.
 5. Run applicable formatting/static checks and inspect the final diff for accidental scope expansion, dead support, weakened assertions, and configuration changes. Before completing removal batches, run the project's existing unused-file, export, and dependency checks where available. Inspect findings against shared consumers and published contracts; report unavailable checks and propose production or public API removals separately.
 

@@ -1,6 +1,6 @@
 # Good and Bad Tests
 
-These examples illustrate /pstack-principle-test-behavior-not-implementation, which owns the criteria. Judge the contract before copying an example.
+These examples illustrate /principle-test-behavior-not-implementation, which owns the criteria. Judge the contract before copying an example.
 
 ## Good Tests
 

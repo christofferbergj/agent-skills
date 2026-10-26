@@ -242,6 +242,16 @@ class RepositoryCoverage(unittest.TestCase):
         result = self.checkpoint(completed=['alpha', 'beta', 'local-only'], reviews=self.reviews(), candidates={GROUP: self.baseline, OTHER_GROUP: self.baseline})
         self.assertTrue(result['coverageComplete'])
 
+    def test_a_mapped_skill_keeps_its_upstream_name_unless_a_rename_is_recorded(self):
+        directory = self.add_skill('example-alpha', source=True)
+        (directory / 'UPSTREAM.md').write_text(self.provenance('alpha'))
+        self.definition['skills'] = [{'upstream': 'skills/engineering/alpha', 'local': 'example-alpha', 'directory': 'skills/engineering/example-alpha'}]
+        self.assertIn('example-alpha: renamed from alpha without a recorded reason', catalog.validate(self.root, self.registry)['problems'])
+        self.definition['skills'][0]['renamed'] = 'Collides with another installed alpha'
+        self.assertTrue(catalog.validate(self.root, self.registry)['valid'])
+        self.definition['skills'] = [{'upstream': 'skills/engineering/alpha', 'local': 'alpha', 'directory': 'skills/engineering/alpha', 'renamed': 'Stale reason'}]
+        self.assertIn('alpha: records a rename reason but keeps the upstream name', catalog.validate(self.root, self.registry)['problems'])
+
     def test_unmapped_metadata_and_packaging_are_validated(self):
         directory = self.add_skill('local-only')
         for invalid in ['null', 'false', '23', '[list]', '{map: value}']:

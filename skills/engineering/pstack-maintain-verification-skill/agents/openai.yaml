@@ -1,5 +1,0 @@
-interface:
-  display_name: "Pstack maintain verification skill"
-  short_description: "Audit a verification skill against the live app"
-policy:
-  allow_implicit_invocation: false

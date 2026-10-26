@@ -1,0 +1,3 @@
+interface:
+  display_name: "Principle minimize reader load"
+  short_description: "Apply when reviewing or shaping code that's hard to trace"

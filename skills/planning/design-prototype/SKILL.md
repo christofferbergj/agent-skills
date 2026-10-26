@@ -3,7 +3,7 @@ name: design-prototype
 description: Build a throwaway prototype to answer a design question. Use when the user wants to sanity-check whether a state model or logic feels right, or explore what a UI should look like.
 ---
 
-Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /pstack-swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
+Invoke /domain-modeling to resolve and read the project's configured artifacts; persist accepted model changes through that owner only when this task authorizes edits. Use /swarm for any delegated work with the actual host schema, isolated writers, and disclosed fallback.
 
 # Prototype
 

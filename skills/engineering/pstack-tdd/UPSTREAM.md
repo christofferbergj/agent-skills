@@ -16,7 +16,7 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Its description covers only the cheap-regression bug-fix branch; explicit requests for TDD or a failing test route to /tdd, the shared behavior-test owner.
-- Delegation to /tdd: upstream's workflow steps for choosing the narrowest existing check, writing the failing test first, encoding intended behavior rather than the implementation, making the smallest production change, and rerunning are held by /tdd and /pstack-principle-test-behavior-not-implementation. The local steps keep only the bug-fix evidence: failing for the intended reason, preserved before-and-after results, and the report.
+- Delegation to /tdd: upstream's workflow steps for choosing the narrowest existing check, writing the failing test first, encoding intended behavior rather than the implementation, making the smallest production change, and rerunning are held by /tdd and /principle-test-behavior-not-implementation. The local steps keep only the bug-fix evidence: failing for the intended reason, preserved before-and-after results, and the report.
 
 ## Maintenance
 

@@ -1,3 +1,0 @@
-interface:
-  display_name: "Pstack statechart"
-  short_description: "Chart how a system moves between states from a TLA+ model"

@@ -330,6 +330,13 @@ def inventory(root, catalog, resume=None):
     if len(mapped_names) != len(set(mapped_names)):
         problems.append('Combined mapping contains duplicate installed names')
     for entry in mapped:
+        # A mapped skill keeps its upstream name; a rename needs its recorded reason.
+        upstream_name = Path(entry['upstream']).name
+        reason = entry.get('renamed')
+        if entry['local'] != upstream_name and not (isinstance(reason, str) and reason.strip()):
+            problems.append(entry['local'] + ': renamed from ' + upstream_name + ' without a recorded reason')
+        elif entry['local'] == upstream_name and 'renamed' in entry:
+            problems.append(entry['local'] + ': records a rename reason but keeps the upstream name')
         item = by_directory.get(entry['directory'])
         if not item or item['name'] != entry['local']:
             problems.append('Missing or renamed mapped skill: ' + entry['local'])

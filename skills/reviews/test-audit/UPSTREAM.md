@@ -32,7 +32,7 @@ License: [MIT, copyright 2026 OpenClaw Foundation](./LICENSE), retained from the
 - Every in-scope test receives a decision, replacing upstream's preference for a few high-confidence candidates; uncertainty still preserves the test.
 - The campaign proposes durable test-ownership rules for the subsystem's agent instructions instead of writing them into `AGENTS.md`, because cleanup authority covers tests and test support only.
 - Keep campaign accounting separate from shared value rules. Actively delegate discovery and independent review, scaling to scope and capacity; retain the sequential fallback.
-- Discovery and the preservation reviewer run through /pstack-swarm, the shared owner of delegation and its fallback, and Step 3 applies /pstack-principle-test-behavior-not-implementation, the shared owner of test-quality criteria, through OpenClaw's six value questions, which stay in upstream's wording (owner decision, 2026-10-25).
+- Discovery and the preservation reviewer run through /swarm, the shared owner of delegation and its fallback, and Step 3 applies /principle-test-behavior-not-implementation, the shared owner of test-quality criteria, through OpenClaw's six value questions, which stay in upstream's wording (owner decision, 2026-10-25).
 
 `README.md`, `agents/openai.yaml`, `assets/icon.svg`, this record, and the retained license are locally maintained packaging.
 
