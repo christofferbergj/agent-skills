@@ -159,7 +159,9 @@ You may use one of these, you may use several, it is unlikely you will use all o
 
 Concrete evidence that the change works. Show a before and after.
 
-Screenshots are S-tier - when the environment is set up for it and the change is visual.
+Screenshots are S-tier. When the change alters what a user sees on a view and capturing it is cheap, such as a running app, a dev server with mocks, or the project's verification skill, take before-and-after screenshots of that view and place each beside the text it supports.
+
+When the forge CLI cannot attach images, as with `gh`, commit them to an images-only branch that never merges and embed each by commit SHA: `https://github.com/<owner>/<repo>/blob/<sha>/<file>.png?raw=true`.
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
 
