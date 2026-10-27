@@ -2,7 +2,7 @@
 
 Invoke `/maintain-skills` from this repository for upstream comparison, integration, provenance updates, and publication checks. It includes Thermos in the same pass as Pstack and the rest of the library, reusing one fetched `cursor/plugins` checkout and immutable candidate. The coordinator owns source records and shared integration; comparison workers return evidence and proposals.
 
-This guide owns Thermos-specific inputs, compatibility contracts, and smoke checks. The maintenance owner's guide governs the overall process; the root README governs installation and refreshes.
+This guide owns Thermos-specific inputs, compatibility contracts, and smoke checks. The maintenance owner's guide governs the overall process; [the usage guide](../../../docs/usage.md#install-and-update) governs installation and refreshes.
 
 ## Source inputs
 

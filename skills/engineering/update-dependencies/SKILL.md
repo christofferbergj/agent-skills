@@ -121,7 +121,7 @@ In Publish mode, follow repository guidance and harness constraints. Retain any 
 
 - Stage and commit only the sweep's files for a requested commit or pull request.
 - Push for a requested push or pull request.
-- Create or update a requested pull request against the discovered base branch. Include release-source links, included and deferred updates, peer-diagnostic dispositions, and validation results. Report its URL and pending hosted checks.
+- Create or update a requested pull request against the discovered base branch. Write its description through /pr, and include release-source links, included and deferred updates, peer-diagnostic dispositions, and validation results. Report its URL and pending hosted checks.
 
 Stop before publication when no changes remain or validation is blocked.
 
