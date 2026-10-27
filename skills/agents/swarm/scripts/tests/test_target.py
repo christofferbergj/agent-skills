@@ -52,7 +52,7 @@ class TargetResolution(unittest.TestCase):
         self.log('a.jsonl',event(10))
         for role,effort in {'review-full':'xhigh','review-delta':'high','computer-use':'medium','computer-use-hard':'high'}.items():
             result=self.run_target(role)
-            self.assertEqual((result['run'],result['model'],result['effort'],result.get('serviceTier')),('codex','gpt-configured',effort,None),role)
+            self.assertEqual((result['run'],result['model'],result['effort'],result.get('serviceTier')),('codex','gpt-configured',effort,'priority'),role)
 
     def test_configured_entry_wins_and_gpt_effort_is_capped_at_xhigh(self):
         self.log('a.jsonl',event(10))
@@ -145,10 +145,11 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('bug-fix',parent='codex')['serviceTier'],'priority')
 
     def test_unusable_role_values_fall_back_to_the_role_default(self):
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':None,'effort':'auto'},'fast-code':{'model':7,'effort':'ultra'},'bug-fix':{'effort':'inherit-parent'}}}}))
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':None,'effort':'auto'},'fast-code':{'model':7,'effort':'ultra'},'bug-fix':{'effort':'inherit-parent'}}},'codex':{'roles':{'swarm-workers':{'serviceTier':'flex'}}}}))
         self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet'})
         self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet'})
         self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code'})
+        self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
 
 if __name__=='__main__':

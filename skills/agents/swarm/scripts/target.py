@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve a delegate's model, effort, and speed, stepping cross-vendor targets down as Codex usage runs low.
+"""Resolve a delegate's model, effort, and speed, stepping Codex targets down as Codex usage runs low.
 
 Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
 
@@ -12,8 +12,9 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
      "roles": {"how-explorer": {"model": "haiku", "effort": "low"}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
-codexUsage thresholds are percent of Codex usage left: below fastWhileLeft a Codex
-target drops to serviceTier "default", and below skipWhenLeft it becomes run "fallback".
+codexUsage thresholds are percent of Codex usage left. A Codex target runs at serviceTier
+"priority" unless configured otherwise, drops to "default" below fastWhileLeft, and below
+skipWhenLeft a cross-vendor one becomes run "fallback". Claude targets carry no speed.
 Usage comes from the newest snapshots in $CODEX_HOME/sessions, so the check stays local.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
@@ -187,7 +188,7 @@ def resolve_native(parent, role, config, usage):
     if parent == 'codex':
         effort = capped(effort)
         fast = usage is None or usage[0] >= thresholds(config)['fastWhileLeft']
-        target['serviceTier'] = (text(entry.get('serviceTier')) or 'priority') if fast else 'default'
+        target['serviceTier'] = 'priority' if fast else 'default'
     target['effort'] = effort if effort in EFFORTS else None
     return target
 
@@ -200,10 +201,10 @@ def resolve(parent, role, config, codex_model, usage):
     vendor = 'claude-code' if parent == 'codex' else 'codex'
     effort = text(table(entry.get('effort')).get(effort_key)) or default_effort
     target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': text(entry.get('model')), 'effort': effort}
-    # Claude has no speed option, so only a Codex target carries one.
+    # Claude targets run at standard speed, so only a Codex target carries one.
     if vendor == 'claude-code':
         return target
-    target.update(model=target['model'] or codex_model, effort=capped(effort), serviceTier=text(entry.get('serviceTier')))
+    target.update(model=target['model'] or codex_model, effort=capped(effort), serviceTier=text(entry.get('serviceTier')) or 'priority')
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
