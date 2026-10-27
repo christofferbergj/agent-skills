@@ -18,7 +18,8 @@ Usage comes from the newest snapshots in $CODEX_HOME/sessions, so the check stay
 
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host: a fast role on the host's fast model
-(Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. Native
+(Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. A
+native Codex role runs fast while Codex usage allows, and Claude never runs fast. Native
 roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
 divergent, synthesizer", and fast-code names its "fast code model". A roles entry overrides
 the model or sets an effort; "inherit-parent" or "auto" as the model keeps the parent's.
@@ -169,7 +170,12 @@ def capped(effort):
     return 'xhigh' if effort in ('max', 'ultra') else effort
 
 
-def resolve_native(parent, role, config):
+def thresholds(config):
+    configured = table(config.get('codexUsage'))
+    return {key: default if number(configured.get(key)) is None else configured[key] for key, default in THRESHOLDS.items()}
+
+
+def resolve_native(parent, role, config, usage):
     entry = table(table(table(config.get(parent)).get('roles')).get(role))
     model = text(entry.get('model'))
     if model is None:
@@ -177,14 +183,18 @@ def resolve_native(parent, role, config):
     elif model in ('inherit-parent', 'auto'):
         model = None
     effort = text(entry.get('effort'))
+    target = {'role': role, 'run': parent, 'model': model}
     if parent == 'codex':
         effort = capped(effort)
-    return {'role': role, 'run': parent, 'model': model, 'effort': effort if effort in EFFORTS else None}
+        fast = usage is None or usage[0] >= thresholds(config)['fastWhileLeft']
+        target['serviceTier'] = (text(entry.get('serviceTier')) or 'priority') if fast else 'default'
+    target['effort'] = effort if effort in EFFORTS else None
+    return target
 
 
 def resolve(parent, role, config, codex_model, usage):
     if role not in CROSS_VENDOR_ROLES:
-        return resolve_native(parent, role, config)
+        return resolve_native(parent, role, config, usage)
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
@@ -198,12 +208,11 @@ def resolve(parent, role, config, codex_model, usage):
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
     left, resets, seen = usage
-    configured = table(config.get('codexUsage'))
-    thresholds = {key: default if number(configured.get(key)) is None else configured[key] for key, default in THRESHOLDS.items()}
+    limits = thresholds(config)
     target['usage'] = {'left': left, 'seenAt': seen}
-    if left < thresholds['skipWhenLeft']:
+    if left < limits['skipWhenLeft']:
         return {'role': role, 'run': 'fallback', 'reason': describe(left, resets), 'usage': target['usage']}
-    if left < thresholds['fastWhileLeft']:
+    if left < limits['fastWhileLeft']:
         target.update(serviceTier='default', note=f'Standard speed: {describe(left, resets)}')
     return target
 
@@ -218,7 +227,9 @@ def main():
     config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     codex_model, usage = None, None
-    if args.parent == 'claude-code' and args.role in CROSS_VENDOR_ROLES:
+    other = 'codex' if args.parent == 'claude-code' else 'claude-code'
+    runs_on = other if args.role in CROSS_VENDOR_ROLES else args.parent
+    if runs_on == 'codex':
         codex_model = configured_codex_model(home)
         try:
             usage = read_usage(home / 'sessions', time.time())

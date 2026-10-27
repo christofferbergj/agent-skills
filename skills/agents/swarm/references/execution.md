@@ -16,6 +16,8 @@ Every Pstack spawn has a role: the label its skill names, such as `how explorer`
 - **Parent roles** keep the session's model: the code delegates `feature-refactoring`, `bug-fix`, `perf-issue`, and `hillclimb`, plus `hardest-tasks`, `judgment-and-prose`, `how-explainer`, `why-synthesizer`, and `reflect-judgment`, which also covers reflect's divergent reviewer and synthesizer.
 - **Panels**, the runners of /arena and /architect and the reviewers of /interrogate, seat one runner on the session's model and one on the counterpart, resolved with `review-full` as below. A counterpart runner writes as [the T3 route](t3.md) describes, or through the CLI route returns its artifact as its final message for the coordinator to save. When the counterpart resolves to `fallback` or fails, that seat takes route 3 below, and the report labels the panel same-vendor.
 
+Speed comes from the target. A Codex delegate, native or cross-vendor, runs in fast mode while Codex usage left stays at or above `codexUsage.fastWhileLeft`, 40% by default, and at standard speed below it. A Claude delegate never uses fast mode.
+
 A target without an `effort` leaves the level to the job: start from the session's level, raise it one step, up to the host's maximum, for the hardest or subtlest work, and lower it one step for judgment and two for routine work such as exploration or a check run. /pstack-mode's Subagents section applies the same rule inside the mode.
 
 ## Native Codex

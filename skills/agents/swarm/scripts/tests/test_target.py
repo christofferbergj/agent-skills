@@ -127,14 +127,22 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet'})
         self.assertEqual(self.run_target('swarm-workers')['model'],'sonnet')
         self.assertEqual(self.run_target('feature-refactoring'),{'role':'feature-refactoring','run':'claude-code'})
-        self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex'})
+        self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex','serviceTier':'default'})
 
     def test_configured_native_role_wins_and_inherit_aliases_keep_the_parent_model(self):
         self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'effort':'max'}}},'codex':{'roles':{'why-investigators':{'model':'gpt-small','effort':'ultra'}}}}))
         self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'haiku','effort':'low'})
         self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code'})
         self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','effort':'max'})
-        self.assertEqual(self.run_target('why-investigators',parent='codex'),{'role':'why-investigators','run':'codex','model':'gpt-small','effort':'xhigh'})
+        self.assertEqual(self.run_target('why-investigators',parent='codex'),{'role':'why-investigators','run':'codex','model':'gpt-small','serviceTier':'priority','effort':'xhigh'})
+
+    def test_codex_native_roles_run_fast_while_usage_allows_and_claude_never_does(self):
+        for used,tier in [(49,'priority'),(51,'default')]:
+            self.log('a.jsonl',event(used))
+            self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],tier,used)
+            self.assertNotIn('serviceTier',self.run_target('swarm-workers'))
+        (self.day/'a.jsonl').unlink()
+        self.assertEqual(self.run_target('bug-fix',parent='codex')['serviceTier'],'priority')
 
     def test_unusable_role_values_fall_back_to_the_role_default(self):
         self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':None,'effort':'auto'},'fast-code':{'model':7,'effort':'ultra'},'bug-fix':{'effort':'inherit-parent'}}}}))
