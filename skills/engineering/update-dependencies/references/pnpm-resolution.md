@@ -6,7 +6,7 @@ Use this reference for pnpm package updates and peer diagnostics. The main skill
 
 Read `pnpm help update`, `pnpm help recursive`, `pnpm help install`, and help for the available peer checker. Consult matching-version official documentation when help does not establish behavior. Workspace coverage, catalog updates, and peer-check commands vary by version.
 
-Read effective resolution policy from the repository's supported configuration locations. Include `autoInstallPeers`, `strictPeerDependencies`, `resolvePeersFromWorkspaceRoot`, `peerDependencyRules`, catalogs, overrides, package extensions, patches, release-age restrictions, and hooks that transform manifests. In pnpm 11, resolution settings moved from `.npmrc` to `pnpm-workspace.yaml`; `.npmrc` still supplies registry and authentication settings. Keep credentials out of captured evidence.
+Read effective resolution policy from the repository's supported configuration locations. Include `autoInstallPeers`, `strictPeerDependencies`, `resolvePeersFromWorkspaceRoot`, `peerDependencyRules`, catalogs, overrides, package extensions, patches, release-age restrictions, `update` settings such as `update.ignoreDeps`, `update.githubActions`, and `update.changeset`, and hooks that transform manifests. In pnpm 11, resolution settings moved from `.npmrc` to `pnpm-workspace.yaml`; `.npmrc` still supplies registry and authentication settings. Keep credentials out of captured evidence.
 
 Use pnpm to evaluate peer ranges, including unions and prereleases. `autoInstallPeers` can supply missing non-optional peers, but conflicting requirements can prevent automatic installation. Root dependencies can supply peers when `resolvePeersFromWorkspaceRoot` permits it. Different workspace consumers can legitimately resolve different peer versions. pnpm does not search every package-release combination or prove runtime compatibility.
 
@@ -25,6 +25,8 @@ Batch related dependency names in one update command. Dependency arguments or ex
 
 Preserve range operators and protocols. Use `--no-save` to preserve manifest ranges. For a lockfile-only refresh, also use the installed version's supported `--lockfile-only` option and verify that it leaves `node_modules` untouched. Catalog-aware update support varies by version; confirm that the chosen command updates the owning default or named catalog and keeps `catalog:` consumers intact. If it cannot, edit the catalog declaration once and let pnpm resolve it. A catalog edit affects every consumer, including packages outside an update filter, so account for them in validation.
 
+Account for everything an update command can write besides manifests and the lockfile. With `--include-github-actions` or `update.githubActions: true`, `pnpm update` also rewrites external `uses:` references in workflow and action files, pinned to commit SHAs with the tag in a comment, and `pnpm outdated` reports them. With `--changeset` or `update.changeset: true`, it writes `.changeset/*.md` files. From pnpm 12.12, it also updates config dependencies in `pnpm-workspace.yaml`. Treat these as candidates under the main skill's broad-command rule, use the Actions update only where SHA pinning matches the repository's pin style, and inspect workflow and changeset diffs after each group.
+
 Published workspace `peerDependencies` declare support for downstream consumers. Evaluate changes to those support ranges separately from choosing the installed peer provider. Use peer-update flags only when changing that contract is in scope.
 
 Allow pnpm's update or install command to enforce configured release eligibility. An outdated report's newest registry version is a candidate, not proof of eligibility. Research the version pnpm actually selects when it differs from that report.
@@ -37,7 +39,7 @@ When the installed version provides `pnpm peers check`, use it to inspect the lo
 
 Reconcile the checker with warnings from resolution. If it reports clean after resolution warned, obtain detailed resolver diagnostics. A supported command-only `--strict-peer-dependencies` diagnostic pass can expose consumer, range, and provider without changing saved policy; interpret its failure against baseline warnings and existing acceptance policy. Run mutation-capable diagnostic passes in an isolated copy when their changes are outside the update. Record any remaining diagnostic gap for the affected group.
 
-For versions with `--resolution-only`, `pnpm install --resolution-only --no-frozen-lockfile` reruns resolution and reports peer issues. Treat it as mutation-capable. Capture baseline output in an isolated copy of the current graph; use it on the updated graph when fresh diagnostics are needed. Resolution-only or lockfile-only work still needs a real install and application checks afterward.
+Through pnpm 11, `pnpm install --resolution-only --no-frozen-lockfile` reruns resolution and reports peer issues. Treat it as mutation-capable. Capture baseline output in an isolated copy of the current graph; use it on the updated graph when fresh diagnostics are needed. pnpm 12 rejects `--resolution-only`; there, run `pnpm peers check` on the freshly resolved lockfile. Resolution-only or lockfile-only work still needs a real install and application checks afterward.
 
 A frozen or headless install can reuse the lockfile and skip resolution. It proves lockfile consistency, not a fresh peer-range assessment. Prefer the supported peer checker or an explicit resolution pass. A documented install dry run may provide fresh diagnostics when available; confirm its write behavior before using it in Audit mode. Keep Audit commands read-only and report unavailable checks.
 
@@ -45,7 +47,9 @@ A frozen or headless install can reuse the lockfile and skip resolution. It prov
 
 ## Primary sources
 
-- [pnpm 10 update](https://pnpm.io/10.x/cli/update) and [pnpm 11 update](https://pnpm.io/11.x/cli/update) document update selection and version-range behavior.
-- [pnpm recursive commands](https://pnpm.io/11.x/cli/recursive) documents workspace coverage.
-- [pnpm 10 settings](https://pnpm.io/10.x/settings), [pnpm 11 settings](https://pnpm.io/11.x/settings), and [pnpm 11 peer settings](https://pnpm.io/11.x/settings/peer-dependencies) document configuration locations, resolution policy, and automatic-peer limitations.
-- [pnpm 10 install](https://pnpm.io/10.x/cli/install), [pnpm 11 install](https://pnpm.io/11.x/cli/install), and [pnpm 11 peers](https://pnpm.io/11.x/cli/peers) document resolution and diagnostic commands.
+The unversioned pnpm docs cover pnpm 11 and 12, and `11.x` URLs redirect to them; [what's different in pnpm 12](https://pnpm.io/blog/whats-different-in-pnpm-12) lists the exceptions.
+
+- [pnpm 10 update](https://pnpm.io/10.x/cli/update) and [pnpm 11 and 12 update](https://pnpm.io/cli/update) document update selection, version-range behavior, and what an update writes.
+- [pnpm recursive commands](https://pnpm.io/cli/recursive) documents workspace coverage.
+- [pnpm 10 settings](https://pnpm.io/10.x/settings), [pnpm 11 and 12 settings](https://pnpm.io/settings), and [peer settings](https://pnpm.io/settings/peer-dependencies) document configuration locations, resolution policy, and automatic-peer limitations.
+- [pnpm 10 install](https://pnpm.io/10.x/cli/install), [pnpm 11 and 12 install](https://pnpm.io/cli/install), and [pnpm peers](https://pnpm.io/cli/peers) document resolution and diagnostic commands.
