@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resolve a cross-vendor delegate's model, effort, and speed, stepping down as Codex usage runs low.
+"""Resolve a delegate's model, effort, and speed, stepping cross-vendor targets down as Codex usage runs low.
 
 Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
 
@@ -8,12 +8,20 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
      "review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
      "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
-                     "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"}},
+                     "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
+     "roles": {"how-explorer": {"model": "haiku", "effort": "low"}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 codexUsage thresholds are percent of Codex usage left: below fastWhileLeft a Codex
 target drops to serviceTier "default", and below skipWhenLeft it becomes run "fallback".
 Usage comes from the newest snapshots in $CODEX_HOME/sessions, so the check stays local.
+
+The review and computer-use roles run on the other vendor. Every other role is one of
+Pstack's native roles and runs on the parent host: a fast role on the host's fast model
+(Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. Native
+roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
+divergent, synthesizer", and fast-code names its "fast code model". A roles entry overrides
+the model or sets an effort; "inherit-parent" or "auto" as the model keeps the parent's.
 """
 
 import argparse
@@ -28,12 +36,18 @@ import sys
 import time
 
 # role: (config entry, effort key, default effort)
-ROLES = {
+CROSS_VENDOR_ROLES = {
     'review-full': ('review', 'full', 'xhigh'),
     'review-delta': ('review', 'delta', 'high'),
     'computer-use': ('computerUse', 'routine', 'medium'),
     'computer-use-hard': ('computerUse', 'hard', 'high'),
 }
+# Native roles: exploration, collection, tooling review, check runs, and trivial edits run fast;
+# code, judgment, prose, and synthesis keep the parent's model.
+FAST_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'fast-code'}
+PARENT_ROLES = {'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
+FAST_MODEL = {'claude-code': 'sonnet'}
+EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'fastWhileLeft': 40, 'skipWhenLeft': 5}
 # Bounds that keep the usage scan to a few small reads.
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
@@ -150,8 +164,28 @@ def describe(left, resets):
     return f'Codex usage {left}% left{until}'
 
 
+def capped(effort):
+    # GPT models never run above xhigh.
+    return 'xhigh' if effort in ('max', 'ultra') else effort
+
+
+def resolve_native(parent, role, config):
+    entry = table(table(table(config.get(parent)).get('roles')).get(role))
+    model = text(entry.get('model'))
+    if model is None:
+        model = FAST_MODEL.get(parent) if role in FAST_ROLES else None
+    elif model in ('inherit-parent', 'auto'):
+        model = None
+    effort = text(entry.get('effort'))
+    if parent == 'codex':
+        effort = capped(effort)
+    return {'role': role, 'run': parent, 'model': model, 'effort': effort if effort in EFFORTS else None}
+
+
 def resolve(parent, role, config, codex_model, usage):
-    entry_name, effort_key, default_effort = ROLES[role]
+    if role not in CROSS_VENDOR_ROLES:
+        return resolve_native(parent, role, config)
+    entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
     effort = text(table(entry.get('effort')).get(effort_key)) or default_effort
@@ -159,8 +193,7 @@ def resolve(parent, role, config, codex_model, usage):
     # Claude has no speed option, so only a Codex target carries one.
     if vendor == 'claude-code':
         return target
-    # GPT models never run above xhigh.
-    target.update(model=target['model'] or codex_model, effort='xhigh' if effort in ('max', 'ultra') else effort, serviceTier=text(entry.get('serviceTier')))
+    target.update(model=target['model'] or codex_model, effort=capped(effort), serviceTier=text(entry.get('serviceTier')))
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
@@ -177,7 +210,7 @@ def resolve(parent, role, config, codex_model, usage):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('role', choices=sorted(ROLES))
+    parser.add_argument('role', choices=sorted({*CROSS_VENDOR_ROLES, *FAST_ROLES, *PARENT_ROLES}))
     parser.add_argument('--parent', choices=['codex', 'claude-code'], required=True, help='The host running this session')
     args = parser.parse_args()
     if args.parent == 'codex' and args.role.startswith('computer-use'):
@@ -185,7 +218,7 @@ def main():
     config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     codex_model, usage = None, None
-    if args.parent == 'claude-code':
+    if args.parent == 'claude-code' and args.role in CROSS_VENDOR_ROLES:
         codex_model = configured_codex_model(home)
         try:
             usage = read_usage(home / 'sessions', time.time())

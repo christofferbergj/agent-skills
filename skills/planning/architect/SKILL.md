@@ -31,7 +31,7 @@ Complete when every system the new code touches has the architectural explanatio
 
 Run /arena with the design-sketch task and the Phase A grounding artifacts. Pass [`references/runner-prompt.md`](references/runner-prompt.md) as each runner's prompt.
 
-Choose the runners as /arena's Phase A does, through /swarm, on different models when the host offers them.
+Choose the runners as /arena's Phase A does, through /swarm's panel of the session's model and the counterpart.
 
 Design it twice. Require at least two structurally distinct candidates before synthesis, even when the first looks sufficient. This is /principle-exhaust-the-design-space made concrete. Whole-shape alternatives, not point fixes inside one shape.
 

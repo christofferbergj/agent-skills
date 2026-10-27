@@ -121,6 +121,27 @@ class TargetResolution(unittest.TestCase):
         with redirect_stderr(StringIO()),self.assertRaises(SystemExit):
             self.run_target('computer-use',parent='codex')
 
+    def test_native_roles_run_on_the_parent_host_with_fast_roles_on_its_fast_model(self):
+        self.config.write_text('{}')
+        self.log('a.jsonl',event(99))
+        self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet'})
+        self.assertEqual(self.run_target('swarm-workers')['model'],'sonnet')
+        self.assertEqual(self.run_target('feature-refactoring'),{'role':'feature-refactoring','run':'claude-code'})
+        self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex'})
+
+    def test_configured_native_role_wins_and_inherit_aliases_keep_the_parent_model(self):
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'effort':'max'}}},'codex':{'roles':{'why-investigators':{'model':'gpt-small','effort':'ultra'}}}}))
+        self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'haiku','effort':'low'})
+        self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code'})
+        self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','effort':'max'})
+        self.assertEqual(self.run_target('why-investigators',parent='codex'),{'role':'why-investigators','run':'codex','model':'gpt-small','effort':'xhigh'})
+
+    def test_unusable_role_values_fall_back_to_the_role_default(self):
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':None,'effort':'auto'},'fast-code':{'model':7,'effort':'ultra'},'bug-fix':{'effort':'inherit-parent'}}}}))
+        self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet'})
+        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet'})
+        self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code'})
+
 
 if __name__=='__main__':
     unittest.main()

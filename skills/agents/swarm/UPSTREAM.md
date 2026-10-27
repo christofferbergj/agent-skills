@@ -15,7 +15,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Local-only files: `references/execution.md`, the host execution contract that replaces Cursor's Task-tool and model-rule mechanics; `scripts/review.py` with its tests, the bounded cross-vendor CLI wrapper; `scripts/target.py` with its tests, which resolves a delegate's model, effort, and speed from the personal configuration and the remaining Codex usage; and `references/computer-use.md`, which hands checks that need Computer Use from Claude to Codex.
+- Local-only files: `references/execution.md`, the host execution contract that replaces Cursor's Task-tool and model-rule mechanics; `scripts/review.py` with its tests, the bounded cross-vendor CLI wrapper; `scripts/target.py` with its tests, which resolves each role's model, effort, and speed from the personal configuration, with the remaining Codex usage stepping down cross-vendor targets; and `references/computer-use.md`, which hands checks that need Computer Use from Claude to Codex.
 - Match review briefs to the restricted reviewer's readable scope. Supply recorded checks and inline snapshots for inaccessible evidence; use a native critic when independent execution or broader evidence access is required.
 - Route counterpart critics through T3 Code child tasks when the session exposes `delegate_task`, before the CLI wrapper, and pass the resolved target's model, scope-scaled effort, and speed on every route ([T3 route](references/t3.md)). The T3 route is principle-derived from the second source below.
 

@@ -6,7 +6,17 @@ Use this contract whenever a Pstack workflow dispatches a worker or critic. The 
 
 Include the goal, scope, relevant user directives, repository guidance, canonical spec/ticket and domain-document pointers, exact revisions, resolved rubric and reference paths, allowed writes, done predicate, output location, and report shape. Child skill discovery is not assumed. The coordinator owns canonical glossary/domain/ADR edits; workers return proposals with evidence. Use one execution coordinator and reuse completed review evidence only for the same artifact and coverage. A Matt entrypoint contributes its discipline without starting another Pstack mode or recursive coordinator. Give each writer a separate worktree or disjoint artifact location; reviewers inspect without editing or posting. Delegates do not recursively delegate unless their explicitly scoped workflow requires it.
 
-Read personal role settings from `PSTACK_CONFIG` or `~/.config/pstack/config.json` when present. Use its active host section and only the model and effort choices the user configured and the host supports; its `review` entry sets the counterpart below, and its `computerUse` entry sets [the Computer Use delegate](computer-use.md). Omit overrides to inherit. A rejected override is disclosed and falls back to the host default; never fabricate equivalent model slugs or silently change a requested vendor.
+Read personal role settings from `PSTACK_CONFIG` or `~/.config/pstack/config.json` when present. Use its active host section and only the model and effort choices the user configured and the host supports; its `review` entry sets the counterpart below, its `computerUse` entry sets [the Computer Use delegate](computer-use.md), and its `roles` entry sets the model roles below. Without an override, each takes its default below. A rejected override is disclosed and falls back to the host default; never fabricate equivalent model slugs or silently change a requested vendor.
+
+## Model roles
+
+Every Pstack spawn has a role: the label its skill names, such as `how explorer`, or `judgment-and-prose` when the skill names none, or `fast-code` for a trivial mechanical edit. Resolve it before dispatch with `python3 scripts/target.py --parent <codex|claude-code> <role>` from this skill directory, using the matching name below, such as `feature-refactoring` for `feature, refactoring`. Pass the target's `model` and `effort` to the host's spawn options.
+
+- **Fast roles** run on the host's fast model, Sonnet in Claude Code: `how-explorer`, `why-investigators`, `reflect-tooling`, `swarm-workers`, and `fast-code`. `swarm-workers` covers fan-out workers, verification and measurement lanes, and history mining.
+- **Parent roles** keep the session's model: the code delegates `feature-refactoring`, `bug-fix`, `perf-issue`, and `hillclimb`, plus `hardest-tasks`, `judgment-and-prose`, `how-explainer`, `why-synthesizer`, and `reflect-judgment`, which also covers reflect's divergent reviewer and synthesizer.
+- **Panels**, the runners of /arena and /architect and the reviewers of /interrogate, seat one runner on the session's model and one on the counterpart, resolved with `review-full` as below. A counterpart runner writes as [the T3 route](t3.md) describes, or through the CLI route returns its artifact as its final message for the coordinator to save. When the counterpart resolves to `fallback` or fails, that seat takes route 3 below, and the report labels the panel same-vendor.
+
+A target without an `effort` leaves the level to the job: start from the session's level, raise it one step, up to the host's maximum, for the hardest or subtlest work, and lower it one step for judgment and two for routine work such as exploration or a check run. /pstack-mode's Subagents section applies the same rule inside the mode.
 
 ## Native Codex
 
@@ -32,7 +42,7 @@ Resolve the counterpart before dispatch with `python3 scripts/target.py --parent
 - `run: "fallback"` means Codex usage is nearly spent: take route 3 and disclose the target's `reason`.
 - `note` records a step down to standard speed or unknown usage; carry it into the report.
 
-The target sets the counterpart only; same-model critics inherit the session's model and effort unless the user configured them.
+For a critic, the target sets the counterpart only; same-model critics inherit the session's model and effort unless the user configured them.
 
 For the CLI route, check executable availability, authentication, supported options, and process/network access. Use `python3 scripts/review.py --parent <codex|claude-code> --repo <repo> --prompt-file <brief> --output <result.json> --model <model> --effort <effort> --service-tier <serviceTier>` from this skill directory, dropping each option the target leaves out. `--preflight` checks readiness without launching a model. The wrapper reads the prompt from a file, restricts reviewer tools, uses the provider's existing credentials, and enforces a timeout. Claude uses safe mode, read tools, and an empty strict MCP configuration. Codex keeps the CLI's other settings while replacing MCP configuration, disabling apps, plugins, hooks, web and computer tools, and using its read-only sandbox with no approvals. CLI flags and Codex feature controls are checked before launch; unsupported restrictions, model or effort options, and a speed for Claude produce an explicit unavailable result. Process-group timeout handling requires a POSIX host. Only macOS was exercised for this adaptation.
 
