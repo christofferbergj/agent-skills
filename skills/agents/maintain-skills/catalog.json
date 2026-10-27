@@ -16,7 +16,7 @@
         "pstack/LICENSE"
       ],
       "sharedRoot": "pstack",
-      "sharedReviewedThrough": "9580c23696ac8d7abed0c166f2f9918800afb819",
+      "sharedReviewedThrough": "519d36aa98955bf680db01bcde5fdfba686dc901",
       "excludedPaths": {
         "pstack/automations/benny": "Dormant Cursor automation workflows outside this library's hosts",
         "pstack/assets": "Images for upstream's README",
