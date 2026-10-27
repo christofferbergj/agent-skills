@@ -25,7 +25,7 @@ The frontmatter and `CREDITS.md` retain Dex Horthy and Humanlayer's credit for t
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Keep the upstream description template and inherited source credit. Repository contribution formats take precedence, and publication follows the invoking grant.
-- Evidence states when screenshots are due (a visible change on a view that is cheap to capture) and how to host them when the forge CLI cannot attach images.
+- Evidence, in the template and its section, states when screenshots are due (a visible change on a view that is cheap to capture), lays them out as a `Before | After` table per view, and says how to host them when the forge CLI cannot attach images.
 
 ## Maintenance
 
