@@ -11,7 +11,7 @@ This is the shared documentation contract for every engineering entrypoint, incl
 
 Read the relevant artifacts before exploration. If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. Missing documents are created lazily when a term or decision needs a durable record. Invoke /domain-modeling when accepted terminology, relationships, ownership, contexts, or document paths change; it owns updates to these artifacts. Invoke /codebase-design for architectural vocabulary without renaming the project's domain concepts.
 
-Respect existing `CONTEXT.md`, `context.md`, or `domain.md` roles. A file named `domain.md` can be either a model or consumer configuration; inspect its content. Keep one source of truth per role. Specs, tickets, prototypes, Pstack rationale documents, and evidence journals link to these records instead of copying them.
+Resolve existing legacy files, such as `CONTEXT.md`, `CONTEXT-MAP.md`, `context.md`, `DOMAIN.md`, or `domain.md`, through /domain-modeling; a filename alone does not establish its role. Keep one source of truth per role. Specs, tickets, prototypes, Pstack rationale documents, and evidence journals link to these records instead of copying them.
 
 The coordinator owns canonical document edits; delegates propose changes. Read-only investigations and reviews report drift without edits.
 
