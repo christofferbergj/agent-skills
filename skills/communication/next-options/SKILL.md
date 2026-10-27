@@ -42,6 +42,7 @@ When the user's answer is needed while your own work runs, say in one line what 
 - **Each option** is a step the user would naturally take next, in plain words that make sense on their own, naming each item it cites as in the example. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.
 - **Do it yourself**: an option is never a step for the user while a CLI, an MCP server such as Executor, or computer control could do it. Hand over only credentials, payment, or physical actions, and say why.
 - **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. When nothing else is left, `a` is the watch (`watch_pull_request` in T3 Code).
+- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>`, or the same script beside this skill where it is installed elsewhere. On `verdict: person`, such as Chromatic baselines that must be accepted or a deployment that waits for approval, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), put each item with its link under **Needs you**, and end with options. A check like this never finishes on its own, so waiting on it stalls the PR.
 - **Leave out** filler such as stop, done, list what's open, or something else, and any option the user passed over in both of the last two lists, including a past `a`.
 
 ## Numbered items
