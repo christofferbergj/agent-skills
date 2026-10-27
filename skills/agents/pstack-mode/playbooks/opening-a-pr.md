@@ -6,7 +6,9 @@ Invoked at the end of every other playbook.
 
 **Commits.** Commit liberally. Rebase into small, ordered commits before opening PRs. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs in a just-made commit. New commit when separable. Commit bodies don't restate the subject.
 
-**PRs.** Run /review-loop for the final review of your own implementation before opening the PR. Run a deslop pass over the diff with the repository's or host's cleanup tool, when one exists, before commit and /no-comments before review. Write every PR title, description, and commit body with /technical-writing (every layer except Diátaxis, and apply the STE vocabulary rules: one word per action, keep articles, a plain verb over `-ing` where one works), then apply /unslop.
+**Final review.** Run /review-loop for the final review of your own implementation before opening the PR. When the user names another review, such as /thermos, run it as well and pass its evidence to /review-loop, which still gives the final verdict. The reply that posts the PR quotes that verdict line with its reviewer counts, such as `Codex 2 · Claude 3`, or the single-model label and its reason.
+
+**PRs.** Run a deslop pass over the diff with the repository's or host's cleanup tool, when one exists, before commit and /no-comments before review. Write every PR title, description, and commit body with /technical-writing (every layer except Diátaxis, and apply the STE vocabulary rules: one word per action, keep articles, a plain verb over `-ing` where one works), then apply /unslop.
 
 **Titles.** Follow the repository's commit and PR title convention. The subject is short, imperative, and names a real symbol when one carries the change, with no trailing period.
 
