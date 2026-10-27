@@ -9,7 +9,7 @@ Invoke /domain-modeling to resolve and read the invoking project's configured ar
 
 Explore the codebase to answer "how does X work?" questions. Produce architectural explanations at the level of a senior engineer onboarding onto a subsystem, enough to build a working mental model, not so much that it reads like annotated source code.
 
-Use /swarm for every explorer and explainer; each is read-only. With no delegation, perform the same passes sequentially and disclose it.
+Use /swarm for every explorer and explainer; each is read-only. Explorers take the `how explorer` role and explainers the `how explainer` role. With no delegation, perform the same passes sequentially and disclose it.
 
 1. Assess complexity. If the scope is ambiguous, state your interpretation and explore. The user can redirect.
    - **Simple** (a single module, a small utility, a narrow question such as "how does function X work"): no explorers. Spawn one explainer that explores and explains in one pass, built from [the explainer prompt](references/explainer-prompt.md) without the explorer-findings section. Go to step 4.

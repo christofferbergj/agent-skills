@@ -17,14 +17,14 @@ Invoke skills through your agent's skill picker or command syntax. [Usage guide 
 
 ## Start here
 
-For a feature, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`. Skip stages that are already settled. Relevant Pstack principles apply automatically throughout this flow, and implementation ends with `review-loop`, where the other vendor's model reviews the change and the agent fixes what holds until a round is clean.
+For a feature or a bug, start with `pstack-mode` and give it the goal and how you will know it works. It plans through code: open design questions get prototypes and `architect` sketches rather than a written plan. When an effort should be written down and split into tickets first, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`; `pstack-mode` can pick up the accepted spec and tickets. Relevant Pstack principles apply in both, and implementation ends with `review-loop`, where the other vendor's model reviews the change and the agent fixes what holds until a round is clean.
 
 | You want to                               | Start with                                 |
 | ----------------------------------------- | ------------------------------------------ |
+| Build a feature or fix a bug              | `pstack-mode`                              |
 | Clarify an idea and capture decisions     | `grill-with-docs`                          |
 | Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed     |
 | Implement agreed work                     | `implement` or `implement-spec`            |
-| Let the agent choose and drive a workflow | `pstack-mode`                              |
 | Review a change                           | `review-loop`, `code-review`, or `thermos` |
 | End replies with the next step or choices | `next-options`                             |
 | Shape replies for skimming and action     | `reply-shape`                              |
@@ -180,7 +180,7 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 | `thermos`                                                                                                      | `thermo-nuclear-review`, `thermo-nuclear-code-quality-review`                 |                                                                                                                                                                                              |
 | `grill-me`                                                                                                     | `grilling`                                                                    |                                                                                                                                                                                              |
 | `grill-with-docs`                                                                                              | `grilling`, `domain-modeling`                                                 |                                                                                                                                                                                              |
-| `grilling`                                                                                                     | `principles`                                                                  | `swarm` for environment-fact investigation                                                                                                                                                   |
+| `grilling`                                                                                                     | `principles`                                                                  | `swarm` for environment-fact investigation; `design-prototype` for questions a sketch can settle                                                                                             |
 | `codebase-design`                                                                                              |                                                                               | `domain-modeling` for accepted project-model changes; `arena` for interface alternatives                                                                                                     |
 | `design-prototype`, `diagnosing-bugs`                                                                          | `domain-modeling`                                                             | `swarm` for delegation                                                                                                                                                                       |
 | `improve-codebase-architecture`                                                                                | `domain-modeling`, `codebase-design`, `swarm`, `grilling`                     |                                                                                                                                                                                              |

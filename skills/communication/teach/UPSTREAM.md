@@ -16,7 +16,8 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Run /how and /why in parallel through /swarm, and use the host's image-generation tool only when it has one; upstream assumes parallel skill runs and an image tool.
-- When an active reply layout such as /reply-shape limits pictures per turn, the diagram build-up continues one diagram per turn instead of all in one reply, because /reply-shape owns reply layout.
+
+Local maintenance on 2026-10-27: step 5 takes upstream's text again. The divergence that continued the diagram series one diagram per turn under /reply-shape's picture limit is dropped, because /reply-shape now exempts a /teach series from that limit. This local repair leaves the upstream reviewed-through position unchanged.
 
 ## Maintenance
 

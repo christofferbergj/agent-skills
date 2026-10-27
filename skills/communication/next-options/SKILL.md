@@ -24,6 +24,8 @@ When the user's answer is needed while your own work runs, say in one line what 
 
 **Nobody** moves next when the work is finished. End with **Done**, without options: one line for a small task, or a few bullets of what is finished and what is still open. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
 
+**Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. A scope, interface, or product call the grant leaves to the user gets a default you apply and report with its reason, saying in plain words what they could tell you instead, without a letter to type back. Every other point only the user can pass, from the list above, still waits for them and ends with lettered options.
+
 ## Format
 
 ```markdown
@@ -50,14 +52,15 @@ Findings, questions, and open items keep their number for the whole session, and
 
 When a stage of this library's flows finishes, the usual `a` is the next stage the user hasn't settled yet:
 
-| Finished                                 | Usual `a`                                                                                        |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| /grill-with-docs                         | /to-spec                                                                                         |
-| /to-spec                                 | /to-tickets, or a counterpart review of the spec through /review-loop for a consequential design |
-| /to-tickets                              | /implement-spec                                                                                  |
-| Implementation with review findings open | fix them and re-review                                                                           |
-| A Clean review without a PR              | open a draft PR through /pr                                                                      |
-| A draft PR                               | watch it, or address its review comments                                                         |
+| Finished                                 | Usual `a`                                                                                    |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
+| /grill-with-docs                         | /pstack-mode to build the agreed design, or /to-spec when it should be split into tickets    |
+| /to-spec                                 | /to-tickets, after a prototype for any open question that running something could settle     |
+| /to-tickets                              | /implement-spec                                                                              |
+| A Pstack prototype                       | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
+| Implementation with review findings open | fix them and re-review                                                                       |
+| A Clean review without a PR              | open a draft PR through /pr                                                                  |
+| A draft PR                               | watch it, or address its review comments                                                     |
 
 ## Setup
 

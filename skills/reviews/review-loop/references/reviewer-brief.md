@@ -18,7 +18,7 @@ Checks already run: <command → result, one per line>. Run quick read-only comm
 
 Code: review the whole change independently. Trace each correctness or security failure from a concrete input to the failure. Check the intent for missing, partial, wrong, and unrequested behavior. Check the standards and cite the rule. Name a simpler design when it removes code.
 Codex correctness: review only correctness and security, applying the rubric at <absolute path to /thermo-nuclear-review's SKILL.md>. Trace each failure from a concrete input to the failure, through callers and paths outside the diff that the change affects. Another reviewer covers intent, standards, and design.
-Plan: report gaps, risks, contradictions with the current code, and simpler options.
+Plan: report missing requirements, contradictions with the current code, and simpler options. Name a risk only with the code path or observed behavior that shows it, not a hypothetical edge case. An open question that running something could settle is a prototype to run, not a finding.
 
 Report each finding on one line: severity · path:line · what fails, for whom, and the input that triggers it · the smallest fix.
 Blocker: wrong behavior, data loss, a security gap, a missing requirement, a failing check, or a broken documented rule.

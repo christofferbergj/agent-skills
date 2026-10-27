@@ -19,7 +19,7 @@ Complete when the transcript path or the digest is fixed.
 
 ## 2. Spawn three reviewers in parallel
 
-Use /swarm to start all three before waiting on any, as native subagents that keep the session's MCP and connector tools. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and a tool-restricted reviewer has none. /swarm sets each subagent's model and effort from the user's configured roles, and otherwise the session's.
+Use /swarm to start all three before waiting on any, as native subagents that keep the session's MCP and connector tools. Reviewers need MCP access to look up the tickets, chat threads, and observability traces the transcript references, and a tool-restricted reviewer has none. /swarm sets each subagent's model and effort from its role: `reflect tooling` for the Tooling lens, and `reflect judgment` for the Judgment and Divergent lenses and the synthesizer.
 
 | Lens      | Prompt template                    |
 | --------- | ---------------------------------- |

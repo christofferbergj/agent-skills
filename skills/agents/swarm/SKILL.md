@@ -11,7 +11,7 @@ To hand a check that needs Computer Use to Codex, follow [the Computer Use route
 
 ## 1. Frame
 
-Open a task list with one entry per phase before dispatching anything. Name the done predicate, report or artifact, and required coverage. Choose slices, an identical-brief race, or a mix. Declare a race rule before dispatch: first passing result, rank all, or best-of. For a model race, name each arm's model before dispatch. Choose the smallest useful worker count within the user's budget and host capacity; total jobs can exceed concurrent slots.
+Open a task list with one entry per phase before dispatching anything. Name the done predicate, report or artifact, and required coverage. Choose slices, an identical-brief race, or a mix. Declare a race rule before dispatch: first passing result, rank all, or best-of. Workers take the `swarm workers` role from [the execution contract](references/execution.md#model-roles); for a model race, name each arm's model before dispatch instead. Choose the smallest useful worker count within the user's budget and host capacity; total jobs can exceed concurrent slots.
 
 Give each writer its own worktree or output directory. A verification or measurement brief names the exact revisions, sample definition, method, and acceptance predicate. Complete when every required slice or arm has an independent brief and output location.
 

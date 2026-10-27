@@ -40,6 +40,7 @@ Departures:
 - The rules load through /next-options' SessionStart hook in a second entry with its own hook budget, rather than a second script.
 - A Decide item still carries a choice that doesn't shape code or the plan, with its options folded, and the decision card stays for one that does. Upstream now turns every Decide item into a one-line pointer to its own queued card, to settle a conflict with the card in its `shared/format.md`, which this library doesn't have; here that would spend a turn on each small choice.
 - Named references keep the full rule, with earlier labels explained and lost names looked up. Upstream cut it to one line because its `bare_references.py` hook now catches bare numbers, and this library ships no such hook.
+- A /teach explanation's diagram series is exempt from the picture limit (owner decision, 2026-10-27), because /teach builds a system up one diagram at a time in one explanation, and a series split across turns stops reading as one picture assembling.
 - The catch-up exemption from the list and picture limits stays (owner decision, 2026-10-21). Upstream removed its copy because ketchup's own skill states those rules, but without it the loaded five-item and one-picture limits would contradict /ketchup's rules in every session.
 
 `agents/openai.yaml` and this record are locally maintained.

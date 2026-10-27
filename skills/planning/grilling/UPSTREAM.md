@@ -17,6 +17,9 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Invoke /principles during design interviews so recommendations use the shared design and coding owners while preserving the design frontier and user confirmation.
+- A frontier question that running something could settle, such as state-model behavior or speed, is answered by a throwaway sketch, through /design-prototype or a measuring script, and reported as a settled decision the user can overturn; a look-and-feel question is asked with /design-prototype's variants in hand. Sketches stay out of the user's uncommitted work. Upstream puts every decision to the user. Reason: [ADR 0005](../../../docs/adr/0005-plan-through-code-by-default.md) adopts Pstack's rule that an observable answer is not the human's to give, and the final confirmation of shared understanding stays.
+
+Local maintenance on 2026-10-27: frontier questions that running something could settle go to a sketch before the user, per ADR 0005. This local change leaves the upstream reviewed-through position unchanged.
 
 Local maintenance on 2026-10-20: Route environment-fact investigations through /swarm, investigating directly when it or delegation is unavailable. This local repair leaves the upstream reviewed-through position unchanged.
 

@@ -9,7 +9,7 @@ Invoke /domain-modeling to resolve and read the invoking project's configured ar
 
 Investigate the motivation and intent behind code. The companion /how skill answers what the code does and how it works. /why answers what forces led to its shape.
 
-Use /swarm for every spawn below. Each spawn names a role; /swarm applies the user's configured model for that role, or the host default when none is configured. Pick each subagent's reasoning level and speed for the job, per /swarm.
+Use /swarm for every spawn below. Each spawn names a role, and /swarm resolves that role's model. Pick each subagent's reasoning level and speed for the job, per /swarm.
 
 Every spawn keeps the host's MCP access. **Do not use a read-only mode or agent type that strips MCP tools.** It disables the MCP-backed investigators and the synthesizer's citation spot-checks. Investigators still shouldn't write anything.
 

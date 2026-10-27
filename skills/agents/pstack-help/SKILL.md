@@ -24,14 +24,14 @@ Infer the need from the message and the conversation. A named situation, such as
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `~/.config/pstack/config.json`, and no file at `PSTACK_CONFIG`, means `/pstack-setup` hasn't run for this user, so every role inherits the session's model.
+- No `~/.config/pstack/config.json`, and no file at `PSTACK_CONFIG`, means `/pstack-setup` hasn't run for this user, so each role takes /swarm's default: helper roles such as exploration run on the host's fast model, Sonnet in Claude Code, panels add the counterpart, and the rest inherit the session's model.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
 - No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
 
 When the configuration is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
 - Now: give them `/pstack-setup` to type, and answer their question too.
-- Later: answer their question, and add one line saying every role inherits the session's model until they run `/pstack-setup`.
+- Later: answer their question, and add one line saying each role keeps /swarm's default until they run `/pstack-setup`.
 
 ## Get set up
 
