@@ -1,4 +1,4 @@
 interface:
-  display_name: "Writing For Agents"
+  display_name: "Writing for Agents"
   short_description: "Write concise, discoverable agent instructions"
   default_prompt: "Use $writing-for-agents to handle this request."
