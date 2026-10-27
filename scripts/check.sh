@@ -31,7 +31,10 @@ for suite in $(git ls-files 'skills/*/tests/test_*.py' | xargs -n1 dirname | sor
   python3 -m unittest discover -s "$suite"
 done
 
-node_tests=$(git ls-files 'skills/*.test.ts' ':!:skills/agents/pstack-mode/**')
+# Statechart's suite is upstream's and needs fast-check, and TLC with Java for
+# most cases; its UPSTREAM.md says how to run it.
+node_tests=$(git ls-files 'skills/*.test.ts' ':!:skills/agents/pstack-mode/**' \
+  ':!:skills/engineering/statechart/scripts/**')
 step "node: $(echo "$node_tests" | wc -l | tr -d ' ') test files"
 node --test $node_tests
 

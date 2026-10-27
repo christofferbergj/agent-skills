@@ -16,7 +16,7 @@
         "pstack/LICENSE"
       ],
       "sharedRoot": "pstack",
-      "sharedReviewedThrough": "9580c23696ac8d7abed0c166f2f9918800afb819",
+      "sharedReviewedThrough": "519d36aa98955bf680db01bcde5fdfba686dc901",
       "excludedPaths": {
         "pstack/automations/benny": "Dormant Cursor automation workflows outside this library's hosts",
         "pstack/assets": "Images for upstream's README",
@@ -213,6 +213,11 @@
         "writing-fragments": "User retirement: experimental article-writing workflow is outside this library's intended use",
         "writing-shape": "User retirement: experimental article-writing workflow is outside this library's intended use"
       },
+      "excludedPaths": {
+        ".changeset": "Matt's release changesets; the skill changes they describe are reviewed in the skills themselves",
+        ".github": "Matt's issue intake templates and CI workflows for his own repository",
+        "CONTRIBUTING.md": "Matt's contribution routing for his own repository"
+      },
       "excludedPathComponents": ["personal"],
       "sharedPaths": [
         "README.md",
@@ -229,7 +234,7 @@
         ".out-of-scope"
       ],
       "sharedRoot": ".",
-      "sharedReviewedThrough": "5beb35b040e3de97e54fa9e386d7e42d15c295c2"
+      "sharedReviewedThrough": "59db609eb1e18aaf59b63284d0e52255aff0c63c"
     },
     "thermos": {
       "repository": "https://github.com/cursor/plugins.git",

@@ -1,0 +1,2 @@
+# Upstream's statechart corpus compares these reports byte for byte.
+skills/engineering/statechart/scripts/test/corpus/**/report.md
