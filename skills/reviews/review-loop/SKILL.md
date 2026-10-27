@@ -17,9 +17,9 @@ Inside an implementation workflow, such as /implement, /implement-spec, or a Pst
 
 Resolve one target: a PR, branch, commit range, or file set the user names; a plan or spec; the current branch against its stack parent or its merge-base with the default branch; or the working changes. Read the intent from the spec and tickets, the PR description, or the accepted request. List the repository's standards documents, and invoke /principles in review mode for the applicable owners.
 
-For a code target, build the packet from this skill's directory with `node scripts/packet.ts --repo <repo>`, adding `--base <ref>`, `--since <ref>`, `--head <ref>`, or `--working` as the target needs (`--help` explains each; Bun also runs it). The packet pins immutable revisions, snapshots working changes into a commit without touching the index or stash, and lists lockfiles, binaries, and generated or vendored files while leaving them out of the diff. A bad ref or an empty diff stops here.
+For a code target, build the packet from this skill's directory with `node scripts/packet.ts --repo <repo>`, adding `--base <ref>`, `--since <ref>`, `--head <ref>`, or `--working` as the target needs (`--help` explains each; Bun also runs it). The packet pins immutable revisions, snapshots working changes into a commit without touching the index or stash, and lists lockfiles, binaries, and generated or vendored files while leaving them out of the diff. A bad ref or an empty diff stops here. Record the packet's size as the loop's **baseline**: the last line of `git apply --stat <diff.patch>`.
 
-**Complete when:** the target, intent, standards documents, selected principles, and either the packet's base and head or the plan's path are known.
+**Complete when:** the target, intent, standards documents, selected principles, and either the packet's base, head, and baseline or the plan's path are known.
 
 ## 2. Review
 
@@ -62,9 +62,10 @@ End by offering the next step: fixing and re-reviewing while findings remain, or
 ## 5. Fix and re-review
 
 1. Apply each **fix** on the branch that owns it and run the focused checks, or edit the plan. When commits are authorized, commit each fix on its own.
-2. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the Codex correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
-3. Report only what is new or still open.
+2. **Cut first.** For code, rebuild the packet with `--since <round-1 base>` and the target's head option, and compare its size with the baseline. When it grew, read the growth and cut or narrow any added code that no fixed finding needs, such as a helper, option, guard, or test for a case the intent doesn't reach. Treat each cut as a fix from here on: apply, check, and commit it the same way, pass it to the next round, then measure again. Growth a fixed finding needs stays.
+3. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the Codex correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
+4. Report only what is new or still open, with the size on the checks line, as `diff +120 −30 → +150 −30`.
 
 Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.
 
-**Complete when:** a round is Clean, the user has fixed, deferred, or dropped every remaining finding, or the round cap is reached with the open findings reported; and every applied fix is committed when commits are authorized, and the packet directories are gone.
+**Complete when:** a round is Clean, the user has fixed, deferred, or dropped every remaining finding, or the round cap is reached with the open findings reported; and every line of growth past the baseline belongs to a fixed finding or was cut, every applied fix is committed when commits are authorized, and the packet directories are gone.
