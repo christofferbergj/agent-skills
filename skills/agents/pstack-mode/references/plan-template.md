@@ -110,7 +110,7 @@ Each live lane runs in its own isolated environment at the PR head, a cloud VM w
 - [ ] Root's clean verdict at the exact head SHA.
 - [ ] Bugbot triage done.
 - [ ] Rebased onto the execution playbook's base after the verdict, patch-id unchanged.
-- [ ] <The owner squash-merges its own PR, or the root appends it to the base-branch stack and the operator lands it bottom-up.>
+- [ ] <The merge or handoff rule from the execution playbook: the owner squash-merges its own PR, or hands the verified PR to the operator, stacked only on a PR it builds on.>
 
 ## Close the program
 
