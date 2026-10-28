@@ -25,7 +25,7 @@ The frontmatter and `CREDITS.md` retain Dex Horthy and Humanlayer's credit for t
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Keep the upstream description template and inherited source credit. Repository contribution formats take precedence, and publication follows the invoking grant.
-- Evidence, in the template and its section, states when screenshots are due (a visible change on a view that is cheap to capture), lays them out as a `Before | After` table per view, and says how to host them when the forge CLI cannot attach images. Reason: owner request (#33, #35). Upstream never says when screenshots are due or where they go, and `gh` cannot attach images, so agents fell back to text evidence for visible UI changes; side-by-side tables spare reviewers scrolling between the two.
+- Evidence, in the template and its section, states when screenshots are due (a visible change on a view that is cheap to capture), lays them out as a `Before | After` table per view when the base branch shows the same state and as a table of the new states otherwise, and says how to host them when the forge CLI cannot attach images. Reason: owner request (#33, #35). Upstream never says when screenshots are due or where they go, and `gh` cannot attach images, so agents fell back to text evidence for visible UI changes; side-by-side tables spare reviewers scrolling between the two. States joined the rule on owner request, because a forced before for a state the base branch never reaches shows nothing.
 
 ## Maintenance
 
