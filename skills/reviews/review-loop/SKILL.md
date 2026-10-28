@@ -27,7 +27,7 @@ Round 1 is a full review by both models. A plan target gets only the counterpart
 
 1. Dispatch the counterpart first, asynchronously and at full-review effort, through /swarm's counterpart route, with the brief filled in.
 2. When Codex is the counterpart and the diff changes code that runs, not only prose, docs, or skill text, dispatch the **Codex correctness** pass beside it: its own asynchronous task with the full review's model, effort, and speed and the brief's Codex correctness line, under its own `clientRequestId` in T3 Code, or its own prompt and output files through the CLI. It runs beside passes the round already waits for. Retry it once on its route when /swarm's execution contract allows a retry, and take no other route, since the same-model correctness critic already covers that ground; skip it when /swarm resolves the counterpart to `fallback`.
-3. Meanwhile, run both same-model passes in parallel on the packet's revisions, passing the resolved intent and standards. Skip a pass when equivalent evidence already covers this head and scope.
+3. Meanwhile, run both same-model passes in parallel on the packet's revisions, passing the resolved intent and standards. Skip a pass when equivalent evidence already covers this head and scope. A same-model /thermo-nuclear-review pass on an earlier head of this change, such as a /thermos run the user named, covers the correctness critic when every commit since only fixes that review's findings and a counterpart pass runs this round, since the counterpart reviews the fixed lines.
    - Invoke /code-review, with its Standards and Spec axes run by same-model critics.
    - Dispatch a same-model correctness and security critic through /swarm with /thermo-nuclear-review's rubric.
 
