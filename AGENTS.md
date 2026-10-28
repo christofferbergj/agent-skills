@@ -4,7 +4,7 @@ Skills are organized under `skills/<category>/<skill-name>/`.
 
 For project orientation, upstream ownership, or changes spanning skill families, read [the library architecture](docs/architecture.md).
 
-Read skills from this repository's `skills/` tree, not from installed copies, which lag until a refresh. To refresh or check installed copies after a change, follow [Install and update](docs/usage.md#install-and-update). Vocabulary lives in `GLOSSARY.md` and decisions in `docs/adr/`; [the docs index](docs/README.md) separates current guidance from dated evidence. Before adding, moving, removing, or redescribing a skill, read [the change set in Contributing](CONTRIBUTING.md#add-move-or-remove-a-skill).
+Read skills from this repository's `skills/` tree, not from installed copies, which lag until a refresh. Whenever a PR in this repository merges, refresh the installed copies by [Install and update](docs/usage.md#install-and-update), without asking first, and confirm that `scripts/check-installs.py` reports none stale. Vocabulary lives in `GLOSSARY.md` and decisions in `docs/adr/`; [the docs index](docs/README.md) separates current guidance from dated evidence. Before adding, moving, removing, or redescribing a skill, read [the change set in Contributing](CONTRIBUTING.md#add-move-or-remove-a-skill).
 
 Every published skill must:
 
