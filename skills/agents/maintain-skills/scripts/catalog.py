@@ -3,12 +3,13 @@
 
 Repository records (skill-local UPSTREAM.md files and catalog.json) hold decisions.
 Machine-local state (source clones, checkpoints, run directories) holds verification
-progress: fetch resolves candidates, compare --resume reuses verified progress,
-checkpoint records it, and prune bounds the retained runs.
+progress: begin takes the run lock, picks the mode, and opens a run folder; fetch
+resolves candidates; compare --resume reuses verified progress; checkpoint records
+it; prune bounds the retained runs; and release frees the lock.
 """
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import json
 import math
@@ -24,7 +25,11 @@ CATALOG = Path(__file__).resolve().parents[1] / 'catalog.json'
 IGNORED = {'.git', '__pycache__', 'node_modules', '.pytest_cache'}
 SHA = r'[0-9a-f]{40}'
 URL = r'https?://[^\s)\]>]+'
-CONTEXT = ['AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'docs/architecture.md']
+RECORD_NAMES = ['UPSTREAM.md', 'PROVENANCE.md', 'ATTRIBUTION.md', 'SOURCE.md']
+LOCK_STALE_MINUTES = 180  # Twice the longest run budget.
+AUDIT_INTERVAL_DAYS = 7
+REVIEW_EXPIRY_DAYS = 28
+WORKTREES = ['library', 'process']
 SOURCE_LABEL = re.compile(r'(?:source repository|canonical source|original source|^\s*[-*]?\s*(?:source|repository))\s*:', re.I)
 
 
@@ -57,13 +62,49 @@ def source_path(root, relative):
     return path
 
 
+def write_atomic(path, text):
+    """Replace path in one step, so a crash leaves the old file or the new one, never a torn one."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name('.' + path.name + '.' + str(os.getpid()) + '.tmp')
+    temporary.write_text(text)
+    os.replace(temporary, path)
+
+
+def read_json(path):
+    try:
+        return json.loads(path.read_text())
+    except (OSError, ValueError):
+        return None
+
+
+def parse_time(value):
+    moment = datetime.fromisoformat(str(value).replace('Z', '+00:00'))
+    return (moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
+
+
+def checkpoint_date(checkpoint):
+    try:
+        return parse_time(checkpoint['createdAt']).date()
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
 def digest(value):
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(',', ':')).encode()).hexdigest()
 
 
 def files_under(directory):
+    """Yield every file, and each symlinked directory as an entry of its own so a link never hides content."""
     for parent, children, files in os.walk(directory, followlinks=False):
-        children[:] = sorted(name for name in children if name not in IGNORED and not (Path(parent) / name).is_symlink())
+        kept = []
+        for name in sorted(children):
+            if name in IGNORED:
+                continue
+            if (Path(parent) / name).is_symlink():
+                yield Path(parent) / name
+            else:
+                kept.append(name)
+        children[:] = kept
         for name in sorted(files):
             if name != '.DS_Store' and not name.endswith('.pyc'):
                 yield Path(parent) / name
@@ -163,6 +204,11 @@ def group_key(identity, tracking):
     return identity + '@' + tracking['kind'] + ':' + tracking['ref']
 
 
+def policy_group(definition):
+    """A catalog policy tracks its repository's branch, main unless it names one."""
+    return group_key(repository_identity(definition['repository']), {'kind': 'branch', 'ref': definition.get('branch', 'main')})
+
+
 def github_paths(text, identity):
     result = []
     for url in re.findall(URL, text):
@@ -242,7 +288,7 @@ def source_record(identity, block, record_path):
 
 
 def discover_provenance(root, directory, front):
-    candidates = [directory / name for name in ['UPSTREAM.md', 'PROVENANCE.md', 'ATTRIBUTION.md', 'SOURCE.md'] if (directory / name).is_file()]
+    candidates = [directory / name for name in RECORD_NAMES if (directory / name).is_file()]
     if len(candidates) > 1:
         return [], [], ['Competing provenance records: ' + ', '.join(path.name for path in candidates)]
     if not candidates:
@@ -287,7 +333,7 @@ def discover_provenance(root, directory, front):
     return records, attributions, problems
 
 
-def inventory(root, catalog, resume=None):
+def inventory(root, catalog, resume=None, now=None):
     skills, groups, problems = [], {}, []
     for instruction in sorted((root / 'skills').rglob('SKILL.md')):
         if any(part in IGNORED for part in instruction.relative_to(root).parts):
@@ -354,7 +400,7 @@ def inventory(root, catalog, resume=None):
         problems.extend(item['name'] + ': ' + problem for problem in item['problems'])
     # Only governing guidance and its owners invalidate local evidence; listings and the catalog do not.
     shared_context = {}
-    for relative in catalog.get('contextPaths', CONTEXT):
+    for relative in catalog.get('contextPaths', []):
         path = source_path(root, relative)
         if path.is_file():
             shared_context[relative] = hashlib.sha256(path.read_bytes()).hexdigest()
@@ -362,18 +408,50 @@ def inventory(root, catalog, resume=None):
     owner_names = {owners[role] for role in catalog.get('contextOwners', []) if role in owners}
     owner_fingerprints = {item['name']: item['fingerprint'] for item in skills if item['name'] in owner_names}
     context_fingerprint = digest([shared_context, owner_fingerprints])
-    result = {'schema': 2, 'contextFingerprint': context_fingerprint, 'repositorySkills': len(skills), 'mappedSkills': len(mapped), 'skills': skills, 'sourceGroups': groups, 'problems': problems, 'valid': not problems, 'catalogFingerprint': digest(catalog), 'fingerprint': digest([[item['directory'], item['fingerprint']] for item in skills])}
+    context_files = {**shared_context, **owner_fingerprints}
+    result = {'schema': 2, 'contextFingerprint': context_fingerprint, 'contextFiles': context_files, 'repositorySkills': len(skills), 'mappedSkills': len(mapped), 'skills': skills, 'sourceGroups': groups, 'problems': problems, 'valid': not problems, 'catalogFingerprint': digest(catalog), 'fingerprint': digest([[item['directory'], item['fingerprint']] for item in skills])}
     # Records never confirmed complete in both directions await their first fidelity check.
     result['fidelityBacklog'] = sorted(item['name'] for item in skills if any(not record['fidelity'] for record in item['sources']))
     if resume is not None:
         previous = resume.get('skillFingerprints', {}) if isinstance(resume, dict) else {}
         result['changedSince'] = sorted(item['name'] for item in skills if previous.get(item['name']) != item['fingerprint'])
+        if isinstance(resume, dict) and isinstance(resume.get('contextFiles'), dict):
+            earlier = resume['contextFiles']
+            result['contextChanged'] = sorted(name for name in set(earlier) | set(context_files) if earlier.get(name) != context_files.get(name))
+        else:
+            result['contextChanged'] = sorted(context_files) if isinstance(resume, dict) and resume.get('contextFingerprint') != context_fingerprint else []
+        result['staleReviews'] = stale_reviews(resume, now)
     return result
+
+
+def review_dates(resume):
+    """Each locally reviewed skill's last review date; older checkpoints date every review by their creation."""
+    if not isinstance(resume, dict):
+        return {}
+    fallback = checkpoint_date(resume)
+    dates = resume.get('reviewedAt') if isinstance(resume.get('reviewedAt'), dict) else {}
+    return {name: dates.get(name) or (fallback.isoformat() if fallback else None) for name in resume.get('locallyReviewed', resume.get('completed', []))}
+
+
+def stale_reviews(resume, now=None):
+    """Reviews older than the expiry, oldest first: an audit rechecks these against current tools."""
+    today = (now or datetime.now(timezone.utc)).date()
+    stale = []
+    for name, date in review_dates(resume).items():
+        try:
+            reviewed = datetime.fromisoformat(date).date() if date else None
+        except ValueError:
+            reviewed = None
+        if reviewed is None or (today - reviewed).days > REVIEW_EXPIRY_DAYS:
+            stale.append((reviewed.isoformat() if reviewed else '', name))
+    return [name for _, name in sorted(stale)]
 
 
 def validate(root, catalog):
     discovered = inventory(root, catalog)
     problems = list(discovered['problems'])
+    if 'contextPaths' not in catalog:
+        problems.append('Catalog has no contextPaths')
     names = {item['name'] for item in discovered['skills']}
     for role, owner in catalog.get('owners', {}).items():
         if owner not in names:
@@ -407,7 +485,7 @@ def validate(root, catalog):
                 for label, target in markdown_targets(document):
                     if not target.exists():
                         problems.append(str(document.relative_to(root)) + ': broken link ' + label)
-                    elif document.name not in ['README.md', 'UPSTREAM.md', 'PROVENANCE.md', 'ATTRIBUTION.md', 'SOURCE.md', 'MAINTENANCE.md', 'VALIDATION.md'] and not target.is_relative_to(directory):
+                    elif document.name not in ['README.md', *RECORD_NAMES, 'MAINTENANCE.md', 'VALIDATION.md'] and not target.is_relative_to(directory):
                         problems.append(str(document.relative_to(root)) + ': invoke the reference owner instead of linking outside the skill: ' + label)
         except (OSError, ValueError, IndexError) as error:
             problems.append(name + ': ' + str(error))
@@ -434,8 +512,7 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
     definitions = sources(root, catalog)
     if source in definitions:
         definition = definitions[source]
-        identity = repository_identity(definition['repository'])
-        key = group_key(identity, {'kind': 'branch', 'ref': definition.get('branch', 'main')})
+        key = policy_group(definition)
         group = discovered['sourceGroups'].get(key)
         if not group:
             raise ValueError('Suite source has no resolved local provenance')
@@ -446,7 +523,7 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
         key = source
         group = discovered['sourceGroups'][source]
         records = group['records']
-        policies = {name: definition for name, definition in definitions.items() if repository_identity(definition['repository']) == group['identity'] and {'kind': 'branch', 'ref': definition.get('branch', 'main')} == group['tracking']}
+        policies = {name: definition for name, definition in definitions.items() if policy_group(definition) == key}
     # Avoid comparing a valid SHA in a checkout for a different repository.
     try:
         remote = git(upstream, 'remote', 'get-url', 'origin').decode().strip()
@@ -527,7 +604,7 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
         original = next((entry['upstream'] for definition in policies.values() for entry in definition.get('skills', []) if entry['local'] == change['local']), None)
         if original and original not in actual and change['status'] != 'blocked':
             change['status'] = 'removed'
-    result = {'source': source, 'candidate': candidate, 'repository': group['repository'], 'tracking': group['tracking'], 'resumedFrom': prior, 'suites': suite_results, 'skills': changes, 'sharedInputs': shared, 'reviewComplete': False, 'policy': catalog.get('policy')}
+    result = {'source': source, 'candidate': candidate, 'repository': group['repository'], 'tracking': group['tracking'], 'resumedFrom': prior, 'suites': suite_results, 'skills': changes, 'sharedInputs': shared, 'reviewComplete': False}
     if policies:
         result['inventory'] = sorted(actual)
     if source in suite_results:
@@ -584,6 +661,142 @@ def prune(state, keep):
     return {'deleted': deleted}
 
 
+class Locked(Exception):
+    def __init__(self, owner):
+        super().__init__('locked')
+        self.owner = owner if isinstance(owner, dict) else {}
+
+
+def acquire_lock(state, run, now):
+    """Take $STATE/lock with an atomic mkdir; a lock older than LOCK_STALE_MINUTES belongs to a dead run."""
+    lock = state / 'lock'
+    recovered = None
+    try:
+        lock.mkdir()
+    except FileExistsError:
+        owner = read_json(lock / 'owner.json')
+        try:
+            since = parse_time(owner['startedAt'])
+        except (KeyError, TypeError, ValueError):
+            since = None
+        if since and now - since < timedelta(minutes=LOCK_STALE_MINUTES):
+            raise Locked(owner)
+        recovered = owner if isinstance(owner, dict) else {'unreadable': True}
+        # Renaming first lets only one of two racing runs recreate the lock.
+        stale = state / ('lock.stale.' + now.strftime('%Y%m%dT%H%M%S%fZ'))
+        os.rename(lock, stale)
+        shutil.rmtree(stale)
+        try:
+            lock.mkdir()
+        except FileExistsError:
+            raise Locked(read_json(lock / 'owner.json'))
+    write_atomic(lock / 'owner.json', json.dumps({'run': str(run), 'startedAt': now.isoformat()}, indent=2) + '\n')
+    return recovered
+
+
+def leftovers(state):
+    """Uncommitted changes and unpushed commits an interrupted run left in the reused worktrees."""
+    found = {}
+    for name in WORKTREES:
+        worktree = state / 'worktrees' / name
+        if not worktree.exists():
+            continue
+        try:
+            changes = git(worktree, 'status', '--porcelain').decode().splitlines()
+            unpushed = git(worktree, 'rev-list', 'HEAD', '--not', '--remotes').decode().split()
+        except ValueError as error:
+            found[name] = {'error': str(error)}
+            continue
+        if changes or unpushed:
+            found[name] = {'changes': changes, 'unpushed': unpushed}
+    return found
+
+
+def begin(state, mode=None, now=None):
+    """Open a run: take the lock, choose the mode, find the resume checkpoint, and gather carried state."""
+    now = now or datetime.now(timezone.utc)
+    state.mkdir(parents=True, exist_ok=True)
+    runs = state / 'runs'
+    earlier = sorted((path for path in runs.iterdir() if path.is_dir() and not path.is_symlink()), reverse=True) if runs.is_dir() else []
+    audits = [checkpoint_date(data) for path in earlier if path.name.endswith('-audit') and isinstance(data := read_json(path / 'checkpoint.json'), dict) and data.get('coverageComplete') is True]
+    last_audit = max((date for date in audits if date), default=None)
+    if mode:
+        reason = 'named'
+    elif last_audit and (now.date() - last_audit).days < AUDIT_INTERVAL_DAYS:
+        mode, reason = 'upstream', 'audit completed ' + last_audit.isoformat()
+    else:
+        mode, reason = 'audit', 'no completed audit in ' + str(AUDIT_INTERVAL_DAYS) + ' days'
+    run = runs / (now.strftime('%Y-%m-%dT%H%M%SZ') + '-' + mode)
+    recovered = acquire_lock(state, run, now)
+    try:
+        run.mkdir(parents=True)
+        resume, skipped = None, []
+        for path in earlier:
+            if not (path / 'checkpoint.json').exists():
+                continue
+            data = read_json(path / 'checkpoint.json')
+            if isinstance(data, dict) and data.get('schema') == 2:
+                resume = (path / 'checkpoint.json', data)
+                break
+            skipped.append(str(path / 'checkpoint.json'))
+        comments_since = None
+        if resume:
+            try:
+                comments_since = (parse_time(resume[1]['createdAt']) - timedelta(minutes=float(resume[1].get('elapsedMinutes', 0)))).isoformat()
+            except (KeyError, TypeError, ValueError):
+                comments_since = None
+        questions = read_json(state / 'questions.json') if (state / 'questions.json').exists() else []
+        if questions is None:
+            raise ValueError('Unreadable questions file: ' + str(state / 'questions.json'))
+        result = {'run': str(run), 'mode': mode, 'modeReason': reason, 'startedAt': now.isoformat(), 'resume': str(resume[0]) if resume else None, 'skippedCheckpoints': skipped, 'commentsSince': comments_since, 'questions': questions}
+        actions_path = state / 'next-actions.json'
+        if actions_path.exists():
+            actions = read_json(actions_path)
+            if not isinstance(actions, list):
+                raise ValueError('Unreadable next actions file: ' + str(actions_path))
+            for action in actions:
+                try:
+                    carried = datetime.fromisoformat(action['firstCarried']).date()
+                except (KeyError, TypeError, ValueError):
+                    raise ValueError('Next action needs an item and a firstCarried date: ' + json.dumps(action))
+                if last_audit and carried <= last_audit:
+                    action['overdue'] = True
+            result['nextActions'] = actions
+        else:
+            result['nextActions'] = []
+            legacy = next((path / 'next-actions.md' for path in earlier if (path / 'next-actions.md').is_file()), None)
+            if legacy:
+                result['legacyNextActions'] = str(legacy)
+        result['leftovers'] = leftovers(state)
+        if recovered is not None:
+            result['recoveredLock'] = recovered
+        write_atomic(run / 'run.json', json.dumps({'startedAt': result['startedAt'], 'mode': mode}, indent=2) + '\n')
+        write_atomic(run / 'begin.json', json.dumps(result, indent=2) + '\n')
+        return result
+    except BaseException:
+        release(state, run)
+        raise
+
+
+def release(state, run):
+    owner = read_json(state / 'lock' / 'owner.json')
+    if not (state / 'lock').is_dir():
+        return {'error': 'No run holds the lock'}
+    holder = owner.get('run') if isinstance(owner, dict) else None
+    if not holder or Path(holder).resolve() != Path(run).resolve():
+        return {'error': 'The lock is held by ' + str(holder), 'heldBy': holder}
+    shutil.rmtree(state / 'lock')
+    return {'released': str(run)}
+
+
+def suites_changed(report):
+    return any(suite['added'] or suite['removed'] or suite['possibleMoves'] for suite in report['suites'].values())
+
+
+def shared_changed(report):
+    return any(entry.get('files') or entry.get('status') == 'blocked' for entry in report['sharedInputs'])
+
+
 def compared_reviews(comparisons, candidates):
     """Turn compare reports into source reviews: unchanged skills, and empty inventories and shared inputs, need no decision."""
     reviews = {}
@@ -592,16 +805,36 @@ def compared_reviews(comparisons, candidates):
         if candidates.get(key) != report['candidate']:
             raise ValueError('Comparison candidate differs from the checkpoint candidate for ' + key)
         review = reviews.setdefault(key, {'candidate': report['candidate'], 'skills': [], 'inventoryReviewed': True, 'sharedInputsReviewed': True})
-        review['skills'] = sorted(set(review['skills']) | {change['local'] for change in report['skills'] if change['status'] == 'unchanged'})
-        review['inventoryReviewed'] = review['inventoryReviewed'] and not any(suite['added'] or suite['removed'] or suite['possibleMoves'] for suite in report['suites'].values())
-        review['sharedInputsReviewed'] = review['sharedInputsReviewed'] and not any(entry.get('files') or entry.get('status') == 'blocked' for entry in report['sharedInputs'])
+        # A skill with several records in one group is acknowledged only when every row is unchanged.
+        statuses = {}
+        for change in report['skills']:
+            statuses.setdefault(change['local'], set()).add(change['status'])
+        review['skills'] = sorted(set(review['skills']) | {name for name, found in statuses.items() if found == {'unchanged'}})
+        review['inventoryReviewed'] = review['inventoryReviewed'] and not suites_changed(report)
+        review['sharedInputsReviewed'] = review['sharedInputsReviewed'] and not shared_changed(report)
     return reviews
 
 
-def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integration_validated, source_reviews=None, resume=None, comparisons=None):
+def library_revision(root):
+    try:
+        return git(root, 'rev-parse', '--verify', 'HEAD').decode().strip()
+    except ValueError:
+        return None
+
+
+def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integration_validated, source_reviews=None, resume=None, comparisons=None, failed=None, context_reviewed=False, context_affected=(), now=None):
     current = inventory(root, catalog)
     packaging = validate(root, catalog)
     groups = current['sourceGroups']
+    now = now or datetime.now(timezone.utc)
+    # A group that failed to fetch keeps the prior candidate and stays pending until it fetches again.
+    failed = sorted(failed or {})
+    candidates = dict(candidates)
+    for key in failed:
+        prior = resume.get('sourceCoverage', {}).get(key, {}).get('candidate') or resume.get('candidates', {}).get(key) if isinstance(resume, dict) else None
+        if not prior:
+            raise ValueError('Failed source has no prior candidate to keep: ' + key)
+        candidates[key] = prior
     if set(candidates) != set(groups) or any(not isinstance(value, str) or not re.fullmatch(SHA, value) for value in candidates.values()):
         raise ValueError('Checkpoint needs one immutable candidate SHA for each discovered repository/tracking group: ' + ', '.join(sorted(groups)))
     names = {item['name'] for item in current['skills']}
@@ -617,20 +850,25 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
     if not set(reviews) <= set(groups):
         raise ValueError('Unknown source review group')
     requested = set(completed)
+    affected = set(context_affected)
+    if not affected <= names:
+        raise ValueError('Unknown skills in --context-affected')
     invalidated = []
     fingerprints = {item['name']: item['fingerprint'] for item in current['skills']}
     if resume is not None:
         if resume.get('schema') != 2 or 'skillFingerprints' not in resume or 'sourceCoverage' not in resume:
             raise ValueError('Legacy or incomplete checkpoint cannot establish current repository coverage; reconcile it against a fresh inventory')
+        # A context change keeps a review only when the coordinator reviewed that change and the skill is unaffected.
+        same_context = resume.get('contextFingerprint') == current['contextFingerprint']
         for name in resume.get('locallyReviewed', resume.get('completed', [])):
-            if name in names and resume['skillFingerprints'].get(name) == fingerprints[name] and resume.get('contextFingerprint') == current['contextFingerprint']:
+            if name in names and resume['skillFingerprints'].get(name) == fingerprints[name] and (same_context or (context_reviewed and name not in affected)):
                 requested.add(name)
             else:
                 invalidated.append(name)
         for key, group in groups.items():
             previous = resume['sourceCoverage'].get(key, {})
-            if key not in reviews and previous.get('candidate') == candidates[key] and previous.get('fingerprint') == group['fingerprint'] and resume.get('contextFingerprint') == current['contextFingerprint']:
-                reviews[key] = previous
+            if key not in reviews and previous.get('candidate') == candidates[key] and previous.get('fingerprint') == group['fingerprint'] and (same_context or context_reviewed):
+                reviews[key] = previous if same_context else {**previous, 'skills': [name for name in previous.get('skills', []) if name not in affected]}
     coverage = {}
     for key, group in groups.items():
         review = reviews.get(key, {})
@@ -639,6 +877,8 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
             raise ValueError('Unknown or duplicate skills in source review ' + key)
         matching = review.get('candidate') == candidates[key]
         coverage[key] = {'candidate': candidates[key], 'fingerprint': group['fingerprint'], 'skills': sorted(reviewed_names) if matching else [], 'pending': sorted(set(group['skills']) - set(reviewed_names)) if matching else group['skills'], 'inventoryReviewed': matching and review.get('inventoryReviewed') is True, 'sharedInputsReviewed': matching and review.get('sharedInputsReviewed') is True}
+        if key in failed:
+            coverage[key].update({'skills': [], 'pending': group['skills'], 'inventoryReviewed': False, 'sharedInputsReviewed': False})
     finished = []
     for item in current['skills']:
         invalid_packaging = any(problem.startswith(item['name'] + ':') or problem.startswith(item['directory'] + '/') for problem in packaging['problems'])
@@ -648,7 +888,10 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
     source_pending = [key for key, review in coverage.items() if review['pending'] or not review['inventoryReviewed'] or not review['sharedInputsReviewed']]
     # Integration checks still hold when no skill or governing input changed since a validated checkpoint.
     integration_validated = integration_validated or (isinstance(resume, dict) and resume.get('integrationValidated') is True and resume.get('skillFingerprints') == fingerprints and resume.get('contextFingerprint') == current['contextFingerprint'])
-    return {'schema': 2, 'createdAt': datetime.now(timezone.utc).isoformat(), 'inventoryFingerprint': current['fingerprint'], 'contextFingerprint': current['contextFingerprint'], 'catalogFingerprint': current['catalogFingerprint'], 'skillFingerprints': fingerprints, 'candidates': candidates, 'locallyReviewed': sorted(requested), 'completed': sorted(finished), 'pending': pending, 'sourceCoverage': coverage, 'pendingSources': source_pending, 'invalidated': sorted(invalidated), 'problems': packaging['problems'], 'elapsedMinutes': elapsed_minutes, 'integrationValidated': integration_validated, 'coverageComplete': not pending and not source_pending and not packaging['problems'] and integration_validated, 'reviewComplete': False, 'baselinesAdvancedByCheckpoint': False}
+    earlier_dates = review_dates(resume)
+    today = now.date().isoformat()
+    reviewed_at = {name: today if name in completed else earlier_dates.get(name) or today for name in sorted(requested)}
+    return {'schema': 2, 'createdAt': now.isoformat(), 'libraryRevision': library_revision(root), 'inventoryFingerprint': current['fingerprint'], 'contextFingerprint': current['contextFingerprint'], 'contextFiles': current['contextFiles'], 'catalogFingerprint': current['catalogFingerprint'], 'skillFingerprints': fingerprints, 'candidates': candidates, 'failedSources': failed, 'locallyReviewed': sorted(requested), 'reviewedAt': reviewed_at, 'completed': sorted(finished), 'pending': pending, 'sourceCoverage': coverage, 'pendingSources': source_pending, 'invalidated': sorted(invalidated), 'problems': packaging['problems'], 'elapsedMinutes': elapsed_minutes, 'integrationValidated': integration_validated, 'coverageComplete': not pending and not source_pending and not packaging['problems'] and integration_validated}
 
 
 def main():
@@ -656,44 +899,56 @@ def main():
     parser.add_argument('--catalog', type=Path, default=CATALOG)
     parser.add_argument('--root', type=Path, required=True, help='Skill library repository root')
     commands = parser.add_subparsers(dest='command', required=True, metavar='command')
-    commands.add_parser('names', help='List installed skill names')
-    survey = commands.add_parser('inventory', help='Discover every skill, its provenance records, source groups, and fidelity backlog')
-    survey.add_argument('--resume', type=Path, help='Prior checkpoint; lists skills whose files changed since it as changedSince')
-    survey.add_argument('--output', type=Path)
+    begin_parser = commands.add_parser('begin', help='Take the run lock, choose the mode, and open a run folder with the resume checkpoint and carried state')
+    begin_parser.add_argument('--state', type=Path, required=True)
+    begin_parser.add_argument('--mode', choices=['upstream', 'audit'], help='Run this mode instead of choosing by the last completed audit')
+    begin_parser.add_argument('--now', help=argparse.SUPPRESS)
+    release_parser = commands.add_parser('release', help='Free the run lock that begin took for --run')
+    release_parser.add_argument('--state', type=Path, required=True)
+    release_parser.add_argument('--run', type=Path, required=True)
+    inventory_parser = commands.add_parser('inventory', help='Discover every skill, its provenance records, source groups, and fidelity backlog')
+    inventory_parser.add_argument('--resume', type=Path, help='Prior checkpoint; lists skills whose files changed since it as changedSince')
+    inventory_parser.add_argument('--output', type=Path)
     commands.add_parser('validate', help='Check packaging, listings, links, and catalog mappings')
-    pull = commands.add_parser('fetch', help='Clone or update one blobless checkout per source and resolve candidate commits')
-    pull.add_argument('--state', type=Path, required=True, help='Machine-local state directory; clones live under sources/')
-    pull.add_argument('--remote', action='append', default=[], metavar='IDENTITY=URL', help='Fetch IDENTITY (such as github.com/owner/name) from URL without persisting it')
-    pull.add_argument('--output', type=Path)
-    delta = commands.add_parser('compare', help='Diff one source group or catalog policy from reviewed baselines to a candidate; --resume carries checkpoint progress forward')
-    delta.add_argument('--source', help='Source group key or catalog source name')
-    delta.add_argument('--upstream', type=Path, help='Checkout whose origin is the source repository')
-    delta.add_argument('--candidate')
-    delta.add_argument('--fetch', type=Path, help='Fetch output; compares every fetched group instead of --source/--upstream/--candidate')
-    delta.add_argument('--output-dir', type=Path, help='With --fetch, write one <repository>-compare.json per group here')
-    delta.add_argument('--resume', type=Path, help='Prior checkpoint whose verified progress replaces record baselines')
-    delta.add_argument('--output', type=Path)
-    save = commands.add_parser('checkpoint', help='Record verification progress for the current candidates')
-    save.add_argument('--candidates', type=Path, required=True, help='Group-to-candidate map, or fetch output containing one')
-    save.add_argument('--completed', nargs='*', default=[])
-    save.add_argument('--source-reviews', type=Path, help='Decided source reviews per group; merged over --compare acknowledgements')
-    save.add_argument('--compare', type=Path, nargs='*', default=[], help='Compare reports whose unchanged skills and empty inventories or shared inputs count as reviewed')
-    save.add_argument('--resume', type=Path)
-    save.add_argument('--elapsed-minutes', type=float, required=True)
-    save.add_argument('--integration-validated', action='store_true')
-    save.add_argument('--output', type=Path, required=True)
-    clean = commands.add_parser('prune', help='Delete run directories under --state/runs beyond the newest --keep')
-    clean.add_argument('--state', type=Path, required=True)
-    clean.add_argument('--keep', type=int, required=True)
+    fetch_parser = commands.add_parser('fetch', help='Clone or update one blobless checkout per source and resolve candidate commits')
+    fetch_parser.add_argument('--state', type=Path, required=True, help='Machine-local state directory; clones live under sources/')
+    fetch_parser.add_argument('--remote', action='append', default=[], metavar='IDENTITY=URL', help='Fetch IDENTITY (such as github.com/owner/name) from URL without persisting it')
+    fetch_parser.add_argument('--output', type=Path)
+    compare_parser = commands.add_parser('compare', help='Diff one source group or catalog policy from reviewed baselines to a candidate; --resume carries checkpoint progress forward')
+    compare_parser.add_argument('--source', help='Source group key or catalog source name')
+    compare_parser.add_argument('--upstream', type=Path, help='Checkout whose origin is the source repository')
+    compare_parser.add_argument('--candidate')
+    compare_parser.add_argument('--fetch', type=Path, help='Fetch output; compares every fetched group instead of --source/--upstream/--candidate')
+    compare_parser.add_argument('--output-dir', type=Path, help='With --fetch, write one <repository>-compare.json per group here')
+    compare_parser.add_argument('--resume', type=Path, help='Prior checkpoint whose verified progress replaces record baselines')
+    compare_parser.add_argument('--output', type=Path)
+    checkpoint_parser = commands.add_parser('checkpoint', help='Record verification progress for the current candidates')
+    checkpoint_parser.add_argument('--candidates', type=Path, required=True, help='Group-to-candidate map, or fetch output containing one')
+    checkpoint_parser.add_argument('--completed', nargs='*', default=[])
+    checkpoint_parser.add_argument('--source-reviews', type=Path, help='Decided source reviews per group; merged over --compare acknowledgements')
+    checkpoint_parser.add_argument('--compare', type=Path, nargs='*', default=[], help='Compare reports whose unchanged skills and empty inventories or shared inputs count as reviewed')
+    checkpoint_parser.add_argument('--resume', type=Path)
+    checkpoint_parser.add_argument('--elapsed-minutes', type=float, required=True)
+    checkpoint_parser.add_argument('--integration-validated', action='store_true')
+    checkpoint_parser.add_argument('--context-reviewed', action='store_true', help='The context change since --resume was reviewed; earlier reviews survive it except for --context-affected')
+    checkpoint_parser.add_argument('--context-affected', nargs='*', default=[], metavar='NAME')
+    checkpoint_parser.add_argument('--output', type=Path, required=True)
+    prune_parser = commands.add_parser('prune', help='Delete run directories under --state/runs beyond the newest --keep')
+    prune_parser.add_argument('--state', type=Path, required=True)
+    prune_parser.add_argument('--keep', type=int, required=True)
     arguments = parser.parse_args()
     try:
         root = arguments.root.resolve()
         catalog = json.loads(arguments.catalog.read_text())
-        if arguments.command == 'names':
-            result = inventory(root, catalog)
-            print('\n'.join(sorted(item['name'] for item in result['skills'])))
-            return 0 if result['valid'] else 1
-        if arguments.command == 'inventory':
+        if arguments.command == 'begin':
+            try:
+                result = begin(arguments.state.resolve(), arguments.mode, parse_time(arguments.now) if arguments.now else None)
+            except Locked as error:
+                print(json.dumps({'error': 'locked', 'heldBy': error.owner.get('run'), 'since': error.owner.get('startedAt')}))
+                return 3
+        elif arguments.command == 'release':
+            result = release(arguments.state.resolve(), arguments.run.resolve())
+        elif arguments.command == 'inventory':
             result = inventory(root, catalog, json.loads(arguments.resume.read_text()) if arguments.resume else None)
         elif arguments.command == 'validate':
             result = validate(root, catalog)
@@ -714,36 +969,36 @@ def main():
                 result = {}
                 for key, sha in sorted(fetched['candidates'].items()):
                     report = compare(root, catalog, key, Path(fetched['checkouts'][key]), sha, resume)
-                    path = arguments.output_dir / (key.split('@')[0].replace('/', '-') + '-compare.json')
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    path.write_text(json.dumps(report, indent=2, sort_keys=True) + '\n')
+                    path = arguments.output_dir / (re.sub(r'[^A-Za-z0-9._-]+', '-', key) + '-compare.json')
+                    write_atomic(path, json.dumps(report, indent=2, sort_keys=True) + '\n')
                     statuses = {}
                     for change in report['skills']:
                         statuses[change['status']] = statuses.get(change['status'], 0) + 1
-                    result[key] = {'output': str(path), 'skills': statuses, 'suitesChanged': any(suite['added'] or suite['removed'] or suite['possibleMoves'] for suite in report['suites'].values()), 'sharedChanged': any(entry.get('files') or entry.get('status') == 'blocked' for entry in report['sharedInputs'])}
+                    result[key] = {'output': str(path), 'skills': statuses, 'suitesChanged': suites_changed(report), 'sharedChanged': shared_changed(report)}
             elif arguments.source and arguments.upstream and arguments.candidate:
                 result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate, resume)
             else:
                 raise ValueError('compare needs --fetch with --output-dir, or --source, --upstream, and --candidate')
         elif arguments.command == 'prune':
             result = prune(arguments.state, arguments.keep)
-        else:
+        elif arguments.command == 'checkpoint':
             reviews = json.loads(arguments.source_reviews.read_text()) if arguments.source_reviews else None
             resume = json.loads(arguments.resume.read_text()) if arguments.resume else None
             candidates = json.loads(arguments.candidates.read_text())
-            # Accept fetch output directly; its candidates map is the checkpoint input.
+            failed = {}
+            # Accept fetch output directly: its candidates map is the input, and its errors stay pending.
             if isinstance(candidates.get('candidates'), dict):
+                failed = candidates.get('errors') or {}
                 candidates = candidates['candidates']
-            result = checkpoint(root, catalog, candidates, arguments.completed, arguments.elapsed_minutes, arguments.integration_validated, reviews, resume, [json.loads(path.read_text()) for path in arguments.compare])
+            result = checkpoint(root, catalog, candidates, arguments.completed, arguments.elapsed_minutes, arguments.integration_validated, reviews, resume, [json.loads(path.read_text()) for path in arguments.compare], failed, arguments.context_reviewed, arguments.context_affected)
         encoded = json.dumps(result, indent=2) + '\n'
         output = getattr(arguments, 'output', None)
         if output:
-            output.parent.mkdir(parents=True, exist_ok=True)
-            output.write_text(encoded)
+            write_atomic(output, encoded)
         print(encoded, end='')
-        return 0 if result.get('valid', True) and not result.get('errors') else 1
+        return 0 if result.get('valid', True) and not result.get('errors') and 'error' not in result else 1
     except (OSError, ValueError, TypeError, KeyError, IndexError) as error:
-        print(json.dumps({'error': str(error), 'reviewComplete': False}))
+        print(json.dumps({'error': str(error)}))
         return 2
 
 
