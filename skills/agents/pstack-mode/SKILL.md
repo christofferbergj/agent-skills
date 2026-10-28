@@ -28,6 +28,7 @@ Remaining triggers:
 - Docs, RFCs, readmes, PR descriptions, or commit messages → /technical-writing. A PR description takes its shape from /pr.
 - Before commit → a deslop pass over the diff with the repository's or host's cleanup tool, when one exists.
 - Before review → /no-comments.
+- Before opening a PR → the **Opening a PR** playbook (`playbooks/opening-a-pr.md`), read in full. Its **Final review** runs /review-loop, which adds the other vendor's model. A review the user names, such as /thermos, runs as well and never replaces it.
 - Shipping UI / IDE / CLI → the matching control surface: the project's verification skill (/create-verification-skill creates one), or the host's browser and terminal control tools. For bug fixes, reproduce first on the same surface yourself. Hand to the user only under the narrow Bug fix step 1 exception.
 - Running a benchmark, measuring perf yourself, or reporting a speedup or regression you measured → /benchmark-checklist before you report or act on the number.
 - Any PR-status request ("babysit this", "get it green", "address the bugbot comments", and most often "check on PR X" or "anything outstanding on X") → the **Babysit** playbook (`playbooks/babysit.md`), not a host's built-in babysit skill, whose description can match the same words. Never triggered by merely opening a PR. Declare its mode before polling. The playbook's step 1 owns the request-to-mode mapping. Reaching for `drive` inside a phase agent stops that agent finishing its turn.
