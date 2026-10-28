@@ -10,8 +10,8 @@ Keep run evidence in `$STATE`, outside installed skills:
 - `sources/` holds one blobless clone per upstream repository, reused across runs.
 - `worktrees/library/` and `worktrees/process/` hold the two maintenance worktrees, reused across runs.
 - `runs/<UTC timestamp>-<mode>/`, such as `runs/2026-10-21T080000Z-upstream/`, holds the run's `begin.json`, `inventory.json`, `fetch.json`, compare reports, worker assignments and evidence, and `checkpoint.json`.
-- `questions.json` lists questions waiting on the owner, each with its item, question, recommendation, date asked, and PR link. Remove a question once its answer is recorded in the repository.
-- `next-actions.json` lists carried items, each with its `item`, `reason`, and `firstCarried` date. Remove an item once it is finished or asked.
+- `questions.json` lists questions waiting on the owner, each with its item, question, recommendation, date asked, and PR link.
+- `next-actions.json` lists carried items, each with its `item`, `reason`, and `firstCarried` date.
 
 A missing `questions.json` or `next-actions.json` means the list is empty.
 
@@ -32,7 +32,7 @@ It exits 3 when another run holds the lock. Otherwise it prints, and saves as `$
 - `resume`: the newest valid checkpoint, skipping unreadable ones, which it lists in `skippedCheckpoints`.
 - `commentsSince`: when that checkpoint's run started. Owner comments posted since then are new.
 - `questions` and `nextActions` from runtime state. A carried item is `overdue` once an audit has finished since it was first carried. `legacyNextActions` names an older run's `next-actions.md` to convert when `next-actions.json` is missing.
-- `leftovers`: uncommitted changes and unpushed commits an interrupted run left in each worktree. Syncing discards them; the checkpoint, saved only after delivery, still lists their work.
+- `leftovers`: uncommitted changes and unpushed commits an interrupted run left in each worktree. Syncing discards them; the checkpoint and `next-actions.json`, both settled only after delivery, still hold their work.
 
 Free the lock after the last write to `$STATE`, the same way:
 
@@ -125,7 +125,7 @@ Library changes go on the `skill-maintenance` branch. Changes to this skill's ow
 
 Sync each worktree after `begin`, creating it with `git worktree add` when missing; create the process worktree at the first process edit. After fetching, record `git -C "$WORKTREE" rev-parse --verify --quiet "origin/$BRANCH"` as the branch's lease, empty when it has no remote branch:
 
-- **Open PR:** start from its pushed head, which includes any owner commits, rebased onto the default branch. When the rebase stops on a conflict, abort it and ask the owner; that branch's work waits.
+- **Open PR, or pushed without one:** start from the branch's pushed head, which includes any owner commits, rebased onto the default branch. A branch is pushed without a PR when its remote head is the head of no PR (`gh pr list --head "$BRANCH" --state all --json headRefOid`), as an interrupted delivery leaves it. When the rebase stops on a conflict, abort it and ask the owner; that branch's work waits.
 
   ```bash
   git -C "$WORKTREE" fetch --quiet origin
@@ -134,7 +134,7 @@ Sync each worktree after `begin`, creating it with `git worktree add` when missi
   git -C "$WORKTREE" rebase --quiet origin/main
   ```
 
-- **Merged or no PR:** detach at the default branch, and create the branch from it at the first edit.
+- **Merged, or no remote branch:** detach at the default branch, and create the branch from it at the first edit.
 
   ```bash
   git -C "$WORKTREE" fetch --quiet origin

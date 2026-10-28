@@ -846,45 +846,35 @@ class RunLifecycle(unittest.TestCase):
             catalog.begin(self.state, None, catalog.datetime.now(catalog.timezone.utc))
         self.assertTrue((self.state / 'lock').is_dir())
 
-    def test_a_second_reclaimer_backs_off_instead_of_removing_the_new_lock(self):
+    def stale_lock(self):
         (self.state / 'lock').mkdir(parents=True)
-        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': (self.now - catalog.timedelta(minutes=181)).isoformat()}
+        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': '2026-01-01T00:00:00+00:00'}
         (self.state / 'lock/owner.json').write_text(json.dumps(dead))
-        (self.state / 'lock/reclaim').write_text('')
-        with self.assertRaises(catalog.Locked):
-            catalog.begin(self.state, None, catalog.datetime.fromtimestamp((self.state / 'lock/reclaim').stat().st_mtime, catalog.timezone.utc))
-        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text()), dead)
-        original = catalog.read_json
-        winner = {'run': str(self.state / 'runs/winner'), 'startedAt': self.now.isoformat()}
-        (self.state / 'lock/reclaim').unlink()
+        return dead
 
-        def reclaimed_meanwhile(path):
-            # Another run reclaims the lock between this run's two reads of its owner.
-            value = original(path)
-            if path.name == 'owner.json' and value == dead and not getattr(reclaimed_meanwhile, 'done', False):
-                reclaimed_meanwhile.done = True
-                return value
-            return winner if path.name == 'owner.json' else value
+    def start_cli(self, *arguments):
+        return subprocess.Popen([sys.executable, str(SCRIPT), *arguments, '--state', str(self.state)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
-        catalog.read_json = reclaimed_meanwhile
-        try:
-            with self.assertRaises(catalog.Locked):
-                catalog.begin(self.state, None, self.now)
-        finally:
-            catalog.read_json = original
-        self.assertFalse((self.state / 'lock/reclaim').exists())
-        self.assertTrue((self.state / 'lock').is_dir())
+    def test_taking_over_a_stale_lock_waits_for_the_guard(self):
+        dead = self.stale_lock()
+        with open(self.state / 'lock.guard', 'a') as guard:
+            catalog.fcntl.flock(guard, catalog.fcntl.LOCK_EX)
+            started = self.start_cli('begin')
+            with self.assertRaises(subprocess.TimeoutExpired):
+                started.wait(timeout=1)
+            self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text()), dead)
+        output, errors = started.communicate(timeout=30)
+        self.assertEqual(started.returncode, 0, errors)
+        self.assertEqual(json.loads(output)['recoveredLock'], dead)
 
-    def test_a_crashed_reclaimers_marker_expires(self):
-        (self.state / 'lock').mkdir(parents=True)
-        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': (self.now - catalog.timedelta(minutes=181)).isoformat()}
-        (self.state / 'lock/owner.json').write_text(json.dumps(dead))
-        (self.state / 'lock/reclaim').write_text('')
-        old = (self.now - catalog.timedelta(minutes=11)).timestamp()
-        os.utime(self.state / 'lock/reclaim', (old, old))
-        result = catalog.begin(self.state, None, self.now)
-        self.assertEqual(result['recoveredLock'], dead)
-        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], result['run'])
+    def test_concurrent_runs_take_over_a_stale_lock_exactly_once(self):
+        self.stale_lock()
+        runs = [self.start_cli('begin') for _ in range(8)]
+        outputs = [run.communicate(timeout=60)[0] for run in runs]
+        codes = [run.returncode for run in runs]
+        self.assertEqual(sorted(codes), [0] + [3] * 7)
+        winner = json.loads(outputs[codes.index(0)])
+        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], winner['run'])
 
     def test_mode_is_audit_until_a_completed_audit_is_recent(self):
         first = self.begin()

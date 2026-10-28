@@ -21,7 +21,7 @@ Use /swarm throughout. Give each worker one slice, such as a source group, a bat
 
 Read the repository's `AGENTS.md`, the adaptation contract, and the maintenance guide. Run `begin`. When it reports the lock held, stop and name the run that holds it. Otherwise this run owns the lock until it runs `release`.
 
-Note `begin`'s `leftovers`, the edits of a run that ended before delivery, for the report, then sync both worktrees by the guide's branch rules, which discards them. That work returns on its own: a run saves its checkpoint only after delivery, so the interrupted run's items are still open in the checkpoint `begin` found. When `begin` reports `legacyNextActions`, convert that file into `next-actions.json`. Read the owner comments posted since `commentsSince` on the open maintenance PRs and on the PRs the questions link to. Check installed copies with `scripts/check-installs.py`, and refresh them as `AGENTS.md` says when they are stale. Run `inventory --resume` with `begin`'s checkpoint from the library worktree.
+Note `begin`'s `leftovers`, the edits of a run that ended before delivery, for the report, then sync both worktrees by the guide's branch rules, which discards them. That work returns on its own: a run settles its checkpoint and carried items only after delivery, so the interrupted run's items are still open in the state `begin` found. When `begin` reports `legacyNextActions`, convert that file into `next-actions.json`. Read the owner comments posted since `commentsSince` on the open maintenance PRs and on the PRs the questions link to. Check installed copies with `scripts/check-installs.py`, and refresh them as `AGENTS.md` says when they are stale. Run `inventory --resume` with `begin`'s checkpoint from the library worktree.
 
 **Complete when:** this run holds the lock, both worktrees match their sync rule, and you hold `begin`'s mode, checkpoint, questions, carried items, and leftovers, every owner comment since `commentsSince`, a current install check, and the inventory with its `changedSince`, `contextChanged`, and `staleReviews` lists.
 
@@ -29,7 +29,7 @@ Note `begin`'s `leftovers`, the edits of a run that ended before delivery, for t
 
 Run `fetch`, then `compare --fetch` with `--resume`. Save the inventory, fetch result, and compare reports in the run folder. Build the worklist in this order, which is also the order of work:
 
-1. Owner answers and comments not yet applied.
+1. Owner answers and comments not yet applied, and maintenance branches pushed without a PR.
 2. Changed upstream skills and shared inputs, and every source whose fetch failed.
 3. New, removed, or moved upstream skills in the catalog's suites.
 4. Skills in `changedSince`, including new skills, and the inputs in `contextChanged`.
@@ -37,7 +37,7 @@ Run `fetch`, then `compare --fetch` with `--resume`. Save the inventory, fetch r
 
 When items 1 to 4 are empty in upstream mode, save a checkpoint from the compare reports, prune old runs, run `release`, and stop. A quiet run needs no branch, checks, review, PR, or report.
 
-**Complete when:** every unapplied owner answer, compare report entry, failed source, `changedSince` skill, and `contextChanged` input, and in audit mode every carried item, `fidelityBacklog` record, pending skill, and the oldest `staleReviews` up to a quarter of the library, is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
+**Complete when:** every unapplied owner answer, branch pushed without a PR, compare report entry, failed source, `changedSince` skill, and `contextChanged` input, and in audit mode every carried item, `fidelityBacklog` record, pending skill, and the oldest `staleReviews` up to a quarter of the library, is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
 
 ## 3. Decide and repair
 
@@ -47,7 +47,7 @@ For each skill in `changedSince`, check that its edits keep its recorded adaptat
 
 Run the contract's fidelity check on every sourced skill you edit or find in `changedSince`, and in audit mode on backlog records.
 
-Settle each item that waits on the owner as a question, as the contract's decision records describe. Carry an item only when the budget ran out or it waits on a later upstream revision: add it to `next-actions.json` with the date it was first carried, or keep its existing entry. An overdue carried item has already survived an audit; finish it in this audit or ask it as a question.
+Before editing for a repair that no checkpoint tracks, such as one this run found in a skill's or this skill's own text, add it to `next-actions.json` with today's date, so an interrupted run leaves it open. Settle each item that waits on the owner as a question, as the contract's decision records describe. Carry an item only when the budget ran out or it waits on a later upstream revision: keep or add its `next-actions.json` entry with the date it was first carried. An overdue carried item has already survived an audit; finish it in this audit or ask it as a question.
 
 **Complete when:** every worklist item is adopted, adapted, excluded, asked as a question, or carried in `next-actions.json` with its reason; every overdue carried item is finished or asked; every `contextChanged` input has its affected skills named; and every edited or locally changed sourced skill passes both fidelity directions.
 
@@ -61,10 +61,10 @@ Advance a skill's reviewed-through position only when its whole upstream delta i
 
 ## 5. Deliver
 
-Commit library changes and changes to this skill's own process on their separate maintenance branches, push each by the guide's push rule, and create or update one draft PR for each, within the action grant: the scheduled prompt's grant for a scheduled run, and the user's request for an invoked one. Once each PR is verified, save the checkpoint with this run's finished local reviews, adding `--context-reviewed` with the affected skills after step 3 reviewed a context change; a checkpoint never advances a position. Prune old runs, then run `release`.
+Commit library changes and changes to this skill's own process on their separate maintenance branches, push each by the guide's push rule, and create or update one draft PR for each, within the action grant: the scheduled prompt's grant for a scheduled run, and the user's request for an invoked one. Once each PR is verified, settle runtime state: remove the carried items its commits finish or its description asks, and the questions whose answers its commits record, then save the checkpoint with this run's finished local reviews, adding `--context-reviewed` with the affected skills after step 3 reviewed a context change; a checkpoint never advances a position. Prune old runs, then run `release`.
 
 Report what changed, the questions waiting on the owner, failures such as failed sources and discarded leftovers, and coverage still pending.
 
 At the budget's wrap-up point, start no new worklist items: validate, deliver, and checkpoint what is finished, carrying the rest.
 
-**Complete when:** each PR is a draft whose head on the forge equals the pushed commit and whose description lists its open questions; the checkpoint is saved after that verification; the report is written; every action stayed within the grant; and the lock is released.
+**Complete when:** each PR is a draft whose head on the forge equals the pushed commit and whose description lists its open questions; runtime state is settled and the checkpoint saved after that verification; the report is written; every action stayed within the grant; and the lock is released.

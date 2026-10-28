@@ -9,9 +9,11 @@ it; prune bounds the retained runs; and release frees the lock.
 """
 
 import argparse
+from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 import hashlib
 import json
+import fcntl
 import math
 import os
 from pathlib import Path
@@ -26,7 +28,6 @@ SHA = r'[0-9a-f]{40}'
 URL = r'https?://[^\s)\]>]+'
 RECORD_NAMES = ['UPSTREAM.md', 'PROVENANCE.md', 'ATTRIBUTION.md', 'SOURCE.md']
 LOCK_STALE_MINUTES = 180  # Twice the longest run budget.
-RECLAIM_STALE_MINUTES = 10
 AUDIT_INTERVAL_DAYS = 7
 REVIEW_EXPIRY_DAYS = 28
 WORKTREES = ['library', 'process']
@@ -669,18 +670,11 @@ class Locked(Exception):
 
 def publish_lock(lock, owner):
     """Create the lock with its owner already inside, so no run ever sees an ownerless lock."""
-    staged = lock.parent / ('lock.new.' + str(os.getpid()) + '.' + hashlib.sha256(os.urandom(16)).hexdigest()[:12])
+    staged = lock.parent / ('lock.new.' + str(os.getpid()))
+    shutil.rmtree(staged, ignore_errors=True)
     staged.mkdir()
     (staged / 'owner.json').write_text(json.dumps(owner, indent=2) + '\n')
-    try:
-        # rename replaces an empty directory, so an existing lock of any shape stays put.
-        if os.path.lexists(lock):
-            raise FileExistsError(lock)
-        os.rename(staged, lock)
-        return True
-    except OSError:
-        shutil.rmtree(staged)
-        return False
+    os.rename(staged, lock)
 
 
 def lock_is_live(lock, owner, now):
@@ -694,41 +688,29 @@ def lock_is_live(lock, owner, now):
     return now - since < timedelta(minutes=LOCK_STALE_MINUTES)
 
 
+@contextmanager
+def lock_guard(state):
+    """Serialize taking over and releasing the lock; the OS frees the guard when its process dies."""
+    with open(state / 'lock.guard', 'a') as guard:
+        fcntl.flock(guard, fcntl.LOCK_EX)
+        yield
+
+
 def acquire_lock(state, run, now):
     """Take $STATE/lock; a lock older than LOCK_STALE_MINUTES belongs to a dead run."""
     lock = state / 'lock'
-    owner = {'run': str(run), 'startedAt': now.isoformat()}
-    recovered = None
-    for _ in range(3):
-        if publish_lock(lock, owner):
-            return recovered
-        held = read_json(lock / 'owner.json')
-        if lock_is_live(lock, held, now):
-            raise Locked(held if isinstance(held, dict) else {})
-        # The reclaim marker lets one run remove this stale lock; a marker that lands in a newer lock backs off.
-        try:
-            os.close(os.open(lock / 'reclaim', os.O_CREAT | os.O_EXCL | os.O_WRONLY))
-        except FileNotFoundError:
-            continue
-        except FileExistsError:
-            # A reclaimer that crashed leaves its marker; reclaiming takes milliseconds, so an old marker is abandoned.
-            try:
-                abandoned = now - datetime.fromtimestamp((lock / 'reclaim').stat().st_mtime, timezone.utc) > timedelta(minutes=RECLAIM_STALE_MINUTES)
-            except OSError:
-                abandoned = False
-            if not abandoned:
-                raise Locked(held if isinstance(held, dict) else {})
-            (lock / 'reclaim').unlink(missing_ok=True)
-            continue
-        current = read_json(lock / 'owner.json')
-        if current != held:
-            (lock / 'reclaim').unlink(missing_ok=True)
-            raise Locked(current if isinstance(current, dict) else {})
-        recovered = held if isinstance(held, dict) else {'unreadable': True}
-        stale = state / ('lock.stale.' + now.strftime('%Y%m%dT%H%M%S%fZ'))
-        os.rename(lock, stale)
-        shutil.rmtree(stale)
-    raise Locked(read_json(lock / 'owner.json') or {})
+    with lock_guard(state):
+        recovered = None
+        if os.path.lexists(lock):
+            held = read_json(lock / 'owner.json')
+            if lock_is_live(lock, held, now):
+                raise Locked(held)
+            recovered = held if isinstance(held, dict) else {'unreadable': True}
+            stale = state / ('lock.stale.' + now.strftime('%Y%m%dT%H%M%S%fZ'))
+            os.rename(lock, stale)
+            shutil.rmtree(stale)
+        publish_lock(lock, {'run': str(run), 'startedAt': now.isoformat()})
+        return recovered
 
 
 def leftovers(state):
@@ -819,14 +801,15 @@ def begin(state, mode=None, now=None):
 
 
 def release(state, run):
-    owner = read_json(state / 'lock' / 'owner.json')
     if not (state / 'lock').is_dir():
         return {'error': 'No run holds the lock'}
-    holder = owner.get('run') if isinstance(owner, dict) else None
-    if not holder or Path(holder).resolve() != Path(run).resolve():
-        return {'error': 'The lock is held by ' + str(holder), 'heldBy': holder}
-    shutil.rmtree(state / 'lock')
-    return {'released': str(run)}
+    with lock_guard(state):
+        owner = read_json(state / 'lock' / 'owner.json')
+        holder = owner.get('run') if isinstance(owner, dict) else None
+        if not holder or Path(holder).resolve() != Path(run).resolve():
+            return {'error': 'The lock is held by ' + str(holder), 'heldBy': holder}
+        shutil.rmtree(state / 'lock')
+        return {'released': str(run)}
 
 
 def suites_changed(report):
