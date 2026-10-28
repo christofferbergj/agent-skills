@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -40,7 +41,7 @@ class RepositoryCoverage(unittest.TestCase):
             'excludedNames': {'teach': 'User exclusion'}, 'excludedPathComponents': ['personal'],
             'sharedPaths': ['LICENSE', 'README.md'],
         }
-        self.registry = {'sources': {'matt': self.definition}, 'owners': {}, 'policy': 'Preserve adaptations; review integration'}
+        self.registry = {'sources': {'matt': self.definition}, 'owners': {}, 'contextPaths': ['AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'docs/architecture.md']}
         self.directory = self.add_skill('alpha', source=True)
 
     def tearDown(self):
@@ -110,7 +111,6 @@ class RepositoryCoverage(unittest.TestCase):
         self.assertEqual(result['added'], ['skills/in-progress/beta'])
         self.assertEqual(len(result['excluded']), 2)
         self.assertEqual(len(result['inventory']), 4)
-        self.assertFalse(result['reviewComplete'])
         self.add_skill('teach')
         self.assertIn('teach', [item['name'] for item in catalog.inventory(self.root, self.registry)['skills']])
 
@@ -217,8 +217,6 @@ class RepositoryCoverage(unittest.TestCase):
         self.assertFalse(result['coverageComplete'])
         result = self.checkpoint(reviews=review)
         self.assertTrue(result['coverageComplete'])
-        self.assertFalse(result['reviewComplete'])
-        self.assertFalse(result['baselinesAdvancedByCheckpoint'])
         self.assertEqual((self.directory / 'UPSTREAM.md').read_bytes(), before)
 
     def test_candidates_are_required_for_discovered_sources_not_old_aliases(self):
@@ -647,7 +645,7 @@ class RepositoryCoverage(unittest.TestCase):
         summary = json.loads(result.stdout)[GROUP]
         self.assertEqual(summary['skills'], {'unchanged': 1})
         self.assertFalse(summary['sharedChanged'])
-        report = json.loads((self.base / 'reports/github.com-example-library-compare.json').read_text())
+        report = json.loads((self.base / 'reports/github.com-example-library-branch-main-compare.json').read_text())
         self.assertEqual(report['candidate'], self.baseline)
 
     def test_checkpoint_cli_accepts_fetch_output_as_candidates(self):
@@ -682,6 +680,249 @@ class RepositoryCoverage(unittest.TestCase):
         (linked / 'runs').symlink_to(runs)
         self.assertEqual(catalog.prune(linked, 0), {'deleted': []})
         self.assertTrue((runs / '2026-10-20T080000Z-upstream').is_dir())
+
+
+    def test_validate_requires_context_paths(self):
+        del self.registry['contextPaths']
+        self.assertIn('Catalog has no contextPaths', catalog.validate(self.root, self.registry)['problems'])
+
+    def test_failed_fetch_keeps_the_prior_candidate_and_stays_pending(self):
+        previous = self.checkpoint(reviews=self.reviews())
+        self.assertTrue(previous['coverageComplete'])
+        result = catalog.checkpoint(self.root, self.registry, {}, ['alpha'], 1, True, self.reviews(), previous, None, {GROUP: 'fetch failed'})
+        self.assertEqual(result['candidates'], {GROUP: self.baseline})
+        self.assertEqual(result['failedSources'], [GROUP])
+        self.assertIn(GROUP, result['pendingSources'])
+        self.assertEqual(result['sourceCoverage'][GROUP]['skills'], [])
+        self.assertFalse(result['coverageComplete'])
+        with self.assertRaisesRegex(ValueError, 'no prior candidate'):
+            catalog.checkpoint(self.root, self.registry, {}, ['alpha'], 1, True, self.reviews(), None, None, {GROUP: 'fetch failed'})
+        registry, resume, fetched = self.base / 'catalog.json', self.base / 'previous.json', self.base / 'fetch.json'
+        registry.write_text(json.dumps(self.registry))
+        resume.write_text(json.dumps(previous))
+        fetched.write_text(json.dumps({'candidates': {}, 'checkouts': {}, 'errors': {GROUP: 'fetch failed'}}))
+        output = self.base / 'checkpoint.json'
+        cli = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'checkpoint', '--candidates', str(fetched), '--resume', str(resume), '--completed', 'alpha', '--elapsed-minutes', '1', '--output', str(output)], capture_output=True, text=True)
+        self.assertEqual(cli.returncode, 0, cli.stdout + cli.stderr)
+        self.assertEqual(json.loads(output.read_text())['pendingSources'], [GROUP])
+
+    def test_reviewed_context_change_keeps_unaffected_reviews(self):
+        self.add_skill('beta')
+        previous = self.checkpoint(completed=['alpha', 'beta'], reviews=self.reviews())
+        self.assertTrue(previous['coverageComplete'])
+        (self.root / 'AGENTS.md').write_text('New repository review requirements.\n')
+        self.assertEqual(catalog.inventory(self.root, self.registry, previous)['contextChanged'], ['AGENTS.md'])
+        legacy = {key: value for key, value in previous.items() if key != 'contextFiles'}
+        self.assertEqual(catalog.inventory(self.root, self.registry, legacy)['contextChanged'], sorted(catalog.inventory(self.root, self.registry)['contextFiles']))
+        unreviewed = self.checkpoint(completed=[], resume=previous)
+        self.assertEqual(unreviewed['pending'], ['alpha', 'beta'])
+        kept = catalog.checkpoint(self.root, self.registry, {GROUP: self.baseline}, [], 1, True, None, previous, None, None, True, ['beta'])
+        self.assertEqual(kept['completed'], ['alpha'])
+        self.assertEqual(kept['pending'], ['beta'])
+        self.assertEqual(kept['invalidated'], ['beta'])
+        with self.assertRaisesRegex(ValueError, 'context-affected'):
+            catalog.checkpoint(self.root, self.registry, {GROUP: self.baseline}, [], 1, True, None, previous, None, None, True, ['missing'])
+
+    def test_review_dates_carry_forward_and_expire_into_stale_reviews(self):
+        today = catalog.datetime.now(catalog.timezone.utc)
+        old = today - catalog.timedelta(days=40)
+        previous = catalog.checkpoint(self.root, self.registry, {GROUP: self.baseline}, ['alpha'], 1, True, self.reviews(), None, now=old)
+        self.assertEqual(previous['reviewedAt'], {'alpha': old.date().isoformat()})
+        carried = self.checkpoint(completed=[], resume=previous)
+        self.assertEqual(carried['reviewedAt'], {'alpha': old.date().isoformat()})
+        self.assertEqual(catalog.inventory(self.root, self.registry, carried)['staleReviews'], ['alpha'])
+        undated = {key: value for key, value in previous.items() if key != 'reviewedAt'}
+        self.assertEqual(catalog.inventory(self.root, self.registry, undated)['staleReviews'], ['alpha'])
+        fresh = self.checkpoint(resume=carried)
+        self.assertEqual(fresh['reviewedAt'], {'alpha': today.date().isoformat()})
+        self.assertEqual(catalog.inventory(self.root, self.registry, fresh)['staleReviews'], [])
+
+    def test_symlinked_skill_directory_is_reported(self):
+        elsewhere = self.base / 'elsewhere'
+        elsewhere.mkdir()
+        (elsewhere / 'helper.py').write_text('run = True\n')
+        (self.directory / 'scripts').symlink_to(elsewhere)
+        problems = catalog.inventory(self.root, self.registry)['problems']
+        self.assertIn('alpha: Skill resource is a symlink: scripts', problems)
+
+    def test_compare_cli_writes_one_report_per_tracking_group(self):
+        beta = self.add_skill('beta', source=True)
+        record = beta / 'UPSTREAM.md'
+        record.write_text(record.read_text().replace('upstream `main`', 'upstream `release`'))
+        release = 'github.com/example/library@branch:release'
+        registry, fetched = self.base / 'catalog.json', self.base / 'fetch.json'
+        registry.write_text(json.dumps(self.registry))
+        fetched.write_text(json.dumps({'candidates': {GROUP: self.baseline, release: self.baseline}, 'checkouts': {GROUP: str(self.upstream), release: str(self.upstream)}, 'errors': {}}))
+        result = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'compare', '--fetch', str(fetched), '--output-dir', str(self.base / 'reports')], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(sorted(path.name for path in (self.base / 'reports').iterdir()), ['github.com-example-library-branch-main-compare.json', 'github.com-example-library-branch-release-compare.json'])
+
+    def test_a_skill_with_one_changed_row_is_not_acknowledged(self):
+        report = {'repository': REPOSITORY, 'tracking': {'kind': 'branch', 'ref': 'main'}, 'candidate': self.baseline, 'suites': {}, 'sharedInputs': [], 'skills': [{'local': 'alpha', 'status': 'unchanged'}, {'local': 'alpha', 'status': 'changed'}]}
+        self.assertEqual(catalog.compared_reviews([report], {GROUP: self.baseline})[GROUP]['skills'], [])
+        report['skills'][1]['status'] = 'unchanged'
+        self.assertEqual(catalog.compared_reviews([report], {GROUP: self.baseline})[GROUP]['skills'], ['alpha'])
+
+
+class RunLifecycle(unittest.TestCase):
+    NOW = '2026-11-03T12:00:00+00:00'
+
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory()
+        self.base = Path(self.temporary.name).resolve()
+        self.state = self.base / 'state'
+        self.now = catalog.parse_time(self.NOW)
+
+    def tearDown(self):
+        self.temporary.cleanup()
+
+    def run_cli(self, *arguments):
+        result = subprocess.run([sys.executable, str(SCRIPT), '--root', str(self.base), *arguments], capture_output=True, text=True)
+        return result.returncode, json.loads(result.stdout)
+
+    def add_run(self, name, checkpoint=None, text=None):
+        run = self.state / 'runs' / name
+        run.mkdir(parents=True)
+        if checkpoint is not None:
+            (run / 'checkpoint.json').write_text(json.dumps(checkpoint))
+        if text is not None:
+            (run / 'checkpoint.json').write_text(text)
+        return run
+
+    def begin(self, mode=None, days=0):
+        # Each run gets its own second, as real runs do.
+        self.calls = getattr(self, 'calls', 0) + 1
+        result = catalog.begin(self.state, mode, self.now + catalog.timedelta(days=days, seconds=self.calls))
+        catalog.release(self.state, result['run'])
+        return result
+
+    def test_begin_and_release_run_streamed_without_a_library_root(self):
+        source = SCRIPT.read_text()
+        started = subprocess.run([sys.executable, '-', 'begin', '--state', str(self.state), '--now', self.NOW], input=source, capture_output=True, text=True, cwd='/')
+        self.assertEqual(started.returncode, 0, started.stderr)
+        run = json.loads(started.stdout)['run']
+        released = subprocess.run([sys.executable, '-', 'release', '--state', str(self.state), '--run', run], input=source, capture_output=True, text=True, cwd='/')
+        self.assertEqual(released.returncode, 0, released.stderr)
+        self.assertFalse((self.state / 'lock').exists())
+        refused = subprocess.run([sys.executable, '-', 'inventory'], input=source, capture_output=True, text=True, cwd='/')
+        self.assertEqual(refused.returncode, 2)
+        self.assertIn('--root is required', refused.stderr)
+
+    def test_a_second_run_waits_for_the_lock_and_release_checks_its_owner(self):
+        code, first = self.run_cli('begin', '--state', str(self.state), '--now', self.NOW)
+        self.assertEqual(code, 0, first)
+        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], first['run'])
+        code, second = self.run_cli('begin', '--state', str(self.state), '--now', '2026-11-03T13:00:00+00:00')
+        self.assertEqual(code, 3)
+        self.assertEqual(second, {'error': 'locked', 'heldBy': first['run'], 'since': first['startedAt']})
+        self.assertEqual(len(list((self.state / 'runs').iterdir())), 1)
+        code, refused = self.run_cli('release', '--state', str(self.state), '--run', str(self.base / 'other'))
+        self.assertEqual(code, 1)
+        self.assertEqual(refused['heldBy'], first['run'])
+        code, released = self.run_cli('release', '--state', str(self.state), '--run', first['run'])
+        self.assertEqual(code, 0, released)
+        self.assertFalse((self.state / 'lock').exists())
+
+    def test_a_stale_or_unreadable_lock_is_taken_over(self):
+        (self.state / 'lock').mkdir(parents=True)
+        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': (self.now - catalog.timedelta(minutes=181)).isoformat()}
+        (self.state / 'lock/owner.json').write_text(json.dumps(dead))
+        result = catalog.begin(self.state, None, self.now)
+        self.assertEqual(result['recoveredLock'], dead)
+        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], result['run'])
+        (self.state / 'lock/owner.json').write_text('{')
+        # Without a readable owner, the lock's age is its directory's.
+        old = (self.now - catalog.timedelta(minutes=181)).timestamp()
+        os.utime(self.state / 'lock', (old, old))
+        later = catalog.begin(self.state, None, self.now + catalog.timedelta(minutes=1))
+        self.assertEqual(later['recoveredLock'], {'unreadable': True})
+        with self.assertRaises(catalog.Locked):
+            catalog.begin(self.state, None, self.now + catalog.timedelta(minutes=2))
+
+    def test_a_fresh_lock_without_its_owner_file_is_live(self):
+        # A run between creating the lock and writing its owner must not lose the lock to another run.
+        (self.state / 'lock').mkdir(parents=True)
+        with self.assertRaises(catalog.Locked):
+            catalog.begin(self.state, None, catalog.datetime.now(catalog.timezone.utc))
+        self.assertTrue((self.state / 'lock').is_dir())
+
+    def stale_lock(self):
+        (self.state / 'lock').mkdir(parents=True)
+        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': '2026-01-01T00:00:00+00:00'}
+        (self.state / 'lock/owner.json').write_text(json.dumps(dead))
+        return dead
+
+    def start_cli(self, *arguments):
+        return subprocess.Popen([sys.executable, str(SCRIPT), *arguments, '--state', str(self.state)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    def test_taking_over_a_stale_lock_waits_for_the_guard(self):
+        dead = self.stale_lock()
+        with open(self.state / 'lock.guard', 'a') as guard:
+            catalog.fcntl.flock(guard, catalog.fcntl.LOCK_EX)
+            started = self.start_cli('begin')
+            with self.assertRaises(subprocess.TimeoutExpired):
+                started.wait(timeout=1)
+            self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text()), dead)
+        output, errors = started.communicate(timeout=30)
+        self.assertEqual(started.returncode, 0, errors)
+        self.assertEqual(json.loads(output)['recoveredLock'], dead)
+
+    def test_concurrent_runs_take_over_a_stale_lock_exactly_once(self):
+        self.stale_lock()
+        runs = [self.start_cli('begin') for _ in range(8)]
+        outputs = [run.communicate(timeout=60)[0] for run in runs]
+        codes = [run.returncode for run in runs]
+        self.assertEqual(sorted(codes), [0] + [3] * 7)
+        winner = json.loads(outputs[codes.index(0)])
+        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], winner['run'])
+
+    def test_mode_is_audit_until_a_completed_audit_is_recent(self):
+        first = self.begin()
+        self.assertEqual((first['mode'], first['modeReason']), ('audit', 'no completed audit in 7 days'))
+        self.add_run('2026-11-02T090000Z-audit', {'schema': 2, 'createdAt': '2026-11-02T10:00:00+00:00', 'coverageComplete': False})
+        self.assertEqual(self.begin(days=0)['mode'], 'audit')
+        self.add_run('2026-10-28T090000Z-audit', {'schema': 2, 'createdAt': '2026-10-28T10:00:00+00:00', 'coverageComplete': True})
+        upstream = self.begin(days=0)
+        self.assertEqual((upstream['mode'], upstream['modeReason']), ('upstream', 'audit completed 2026-10-28'))
+        self.assertEqual(self.begin(days=1)['mode'], 'audit')
+        named = self.begin('upstream', days=3)
+        self.assertEqual((named['mode'], named['modeReason']), ('upstream', 'named'))
+        self.assertTrue(Path(named['run']).name.endswith('-upstream'))
+        self.assertEqual(json.loads((Path(named['run']) / 'run.json').read_text())['mode'], 'upstream')
+
+    def test_resume_skips_a_torn_newest_checkpoint(self):
+        self.add_run('2026-11-01T090000Z-upstream', {'schema': 2, 'createdAt': '2026-11-01T10:00:00+00:00', 'elapsedMinutes': 30})
+        torn = self.add_run('2026-11-02T090000Z-upstream', text='{"schema": 2, "crea')
+        self.add_run('2026-11-02T100000Z-upstream')
+        result = self.begin()
+        self.assertTrue(result['resume'].endswith('2026-11-01T090000Z-upstream/checkpoint.json'))
+        self.assertEqual(result['skippedCheckpoints'], [str(torn / 'checkpoint.json')])
+        self.assertEqual(result['commentsSince'], '2026-11-01T09:30:00+00:00')
+        self.assertEqual(json.loads((Path(result['run']) / 'begin.json').read_text()), result)
+
+    def test_begin_carries_questions_next_actions_and_reports_leftovers(self):
+        (self.add_run('2026-10-30T090000Z-upstream') / 'next-actions.md').write_text('1. Carried item\n')
+        legacy = self.begin()
+        self.assertEqual(legacy['nextActions'], [])
+        self.assertTrue(legacy['legacyNextActions'].endswith('2026-10-30T090000Z-upstream/next-actions.md'))
+        self.add_run('2026-10-28T090000Z-audit', {'schema': 2, 'createdAt': '2026-10-28T10:00:00+00:00', 'coverageComplete': True})
+        (self.state / 'questions.json').write_text(json.dumps([{'item': 'x', 'question': 'Keep it?'}]))
+        (self.state / 'next-actions.json').write_text(json.dumps([{'item': 'old repair', 'firstCarried': '2026-10-25'}, {'item': 'new repair', 'firstCarried': '2026-10-29'}]))
+        library = self.state / 'worktrees/library'
+        subprocess.run(['git', 'init', '-q', str(library)], check=True)
+        (library / 'tracked.txt').write_text('one')
+        subprocess.run(['git', '-C', str(library), 'add', '.'], check=True)
+        subprocess.run(['git', '-C', str(library), '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid', 'commit', '-qm', 'Local'], check=True)
+        subprocess.run(['git', 'clone', '-q', str(library), str(self.state / 'worktrees/process')], check=True)
+        (library / 'stranded.txt').write_text('edit')
+        result = self.begin()
+        self.assertEqual(result['questions'], [{'item': 'x', 'question': 'Keep it?'}])
+        self.assertEqual([action.get('overdue', False) for action in result['nextActions']], [True, False])
+        self.assertNotIn('legacyNextActions', result)
+        self.assertEqual(set(result['leftovers']), {'library'})
+        self.assertEqual(result['leftovers']['library']['changes'], ['?? stranded.txt'])
+        self.assertEqual(len(result['leftovers']['library']['unpushed']), 1)
+
 
 class ActualLibraryCoverage(unittest.TestCase):
     def setUp(self):
@@ -734,8 +975,6 @@ class ActualLibraryCoverage(unittest.TestCase):
         result = catalog.checkpoint(self.root, self.registry, candidates, all_names, 50, True, reviews)
         self.assertTrue(result['coverageComplete'], result['problems'])
         self.assertEqual(set(result['completed']), set(all_names))
-        self.assertFalse(result['reviewComplete'])
-        self.assertFalse(result['baselinesAdvancedByCheckpoint'])
 
 
 if __name__ == '__main__':

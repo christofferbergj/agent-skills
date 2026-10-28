@@ -1,10 +1,10 @@
 # Combined library validation history
 
-Historical snapshots of the initial port and later maintenance changes. Counts, tool versions, installation state, and deployment prerequisites describe the revisions under review. Use [Contributing](../../../CONTRIBUTING.md) for current checks and [the library architecture](../../../docs/architecture.md) for current composition.
+Historical snapshots of the initial port and later maintenance changes. Counts, tool versions, installation state, and deployment prerequisites describe the revisions under review. Use [Contributing](../../CONTRIBUTING.md) for current checks and [the library architecture](../architecture.md) for current composition.
 
 Validated on macOS on 2026-10-15 against Matt Pocock's skills 1.3.1 at `49dd158d1076134a641b33efb035946536778336` and Pstack 0.15.25 at `e5136d82418d2db3165ea1050d17577cd618cc05`.
 
-The exercised tools were Codex CLI 0.162.1, Claude Code 2.1.292, Bun 1.4.3, Node 24.22.0, Python 3.9.6, Git 2.54.0, and GitHub CLI 2.102.0. Other operating systems were not exercised. This record extends the [initial Pstack validation](../pstack-mode/VALIDATION.md).
+The exercised tools were Codex CLI 0.162.1, Claude Code 2.1.292, Bun 1.4.3, Node 24.22.0, Python 3.9.6, Git 2.54.0, and GitHub CLI 2.102.0. Other operating systems were not exercised. This record extends the [initial Pstack validation](../../skills/agents/pstack-mode/VALIDATION.md).
 
 ## Packaging and source coverage
 
@@ -47,7 +47,7 @@ The initial Pstack record gives the runtime and Python test commands; its remove
 
 The coordinator inspected actual diffs, reran both projects' tests, and checked whitespace. These are selected behavioral exercises, not evaluations of every expensive workflow. Private model transcripts and mutable test projects remain outside installed skill source.
 
-The [Thermos review record](../../../docs/reviews/2026-10-15-combined-skills-thermos.md) records the independent correctness and maintainability passes, nine verified findings, and their repairs.
+The [Thermos review record](2026-10-15-combined-skills-thermos.md) records the independent correctness and maintainability passes, nine verified findings, and their repairs.
 
 ## Earlier Thermos smoke evidence
 
@@ -55,7 +55,7 @@ The initial 2026-10-12 smoke test exercised Codex desktop's collaboration tools 
 
 ## Scheduled upkeep and limits
 
-The initial Pstack heartbeat was replaced by the standalone **Combined skill maintenance** automation in the `agent-skills` project. At validation, the standalone job ran every other day with GPT-6.1-Sol and maximum reasoning effort; the old heartbeat was paused. The whole-repository maintenance repair preserved those settings. The [scheduled prompt](references/scheduled-prompt.md) covers every local skill and discovered upstream and actively delegates throughout the pass, with a 60-minute budget and wrap-up at minute 50. Saved automation settings own the current cadence and model. On 2026-10-20, T3 Code scheduled tasks replaced this automation; see [upstream-focused maintenance](#upstream-focused-maintenance).
+The initial Pstack heartbeat was replaced by the standalone **Combined skill maintenance** automation in the `agent-skills` project. At validation, the standalone job ran every other day with GPT-6.1-Sol and maximum reasoning effort; the old heartbeat was paused. The whole-repository maintenance repair preserved those settings. The [scheduled prompt](../../skills/agents/maintain-skills/references/scheduled-prompt.md) covers every local skill and discovered upstream and actively delegates throughout the pass, with a 60-minute budget and wrap-up at minute 50. Saved automation settings own the current cadence and model. On 2026-10-20, T3 Code scheduled tasks replaced this automation; see [upstream-focused maintenance](#upstream-focused-maintenance).
 
 No validation merged a PR, refreshed global skills, changed live host hooks, published tracker items, or configured a production service. Hook adapters use official host schemas; native Codex trust and actual activation must be verified when the setup skill is invoked. Git parsing remains a bounded accidental-operation guardrail. The orchestration frontier reports the optional Origin backend unavailable until its immutable PR-head schema is verified; it never substitutes a local branch SHA as forge proof. GitLab server/tier behavior, external tracker writes, every prototype UI branch, and the initial Pstack record's optional service integrations remain unexercised. Skills declare their prerequisites and preserve explicit gaps when these capabilities are unavailable.
 
