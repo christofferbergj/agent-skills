@@ -24,14 +24,14 @@ Infer the need from the message and the conversation. A named situation, such as
 
 Check the state that changes the answer, and mention it only when it does:
 
-- No `~/.config/pstack/config.json`, and no file at `PSTACK_CONFIG`, means `/pstack-setup` hasn't run for this user, so each role takes /swarm's default: helper roles such as exploration run on the host's fast model, Sonnet in Claude Code, panels add the counterpart, and the rest inherit the session's model.
+- No `~/.config/pstack/config.json`, and no file at `PSTACK_CONFIG`, means `/pstack-setup` hasn't run for this user, so every role uses its default model.
 - No `verify-*` skill or other app harness in the project means agents have no scripted way to drive the app. Mention `/create-verification-skill` when the question is about proving a change works.
 - No formal verification skill in the project means no property is checked past what tests reach. Mention `/create-formal-verification-skill` when the question is about a race, an invariant, or another case tests rarely hit. When one exists and the code it covers changed after the commit it records as last in sync, mention `/maintain-formal-verification-skill` if the question touches that code.
 
 When the configuration is missing and it matters, ask whether the user wants to pick a model for each role and a reasoning budget now. It matters when the user is new, the question is about setup or cost, or the answer depends on which models run. Ask at most once per chat. If the need is also unclear, ask both questions together. Offer two choices:
 
 - Now: give them `/pstack-setup` to type, and answer their question too.
-- Later: answer their question, and add one line saying each role keeps /swarm's default until they run `/pstack-setup`.
+- Later: answer their question, and add one line saying every role keeps its default model until they run `/pstack-setup`.
 
 ## Get set up
 
@@ -71,7 +71,7 @@ Rows marked _user entrypoint_ load only when the user types them. Give the user 
 | Understand a change or subsystem, explained plainly                                                                                                                                                  | `/teach`                                                  |
 | Catch up on their own recent work on a topic                                                                                                                                                         | `/recall`                                                 |
 | Catch up on what changed in this chat since their last message, in plain words and small visuals, with every item waiting on them listed and decidable from the reply alone                          | `/ketchup`                                                |
-| Catch up like `/ketchup`, in a short silent video of slides, with the waiting calls as text under it                                                                                                 | `/ketchup-video`                                          |
+| Catch up like `/ketchup`, in a short subtitled video of slides, with the waiting calls as text under it                                                                                              | `/ketchup-video`                                          |
 | Know what a small diff could break outside itself                                                                                                                                                    | `/blast-radius`                                           |
 | Settle types and module shape before code that crosses a function boundary                                                                                                                           | `/architect`                                              |
 | Get several attempts at one brief, merged into the best one                                                                                                                                          | `/arena`                                                  |
@@ -122,7 +122,7 @@ Playbooks are step lists inside `/pstack-mode`, not skills, so they have no slas
 - "land the stack" runs Shipping.
 - "take over this branch" runs Session pickup.
 - "pause safely" runs Pause safely.
-- "full autopilot on this queue" runs Autopilot-full. "stack them, don't ship" runs Autopilot-stack.
+- "full autopilot on this queue" runs Autopilot-full. "autopilot, don't merge" runs Autopilot-stack.
 - "run the eval playbook" runs Eval.
 
 Without `/pstack-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. `/pstack-mode` lists every playbook and when it applies. Guide page 6, `06-verify-and-ship.md`, covers opening, babysitting, and landing a PR.

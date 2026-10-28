@@ -1,56 +1,38 @@
 ---
 name: interrogate
-description: "Use for Pstack adversarial review of a concrete diff or contested design with independent criticism."
+description: "Use for Pstack adversarial review that tries to break a concrete diff or contested design and keeps only findings a run proves."
 ---
 
 Invoke /domain-modeling to resolve and read the invoking project's configured artifacts. Read-only investigations and reviews report documentation drift without edits; creation or implementation reconciles accepted model changes through that owner.
 
 # Interrogate
 
-Spawn one reviewer per panel model to adversarially review code changes. The adversarial signal comes from model diversity, not assigned personas. The deliverable is a synthesized verdict. Do NOT auto-apply changes.
+Adversaries try to break a change or a design. A finding survives only when a run proves it. Report the findings. Do not apply fixes.
 
-1. Scope. Identify what to review from context. Complete when reviewers receive the same scope.
-   - If the user points at specific files or a diff, use that.
-   - If on a feature branch, run `git diff main...HEAD` (or the appropriate base branch) for the full changeset.
-   - If the user's message references recent work, gather the relevant files.
+## Frame
 
-   Package the diff or file contents with any surrounding context files the reviewers need to understand the code, including the originating spec and relevant tests.
+The scope is what the user names. Otherwise it is the branch diff from its merge base with the base branch, through the working tree. State the intent with /in-your-own-words, from the user's message, the commits, and the PR description. Ask the user when the intent is unclear.
 
-2. Intent. Before spawning reviewers, state the intent in one clear paragraph from the user's message, commit messages, the PR description if one exists, and the code. If you're unsure about the intent, ask the user before proceeding. Complete when the intent paragraph is stated.
-3. Spawn reviewers. For a code diff, invoke /code-review for Standards/Spec coverage unless equivalent evidence already covers the current artifact; the adversarial lens adds the remaining coverage and keeps its evidence distinct. Use /swarm to launch all reviewers at once, one per seat of its panel, the session's model and the counterpart, labeled Reviewer A, B, and so on. Fill in [the reviewer prompt](references/reviewer-prompt.md) the same way for every reviewer with the stated intent, the diff or file contents, [the rubric](references/rubric.md), and [the code-quality lens](references/code-quality-review.md). Reviewers inspect directly, without edits, posting comments, or further delegation. Complete when each reviewer returns evidence-based findings or a stated failure.
-4. Synthesize. As results come back, build a unified picture. Parse every reviewer's findings. Merge findings that describe the same issue differently, and note which models raised each one. Findings two or more models raised independently are the highest signal. Read a lone model's finding, but weight it accordingly. Note disagreements. If one model flags something and another explicitly says the opposite, that is context for the verdict. Verify each candidate finding against the code; agreement raises the signal but is not proof. Preserve the shared Standards/Spec reports as separate axes; their findings do not disappear into this lead's ranking. Complete when every finding is verified, merged, and attributed.
-5. Lead judgment. You are the lead reviewer, a pragmatic senior engineer, not a neutral aggregator. Read [the lead-judgment framework](references/lead-judgment.md). Put every finding in one of four buckets, with the model(s) that raised it and a one-line rationale. Complete when every finding has a bucket.
-   - **Act on**. Real issues affecting correctness, security, or maintainability given the actual goals. They would block a real PR.
-   - **Consider**. Legitimate, but you're not sure they outweigh the cost of addressing them now. Worth the user's attention.
-   - **Noted**. Technically valid but not actionable. Context-dependent, premature optimization, or low-impact at this stage.
-   - **Dismissed**. Wrong, nitpicky, or missing context, with a brief reason.
+Complete when the scope and the intent are stated.
 
-## Output Format
+## Fan out
 
-### Intent
+Run Phase A steps 3 and 4 and Phase B of /arena, with four changes. Seat the adversaries as /swarm's panel for /interrogate's reviewers in place of /arena's runners. Copy the scope's uncommitted changes into each worktree. Spawn each adversary as a writer that runs commands in its own worktree; per /swarm, a counterpart seat whose route cannot run them takes the same-vendor fallback, and the report says so. In place of the arena task and rationale, give each adversary the scope, the intent, and this brief:
 
-> [The stated intent paragraph from step 2]
+> Break this change. Prove each finding with a run against the real code, such as a failing test, a repro script, or command output that shows the wrong behavior. For a design or plan, run a prototype or probe the current tree. Keep repros in your own worktree. Report each finding with a title, the exact command, the output it printed, and the output the intent requires. Leave out anything you did not run. That covers style, naming, structure, and risks that need a future change to matter. No findings is a valid result.
 
-### Reviewers
+Complete when every adversary has returned its findings or no findings, or is noted as a dropout.
 
-- Reviewer [label]: [model name], [N findings] (one bullet per reviewer)
+## Verify
 
-### Act On
+Verify each finding per /arena Phase F by rerunning its command. Keep a finding when the output shows the failure and the failure breaks the intent. Drop the rest. Merge findings that share a root cause.
 
-[Each: description, which models raised it, why it matters.]
+Skip /arena Phases C, D, and E. Adversaries find different failures, so the verdict keeps every verified finding, not one adversary's list.
 
-### Consider
+Complete when every finding is kept on its rerun output or dropped with a reason, and kept findings that share a root cause are merged.
 
-[Each: description, which models raised it, the tradeoff.]
+## Output
 
-### Noted
-
-[Brief list.]
-
-### Dismissed
-
-[Each with a brief rationale.]
-
-### Agreement Map
-
-[Where models agreed and diverged, and what that pattern tells us.]
+- **Intent**: the restatement.
+- **Findings**: for each verified finding, the command, its output, how it breaks the intent, and the adversaries that found it. Say "no verified findings" when none survive.
+- **Dropped**: for each adversary, the count of dropped findings and why.

@@ -18,7 +18,7 @@ Every Pstack spawn has a role: the label its skill names, such as `how explorer`
 
 Speed comes from the target. A Codex delegate, native or cross-vendor, runs in fast mode while Codex usage left stays at or above `codexUsage.fastWhileLeft`, 40% by default, and at standard speed below it. A Claude delegate runs at standard speed.
 
-A target without an `effort` leaves the level to the job: start from the session's level, raise it one step, up to the host's maximum, for the hardest or subtlest work, and lower it one step for judgment and two for routine work such as exploration or a check run. /pstack-mode's Subagents section applies the same rule inside the mode.
+A target without an `effort` leaves the level to the job: start from the /pstack-setup task budget's level, or the session's level without one, raise it one step, up to the host's maximum, for the hardest or subtlest work, and lower it one step for judgment and two or more for routine work such as exploration or a check run. /pstack-mode's Subagents section applies the same rule inside the mode.
 
 ## Native Codex
 
