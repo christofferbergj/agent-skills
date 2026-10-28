@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { execFileSync } from "node:child_process";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { execFileSync, spawnSync } from "node:child_process";
+import { mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
@@ -192,4 +192,16 @@ test("pushes images-only commits that fast-forward, so earlier image links keep 
   assert.equal(remote(["rev-parse", `${second}^`]), first);
   assert.equal(remote(["show", `${first}:product-after.png`]), "first");
   assert.equal(remote(["ls-tree", "--name-only", second]), "product-after.png");
+});
+
+test("runs when started through a symlink, as installed skills are", async () => {
+  const root = await mkdtemp(path.join(tmpdir(), "pr-evidence-"));
+  fixtures.add(root);
+  const script = path.join(root, "pr-evidence.ts");
+  await symlink(path.join(import.meta.dirname, "pr-evidence.ts"), script);
+
+  const run = spawnSync(process.execPath, [script], { encoding: "utf-8" });
+
+  assert.equal(run.status, 1);
+  assert.match(run.stderr, /Usage: node pr-evidence\.ts/);
 });
