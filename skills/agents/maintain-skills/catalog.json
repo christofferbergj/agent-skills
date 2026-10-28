@@ -283,6 +283,5 @@
     "docs/architecture.md",
     "skills/agents/maintain-skills/references/ADAPTATION.md"
   ],
-  "contextOwners": ["agentWriting"],
-  "policy": "Adopt upstream changes by default. Import eligible new upstream skills. Propose retirement for removed skills. Hold only decisions that need the owner."
+  "contextOwners": ["agentWriting"]
 }
