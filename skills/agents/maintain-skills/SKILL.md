@@ -21,23 +21,24 @@ Use /swarm throughout. Give each worker one slice, such as a source group, a bat
 
 Read the repository's `AGENTS.md`, the adaptation contract, and the maintenance guide. Run `begin`. When it reports the lock held, stop and name the run that holds it. Otherwise this run owns the lock until it runs `release`.
 
-Note `begin`'s `leftovers` for the report, then sync both worktrees by the guide's branch rules. Syncing discards leftovers, the edits of a run that ended before delivery; their skills no longer match the checkpoint, so the work returns to the worklist on its own. When `begin` reports `legacyNextActions`, convert that file into `next-actions.json`. Read the owner comments posted since `commentsSince` on the open maintenance PRs and on the PRs the questions link to. Check installed copies with `scripts/check-installs.py`, and refresh them as `AGENTS.md` says when they are stale. Run `inventory --resume` with `begin`'s checkpoint from the library worktree.
+Sync both worktrees by the guide's branch rules, then reapply each of `begin`'s `leftovers`, the saved edits of a run that ended before delivery, to its synced worktree as the guide describes; report and carry one that no longer applies. When `begin` reports `legacyNextActions`, convert that file into `next-actions.json`. Read the owner comments posted since `commentsSince` on the open maintenance PRs and on the PRs the questions link to. Check installed copies with `scripts/check-installs.py`, and refresh them as `AGENTS.md` says when they are stale. Run `inventory --resume` with `begin`'s checkpoint from the library worktree.
 
-**Complete when:** this run holds the lock, both worktrees match their sync rule, and you hold `begin`'s mode, checkpoint, questions, carried items, and leftovers, every owner comment since `commentsSince`, a current install check, and the inventory with its `changedSince`, `contextChanged`, and `staleReviews` lists.
+**Complete when:** this run holds the lock, both worktrees match their sync rule, every leftover is reapplied or carried, and you hold `begin`'s mode, checkpoint, questions, carried items, and leftovers, every owner comment since `commentsSince`, a current install check, and the inventory with its `changedSince`, `contextChanged`, and `staleReviews` lists.
 
 ## 2. Find what changed
 
 Run `fetch`, then `compare --fetch` with `--resume`. Save the inventory, fetch result, and compare reports in the run folder. Build the worklist in this order, which is also the order of work:
 
-1. Owner answers and comments not yet applied.
-2. Changed upstream skills and shared inputs, and every source whose fetch failed.
-3. New, removed, or moved upstream skills in the catalog's suites.
-4. Skills in `changedSince`, including new skills, and the inputs in `contextChanged`.
-5. In audit mode only: carried items, overdue ones first; the inventory's `fidelityBacklog`; skills the checkpoint lists as pending; then the oldest `staleReviews`, up to a quarter of the library.
+1. Reapplied leftovers, which still need validation and delivery.
+2. Owner answers and comments not yet applied.
+3. Changed upstream skills and shared inputs, and every source whose fetch failed.
+4. New, removed, or moved upstream skills in the catalog's suites.
+5. Skills in `changedSince`, including new skills, and the inputs in `contextChanged`.
+6. In audit mode only: carried items, overdue ones first; the inventory's `fidelityBacklog`; skills the checkpoint lists as pending; then the oldest `staleReviews`, up to a quarter of the library.
 
-When items 1 to 4 are empty in upstream mode, save a checkpoint from the compare reports, prune old runs, run `release`, and stop. A quiet run needs no branch, checks, review, PR, or report.
+When items 1 to 5 are empty in upstream mode, save a checkpoint from the compare reports, prune old runs, run `release`, and stop. A quiet run needs no branch, checks, review, PR, or report.
 
-**Complete when:** every unapplied owner answer, compare report entry, failed source, `changedSince` skill, and `contextChanged` input, and in audit mode every carried item, `fidelityBacklog` record, pending skill, and the oldest `staleReviews` up to a quarter of the library, is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
+**Complete when:** every reapplied leftover, unapplied owner answer, compare report entry, failed source, `changedSince` skill, and `contextChanged` input, and in audit mode every carried item, `fidelityBacklog` record, pending skill, and the oldest `staleReviews` up to a quarter of the library, is on the worklist or recorded as unchanged, or the run has stopped as a quiet run.
 
 ## 3. Decide and repair
 

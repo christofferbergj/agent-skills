@@ -61,7 +61,7 @@ Adopt by default. Taking upstream's improvements is the reason these skills are 
 - **Upstream reverses a local divergence:** keep the divergence only when its reason outweighs upstream's stated reason, and record the comparison either way.
 - **Converge:** when upstream now handles what a divergence was for, or a library-wide adaptation covers it, drop the divergence and take upstream's text.
 
-Import each new upstream skill under its upstream name, by the names rule above, unless the catalog excludes it or it needs owner approval. Package it like its siblings: provenance record, license, Codex metadata, suite or catalog mapping, README listings, companion rows, and /pstack-help routing for a user-facing Pstack entrypoint. When upstream removes a skill without a successor, propose its retirement and a catalog exclusion with the removal commit as evidence, unless a local skill depends on it; then hold it and name the dependency.
+Import each new upstream skill under its upstream name, by the names rule above, unless the catalog excludes it or it needs owner approval. Package it by the Add row of the change set in the repository's `CONTRIBUTING.md`. When upstream removes a skill without a successor, propose its retirement and a catalog exclusion with the removal commit as evidence, unless a local skill depends on it; then hold it and name the dependency.
 
 ## Principle-derived skills
 

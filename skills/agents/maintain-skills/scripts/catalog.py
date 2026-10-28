@@ -21,7 +21,6 @@ import subprocess
 import sys
 from urllib.parse import urlsplit
 
-CATALOG = Path(__file__).resolve().parents[1] / 'catalog.json'
 IGNORED = {'.git', '__pycache__', 'node_modules', '.pytest_cache'}
 SHA = r'[0-9a-f]{40}'
 URL = r'https?://[^\s)\]>]+'
@@ -66,7 +65,7 @@ def write_atomic(path, text):
     """Replace path in one step, so a crash leaves the old file or the new one, never a torn one."""
     path.parent.mkdir(parents=True, exist_ok=True)
     temporary = path.with_name('.' + path.name + '.' + str(os.getpid()) + '.tmp')
-    temporary.write_text(text)
+    temporary.write_bytes(text if isinstance(text, bytes) else text.encode())
     os.replace(temporary, path)
 
 
@@ -667,35 +666,67 @@ class Locked(Exception):
         self.owner = owner if isinstance(owner, dict) else {}
 
 
-def acquire_lock(state, run, now):
-    """Take $STATE/lock with an atomic mkdir; a lock older than LOCK_STALE_MINUTES belongs to a dead run."""
-    lock = state / 'lock'
-    recovered = None
+def publish_lock(lock, owner):
+    """Create the lock with its owner already inside, so no run ever sees an ownerless lock."""
+    staged = lock.parent / ('lock.new.' + str(os.getpid()) + '.' + hashlib.sha256(os.urandom(16)).hexdigest()[:12])
+    staged.mkdir()
+    (staged / 'owner.json').write_text(json.dumps(owner, indent=2) + '\n')
     try:
-        lock.mkdir()
-    except FileExistsError:
-        owner = read_json(lock / 'owner.json')
+        # rename replaces an empty directory, so an existing lock of any shape stays put.
+        if os.path.lexists(lock):
+            raise FileExistsError(lock)
+        os.rename(staged, lock)
+        return True
+    except OSError:
+        shutil.rmtree(staged)
+        return False
+
+
+def lock_is_live(lock, owner, now):
+    try:
+        since = parse_time(owner['startedAt'])
+    except (KeyError, TypeError, ValueError):
         try:
-            since = parse_time(owner['startedAt'])
-        except (KeyError, TypeError, ValueError):
-            since = None
-        if since and now - since < timedelta(minutes=LOCK_STALE_MINUTES):
-            raise Locked(owner)
-        recovered = owner if isinstance(owner, dict) else {'unreadable': True}
-        # Renaming first lets only one of two racing runs recreate the lock.
+            since = datetime.fromtimestamp(lock.stat().st_mtime, timezone.utc)
+        except OSError:
+            return False
+    return now - since < timedelta(minutes=LOCK_STALE_MINUTES)
+
+
+def acquire_lock(state, run, now):
+    """Take $STATE/lock; a lock older than LOCK_STALE_MINUTES belongs to a dead run."""
+    lock = state / 'lock'
+    owner = {'run': str(run), 'startedAt': now.isoformat()}
+    recovered = None
+    for _ in range(2):
+        if publish_lock(lock, owner):
+            return recovered
+        held = read_json(lock / 'owner.json')
+        if lock_is_live(lock, held, now):
+            raise Locked(held if isinstance(held, dict) else {})
+        # The reclaim marker lets one run remove this stale lock; a marker that lands in a newer lock backs off.
+        try:
+            os.close(os.open(lock / 'reclaim', os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+        except FileNotFoundError:
+            continue
+        except FileExistsError:
+            raise Locked(held if isinstance(held, dict) else {})
+        current = read_json(lock / 'owner.json')
+        if current != held:
+            (lock / 'reclaim').unlink(missing_ok=True)
+            raise Locked(current if isinstance(current, dict) else {})
+        recovered = held if isinstance(held, dict) else {'unreadable': True}
         stale = state / ('lock.stale.' + now.strftime('%Y%m%dT%H%M%S%fZ'))
         os.rename(lock, stale)
         shutil.rmtree(stale)
-        try:
-            lock.mkdir()
-        except FileExistsError:
-            raise Locked(read_json(lock / 'owner.json'))
-    write_atomic(lock / 'owner.json', json.dumps({'run': str(run), 'startedAt': now.isoformat()}, indent=2) + '\n')
-    return recovered
+    raise Locked(read_json(lock / 'owner.json') or {})
 
 
-def leftovers(state):
-    """Uncommitted changes and unpushed commits an interrupted run left in the reused worktrees."""
+def leftovers(state, run):
+    """Save what an interrupted run left in the reused worktrees before syncing discards it.
+
+    Uncommitted changes become a patch in the run folder, and unpushed commits stay reachable under refs/leftovers/.
+    """
     found = {}
     for name in WORKTREES:
         worktree = state / 'worktrees' / name
@@ -704,11 +735,20 @@ def leftovers(state):
         try:
             changes = git(worktree, 'status', '--porcelain').decode().splitlines()
             unpushed = git(worktree, 'rev-list', 'HEAD', '--not', '--remotes').decode().split()
+            entry = {}
+            if changes:
+                git(worktree, 'add', '--all', '--intent-to-add')
+                patch = run / ('leftovers-' + name + '.patch')
+                write_atomic(patch, git(worktree, 'diff', '--binary', 'HEAD'))
+                entry.update(changes=changes, patch=str(patch))
+            if unpushed:
+                ref = 'refs/leftovers/' + run.name + '/' + name
+                git(worktree, 'update-ref', ref, 'HEAD')
+                entry.update(unpushed=unpushed, ref=ref)
         except ValueError as error:
-            found[name] = {'error': str(error)}
-            continue
-        if changes or unpushed:
-            found[name] = {'changes': changes, 'unpushed': unpushed}
+            entry = {'error': str(error)}
+        if entry:
+            found[name] = entry
     return found
 
 
@@ -767,7 +807,7 @@ def begin(state, mode=None, now=None):
             legacy = next((path / 'next-actions.md' for path in earlier if (path / 'next-actions.md').is_file()), None)
             if legacy:
                 result['legacyNextActions'] = str(legacy)
-        result['leftovers'] = leftovers(state)
+        result['leftovers'] = leftovers(state, run)
         if recovered is not None:
             result['recoveredLock'] = recovered
         write_atomic(run / 'run.json', json.dumps({'startedAt': result['startedAt'], 'mode': mode}, indent=2) + '\n')
@@ -896,7 +936,7 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--catalog', type=Path, default=CATALOG)
+    parser.add_argument('--catalog', type=Path, help='Defaults to the catalog.json beside this script')
     parser.add_argument('--root', type=Path, help='Skill library repository root; begin, release, and prune need only --state')
     commands = parser.add_subparsers(dest='command', required=True, metavar='command')
     begin_parser = commands.add_parser('begin', help='Take the run lock, choose the mode, and open a run folder with the resume checkpoint and carried state')
@@ -943,7 +983,7 @@ def main():
     try:
         if arguments.root:
             root = arguments.root.resolve()
-            catalog = json.loads(arguments.catalog.read_text())
+            catalog = json.loads((arguments.catalog or Path(__file__).resolve().parents[1] / 'catalog.json').read_text())
         if arguments.command == 'begin':
             try:
                 result = begin(arguments.state.resolve(), arguments.mode, parse_time(arguments.now) if arguments.now else None)

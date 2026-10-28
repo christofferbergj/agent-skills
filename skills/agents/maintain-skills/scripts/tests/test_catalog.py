@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -797,13 +798,13 @@ class RunLifecycle(unittest.TestCase):
 
     def test_begin_and_release_run_streamed_without_a_library_root(self):
         source = SCRIPT.read_text()
-        started = subprocess.run([sys.executable, '-', 'begin', '--state', str(self.state), '--now', self.NOW], input=source, capture_output=True, text=True, cwd=self.base)
+        started = subprocess.run([sys.executable, '-', 'begin', '--state', str(self.state), '--now', self.NOW], input=source, capture_output=True, text=True, cwd='/')
         self.assertEqual(started.returncode, 0, started.stderr)
         run = json.loads(started.stdout)['run']
-        released = subprocess.run([sys.executable, '-', 'release', '--state', str(self.state), '--run', run], input=source, capture_output=True, text=True, cwd=self.base)
+        released = subprocess.run([sys.executable, '-', 'release', '--state', str(self.state), '--run', run], input=source, capture_output=True, text=True, cwd='/')
         self.assertEqual(released.returncode, 0, released.stderr)
         self.assertFalse((self.state / 'lock').exists())
-        refused = subprocess.run([sys.executable, '-', 'inventory'], input=source, capture_output=True, text=True, cwd=self.base)
+        refused = subprocess.run([sys.executable, '-', 'inventory'], input=source, capture_output=True, text=True, cwd='/')
         self.assertEqual(refused.returncode, 2)
         self.assertIn('--root is required', refused.stderr)
 
@@ -830,10 +831,49 @@ class RunLifecycle(unittest.TestCase):
         self.assertEqual(result['recoveredLock'], dead)
         self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], result['run'])
         (self.state / 'lock/owner.json').write_text('{')
+        # Without a readable owner, the lock's age is its directory's.
+        old = (self.now - catalog.timedelta(minutes=181)).timestamp()
+        os.utime(self.state / 'lock', (old, old))
         later = catalog.begin(self.state, None, self.now + catalog.timedelta(minutes=1))
         self.assertEqual(later['recoveredLock'], {'unreadable': True})
         with self.assertRaises(catalog.Locked):
             catalog.begin(self.state, None, self.now + catalog.timedelta(minutes=2))
+
+    def test_a_fresh_lock_without_its_owner_file_is_live(self):
+        # A run between creating the lock and writing its owner must not lose the lock to another run.
+        (self.state / 'lock').mkdir(parents=True)
+        with self.assertRaises(catalog.Locked):
+            catalog.begin(self.state, None, catalog.datetime.now(catalog.timezone.utc))
+        self.assertTrue((self.state / 'lock').is_dir())
+
+    def test_a_second_reclaimer_backs_off_instead_of_removing_the_new_lock(self):
+        (self.state / 'lock').mkdir(parents=True)
+        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': (self.now - catalog.timedelta(minutes=181)).isoformat()}
+        (self.state / 'lock/owner.json').write_text(json.dumps(dead))
+        (self.state / 'lock/reclaim').write_text('')
+        with self.assertRaises(catalog.Locked):
+            catalog.begin(self.state, None, self.now)
+        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text()), dead)
+        original = catalog.read_json
+        winner = {'run': str(self.state / 'runs/winner'), 'startedAt': self.now.isoformat()}
+        (self.state / 'lock/reclaim').unlink()
+
+        def reclaimed_meanwhile(path):
+            # Another run reclaims the lock between this run's two reads of its owner.
+            value = original(path)
+            if path.name == 'owner.json' and value == dead and not getattr(reclaimed_meanwhile, 'done', False):
+                reclaimed_meanwhile.done = True
+                return value
+            return winner if path.name == 'owner.json' else value
+
+        catalog.read_json = reclaimed_meanwhile
+        try:
+            with self.assertRaises(catalog.Locked):
+                catalog.begin(self.state, None, self.now)
+        finally:
+            catalog.read_json = original
+        self.assertFalse((self.state / 'lock/reclaim').exists())
+        self.assertTrue((self.state / 'lock').is_dir())
 
     def test_mode_is_audit_until_a_completed_audit_is_recent(self):
         first = self.begin()
@@ -881,6 +921,14 @@ class RunLifecycle(unittest.TestCase):
         self.assertEqual(set(result['leftovers']), {'library'})
         self.assertEqual(result['leftovers']['library']['changes'], ['?? stranded.txt'])
         self.assertEqual(len(result['leftovers']['library']['unpushed']), 1)
+        saved = result['leftovers']['library']
+        self.assertEqual(subprocess.run(['git', '-C', str(library), 'rev-parse', saved['ref']], capture_output=True, text=True).stdout.split(), saved['unpushed'])
+        # Syncing discards the edit; the saved patch brings it back.
+        subprocess.run(['git', '-C', str(library), 'reset', '-q', '--hard'], check=True)
+        subprocess.run(['git', '-C', str(library), 'clean', '-fdq'], check=True)
+        self.assertFalse((library / 'stranded.txt').exists())
+        subprocess.run(['git', '-C', str(library), 'apply', saved['patch']], check=True)
+        self.assertEqual((library / 'stranded.txt').read_text(), 'edit')
 
 
 class ActualLibraryCoverage(unittest.TestCase):
