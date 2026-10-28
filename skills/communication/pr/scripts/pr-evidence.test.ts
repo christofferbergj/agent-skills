@@ -199,10 +199,9 @@ test("runs when started through a symlink, as installed skills are", async () =>
   fixtures.add(root);
   const script = path.join(root, "pr-evidence.ts");
   await symlink(path.join(import.meta.dirname, "pr-evidence.ts"), script);
-  await writeFile(path.join(root, "product-after.png"), "not a png");
 
-  const run = spawnSync(process.execPath, [script, "--dry-run", root], { encoding: "utf-8" });
+  const run = spawnSync(process.execPath, [script], { encoding: "utf-8" });
 
   assert.equal(run.status, 1);
-  assert.match(run.stderr, /product-after\.png is not a PNG/);
+  assert.match(run.stderr, /Usage: node pr-evidence\.ts/);
 });
