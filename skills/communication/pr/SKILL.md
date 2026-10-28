@@ -177,7 +177,9 @@ Screenshots are S-tier. When the change alters what a user sees on a view and ca
 
 Show each view as a bold label, at most one sentence on what changed, and a `Before | After` table whose one row holds the two screenshots. Open the screenshots with one line naming their source, viewport, and baseline, such as "Mocked checkout at 1280px. Before is `main`, after is this branch." Show states the same way, with each state's name as its column heading, as in `Empty | Not looked up`: two screenshots to a row, or three for phone screenshots, with each later row's labels in the cell above it.
 
-When the forge CLI cannot attach images, as with `gh`, commit them to an images-only branch that never merges and embed each by commit SHA: `https://github.com/<owner>/<repo>/blob/<sha>/<file>.png?raw=true`. Make each upload's parent the branch's previous commit, so the push fast-forwards and the images in earlier PR body revisions keep resolving.
+The project's verification skill says how to capture the base branch. Name a pair `<view>-before.png` and `<view>-after.png`, a view that is new `<view>-after.png`, and a state the base branch never reaches `<view>--<state>.png`, such as `contact-step--empty.png`, all in kebab case.
+
+`gh` cannot attach images, so publish them on GitHub with `node ~/.agents/skills/pr/scripts/pr-evidence.ts <png or directory>...`, or the same script beside this skill where it is installed elsewhere, run from the PR branch's checkout. `--dry-run` checks the names and pushes nothing. The script commits the screenshots to `pr-images/<branch>`, an images-only branch that never merges, with the branch's previous commit as parent, so the images in earlier PR body revisions keep resolving. It prints the tables above, with each image linked by commit SHA.
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
 
