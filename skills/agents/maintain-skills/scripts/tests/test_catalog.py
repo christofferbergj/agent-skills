@@ -110,7 +110,6 @@ class RepositoryCoverage(unittest.TestCase):
         self.assertEqual(result['added'], ['skills/in-progress/beta'])
         self.assertEqual(len(result['excluded']), 2)
         self.assertEqual(len(result['inventory']), 4)
-        self.assertFalse(result['reviewComplete'])
         self.add_skill('teach')
         self.assertIn('teach', [item['name'] for item in catalog.inventory(self.root, self.registry)['skills']])
 
@@ -795,6 +794,18 @@ class RunLifecycle(unittest.TestCase):
         result = catalog.begin(self.state, mode, self.now + catalog.timedelta(days=days, seconds=self.calls))
         catalog.release(self.state, result['run'])
         return result
+
+    def test_begin_and_release_run_streamed_without_a_library_root(self):
+        source = SCRIPT.read_text()
+        started = subprocess.run([sys.executable, '-', 'begin', '--state', str(self.state), '--now', self.NOW], input=source, capture_output=True, text=True, cwd=self.base)
+        self.assertEqual(started.returncode, 0, started.stderr)
+        run = json.loads(started.stdout)['run']
+        released = subprocess.run([sys.executable, '-', 'release', '--state', str(self.state), '--run', run], input=source, capture_output=True, text=True, cwd=self.base)
+        self.assertEqual(released.returncode, 0, released.stderr)
+        self.assertFalse((self.state / 'lock').exists())
+        refused = subprocess.run([sys.executable, '-', 'inventory'], input=source, capture_output=True, text=True, cwd=self.base)
+        self.assertEqual(refused.returncode, 2)
+        self.assertIn('--root is required', refused.stderr)
 
     def test_a_second_run_waits_for_the_lock_and_release_checks_its_owner(self):
         code, first = self.run_cli('begin', '--state', str(self.state), '--now', self.NOW)

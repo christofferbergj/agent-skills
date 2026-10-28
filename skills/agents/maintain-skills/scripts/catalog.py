@@ -485,7 +485,7 @@ def validate(root, catalog):
                 for label, target in markdown_targets(document):
                     if not target.exists():
                         problems.append(str(document.relative_to(root)) + ': broken link ' + label)
-                    elif document.name not in ['README.md', *RECORD_NAMES, 'MAINTENANCE.md', 'VALIDATION.md'] and not target.is_relative_to(directory):
+                    elif document.name not in ['README.md', *RECORD_NAMES, 'MAINTENANCE.md'] and not target.is_relative_to(directory):
                         problems.append(str(document.relative_to(root)) + ': invoke the reference owner instead of linking outside the skill: ' + label)
         except (OSError, ValueError, IndexError) as error:
             problems.append(name + ': ' + str(error))
@@ -604,7 +604,7 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
         original = next((entry['upstream'] for definition in policies.values() for entry in definition.get('skills', []) if entry['local'] == change['local']), None)
         if original and original not in actual and change['status'] != 'blocked':
             change['status'] = 'removed'
-    result = {'source': source, 'candidate': candidate, 'repository': group['repository'], 'tracking': group['tracking'], 'resumedFrom': prior, 'suites': suite_results, 'skills': changes, 'sharedInputs': shared, 'reviewComplete': False}
+    result = {'source': source, 'candidate': candidate, 'repository': group['repository'], 'tracking': group['tracking'], 'resumedFrom': prior, 'suites': suite_results, 'skills': changes, 'sharedInputs': shared}
     if policies:
         result['inventory'] = sorted(actual)
     if source in suite_results:
@@ -897,7 +897,7 @@ def checkpoint(root, catalog, candidates, completed, elapsed_minutes, integratio
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--catalog', type=Path, default=CATALOG)
-    parser.add_argument('--root', type=Path, required=True, help='Skill library repository root')
+    parser.add_argument('--root', type=Path, help='Skill library repository root; begin, release, and prune need only --state')
     commands = parser.add_subparsers(dest='command', required=True, metavar='command')
     begin_parser = commands.add_parser('begin', help='Take the run lock, choose the mode, and open a run folder with the resume checkpoint and carried state')
     begin_parser.add_argument('--state', type=Path, required=True)
@@ -937,9 +937,13 @@ def main():
     prune_parser.add_argument('--state', type=Path, required=True)
     prune_parser.add_argument('--keep', type=int, required=True)
     arguments = parser.parse_args()
+    # State-only commands run from a copy of this file streamed from the default branch, before any worktree is synced.
+    if arguments.command not in {'begin', 'release', 'prune'} and not arguments.root:
+        parser.error('--root is required for ' + arguments.command)
     try:
-        root = arguments.root.resolve()
-        catalog = json.loads(arguments.catalog.read_text())
+        if arguments.root:
+            root = arguments.root.resolve()
+            catalog = json.loads(arguments.catalog.read_text())
         if arguments.command == 'begin':
             try:
                 result = begin(arguments.state.resolve(), arguments.mode, parse_time(arguments.now) if arguments.now else None)
