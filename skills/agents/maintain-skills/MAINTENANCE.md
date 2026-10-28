@@ -32,7 +32,7 @@ It exits 3 when another run holds the lock. Otherwise it prints, and saves as `$
 - `resume`: the newest valid checkpoint, skipping unreadable ones, which it lists in `skippedCheckpoints`.
 - `commentsSince`: when that checkpoint's run started. Owner comments posted since then are new.
 - `questions` and `nextActions` from runtime state. A carried item is `overdue` once an audit has finished since it was first carried. `legacyNextActions` names an older run's `next-actions.md` to convert when `next-actions.json` is missing.
-- `leftovers`: what an interrupted run left in each worktree, saved before syncing discards it. Uncommitted `changes` are in its `patch` file, and `unpushed` commits, newest first, stay reachable under its `ref`. After syncing, reapply them with `git -C "$WORKTREE" apply --3way <patch>` and by cherry-picking the commits oldest first.
+- `leftovers`: uncommitted changes and unpushed commits an interrupted run left in each worktree. Syncing discards them; the checkpoint, saved only after delivery, still lists their work.
 
 Free the lock after the last write to `$STATE`, the same way:
 
@@ -68,7 +68,7 @@ Each skill gets `unchanged`, `changed`, `removed`, or `blocked`, with the change
 
 ### Checkpoint and prune
 
-`checkpoint` records coverage without touching source records:
+`checkpoint` records coverage without touching source records. Save it only after delivery is verified, or at the end of a quiet run, so an interrupted run's work stays open:
 
 ```bash
 python3 "$HELPER" --root . checkpoint \

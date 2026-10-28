@@ -26,6 +26,7 @@ SHA = r'[0-9a-f]{40}'
 URL = r'https?://[^\s)\]>]+'
 RECORD_NAMES = ['UPSTREAM.md', 'PROVENANCE.md', 'ATTRIBUTION.md', 'SOURCE.md']
 LOCK_STALE_MINUTES = 180  # Twice the longest run budget.
+RECLAIM_STALE_MINUTES = 10
 AUDIT_INTERVAL_DAYS = 7
 REVIEW_EXPIRY_DAYS = 28
 WORKTREES = ['library', 'process']
@@ -698,7 +699,7 @@ def acquire_lock(state, run, now):
     lock = state / 'lock'
     owner = {'run': str(run), 'startedAt': now.isoformat()}
     recovered = None
-    for _ in range(2):
+    for _ in range(3):
         if publish_lock(lock, owner):
             return recovered
         held = read_json(lock / 'owner.json')
@@ -710,7 +711,15 @@ def acquire_lock(state, run, now):
         except FileNotFoundError:
             continue
         except FileExistsError:
-            raise Locked(held if isinstance(held, dict) else {})
+            # A reclaimer that crashed leaves its marker; reclaiming takes milliseconds, so an old marker is abandoned.
+            try:
+                abandoned = now - datetime.fromtimestamp((lock / 'reclaim').stat().st_mtime, timezone.utc) > timedelta(minutes=RECLAIM_STALE_MINUTES)
+            except OSError:
+                abandoned = False
+            if not abandoned:
+                raise Locked(held if isinstance(held, dict) else {})
+            (lock / 'reclaim').unlink(missing_ok=True)
+            continue
         current = read_json(lock / 'owner.json')
         if current != held:
             (lock / 'reclaim').unlink(missing_ok=True)
@@ -722,10 +731,10 @@ def acquire_lock(state, run, now):
     raise Locked(read_json(lock / 'owner.json') or {})
 
 
-def leftovers(state, run):
-    """Save what an interrupted run left in the reused worktrees before syncing discards it.
+def leftovers(state):
+    """Uncommitted changes and unpushed commits an interrupted run left in the reused worktrees.
 
-    Uncommitted changes become a patch in the run folder, and unpushed commits stay reachable under refs/leftovers/.
+    Syncing discards them safely: a run saves its checkpoint only after delivery, so an interrupted run's work returns through the earlier checkpoint.
     """
     found = {}
     for name in WORKTREES:
@@ -735,20 +744,11 @@ def leftovers(state, run):
         try:
             changes = git(worktree, 'status', '--porcelain').decode().splitlines()
             unpushed = git(worktree, 'rev-list', 'HEAD', '--not', '--remotes').decode().split()
-            entry = {}
-            if changes:
-                git(worktree, 'add', '--all', '--intent-to-add')
-                patch = run / ('leftovers-' + name + '.patch')
-                write_atomic(patch, git(worktree, 'diff', '--binary', 'HEAD'))
-                entry.update(changes=changes, patch=str(patch))
-            if unpushed:
-                ref = 'refs/leftovers/' + run.name + '/' + name
-                git(worktree, 'update-ref', ref, 'HEAD')
-                entry.update(unpushed=unpushed, ref=ref)
         except ValueError as error:
-            entry = {'error': str(error)}
-        if entry:
-            found[name] = entry
+            found[name] = {'error': str(error)}
+            continue
+        if changes or unpushed:
+            found[name] = {'changes': changes, 'unpushed': unpushed}
     return found
 
 
@@ -807,7 +807,7 @@ def begin(state, mode=None, now=None):
             legacy = next((path / 'next-actions.md' for path in earlier if (path / 'next-actions.md').is_file()), None)
             if legacy:
                 result['legacyNextActions'] = str(legacy)
-        result['leftovers'] = leftovers(state, run)
+        result['leftovers'] = leftovers(state)
         if recovered is not None:
             result['recoveredLock'] = recovered
         write_atomic(run / 'run.json', json.dumps({'startedAt': result['startedAt'], 'mode': mode}, indent=2) + '\n')

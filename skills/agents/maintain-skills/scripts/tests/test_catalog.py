@@ -852,7 +852,7 @@ class RunLifecycle(unittest.TestCase):
         (self.state / 'lock/owner.json').write_text(json.dumps(dead))
         (self.state / 'lock/reclaim').write_text('')
         with self.assertRaises(catalog.Locked):
-            catalog.begin(self.state, None, self.now)
+            catalog.begin(self.state, None, catalog.datetime.fromtimestamp((self.state / 'lock/reclaim').stat().st_mtime, catalog.timezone.utc))
         self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text()), dead)
         original = catalog.read_json
         winner = {'run': str(self.state / 'runs/winner'), 'startedAt': self.now.isoformat()}
@@ -874,6 +874,17 @@ class RunLifecycle(unittest.TestCase):
             catalog.read_json = original
         self.assertFalse((self.state / 'lock/reclaim').exists())
         self.assertTrue((self.state / 'lock').is_dir())
+
+    def test_a_crashed_reclaimers_marker_expires(self):
+        (self.state / 'lock').mkdir(parents=True)
+        dead = {'run': str(self.state / 'runs/dead'), 'startedAt': (self.now - catalog.timedelta(minutes=181)).isoformat()}
+        (self.state / 'lock/owner.json').write_text(json.dumps(dead))
+        (self.state / 'lock/reclaim').write_text('')
+        old = (self.now - catalog.timedelta(minutes=11)).timestamp()
+        os.utime(self.state / 'lock/reclaim', (old, old))
+        result = catalog.begin(self.state, None, self.now)
+        self.assertEqual(result['recoveredLock'], dead)
+        self.assertEqual(json.loads((self.state / 'lock/owner.json').read_text())['run'], result['run'])
 
     def test_mode_is_audit_until_a_completed_audit_is_recent(self):
         first = self.begin()
@@ -921,14 +932,6 @@ class RunLifecycle(unittest.TestCase):
         self.assertEqual(set(result['leftovers']), {'library'})
         self.assertEqual(result['leftovers']['library']['changes'], ['?? stranded.txt'])
         self.assertEqual(len(result['leftovers']['library']['unpushed']), 1)
-        saved = result['leftovers']['library']
-        self.assertEqual(subprocess.run(['git', '-C', str(library), 'rev-parse', saved['ref']], capture_output=True, text=True).stdout.split(), saved['unpushed'])
-        # Syncing discards the edit; the saved patch brings it back.
-        subprocess.run(['git', '-C', str(library), 'reset', '-q', '--hard'], check=True)
-        subprocess.run(['git', '-C', str(library), 'clean', '-fdq'], check=True)
-        self.assertFalse((library / 'stranded.txt').exists())
-        subprocess.run(['git', '-C', str(library), 'apply', saved['patch']], check=True)
-        self.assertEqual((library / 'stranded.txt').read_text(), 'edit')
 
 
 class ActualLibraryCoverage(unittest.TestCase):
