@@ -273,7 +273,7 @@ function main() {
   );
 }
 
-if (process.argv[1] === import.meta.filename) {
+if (import.meta.main) {
   try {
     main();
   } catch (error) {
