@@ -26,7 +26,7 @@ Use the [complete-library install](../README.md#install). Skills CLI does not in
 
 Installations are snapshots. After changes merge, rerun the complete install to refresh your selected agents and discover new skills. Install from this repository rather than overwriting its adaptations with same-named upstream skills. A repository update does not refresh global installations automatically. To check them against `main`, run `git fetch origin main`, then `python3 scripts/check-installs.py` from this repository. It reports stale, missing, unknown, and retired installs, same-named skills from other sources, and entries in `~/.claude/skills` that load something other than the shared install.
 
-For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). Daily runs adopt upstream changes while keeping the library's local adaptations; weekly audits also review every skill against current tools and conventions. This is separate from refreshing installed copies.
+For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). Upstream runs adopt upstream changes while keeping the library's local adaptations; audits also recheck skills against current tools and conventions. This is separate from refreshing installed copies.
 
 ## Agent compatibility
 

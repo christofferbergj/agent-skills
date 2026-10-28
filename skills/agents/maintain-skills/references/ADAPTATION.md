@@ -10,7 +10,7 @@ Every source:
 
 - **Hosts:** Codex and Claude Code. Translate host-specific execution, such as Cursor plugin registration, named Cursor agents, and fixed host model mappings, into each host's native tools. /swarm owns delegation, isolated writers, and cross-vendor review.
 - **Names:** a sourced skill keeps its upstream name, with no source prefix. Rename it only when the name collides with another skill the user installs, from this library or elsewhere; when it names its author or one host rather than what the skill does; or so a suite's entrypoints share the suite's name, as `pstack-mode`, `pstack-help`, and `pstack-setup` do. Record the reason in the mapping's `renamed` field in the catalog or `suite.json`, or in `UPSTREAM.md` for an unmapped skill; the catalog check rejects a mapped rename without one. Upstream references to a renamed skill use its local name, such as `/tdd` in Pstack's text becoming `/pstack-tdd`.
-- **Packaging:** install with the Skills CLI from this repository. Each skill's locally owned `agents/openai.yaml` mirrors its invocation mode: user-invoked skills set `disable-model-invocation: true` and `policy.allow_implicit_invocation: false`. Dependencies are `/skill-name` invocations, and the README lists required companions.
+- **Packaging:** install with the Skills CLI from this repository, and package each sourced skill by the repository's `AGENTS.md`; its `agents/openai.yaml` is locally owned.
 - **Coordination:** one coordinator writes canonical artifacts while delegates return proposals, and each effort keeps one accepted spec and ticket graph. Scale effort and parallelism to the task's scope and budget, and keep each workflow's outcomes and evidence.
 - **Review:** a workflow's final review of its own implementation runs through /review-loop, which keeps /code-review's axes and adds /thermo-nuclear-review's correctness audit, the counterpart model's review, and the fix rounds. A review the user names runs as well, and /review-loop still gives the final verdict.
 - **Authority:** honor the invoking repository's conventions and the user's existing authorization. Pull requests default to drafts, and learning-driven edits to source skills are prepared for review.
@@ -57,7 +57,7 @@ Adopt by default. Taking upstream's improvements is the reason these skills are 
 - **Adopt** a change as written when it already fits the library-wide adaptations.
 - **Adapt** a change by applying the library-wide adaptations, such as a renamed skill's local name, host translation, and owner delegation, or by keeping a recorded divergence whose reason still holds. Keep the change's intent. When it improves a discipline a shared owner holds, carry the improvement into the owner so both suites receive it, and keep the consumer delegating.
 - **Exclude** a change only when it is specific to the author's own environment or product, or has evidence that it makes the skill worse. Record the reason; the reviewed-through position then covers it.
-- **Hold** a change that needs a new service, wider authority, or a scope change, and ask the owner.
+- **Hold** a change that needs a new service, wider authority, or a scope change, and ask the owner a question.
 - **Upstream reverses a local divergence:** keep the divergence only when its reason outweighs upstream's stated reason, and record the comparison either way.
 - **Converge:** when upstream now handles what a divergence was for, or a library-wide adaptation covers it, drop the divergence and take upstream's text.
 
@@ -88,4 +88,4 @@ When both directions pass, set the record's `Fidelity checked through` line to t
 
 Record each decision where the next run reads it. Skill decisions go in the skill's `UPSTREAM.md` decision log. An excluded upstream skill or path goes in the catalog's `excludedNames` or `excludedPaths` with its reason. Owner answers from PR comments or chat are recorded the same way.
 
-A held change counts as reviewed: its question goes in runtime state and in each open maintenance PR's description, and the change waits there until the owner answers.
+Anything that waits on the owner is a question: a held change, an upstream bug report to file, or a choice the contract leaves open. Ask it with your recommendation in runtime state and in each open maintenance PR's description. A held change counts as reviewed and waits there until the owner answers.
