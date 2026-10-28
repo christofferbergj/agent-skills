@@ -6,7 +6,7 @@ Use this contract whenever a Pstack workflow dispatches a worker or critic. The 
 
 Include the goal, scope, relevant user directives, repository guidance, canonical spec/ticket and domain-document pointers, exact revisions, resolved rubric and reference paths, allowed writes, done predicate, output location, and report shape. Child skill discovery is not assumed. The coordinator owns canonical glossary/domain/ADR edits; workers return proposals with evidence. Use one execution coordinator and reuse completed review evidence only for the same artifact and coverage. A Matt entrypoint contributes its discipline without starting another Pstack mode or recursive coordinator. Give each writer a separate worktree or disjoint artifact location; reviewers inspect without editing or posting. Delegates do not recursively delegate unless their explicitly scoped workflow requires it.
 
-Read personal role settings from `PSTACK_CONFIG` or `~/.config/pstack/config.json` when present. Use its active host section and only the model and effort choices the user configured and the host supports; its `review` entry sets the counterpart below, its `computerUse` entry sets [the Computer Use delegate](computer-use.md), and its `roles` entry sets the model roles below. Without an override, each takes its default below. A rejected override is disclosed and falls back to the host default; never fabricate equivalent model slugs or silently change a requested vendor.
+Read personal role settings from `PSTACK_CONFIG` or `~/.config/pstack/config.json` when present. Use its active host section and only the model and effort choices the user configured and the host supports; its `review` entry sets the counterpart below, its `computerUse` entry sets [the Computer Use delegate](computer-use.md), and its `roles` entry sets the model roles below. Without an override, each takes its default below. A rejected override follows [Rejected models](#rejected-models); never fabricate equivalent model slugs or silently change a requested vendor.
 
 ## Model roles
 
@@ -14,11 +14,23 @@ Every Pstack spawn has a role: the label its skill names, such as `how explorer`
 
 - **Fast roles** run on the host's fast model, Sonnet in Claude Code: `how-explorer`, `why-investigators`, `reflect-tooling`, `swarm-workers`, and `fast-code`. `swarm-workers` covers fan-out workers, verification and measurement lanes, and history mining.
 - **Parent roles** keep the session's model: the code delegates `feature-refactoring`, `bug-fix`, `perf-issue`, and `hillclimb`, plus `hardest-tasks`, `judgment-and-prose`, `how-explainer`, `why-synthesizer`, and `reflect-judgment`, which also covers reflect's divergent reviewer and synthesizer.
-- **Panels**, the runners of /arena and /architect and the reviewers of /interrogate, seat one runner on the session's model and one on the counterpart, resolved with `review-full` as below. A counterpart runner writes as [the T3 route](t3.md) describes, or through the CLI route returns its artifact as its final message for the coordinator to save. When the counterpart resolves to `fallback` or fails, that seat takes route 3 below, and the report labels the panel same-vendor.
+- **Panels**, the runners of /arena and /architect and the reviewers of /interrogate, seat one runner on the session's model and one on the counterpart, resolved with `review-full` as below. A counterpart runner writes as [the T3 route](t3.md) describes, or through the CLI route returns its artifact as its final message for the coordinator to save. When the counterpart resolves to `fallback` or every counterpart route the calling skill allows fails, that seat takes route 3 below, and the report labels the panel same-vendor.
 
 Speed comes from the target. A Codex delegate, native or cross-vendor, runs in fast mode while Codex usage left stays at or above `codexUsage.fastWhileLeft`, 40% by default, and at standard speed below it. A Claude delegate runs at standard speed.
 
 A target without an `effort` leaves the level to the job: start from the /pstack-setup task budget's level, or the session's level without one, raise it one step, up to the host's maximum, for the hardest or subtlest work, and lower it one step for judgment and two or more for routine work such as exploration or a check run. /pstack-mode's Subagents section applies the same rule inside the mode.
+
+## Rejected models
+
+A model counts as rejected once the host's error says it is not valid, or leaves it out of its list of valid models. Never pass a rejected model again, skip any step below whose model is already rejected, and report what was rejected, the fallback taken, and the model and settings that ran.
+
+- **A counterpart seat**, whether a critic, a panel runner, or a judge, keeps the counterpart's vendor while a counterpart route remains. A route that lists valid models, such as [the T3 route](t3.md), retries once with the closest listed counterpart model; otherwise take the next route under Cross-vendor critics that the calling skill allows.
+- **Every other spawn** tries these steps in order, skipping a step that does not apply:
+  1. A rejected effort or speed adjustment: run at the role's resolved target, and try no other adjusted setting.
+  2. A rejected configured model: the role's default under Model roles, and the host's default when that role has none.
+  3. The calling skill's own fallback, when it has one. When that fallback runs out without saying what to do next, go to step 5.
+  4. The closest valid model of the role's family from the error's list of valid models.
+  5. No model, so the spawn runs on the session's model.
 
 ## Native Codex
 
