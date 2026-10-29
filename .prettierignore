@@ -1,2 +1,5 @@
 # Upstream's statechart corpus compares these reports byte for byte.
 skills/engineering/statechart/scripts/test/corpus/**/report.md
+
+# Upstream break-ui test values keep the exact spaces they test.
+skills/reviews/break-ui/CATALOG.md

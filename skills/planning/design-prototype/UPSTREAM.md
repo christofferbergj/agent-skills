@@ -16,7 +16,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Rename prototype to design-prototype to preserve Emil Kowalski's command. Keep both logic/UI branches; accepted model changes use the shared owner, and implementation/publication require their own task scope.
+- Rename prototype to design-prototype, because the upstream name collides with Emil Kowalski's prototype in the tracked emilkowalski/skill repository. Keep both logic/UI branches; accepted model changes use the shared owner, and implementation/publication require their own task scope.
 - `SKILL.md` rule 6 and the capture steps in `LOGIC.md` and `UI.md`: upstream always folds the decision into real code, commits the prototype to a throwaway branch, and comments on the implementation issue. Locally the prototype may stay in the project's chosen scratch location instead of a branch, folding into production code waits for implementation scope, and branch or issue publication follows the existing grant, because committing, pushing, and commenting need the user's authorization. The answer is captured as the question, observed answer, and remaining uncertainty, linked from the implementation artifact.
 
 ## Maintenance
