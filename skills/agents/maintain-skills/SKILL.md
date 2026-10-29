@@ -23,7 +23,7 @@ Read the repository's `AGENTS.md`, the adaptation contract, and the maintenance 
 
 Note `begin`'s `leftovers`, the edits of a run that ended before delivery, for the report, then sync both worktrees by the guide's branch rules, which discards them. That work returns on its own: a run settles its checkpoint and carried items only after delivery, so the interrupted run's items are still open in the state `begin` found. When `begin` reports `legacyNextActions`, convert that file into `next-actions.json`. Read the owner comments posted since `commentsSince` on the open maintenance PRs and on the PRs the questions link to. Check installed copies with `scripts/check-installs.py`, and refresh them as `AGENTS.md` says when they are stale. Run `inventory --resume` with `begin`'s checkpoint from the library worktree.
 
-**Complete when:** this run holds the lock, both worktrees match their sync rule, and you hold `begin`'s mode, checkpoint, questions, carried items, and leftovers, every owner comment since `commentsSince`, a current install check, and the inventory with its `changedSince`, `contextChanged`, and `staleReviews` lists.
+**Complete when:** this run holds the lock, both worktrees match their sync rule, and you hold `begin`'s mode, checkpoint, questions, carried items, and leftovers, every owner comment since `commentsSince`, a current install check, and the inventory with its `changedSince`, `contextChanged`, and `staleReviews` lists, or the run has stopped on a held lock and named the run that holds it.
 
 ## 2. Find what changed
 
