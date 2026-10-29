@@ -1,6 +1,6 @@
 # Adaptation contract
 
-This library tracks Pstack, Matt Pocock's skills, Thermos, and OpenClaw's test audit, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills are tracked differently, as the source of [principle-derived skills](#principle-derived-skills).
+This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, and two of Emil Kowalski's UI reviews, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills are tracked differently, as the source of [principle-derived skills](#principle-derived-skills).
 
 ## Library-wide adaptations
 
@@ -62,6 +62,8 @@ Adopt by default. Taking upstream's improvements is the reason these skills are 
 - **Converge:** when upstream now handles what a divergence was for, or a library-wide adaptation covers it, drop the divergence and take upstream's text.
 
 Import each new upstream skill under its upstream name, by the names rule above, unless the catalog excludes it or it needs owner approval. Package it by the Add row of the change set in the repository's `CONTRIBUTING.md`. When upstream removes a skill without a successor, propose its retirement and a catalog exclusion with the removal commit as evidence, unless a local skill depends on it; then hold it and name the dependency.
+
+Adopt a new skill only when it fills a gap no local skill covers and is worth maintaining, whether a tracked source adds it or the user installed it from elsewhere. When a local skill already mostly covers it, take nothing from it, not even a merge into that skill: record the exclusion and its reason, in the catalog's `excludedNames` for a mapped suite, and propose uninstalling any installed copy.
 
 ## Principle-derived skills
 
