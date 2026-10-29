@@ -40,7 +40,7 @@ Five touched Pstack records advance through the candidate after their complete r
 - Restricted Claude synthesis runs consume the exact updated instruction snapshots with both current and legacy artifacts. Each retains seven distinct, independently reproduced fixture defects, keeps Standards and Spec results separate, writes no canonical artifacts and discloses sequential rather than independent review. These are synthesis-stage exercises with supplied synthetic findings, not new full independent swarms.
 - TypeScript 7.0.2 compiles and Node 24.22.0 executes the negative, infinite and `NaN` duration counterexamples. The old field shape accepts all three, supporting the corrected guidance.
 
-Fresh host evidence uses Codex CLI 0.163.0 and Claude Code 2.1.292, with `claude-opus-5-5` reported by the restricted reviewer. Native tools supply their actual schemas and inherited settings. The [initial combined validation](../../skills/agents/maintain-skills/VALIDATION.md) is reused explicitly for unchanged executable internals and expensive workflows; its earlier Codex 0.162.1 checks are not presented as fresh runs.
+Fresh host evidence uses Codex CLI 0.163.0 and Claude Code 2.1.292, with `claude-opus-5-5` reported by the restricted reviewer. Native tools supply their actual schemas and inherited settings. The [initial combined validation](2026-10-15-combined-validation.md) is reused explicitly for unchanged executable internals and expensive workflows; its earlier Codex 0.162.1 checks are not presented as fresh runs.
 
 ## Limits and delivery
 

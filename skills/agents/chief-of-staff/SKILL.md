@@ -19,7 +19,7 @@ Harness-permitting, you will suggest recurring schedules which can help in achie
 
 Use /swarm for useful background delegates within available capacity; retain coordination and bounded local work in the parent. Keep the user's goal and budget as the scope boundary.
 
-Use background agents so you can stay in active dialogue with the user.
+Use background agents so you can stay in active dialogue with the user. Start every subagent with a fresh context window.
 
 Communication to and from subagents should be sparse. Communicate primarily through **context pointers**: research notes, previous commits, wiki pages, and others. Don't duplicate information already available via pointers.
 

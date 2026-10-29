@@ -39,7 +39,7 @@ All 134 automated tests pass: 76 Bun tests, 37 Pstack Python tests, ten combined
 
 Skills CLI discovery, repository formatting, whitespace checks, and Gitleaks pass. A final isolated Skills CLI copy installs all 94 skills for Codex and Claude Code. All 1,034 supporting-file hash comparisons match the source, and the removed maintenance engine is absent from both installations.
 
-The Wayfinder exercise used installed instructions, a local tracker, and two local provider documents. The parent inspected its map, both tickets, both research notes, and source hashes. Earlier native Codex and Claude Code exercises remain documented in the [combined validation record](../../skills/agents/maintain-skills/VALIDATION.md). These exercises cover selected branches, not every expensive workflow or optional service integration.
+The Wayfinder exercise used installed instructions, a local tracker, and two local provider documents. The parent inspected its map, both tickets, both research notes, and source hashes. Earlier native Codex and Claude Code exercises remain documented in the [combined validation record](2026-10-15-combined-validation.md). These exercises cover selected branches, not every expensive workflow or optional service integration.
 
 The Git detector remains an accidental-operation guardrail rather than a shell sandbox. Live hook activation, Origin immutable-head compatibility, GitLab tier behavior, production services, external tracker publication, and other operating systems remain unverified. Upstream pins and license notices remain unchanged.
 

@@ -179,7 +179,7 @@ Show each view as a bold label, at most one sentence on what changed, and a `Bef
 
 The project's verification skill says how to capture the base branch. Name a pair `<view>-before.png` and `<view>-after.png`, a view that is new `<view>-after.png`, and a state the base branch never reaches `<view>--<state>.png`, such as `contact-step--empty.png`, all in kebab case.
 
-`gh` cannot attach images, so publish them on GitHub with `node ~/.agents/skills/pr/scripts/pr-evidence.ts <png or directory>...`, or the same script beside this skill where it is installed elsewhere, run from the PR branch's checkout. `--dry-run` checks the names and pushes nothing. The script commits the screenshots to `pr-images/<branch>`, an images-only branch that never merges, with the branch's previous commit as parent, so the images in earlier PR body revisions keep resolving. It prints the tables above, with each image linked by commit SHA.
+`gh` cannot attach images, so publish them on GitHub with `node ~/.agents/skills/pr/scripts/pr-evidence.ts <png or directory>...`, or the same script beside this skill where it is installed elsewhere, run from the PR branch's checkout. `--dry-run` checks the names and pushes nothing. The script commits the screenshots to `pr-images/<branch>`, without a first path segment such as `agent/`, an images-only branch that never merges, with the branch's previous commit as parent, so the images in earlier PR body revisions keep resolving. It prints the tables above, with each image linked by commit SHA.
 
 Execution-based evidence is A-tier. Test results, console output. Show the exact test that now fails and passes, using pseudocode.
 

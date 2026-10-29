@@ -1,6 +1,6 @@
 # Whole-library maintenance
 
-Historical audit and rebase record. Counts and pending prerequisites describe those snapshots. Later full-inventory and attribution repairs are recorded in the [combined validation history](../../skills/agents/maintain-skills/VALIDATION.md#rebase-on-the-current-library); current ownership is explained in the [library architecture](../architecture.md).
+Historical audit and rebase record. Counts and pending prerequisites describe those snapshots. Later full-inventory and attribution repairs are recorded in the [combined validation history](2026-10-15-combined-validation.md#rebase-on-the-current-library); current ownership is explained in the [library architecture](../architecture.md).
 
 Reviewed all 94 local skills and 517 supporting files from default-branch commit `aa659e21f4484b3be362541cb0435526e235b6e4`. The inventory includes 90 sourced adaptations and four first-party skills. No new or relevant untracked skill was omitted. Three direct native Codex workers used disjoint write boundaries; none started another coordinator.
 

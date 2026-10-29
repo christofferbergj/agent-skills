@@ -4,7 +4,7 @@ Use this contract whenever a Pstack workflow dispatches a worker or critic. The 
 
 ## Prepare a brief
 
-Include the goal, scope, relevant user directives, repository guidance, canonical spec/ticket and domain-document pointers, exact revisions, resolved rubric and reference paths, allowed writes, done predicate, output location, and report shape. Child skill discovery is not assumed. The coordinator owns canonical glossary/domain/ADR edits; workers return proposals with evidence. Use one execution coordinator and reuse completed review evidence only for the same artifact and coverage. A Matt entrypoint contributes its discipline without starting another Pstack mode or recursive coordinator. Give each writer a separate worktree or disjoint artifact location; reviewers inspect without editing or posting. Delegates do not recursively delegate unless their explicitly scoped workflow requires it.
+Start every delegate with a fresh context window, never a fork of the parent conversation: the brief is its whole context. Include the goal, scope, relevant user directives, repository guidance, canonical spec/ticket and domain-document pointers, exact revisions, resolved rubric and reference paths, allowed writes, done predicate, output location, and report shape. Child skill discovery is not assumed. The coordinator owns canonical glossary/domain/ADR edits; workers return proposals with evidence. Use one execution coordinator and reuse completed review evidence only for the same artifact and coverage. A Matt entrypoint contributes its discipline without starting another Pstack mode or recursive coordinator. Give each writer a separate worktree or disjoint artifact location; reviewers inspect without editing or posting. Delegates do not recursively delegate unless their explicitly scoped workflow requires it.
 
 Read personal role settings from `PSTACK_CONFIG` or `~/.config/pstack/config.json` when present. Use its active host section and only the model and effort choices the user configured and the host supports; its `review` entry sets the counterpart below, its `computerUse` entry sets [the Computer Use delegate](computer-use.md), and its `roles` entry sets the model roles below. Without an override, each takes its default below. A rejected override follows [Rejected models](#rejected-models); never fabricate equivalent model slugs or silently change a requested vendor.
 
@@ -34,11 +34,11 @@ A model counts as rejected once the host's error says it is not valid, or leaves
 
 ## Native Codex
 
-Use exposed `collaboration.spawn_agent` and collection tools when available. The CLI can expose `spawn_agent`, `wait_agent` or `wait`, and result handles instead. Inspect the actual schema. Launch independent work before waiting and use a rolling window within available slots. Collect terminal output before synthesis; an acknowledgement is not a result. Reuse a running agent only for costly live state, otherwise supply a fresh consolidated brief.
+Use exposed `collaboration.spawn_agent` and collection tools when available. The CLI can expose `spawn_agent`, `wait_agent` or `wait`, and result handles instead. Inspect the actual schema. Set `fork_turns` to `"none"`, or `fork_context` to false in a schema that has it instead: a full-history fork, `spawn_agent`'s default, inherits the parent's context, model, and effort and accepts no overrides. Launch independent work before waiting and use a rolling window within available slots. Collect terminal output before synthesis; an acknowledgement is not a result. Reuse a running agent only for costly live state, otherwise supply a fresh consolidated brief.
 
 ## Native Claude Code
 
-Use the exposed `Agent` tool with its built-in general-purpose agent and supported concurrent/background options. Older sessions can expose `Task`; inspect the actual schema. Pass the rubric and scope explicitly. Collect all results or account for failure before synthesis. No custom agent registration is required.
+Use the exposed `Agent` tool with its built-in general-purpose agent and supported concurrent/background options, never the `fork` type, which inherits the parent conversation. Older sessions can expose `Task`; inspect the actual schema. Pass the rubric and scope explicitly. Collect all results or account for failure before synthesis. No custom agent registration is required.
 
 ## Cross-vendor critics
 
