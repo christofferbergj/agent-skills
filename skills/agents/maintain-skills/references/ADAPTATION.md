@@ -63,7 +63,7 @@ Adopt by default. Taking upstream's improvements is the reason these skills are 
 
 Import each new upstream skill that does a job no local skill does, under its upstream name by the names rule above, unless the catalog excludes it or it needs owner approval. Judge the job by when the skill runs, what it is pointed at, and what it produces, not by its subject: a guide that loads while work is built and a review invoked afterwards do different jobs even when they share rules. When a local skill already does the same job, take nothing from it, not even a merge into that skill: exclude it, and propose uninstalling any installed copy. Hold a skill that does a new job but may not be worth maintaining, and ask the owner. Package an imported skill by the Add row of the change set in the repository's `CONTRIBUTING.md`. When upstream removes a skill without a successor, propose its retirement and a catalog exclusion with the removal commit as evidence, unless a local skill depends on it; then hold it and name the dependency.
 
-The same test decides whether to adopt a skill the user installed from an untracked source. One that does a new job but needs no local change can stay installed from its upstream instead.
+The same test decides whether to adopt a skill the user installed from an untracked source. One that does a new job but needs no local change can stay installed from its upstream instead. One whose job a local skill already does needs only the uninstall proposal and no exclusion record, because no maintenance run reads an untracked source.
 
 ## Principle-derived skills
 
