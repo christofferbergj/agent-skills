@@ -37,7 +37,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 | [Agent workflows](skills/agents/README.md)                 | Configure agents, coordinate work, maintain skills, and learn from completed sessions. |
 | [Planning and design](skills/planning/README.md)           | Understand a codebase, research a problem, clarify requirements, and choose a design.  |
 | [Implementation and tooling](skills/engineering/README.md) | Build and debug software, configure development tools, and verify behavior.            |
-| [Reviews](skills/reviews/README.md)                        | Assess code, architecture, tests, performance claims, and the effects of a change.     |
+| [Reviews](skills/reviews/README.md)                        | Assess code, architecture, tests, UI, performance claims, and the effects of a change. |
 | [Writing and explanation](skills/communication/README.md)  | Explain work clearly, write technical documents, and edit prose.                       |
 | [Principles](skills/principles/README.md)                  | Design and coding principles selected by the workflows.                                |
 
@@ -114,9 +114,11 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 
 - [benchmark-checklist](skills/reviews/benchmark-checklist/SKILL.md)
 - [blast-radius](skills/reviews/blast-radius/SKILL.md)
+- [break-ui](skills/reviews/break-ui/SKILL.md)
 - [code-review](skills/reviews/code-review/SKILL.md)
 - [interrogate](skills/reviews/interrogate/SKILL.md)
 - [no-comments](skills/reviews/no-comments/SKILL.md)
+- [review-animations](skills/reviews/review-animations/SKILL.md)
 - [review-loop](skills/reviews/review-loop/SKILL.md)
 - [test-audit](skills/reviews/test-audit/SKILL.md)
 - [thermo-nuclear-code-quality-review](skills/reviews/thermo-nuclear-code-quality-review/SKILL.md)
