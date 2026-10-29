@@ -63,7 +63,7 @@ Adopt by default. Taking upstream's improvements is the reason these skills are 
 
 Import each new upstream skill under its upstream name, by the names rule above, unless the catalog excludes it or it needs owner approval. Package it by the Add row of the change set in the repository's `CONTRIBUTING.md`. When upstream removes a skill without a successor, propose its retirement and a catalog exclusion with the removal commit as evidence, unless a local skill depends on it; then hold it and name the dependency.
 
-Adopt a new skill only when it fills a gap no local skill covers and is worth maintaining, whether a tracked source adds it or the user installed it from elsewhere. When a local skill already mostly covers it, take nothing from it, not even a merge into that skill: record the exclusion and its reason, in the catalog's `excludedNames` for a mapped suite, and propose uninstalling any installed copy.
+Adopt a new skill only when it does a job no local skill does and is worth maintaining, whether a tracked source adds it or the user installed it from elsewhere. Judge the job by when the skill runs, what it is pointed at, and what it produces, not by its subject: a guide that loads while work is built and a review invoked afterwards do different jobs even when they share rules. When a local skill already does the same job, take nothing from it, not even a merge into that skill: record the exclusion and its reason, in the catalog's `excludedNames` for a mapped suite, and propose uninstalling any installed copy.
 
 ## Principle-derived skills
 
