@@ -89,7 +89,7 @@
           "local": "design-prototype",
           "directory": "skills/planning/design-prototype",
           "stage": "engineering",
-          "renamed": "Collides with Emil Kowalski's separate prototype skill."
+          "renamed": "Collides with Emil Kowalski's prototype skill in the tracked emilkowalski/skill repository."
         },
         {
           "upstream": "skills/engineering/research",
