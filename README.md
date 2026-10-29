@@ -102,6 +102,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [maintain-verification-skill](skills/engineering/maintain-verification-skill/SKILL.md)
 - [make-bot-ui](skills/engineering/make-bot-ui/SKILL.md)
 - [pstack-tdd](skills/engineering/pstack-tdd/SKILL.md)
+- [setup-agent-sign-in](skills/engineering/setup-agent-sign-in/SKILL.md)
 - [setup-pre-commit](skills/engineering/setup-pre-commit/SKILL.md)
 - [setup-ts-deep-modules](skills/engineering/setup-ts-deep-modules/SKILL.md)
 - [statechart](skills/engineering/statechart/SKILL.md)

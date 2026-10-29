@@ -1,0 +1,4 @@
+interface:
+  display_name: "Setup Agent Sign-In"
+  short_description: "Save test-user logins that agents sign in with"
+  default_prompt: "Use $setup-agent-sign-in to handle this request."
