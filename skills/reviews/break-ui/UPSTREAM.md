@@ -16,10 +16,9 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Upstream's "Initial Response" section is dropped. It made an invocation without a specific question answer with a fixed greeting and wait, which stalls a model invocation mid-task; /reply-shape and /next-options own how replies are laid out and end.
-- `CATALOG.md`'s padded-name row quotes its value, `"  Sam   Lee "`, because the repository formatter trims the spaces the row tests from bare inline code.
 - Redesign routes to `design-prototype`, this library's owner of UI variant prototypes, instead of Emil Kowalski's `prototype`, which overlaps it and is not adopted.
 
-`agents/openai.yaml`, this record, and the retained license are locally maintained packaging.
+`agents/openai.yaml`, this record, and the retained license are locally maintained packaging. The repository's `.prettierignore` keeps `CATALOG.md` byte-identical to upstream, because the formatter would trim the spaces its padded-name test value depends on.
 
 ## Maintenance
 
@@ -27,6 +26,6 @@ Compare future upstream changes against the reviewed-through revision for the li
 
 ## Review history
 
-| Date       | Candidate revision                         | Decision                                                                                                                                                                                                                                                             |
-| ---------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-10-29 | `a81dbca07f2217b7103e510c0f13f8d5b017afc9` | Imported `SKILL.md` and `CATALOG.md` from the revision the Skills CLI had installed; the installed tree hash matched upstream's. Dropped the fixed greeting, routed redesign to `design-prototype`, and quoted the padded-name value so formatting keeps its spaces. |
+| Date       | Candidate revision                         | Decision                                                                                                                                                                                                                                              |
+| ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-29 | `a81dbca07f2217b7103e510c0f13f8d5b017afc9` | Imported `SKILL.md` and `CATALOG.md` from the revision the Skills CLI had installed; the installed tree hash matched upstream's. Dropped the fixed greeting and routed redesign to `design-prototype`. Repository checks and catalog validation pass. |
