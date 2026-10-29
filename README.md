@@ -242,4 +242,4 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 
 ## License
 
-[MIT](LICENSE). Adapted skills retain the notices and `UPSTREAM.md` records for Matt Pocock, Lauren Tan, Cursor, and the OpenClaw Foundation inside their own directories.
+[MIT](LICENSE). Adapted skills retain the notices and `UPSTREAM.md` records for Matt Pocock, Lauren Tan, Cursor, the OpenClaw Foundation, and Emil Kowalski inside their own directories.
