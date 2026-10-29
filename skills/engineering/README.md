@@ -17,6 +17,7 @@ Build and debug software, configure development tools, and verify behavior.
 | [maintain-verification-skill](maintain-verification-skill/SKILL.md)               | Keep a verification skill and feature map current.         |
 | [make-bot-ui](make-bot-ui/SKILL.md)                                               | Build controls for an existing agent receiver.             |
 | [pstack-tdd](pstack-tdd/SKILL.md)                                                 | Prove a bug fix with a regression test.                    |
+| [setup-agent-sign-in](setup-agent-sign-in/SKILL.md)                               | Save test-user logins that agents sign in with.            |
 | [setup-pre-commit](setup-pre-commit/SKILL.md)                                     | Configure commit-time checks with existing tools.          |
 | [setup-ts-deep-modules](setup-ts-deep-modules/SKILL.md)                           | Configure deep-module checks for TypeScript.               |
 | [statechart](statechart/SKILL.md)                                                 | Chart how a system moves between states from a TLA+ model. |
