@@ -59,7 +59,7 @@ Each smell reads _what it is_ → _how to fix_; match it against the diff:
 
 ### 4. Spawn both sub-agents in parallel
 
-Use /swarm to issue the two independent briefs within host capacity and collect terminal results. Include resolved rubrics and artifact paths in each brief. If the caller supplies a Pstack adversarial lens, assign it explicitly without replacing either axis; reuse a completed equivalent pass only for the same artifact and scope. Disclose native or sequential fallback.
+Use /swarm to issue the two independent briefs within host capacity and collect terminal results. Include resolved rubrics and artifact paths in each brief. Each brief tells the reviewer to read the pinned revisions with `git show <sha>:<path>` and `git diff <base> <head>`, or the captured snapshot of working changes, so the shared checkout stays on its branch while the caller commits fixes. If the caller supplies a Pstack adversarial lens, assign it explicitly without replacing either axis; reuse a completed equivalent pass only for the same artifact and scope. Disclose native or sequential fallback.
 
 **Standards sub-agent prompt** should include:
 
