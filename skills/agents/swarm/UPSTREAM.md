@@ -39,6 +39,8 @@ Local maintenance on 2026-10-24 added usage-aware targets and the Computer Use d
 
 Local maintenance on 2026-10-28: `references/execution.md` gains a Rejected models rule, carried from Pstack's #986 chain in /pstack-mode so every caller gets it. It replaces the earlier one-line rule that a rejected override falls back to the host default, and keeps counterpart seats on the counterpart's vendor while a route remains, because a silent vendor change breaks cross-vendor review.
 
+Local maintenance on 2026-10-29: `references/execution.md` starts every delegate with a fresh context window instead of a fork, carried from Matt Pocock's #1341 and #1342 so both suites receive it. Codex 0.165's `spawn_agent` forks the full history unless `fork_turns` is `"none"`, and that fork refuses the model and effort overrides the model roles pass; Claude Code's `Agent` tool forks only for its `fork` type.
+
 Local maintenance on 2026-10-17 clarified the restricted reviewer's evidence scope. The Claude wrapper exposes `Read,Glob,Grep` without a shell, and its restricted session denied external runtime paths. Supply relevant snapshots inline and recorded checks; use a native critic for independent execution. The reviewed source candidate is `101b274dd991f694e1f7024be2157e5f3adf07de`; portable host behavior and source exclusions are retained.
 
 ## Second source: T3 delegation

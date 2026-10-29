@@ -7,9 +7,9 @@
 - Original skill and resources: [`skills/engineering/codebase-design`](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/codebase-design).
 - Tracking policy: upstream `main`; inspect the entire public skills inventory for additions, removals, category moves, and relevant shared documentation. Exclude personal skills and the recorded user exclusions.
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
-- Reviewed through commit: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
-- Fidelity checked through: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
-- Last upstream review: 2026-10-21.
+- Reviewed through commit: `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`.
+- Fidelity checked through: `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa`.
+- Last upstream review: 2026-10-29.
 - Upstream stage: `engineering`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.
 
@@ -29,3 +29,4 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 | 2026-10-15  | `49dd158d1076134a641b33efb035946536778336` | Imported the complete pinned skill and resources; adapted host execution, artifact ownership, and delivery boundaries for the combined library. Validate with the combined catalog and targeted workflow fixtures.                                                                                                                                                                                                                                                                         |
 | 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | No upstream delta. Fidelity check: restored upstream's design-it-twice framing hand-off, radically different constraints, candidate outputs, sequential presentation, and opinionated recommendation inside the /pstack-arena steps; recorded the glossary softening, arena execution and trigger, and completion criteria. Formatter-only Markdown changes are not divergences. Catalog validation passes. Final review: restored the rough illustrative code sketch in the framing step. |
 | 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| 2026-10-29  | `a496f5513d4a4cf889bc48e189e579f4b0bdf6aa` | Upstream `7739eae` (#1341) and `a496f55` (#1342) start every subagent with a fresh context window rather than a fork. Carried the rule into /swarm's execution contract, the delegation owner, so both suites receive it, including Codex's `fork_turns` and Claude Code's `fork` type. No local change: `DESIGN-IT-TWICE.md` step 2 runs its candidates through /arena, which dispatches through /swarm. Fidelity holds in both directions.                                               |
