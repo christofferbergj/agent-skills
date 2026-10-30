@@ -45,7 +45,7 @@ If you identify a high risk finding, but the intent of the branch is to introduc
 ## Over-reporting Guidelines
 
 If you report issues as High priority when they are not in fact high priority / meaningful issues, devs will lose trust in you and stop listening to you over time.
-NEVER misreport the priority / importance of issues. Be extremely thorough in tracing issues end-to-end to gain complete, and total confidence before reporting.
+NEVER misreport the priority / importance of issues. Be extremely thorough in tracing issues end-to-end to gain complete, and total confidence before reporting. Trace each changed path with the real inputs it meets, then a second run, such as a retry or the next request; for a failure in a shared helper, check every caller.
 
 # Final Response
 

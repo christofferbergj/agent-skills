@@ -20,6 +20,7 @@ Correctness, security, developer-experience, and feature-gate review rubric.
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Removed upstream `disable-model-invocation: true` so `/thermos` can invoke this dependency. Codex metadata allows implicit invocation.
 - Added a review-only boundary: report introduced issues and proposed remedies; edits and published comments need a separate user request.
+- Added the tracing method after the end-to-end rule: real inputs, a second run such as a retry, and every caller of a shared helper. It comes from Oliver Cederborg's shared review lenses (d3b51b8), adopted in /review-loop's counterpart brief and carried here, the owner of the correctness audit, so /thermos and /review-loop's same-model pass get it too (owner decision, 2026-10-30).
 - Added direct completion without nested subagents when delegated. The original audit criteria, severity calibration, and requirement to read PR discussion only after the independent audit remain.
 
 `agents/openai.yaml` is locally maintained host metadata. Formatting may differ from the original without changing the rubric.
