@@ -1,6 +1,6 @@
 ---
 name: next-options
-description: End replies with the next step, as one plain line when the agent carries on, or up to three lettered options when the user decides.
+description: End replies with the next step, as one plain line when the agent carries on, or one or two lettered options when the user decides.
 disable-model-invocation: true
 ---
 
@@ -22,7 +22,7 @@ Keep working through reversible steps inside the agreed scope, as /principle-nev
 
 When the user's answer is needed while your own work runs, say in one line what is still running, then end with the options.
 
-**Nobody** moves next when the work is finished. End with **Done**, without options: one line for a small task, or a few bullets of what is finished and what is still open. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
+**Nobody** moves next when the work is finished. End with **Done**, without options, and one line naming what is still open, or that nothing is. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
 
 **Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. A scope, interface, or product call the grant leaves to the user gets a default you apply and report with its reason, saying in plain words what they could tell you instead, without a letter to type back. Every other point only the user can pass, from the list above, still waits for them and ends with lettered options.
 
@@ -31,23 +31,22 @@ When the user's answer is needed while your own work runs, say in one line what 
 ```markdown
 **Next**
 
-- **`a` → fix 1 (currency column) and 2 (null dates), one commit each, and re-review until clean** · _recommended_
-- `b` → also add 3 (timeout test)
-- `c` → open the draft PR now and track 3 (timeout test) as a follow-up
+- **`a` → yes: fix the currency column and null dates, then push** · _recommended_
+- `b` → no: fix only the currency column
 ```
 
-- **At most three options**, `a` to `c`. They are the turn's only question, so the reply doesn't also end on "Should I…?".
+- **One or two options**, each at most 12 words. A report's `a` stands alone, and the user steers in their own words; `b` appears only on a yes-or-no call, such as /reply-shape's decision card, as the no and the smallest option. The options are the turn's only question, so the reply doesn't also end on "Should I…?".
 - **Only real choices**: each option waits for the user's pick. Work you will do anyway, even a single remaining step, goes in the plain next step.
-- **`a` is the recommendation**: bold only its option text and add the italic tag. It serves the session's goal, with side work under another letter, and names every push, post, PR, or issue it creates. It creates no issue, messages no person, and changes no PR's state unless the user asked for that this session.
-- **Each option** is a step the user would naturally take next, in plain words that make sense on their own, naming each item it cites as in the example. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.
+- **`a` is the recommendation**: bold only its option text and add the italic tag. It serves the session's goal and names every push, post, PR, or issue it creates in a word or two, as in `…, then push`. The option names the action; its plan stays with you. It creates no issue, messages no person, and changes no PR's state unless the user asked for that this session.
+- **Each option** is a step the user would naturally take next, in plain words that make sense on their own, calling each item it cites by name. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.
 - **Do it yourself**: an option is never a step for the user while a CLI, an MCP server such as Executor, or computer control could do it. Hand over only credentials, payment, or physical actions, and say why.
-- **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. When nothing else is left, `a` is the watch (`watch_pull_request` in T3 Code).
-- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>`, or the same script beside this skill where it is installed elsewhere. On `verdict: person`, such as Chromatic baselines that must be accepted or a deployment that waits for approval, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), put each item with its link under **Needs you**, and end with options. A check like this never finishes on its own, so waiting on it stalls the PR.
+- **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. When nothing else is left and the PR has checks, bots, or reviews still to report, `a` is the watch (`watch_pull_request` in T3 Code); with none, a watch has nothing to wake on.
+- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>`, or the same script beside this skill where it is installed elsewhere. On `verdict: person`, such as Chromatic baselines that must be accepted or a deployment that waits for approval, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), list each item with its link as something only the user can do, and end with options. A check like this never finishes on its own, so waiting on it stalls the PR.
 - **Leave out** filler such as stop, done, list what's open, or something else, and any option the user passed over in both of the last two lists, including a past `a`.
 
-## Numbered items
+## Answers
 
-Findings, questions, and open items keep their number for the whole session, and new items continue the count. A summary or handoff keeps each number with its name. The user can answer `3` to discuss item 3, `skip 3`, `?` for the current step and open items, a combination such as `a, skip 3`, or in their own words. These answers never get an option line.
+The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line.
 
 ## Workflow handoffs
 
