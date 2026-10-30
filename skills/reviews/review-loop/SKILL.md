@@ -47,7 +47,7 @@ Group verified findings by root cause and number them; numbers continue across r
 - **follow-up**: outside this change's scope; it goes in the PR description's open items.
 - **skip**: with a few-word reason.
 
-A finding the change did not cause or worsen is context, not a finding. One that nobody can reach yet, behind an off flag or an input the real configuration cannot produce, is Optional at most.
+A finding the change did not cause, newly reach, or worsen, such as one a reviewer labeled Pre-existing, is context, not a finding. One that nobody can reach yet, behind an off flag or an input the real configuration cannot produce, is Optional at most.
 
 **Complete when:** every finding is verified or dropped, and each verified one has a group, a number, a severity, and a call.
 
@@ -55,15 +55,15 @@ A finding the change did not cause or worsen is context, not a finding. One that
 
 Lead with the round, the verdict, and reviewer counts, such as `🔴 **Blocked.** Round 1: a retry can charge twice. Codex 2 · Claude 3 · both raised 1.` The verdict is **Blocked** with any Blocker, **Needs cleanup** with only Cleanups, and **Clean** when nothing needs fixing. Then list each finding on one line, worst first: number, severity, what breaks in plain words, `path:line`, who raised it, and the call. Fold the checks, one evidence line per finding, and each dropped finding with its reason into a details block. A finding that needs the user, such as a design, scope, or product decision, also gets a short card: what breaks, for whom, and the smallest diff.
 
-End by offering the next step: fixing and re-reviewing while findings remain, or delivering the draft PR through /pr once a round is Clean, when delivery is within the grant.
+End by offering the next step: fixing and re-reviewing while findings remain, or, once a round is Clean, proving the change works at that head through /principle-prove-it-works and then delivering the draft PR through /pr, when delivery is within the grant. Leave out a step that already ran on that head.
 
 **Complete when:** the report alone shows what each reviewer found, what held up, and what happens next.
 
 ## 5. Fix and re-review
 
-1. Apply each **fix** on the branch that owns it and run the focused checks, or edit the plan. When commits are authorized, commit each fix on its own.
+1. Apply each **fix** at every place its class names, on the branch that owns it, and run the focused checks, or edit the plan. When commits are authorized, commit each fix on its own.
 2. **Cut first.** For code, rebuild the packet with `--since <round-1 base>` and the target's head option, and compare its size with the baseline. When it grew, read the growth and cut or narrow any added code that no fixed finding needs, such as a helper, option, guard, or test for a case the intent doesn't reach. Treat each cut as a fix from here on: apply, check, and commit it the same way, pass it to the next round, then measure again. Growth a fixed finding needs stays.
-3. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the Codex correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
+3. Run the next round on the delta with only the counterpart, at delta-review effort, as a new task, passing the previous findings and their fixes and every settled finding (dropped, skipped, or follow-up) with its reason. For code, rebuild the packet with `--since <last reviewed head>`. The same-model passes and the Codex correctness pass run in round 1 only; the counterpart's delta review covers their ground on the fixed lines and is the refresh /code-review's completion rule asks for. For a plan, send the revised plan. Skip it when every fix was a local Cleanup or Optional item and its focused checks pass.
 4. Report only what is new or still open, with the size among the checks in the details block, as `diff +120 −30 → +150 −30`.
 
 Stop and report when a round is Clean, after three rounds, or when a finding needs the user. When a round repeats a class of finding an earlier round fixed, invoke /principle-attack-the-premise before another round. After three rounds without Clean, hand the open findings to the user; in an autonomous run, put them at the top of the PR description, report the branch as unverified, and continue. Delete the packet directories when the loop ends.
