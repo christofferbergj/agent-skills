@@ -20,7 +20,7 @@ Four parts, in this order. Skip a part with nothing to say. A skill's own report
    - **Do**: a login, device step, or payment, with why you can't do it and its steps numbered in the reply. Show it in the reply that first needs it, not again.
 4. **Fold**: at most one, for what the user may audit or compare: checks, evidence, sources, the other options, a long diff, and a multi-item run's table with `#`, item, status, and commit columns. Write it as `<details><summary>…</summary>` and a blank line. The summary gives the verdict, worst result first: `Checks: ❌ tests 11/12 · ⚠️ lint not run (no config) · ✅ typecheck`. A failure that matters also goes in the headline or a note. Cut a detail worth neither a glance nor an audit.
 
-**Budget**: the headline and notes stay under 60 words. Code, drafts, a Do item's steps, the fold, and the ending don't count.
+**Budget**: the prose above the fold, a glance's headline and notes or a card's lines, stays under 60 words. Code, drafts, a Do item's steps, the fold, and the ending don't count.
 
 ````markdown
 ✅ **Exports no longer time out on big companies.**
@@ -40,7 +40,7 @@ Put a `---` line with blank lines around it just above the ending, so it marks w
 
 ## Decision card
 
-When the reply exists to get a decision that shapes code or the plan, or the user's go on a merge, deploy, or message, the card is the whole reply, one call per reply; queue the rest. A skill that names its own format for a call keeps it, such as a review's findings. Everything above the fold fits in about twelve lines:
+When the reply exists to get a decision that shapes code or the plan, or the user's go on a merge, deploy, or message, the card is the whole reply, one call per reply; queue the rest. A skill that names its own format for a call keeps it, such as a review's findings.:
 
 1. **Question**: the headline, `🟡 **<a yes-or-no question>**`. In a round of several, a progress strip follows, as in `Group 1 🟡 · 2 ⬜ · 3 ⬜`.
 2. **Problem**: one line on what is wrong or at stake, and for whom.
