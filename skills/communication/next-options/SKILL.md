@@ -35,7 +35,7 @@ When the user's answer is needed while your own work runs, say in one line what 
 - `b` → no: fix only the currency column
 ```
 
-- **One or two options**, each at most 12 words. A report's `a` stands alone, and the user steers in their own words; `b` appears only when the reply stops for the user's call, as the no and the smallest option. The options are the turn's only question, so the reply doesn't also end on "Should I…?".
+- **One or two options**, each at most 12 words. A report's `a` stands alone, and the user steers in their own words; `b` appears only on a yes-or-no call, such as /reply-shape's decision card, as the no and the smallest option. The options are the turn's only question, so the reply doesn't also end on "Should I…?".
 - **Only real choices**: each option waits for the user's pick. Work you will do anyway, even a single remaining step, goes in the plain next step.
 - **`a` is the recommendation**: bold only its option text and add the italic tag. It serves the session's goal and names every push, post, PR, or issue it creates in a word or two, as in `…, then push`. The option names the action; its plan stays with you. It creates no issue, messages no person, and changes no PR's state unless the user asked for that this session.
 - **Each option** is a step the user would naturally take next, in plain words that make sense on their own, calling each item it cites by name. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.

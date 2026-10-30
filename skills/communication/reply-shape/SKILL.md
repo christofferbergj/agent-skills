@@ -12,11 +12,11 @@ The user gives each reply a glance, and what isn't on screen is forgotten. Write
 
 Four parts, in this order. Skip a part with nothing to say. A skill's own report fills them: its verdict is the headline, what it needs from the user goes in the notes, and its evidence goes in the fold.
 
-1. **Headline**: the first line, at most 12 words. Open with a marker, then the outcome in bold, in terms of what the user asked for: `✅ **Exports no longer time out.**`, not "added an index on `created_at`". The marker says before a word whether the user is needed: ✅ done and nothing needs them, 🟡 a decision or a risk, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated." An answer to a question is the headline, with a best guess in concrete units and how sure you are. A line that says you're waiting, mid-turn too, opens with ⏳ and names what it waits on, how long it has run, about how long is left, and what comes next: "⏳ CI on #12, 6 min in, about 4 min left; then I push."
+1. **Headline**: the first line, at most 12 words. Open with a marker, then the outcome in bold, in terms of what the user asked for: `✅ **Exports no longer time out.**`, not "added an index on `created_at`". The marker says before a word whether the user is needed: ✅ done and nothing needs them, 🟡 a decision or a risk, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated." An answer to a question is the headline, with a best guess in concrete units and how sure you are. A line that says you're waiting opens with ⏳ and names what it waits on, how long it has run, and about how long is left: "⏳ **CI on #12, 6 min in, about 4 min left.**" Mid-turn it also names what comes next; at the end of a turn, /next-options' plain next step says that.
 2. **Shape**: when the work touches code or a design, one view of at most 15 lines, by Views, that gives the user the mental model. A UI mockup can take its place.
 3. **Notes**: up to three ranked bullets of at most 15 words each, such as a call you made and its reason, a risk, or how to see the change. A note for the user opens with its label:
    - **Decide**: a choice that doesn't shape code or the plan, with your recommendation; its options go in the fold.
-   - **Review**: an interface, shown as its signature and one call site, or a draft, shown in full below the notes.
+   - **Review**: an interface, shown as its signature and one call site, or a draft that waits only for the user's look, shown in full below the notes. A draft that goes out on their yes takes the card's Message view.
    - **Do**: a login, device step, or payment, with why you can't do it and its steps numbered in the reply. Show it in the reply that first needs it, not again.
 4. **Fold**: at most one, for what the user may audit or compare: checks, evidence, sources, the other options, a long diff, and a multi-item run's table with `#`, item, status, and commit columns. Write it as `<details><summary>…</summary>` and a blank line. The summary gives the verdict, worst result first: `Checks: ❌ tests 11/12 · ⚠️ lint not run (no config) · ✅ typecheck`. A failure that matters also goes in the headline or a note. Cut a detail worth neither a glance nor an audit.
 
@@ -54,7 +54,7 @@ When the reply exists to get a decision that shapes code or the plan, or the use
 4. **Pick**: your answer and what it optimizes. **Source**: the doc, ADR, convention, or measurement it follows. **Cost**, only when the pick is hard to undo, such as a migration, a public API, or a sent message.
 5. **One fold** for the proof, the other options, and the sources.
 
-The options are the answers: `a` is yes, your pick, and `b` is no, the smallest option.
+End with /next-options' yes-or-no options.
 
 ## Writing
 
@@ -71,7 +71,7 @@ The options are the answers: `a` is yes, your pick, and `b` is no, the smallest 
 
 ## Before sending
 
-Delete an opening sentence that announces, a recap outside **Done**, and a closing sign-off. Read only the headline, the shape, the notes, and the ending: they alone must say what happened, what the code looks like now, and what comes next. On a card, read only what's above the fold: the user must be able to answer yes or no from it. Cut each sentence that doesn't change that, then check the budget.
+Delete an opening sentence that announces, a recap, and a closing sign-off. Read only the headline, the shape, the notes, and the ending: they alone must say what happened, what the code looks like now, and what comes next. On a card, read only what's above the fold: the user must be able to answer yes or no from it. Cut each sentence that doesn't change that, then check the budget.
 
 ## Setup
 

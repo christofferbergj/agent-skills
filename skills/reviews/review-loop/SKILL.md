@@ -55,7 +55,7 @@ A finding the change did not cause, newly reach, or worsen, such as one a review
 
 Lead with the round, the verdict, and reviewer counts, such as `🔴 **Blocked.** Round 1: a retry can charge twice. Codex 2 · Claude 3 · both raised 1.` The verdict is **Blocked** with any Blocker, **Needs cleanup** with only Cleanups, and **Clean** when nothing needs fixing. Then list each finding on one line, worst first: number, severity, what breaks in plain words, `path:line`, who raised it, and the call. Fold the checks, one evidence line per finding, and each dropped finding with its reason into a details block. A finding that needs the user, such as a design, scope, or product decision, also gets a short card: what breaks, for whom, and the smallest diff.
 
-End by offering the next step: fixing and re-reviewing while findings remain, or, once a round is Clean, proving the change works at that head through /principle-prove-it-works and then delivering the draft PR through /pr, when delivery is within the grant. Leave out a step that already ran on that head.
+End by offering the next step: fixing and re-reviewing while findings remain. Once a round is Clean, prove the change works at that head through /principle-prove-it-works unless that already ran there, then offer the draft PR through /pr when delivery is within the grant.
 
 **Complete when:** the report alone shows what each reviewer found, what held up, and what happens next.
 
