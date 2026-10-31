@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, test } from "node:test";
@@ -189,6 +189,7 @@ test("--working with --only stages only the named paths", () => {
   write("app.ts", "export const a = 2;\n");
   mkdirSync(join(repo, "unrelated"));
   execFileSync("git", ["-C", join(repo, "unrelated"), "init", "--quiet"]);
+  symlinkSync("absent-target", join(repo, "link"));
 
   const { status, json, stderr } = packet(
     "--since",
@@ -197,15 +198,17 @@ test("--working with --only stages only the named paths", () => {
     "--only",
     "app.ts",
     "--only",
+    "link",
+    "--only",
     "missing.ts",
   );
 
   assert.equal(status, 0, stderr);
   assert.deepEqual(
     json.files.map((file: { path: string }) => file.path),
-    ["app.ts"],
+    ["app.ts", "link"],
   );
-  assert.equal(json.size, "1 file changed, 1 insertion(+), 1 deletion(-)");
+  assert.equal(json.size, "2 files changed, 2 insertions(+), 1 deletion(-)");
   assert.equal(git("rev-parse", "HEAD"), base);
 });
 

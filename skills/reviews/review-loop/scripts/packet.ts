@@ -9,6 +9,7 @@ import { execFileSync } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
+  lstatSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -112,6 +113,16 @@ function defaultBranch(repo: string): string {
 }
 
 /** Commit the working tree, untracked files included, without touching the real index or refs. */
+// Unlike existsSync, counts a symlink whose target is missing.
+function entryExists(path: string): boolean {
+  try {
+    lstatSync(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function snapshot(repo: string, only: string[] | undefined): string {
   const scratch = mkdtempSync(join(tmpdir(), "review-loop-index-"));
   const index = join(scratch, "index");
@@ -149,7 +160,7 @@ function snapshot(repo: string, only: string[] | undefined): string {
       .filter(
         (path) =>
           path === "." ||
-          existsSync(join(repo, path)) ||
+          entryExists(join(repo, path)) ||
           git(repo, ["ls-files", "--", `:(top,literal)${path}`], { env }).trim() !== "",
       )
       .map((path) => (path === "." ? path : `:(top,literal)${path}`));
