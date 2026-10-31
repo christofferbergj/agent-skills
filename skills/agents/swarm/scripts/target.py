@@ -216,7 +216,8 @@ def on_pace(left, resets, minutes, now):
     if resets is None or minutes is None or minutes <= 0:
         return None
     length = minutes * 60
-    return 100 - left <= (now - (resets - length)) / length * 100
+    # Cross-multiplied, so equal shares compare equal.
+    return (100 - left) * length <= (now - (resets - length)) * 100
 
 
 def borrow_refusal(usage, config, now):
@@ -240,7 +241,8 @@ def resolve_borrowed(role, config, codex_model, usage, now):
     if refusal:
         return {**native, **report, 'note': f'{refusal}; running natively'}
     counterpart = table(role_entry('claude-code', role, config).get('counterpart'))
-    settings = codex_settings(counterpart, text(counterpart.get('effort')) or 'xhigh', codex_model)
+    effort = text(counterpart.get('effort'))
+    settings = codex_settings(counterpart, effort if effort in (*EFFORTS, 'ultra') else 'xhigh', codex_model)
     kept = {key: native[key] for key in ('model', 'effort') if native.get(key) is not None}
     return {'role': role, 'run': 'codex', **settings, **report, 'native': kept}
 

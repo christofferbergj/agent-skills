@@ -194,7 +194,7 @@ class BorrowedRoles(Harness):
         self.assertIn('unknown',result['note'])
 
     def test_pace_and_threshold_boundaries_use_unrounded_usage(self):
-        cases=[(40,0.4,'codex'),(40.4,0.4,'claude-code'),(50,0.75,'codex'),(50.4,0.75,'claude-code')]
+        cases=[(40,0.4,'codex'),(29,0.29,'codex'),(43,0.43,'codex'),(40.4,0.4,'claude-code'),(50,0.75,'codex'),(50.4,0.75,'claude-code')]
         for used,share,run in cases:
             self.log('a.jsonl',event(used,resets=elapsed(share)))
             self.assertEqual(self.run_target('how-explorer')['run'],run,(used,share))
@@ -217,6 +217,12 @@ class BorrowedRoles(Harness):
         self.log('a.jsonl',event(10,resets=elapsed(0.5)))
         result=self.run_target('how-explorer')
         self.assertEqual((result['model'],result['effort'],result['serviceTier'],result['native']),('gpt-configured','xhigh','priority',{'model':'sonnet'}))
+
+    def test_unsupported_counterpart_efforts_take_the_xhigh_default(self):
+        self.log('a.jsonl',event(10,resets=elapsed(0.5)))
+        for effort in ('auto','inherit-parent','fast',7):
+            self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'counterpart':{'model':'gpt-fixture','effort':effort}}}}}))
+            self.assertEqual(self.run_target('how-explorer')['effort'],'xhigh',effort)
 
     def test_fast_code_reflect_tooling_parent_roles_and_codex_coordinators_ignore_the_counterpart(self):
         self.log('a.jsonl',event(10,resets=elapsed(0.5)))
