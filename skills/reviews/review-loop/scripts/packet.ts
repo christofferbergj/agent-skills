@@ -11,15 +11,18 @@ import { tmpdir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
-const USAGE = `usage: node packet.ts --repo <dir> [--base <ref> | --since <ref>] [--head <ref> | --working] [--out <dir>]
+const USAGE = `usage: node packet.ts --repo <dir> [--base <ref> | --since <ref>] [--head <ref> | --working]
+                      [--only <path>]... [--keep <path>]... [--out <dir>]
 
   --base <ref>   review from the merge-base of <ref> and the head (default: the default branch)
   --since <ref>  review exactly the changes after <ref>, such as the last reviewed head
   --head <ref>   the revision under review (default: HEAD)
   --working      snapshot staged, unstaged, and untracked changes as the revision under review
+  --only <path>  review only this file or folder, from the repository root (repeatable)
+  --keep <path>  keep this lockfile, binary, or generated or vendored file in the diff (repeatable)
   --out <dir>    write the packet here (default: a new temporary directory)
 
-Prints JSON naming the packet, its revisions, and its reviewed and excluded files.`;
+Prints JSON naming the packet, its revisions, its size, and its reviewed and excluded files.`;
 
 const LOCKFILES = new Set([
   "bun.lock",
@@ -34,6 +37,7 @@ const LOCKFILES = new Set([
   "npm-shrinkwrap.json",
   "package-lock.json",
   "Package.resolved",
+  "Pipfile.lock",
   "Podfile.lock",
   "poetry.lock",
   "pnpm-lock.yaml",
@@ -41,7 +45,8 @@ const LOCKFILES = new Set([
   "uv.lock",
   "yarn.lock",
 ]);
-const BUILD_OUTPUT = /\.min\.(?:js|css)$|\.map$/;
+const GENERATED = /\.min\.(?:js|css)$|\.map$|\.pb\.go$|_pb2\.py$|\.generated\./;
+const VENDORED = /(?:^|\/)(?:vendor|node_modules|third_party)\//;
 const SNAPSHOT_IDENTITY = { NAME: "review-loop", EMAIL: "review-loop@localhost" };
 
 type Options = {
@@ -50,6 +55,8 @@ type Options = {
   since?: string;
   head?: string;
   working: boolean;
+  only?: string[];
+  keep?: string[];
   out?: string;
 };
 type Change = { status: string; path: string };
@@ -139,17 +146,26 @@ function nulFields(output: string): string[] {
   return output.split("\0").filter((field) => field !== "");
 }
 
-function changes(repo: string, base: string, head: string): Change[] {
-  const tokens = nulFields(git(repo, ["diff", "--name-status", "--no-renames", "-z", base, head]));
+function changes(repo: string, base: string, head: string, scope: string[]): Change[] {
+  const tokens = nulFields(
+    git(repo, ["diff", "--name-status", "--no-renames", "-z", base, head, "--", ...scope]),
+  );
   const result: Change[] = [];
   for (let index = 0; index < tokens.length; index += 2)
     result.push({ status: tokens[index], path: tokens[index + 1] });
   return result;
 }
 
-function exclusions(repo: string, base: string, head: string, paths: string[]): Exclusion[] {
+function exclusions(
+  repo: string,
+  base: string,
+  head: string,
+  scope: string[],
+  paths: string[],
+  keep: Set<string>,
+): Exclusion[] {
   const binary = new Set(
-    nulFields(git(repo, ["diff", "--numstat", "--no-renames", "-z", base, head]))
+    nulFields(git(repo, ["diff", "--numstat", "--no-renames", "-z", base, head, "--", ...scope]))
       .filter((line) => line.startsWith("-\t-\t"))
       .map((line) => line.slice(4)),
   );
@@ -174,11 +190,13 @@ function exclusions(repo: string, base: string, head: string, paths: string[]): 
       attributes.set(path, attribute === "linguist-vendored" ? "vendored" : "generated");
   }
   return paths.flatMap((path): Exclusion[] => {
+    if (keep.has(path)) return [];
     if (LOCKFILES.has(basename(path))) return [{ path, reason: "lockfile" }];
     if (binary.has(path)) return [{ path, reason: "binary" }];
     const attribute = attributes.get(path);
     if (attribute) return [{ path, reason: attribute }];
-    return BUILD_OUTPUT.test(path) ? [{ path, reason: "generated" }] : [];
+    if (VENDORED.test(path)) return [{ path, reason: "vendored" }];
+    return GENERATED.test(path) ? [{ path, reason: "generated" }] : [];
   });
 }
 
@@ -190,6 +208,8 @@ function parse(): Options | undefined {
       since: { type: "string" },
       head: { type: "string" },
       working: { type: "boolean", default: false },
+      only: { type: "string", multiple: true },
+      keep: { type: "string", multiple: true },
       out: { type: "string" },
       help: { type: "boolean", short: "h", default: false },
     },
@@ -208,18 +228,26 @@ function build(options: Options) {
   const base = options.since
     ? commit(repo, against)
     : git(repo, ["merge-base", commit(repo, against), head]).trim();
-  const changed = changes(repo, base, head);
-  if (changed.length === 0) throw new UsageError(`no changes between ${base} and ${head}`);
+  const scope = options.only?.map((path) => `:(top,literal)${path.replace(/\/+$/, "")}`) ?? ["."];
+  const changed = changes(repo, base, head, scope);
+  if (changed.length === 0)
+    throw new UsageError(
+      `no changes between ${base} and ${head}${options.only ? " in the --only paths" : ""}`,
+    );
   const excluded = exclusions(
     repo,
     base,
     head,
+    scope,
     changed.map((change) => change.path),
+    new Set(options.keep),
   );
   const leftOut = new Set(excluded.map((entry) => entry.path));
   const reviewed = changed.filter((change) => !leftOut.has(change.path));
   if (reviewed.length === 0)
-    throw new UsageError("only lockfiles, binaries, or generated or vendored files changed");
+    throw new UsageError(
+      "only lockfiles, binaries, or generated or vendored files changed; pass --keep for one central to the change",
+    );
 
   const directory = options.out
     ? resolve(options.out)
@@ -227,8 +255,17 @@ function build(options: Options) {
   mkdirSync(directory, { recursive: true });
   const diff = join(directory, "diff.patch");
   const packet = join(directory, "packet.md");
-  const exclude = excluded.map((entry) => `:(exclude,literal)${entry.path}`);
-  writeFileSync(diff, git(repo, ["diff", "--find-renames", base, head, "--", ".", ...exclude]));
+  const pathspec = [...scope, ...excluded.map((entry) => `:(exclude,literal)${entry.path}`)];
+  writeFileSync(diff, git(repo, ["diff", "--find-renames", base, head, "--", ...pathspec]));
+  const size = git(repo, [
+    "diff",
+    "--shortstat",
+    "--find-renames",
+    base,
+    head,
+    "--",
+    ...pathspec,
+  ]).trim();
   const commits = git(repo, ["log", "--format=%h %s", `${base}..${head}`]).trim();
   writeFileSync(
     packet,
@@ -239,6 +276,7 @@ function build(options: Options) {
       `- Base: ${base} (${options.since ? "exactly" : "merge-base with"} ${against})`,
       `- Head: ${head}${options.working ? " (working snapshot)" : ""}`,
       `- Diff: ${diff}, or \`git -C ${repo} diff --find-renames ${base} ${head}\` limited to the files below`,
+      `- Size: ${size}`,
       "",
       "## Commits",
       "",
@@ -263,6 +301,7 @@ function build(options: Options) {
     base,
     head,
     snapshot: options.working,
+    size,
     files: reviewed,
     excluded,
   };
