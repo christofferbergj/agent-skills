@@ -40,7 +40,7 @@ Put a `---` line with blank lines around it just above the ending, so it marks w
 
 ## Decision card
 
-When the reply exists to get a decision that shapes code or the plan, or the user's go on a merge, deploy, or message, the card is the whole reply, one call per reply; queue the rest. A skill that names its own format for a call keeps it, such as a review's findings.:
+When the reply exists to get a decision that shapes code or the plan, or the user's go on a merge, deploy, or message, the card is the whole reply, one call per reply; queue the rest. A skill that names its own format for a call keeps it, such as a review's findings:
 
 1. **Question**: the headline, `🟡 **<a yes-or-no question>**`. In a round of several, a progress strip follows, as in `Group 1 🟡 · 2 ⬜ · 3 ⬜`.
 2. **Problem**: one line on what is wrong or at stake, and for whom.
