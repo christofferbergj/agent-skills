@@ -184,6 +184,31 @@ test("--working snapshots staged, unstaged, and untracked changes without touchi
   );
 });
 
+test("--working with --only stages only the named paths", () => {
+  const base = git("rev-parse", "HEAD");
+  write("app.ts", "export const a = 2;\n");
+  mkdirSync(join(repo, "unrelated"));
+  execFileSync("git", ["-C", join(repo, "unrelated"), "init", "--quiet"]);
+
+  const { status, json, stderr } = packet(
+    "--since",
+    "HEAD",
+    "--working",
+    "--only",
+    "app.ts",
+    "--only",
+    "missing.ts",
+  );
+
+  assert.equal(status, 0, stderr);
+  assert.deepEqual(
+    json.files.map((file: { path: string }) => file.path),
+    ["app.ts"],
+  );
+  assert.equal(json.size, "1 file changed, 1 insertion(+), 1 deletion(-)");
+  assert.equal(git("rev-parse", "HEAD"), base);
+});
+
 test("--working captures the working tree whatever the index flags say", () => {
   write(".gitignore", "secret.env\n");
   write("hidden.ts", "export const hidden = 1;\n");

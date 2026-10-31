@@ -6,7 +6,16 @@
  * so reviewers read an immutable revision while the user's index, stash, and branch stay as they were.
  */
 import { execFileSync } from "node:child_process";
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  statSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, isAbsolute, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
@@ -103,7 +112,7 @@ function defaultBranch(repo: string): string {
 }
 
 /** Commit the working tree, untracked files included, without touching the real index or refs. */
-function snapshot(repo: string): string {
+function snapshot(repo: string, only: string[] | undefined): string {
   const scratch = mkdtempSync(join(tmpdir(), "review-loop-index-"));
   const index = join(scratch, "index");
   const env = {
@@ -119,8 +128,12 @@ function snapshot(repo: string): string {
     // ignored files, and skip-worktree entries a sparse checkout leaves out of the working tree.
     const real = git(repo, ["rev-parse", "--git-path", "index"]).trim();
     const realPath = isAbsolute(real) ? real : join(repo, real);
-    if (existsSync(realPath)) copyFileSync(realPath, index);
-    else git(repo, ["read-tree", "HEAD"], { env });
+    // Keep the index's timestamp, so Git still rechecks a file changed in the same second it was staged.
+    if (existsSync(realPath)) {
+      copyFileSync(realPath, index);
+      const { atime, mtime } = statSync(realPath);
+      utimesSync(index, atime, mtime);
+    } else git(repo, ["read-tree", "HEAD"], { env });
     // An assume-unchanged entry tells `add` not to look at the file, which would hide its changes.
     const assumed = nulFields(git(repo, ["ls-files", "-v", "-z"], { env }))
       .filter((entry) => /^[a-z] /.test(entry))
@@ -130,7 +143,17 @@ function snapshot(repo: string): string {
         env,
         input: assumed.join(""),
       });
-    git(repo, ["add", "--all"], { env });
+    // Stage only the --only paths that exist, so an unrelated file, such as a nested repository
+    // without a commit, can't stop the snapshot, and a missing path doesn't fail `add`.
+    const targets = (only ?? ["."])
+      .filter(
+        (path) =>
+          path === "." ||
+          existsSync(join(repo, path)) ||
+          git(repo, ["ls-files", "--", `:(top,literal)${path}`], { env }).trim() !== "",
+      )
+      .map((path) => (path === "." ? path : `:(top,literal)${path}`));
+    if (targets.length > 0) git(repo, ["add", "--all", "--", ...targets], { env });
     const tree = git(repo, ["write-tree"], { env }).trim();
     return git(
       repo,
@@ -223,12 +246,13 @@ function parse(): Options | undefined {
 
 function build(options: Options) {
   const repo = git(resolve(options.repo), ["rev-parse", "--show-toplevel"]).trim();
-  const head = options.working ? snapshot(repo) : commit(repo, options.head ?? "HEAD");
+  const only = options.only?.map((path) => path.replace(/\/+$/, ""));
+  const head = options.working ? snapshot(repo, only) : commit(repo, options.head ?? "HEAD");
   const against = options.since ?? options.base ?? defaultBranch(repo);
   const base = options.since
     ? commit(repo, against)
     : git(repo, ["merge-base", commit(repo, against), head]).trim();
-  const scope = options.only?.map((path) => `:(top,literal)${path.replace(/\/+$/, "")}`) ?? ["."];
+  const scope = only?.map((path) => `:(top,literal)${path}`) ?? ["."];
   const changed = changes(repo, base, head, scope);
   if (changed.length === 0)
     throw new UsageError(
