@@ -11,5 +11,6 @@ Dated audit and validation evidence. Counts, commands, deployment states, and pe
 - [Weekly audit, 2026-10-21](2026-10-21-weekly-audit.md)
 - [Weekly audit, 2026-10-25](2026-10-25-weekly-audit.md)
 - [Audit, 2026-10-27](2026-10-27-audit.md)
+- [Explorer model bakeoff, 2026-10-31](2026-10-31-explorer-model-bakeoff.md)
 - [Combined validation history, 2026-10-15](2026-10-15-combined-validation.md)
 - [Initial Pstack validation](../../skills/agents/pstack-mode/VALIDATION.md)

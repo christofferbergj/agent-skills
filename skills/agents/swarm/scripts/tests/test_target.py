@@ -18,12 +18,15 @@ NOW=1_800_000_000
 CONFIG={'codexUsage':{'fastWhileLeft':50,'skipWhenLeft':10},'claude-code':{'review':{'providerInstanceId':'codex','model':'gpt-fixture','effort':{'full':'max','delta':'high'},'serviceTier':'priority'},'computerUse':{'model':'gpt-fixture','effort':{'routine':'medium','hard':'high'},'serviceTier':'priority'}}}
 
 
-def event(used,resets=NOW+3600,reached=None,secondary=None,stamp='2026-10-24T21:00:00Z',bucket='codex'):
-    limits={'limit_id':bucket,'primary':{'used_percent':used,'window_minutes':10080,'resets_at':resets},'secondary':secondary,'rate_limit_reached_type':reached}
+WEEK=10080
+
+
+def event(used,resets=NOW+3600,reached=None,secondary=None,stamp='2026-10-24T21:00:00Z',bucket='codex',minutes=WEEK):
+    limits={'limit_id':bucket,'primary':{'used_percent':used,'window_minutes':minutes,'resets_at':resets},'secondary':secondary,'rate_limit_reached_type':reached}
     return json.dumps({'timestamp':stamp,'type':'event_msg','payload':{'type':'token_count','rate_limits':limits}},separators=(',',':'))
 
 
-class TargetResolution(unittest.TestCase):
+class Harness(unittest.TestCase):
     def setUp(self):
         self.directory=tempfile.TemporaryDirectory()
         self.home=Path(self.directory.name)
@@ -46,6 +49,8 @@ class TargetResolution(unittest.TestCase):
             self.assertEqual(target.main(),0)
         return json.loads(stream.getvalue())
 
+
+class TargetResolution(Harness):
     def test_defaults_fill_effort_and_take_the_codex_configured_model(self):
         self.config.write_text('{}')
         (self.home/'config.toml').write_text('model = "gpt-configured"\n\n[profiles.other]\nmodel = "gpt-other"\n')
@@ -150,6 +155,62 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet'})
         self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code'})
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
+
+
+def elapsed(share):
+    """A reset time that leaves `share` of the weekly window elapsed at NOW."""
+    return NOW+round(WEEK*60*(1-share))
+
+
+class BorrowedRoles(Harness):
+    COUNTERPART={'providerInstanceId':'codex','model':'gpt-fixture','effort':'max','serviceTier':'priority'}
+
+    def setUp(self):
+        super().setUp()
+        roles={role:{'model':'inherit-parent','effort':'high','counterpart':self.COUNTERPART} for role in ('how-explorer','why-investigators','reflect-tooling','swarm-workers','fast-code','bug-fix')}
+        self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'roles':roles},'codex':{'roles':roles}}))
+
+    def test_on_pace_and_above_the_fast_threshold_runs_on_codex_with_the_native_settings_attached(self):
+        self.log('a.jsonl',event(40,resets=elapsed(0.5)))
+        for role in ('how-explorer','why-investigators','reflect-tooling','swarm-workers'):
+            result=self.run_target(role)
+            self.assertEqual({key:result[key] for key in ('run','providerInstanceId','model','effort','serviceTier','native')},{'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'xhigh','serviceTier':'priority','native':{'effort':'high'}},role)
+            self.assertEqual(result['usage']['left'],60)
+
+    def test_behind_pace_below_the_threshold_or_unknown_usage_runs_natively_with_a_note(self):
+        cases=[(30,elapsed(0.25),'behind pace'),(55,elapsed(0.75),'Below the fast threshold'),(10,None,'window unknown')]
+        for used,resets,note in cases:
+            self.log('a.jsonl',event(used,resets=resets if resets is not None else NOW+3600,minutes=WEEK if resets is not None else None))
+            result=self.run_target('how-explorer')
+            self.assertEqual((result['run'],result.get('model'),result['effort']),('claude-code',None,'high'),note)
+            self.assertIn(note,result['note'])
+        (self.day/'a.jsonl').unlink()
+        result=self.run_target('swarm-workers')
+        self.assertEqual((result['run'],result['effort']),('claude-code','high'))
+        self.assertIn('unknown',result['note'])
+
+    def test_a_reset_window_counts_as_fresh(self):
+        self.log('a.jsonl',event(95,resets=NOW-1))
+        self.assertEqual(self.run_target('how-explorer')['run'],'codex')
+
+    def test_counterpart_defaults_take_the_codex_configured_model_xhigh_and_priority(self):
+        (self.home/'config.toml').write_text('model = "gpt-configured"\n')
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'counterpart':{'providerInstanceId':'codex'}}}}}))
+        self.log('a.jsonl',event(10,resets=elapsed(0.5)))
+        result=self.run_target('how-explorer')
+        self.assertEqual((result['model'],result['effort'],result['serviceTier'],result['native']),('gpt-configured','xhigh','priority',{'model':'sonnet'}))
+
+    def test_fast_code_parent_roles_and_codex_coordinators_ignore_the_counterpart(self):
+        self.log('a.jsonl',event(10,resets=elapsed(0.5)))
+        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','effort':'high'})
+        self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code','effort':'high'})
+        self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex','serviceTier':'priority','effort':'high'})
+
+    def test_an_empty_or_malformed_counterpart_keeps_the_role_native(self):
+        self.log('a.jsonl',event(10,resets=elapsed(0.5)))
+        for counterpart in ({},'codex',None):
+            self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'effort':'high','counterpart':counterpart}}}}))
+            self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet','effort':'high'},counterpart)
 
 
 if __name__=='__main__':

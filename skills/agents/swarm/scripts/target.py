@@ -9,7 +9,9 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
      "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                      "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
-     "roles": {"how-explorer": {"model": "haiku", "effort": "low"}}},
+     "roles": {"how-explorer": {"model": "inherit-parent", "effort": "high",
+                                "counterpart": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
+                                                "effort": "xhigh", "serviceTier": "priority"}}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 codexUsage thresholds are percent of Codex usage left. A Codex target runs at serviceTier
@@ -24,6 +26,13 @@ native Codex role runs fast while Codex usage allows, and Claude never runs fast
 roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
 divergent, synthesizer", and fast-code names its "fast code model". A roles entry overrides
 the model or sets an effort; "inherit-parent" or "auto" as the model keeps the parent's.
+
+In Claude Code, a fast role other than fast-code can borrow Codex: its roles entry's
+"counterpart" names the Codex target. The role runs on Codex while Codex usage is on pace,
+meaning the share used is at most the share of the usage window elapsed, and at least
+fastWhileLeft is left. Otherwise, or when usage is unknown, it runs natively from the entry's
+other keys with a note. A Codex target carries those native settings as "native", for the
+coordinator to use when Codex can't run it. The counterpart's effort defaults to xhigh.
 """
 
 import argparse
@@ -48,6 +57,8 @@ CROSS_VENDOR_ROLES = {
 # code, judgment, prose, and synthesis keep the parent's model.
 FAST_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'fast-code'}
 PARENT_ROLES = {'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
+# Fast roles a Claude Code coordinator can lend to Codex; fast-code edits the coordinator's checkout.
+BORROWING_ROLES = FAST_ROLES - {'fast-code'}
 FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'fastWhileLeft': 40, 'skipWhenLeft': 5}
@@ -136,7 +147,7 @@ def window_left(window, now):
 
 
 def read_usage(sessions, now):
-    """Return (percent left in the tightest window, its reset time, snapshot time) from the newest snapshot, or None."""
+    """Return (percent left in the tightest window, its reset time, snapshot time, its length in minutes) from the newest snapshot, or None."""
     snapshots = []
     for log in recent_logs(sessions):
         try:
@@ -155,7 +166,7 @@ def read_usage(sessions, now):
     # Windows alone decide: rate_limit_reached_type is an account-wide reason with no reset time,
     # and a live usage-limit error already sends the caller to its fallback.
     left, window = min(windows, key=lambda pair: pair[0])
-    return round(left), number(window.get('resets_at')), seen
+    return round(left), number(window.get('resets_at')), seen, number(window.get('window_minutes'))
 
 
 def describe(left, resets):
@@ -176,8 +187,51 @@ def thresholds(config):
     return {key: default if number(configured.get(key)) is None else configured[key] for key, default in THRESHOLDS.items()}
 
 
+def role_entry(parent, role, config):
+    return table(table(table(config.get(parent)).get('roles')).get(role))
+
+
+def borrows(parent, role, config):
+    return parent == 'claude-code' and role in BORROWING_ROLES and bool(table(role_entry(parent, role, config).get('counterpart')))
+
+
+def on_pace(left, resets, minutes, now):
+    """Return whether the share used is at most the share of the window elapsed, or None without a window."""
+    if resets is None or minutes is None or minutes <= 0:
+        return None
+    length = minutes * 60
+    elapsed = min(100, max(0, (now - (resets - length)) / length * 100))
+    return 100 - left <= elapsed
+
+
+def resolve_borrowed(role, config, codex_model, usage, now):
+    native = resolve_native('claude-code', role, config, usage)
+    counterpart = table(role_entry('claude-code', role, config).get('counterpart'))
+    effort = text(counterpart.get('effort'))
+    if usage is None:
+        return {**native, 'note': 'Codex usage unknown; running natively'}
+    left, resets, seen, minutes = usage
+    report = {'left': left, 'seenAt': seen}
+    if left < thresholds(config)['fastWhileLeft']:
+        return {**native, 'usage': report, 'note': f'Below the fast threshold, running natively: {describe(left, resets)}'}
+    pace = on_pace(left, resets, minutes, now)
+    if not pace:
+        reason = 'Codex usage window unknown' if pace is None else f'Codex behind pace: {describe(left, resets)}'
+        return {**native, 'usage': report, 'note': f'{reason}; running natively'}
+    return {
+        'role': role,
+        'run': 'codex',
+        'providerInstanceId': text(counterpart.get('providerInstanceId')),
+        'model': text(counterpart.get('model')) or codex_model,
+        'effort': capped(effort) if effort in (*EFFORTS, 'ultra') else 'xhigh',
+        'serviceTier': text(counterpart.get('serviceTier')) or 'priority',
+        'usage': report,
+        'native': {key: native[key] for key in ('model', 'effort') if native.get(key) is not None},
+    }
+
+
 def resolve_native(parent, role, config, usage):
-    entry = table(table(table(config.get(parent)).get('roles')).get(role))
+    entry = role_entry(parent, role, config)
     model = text(entry.get('model'))
     if model is None:
         model = FAST_MODEL.get(parent) if role in FAST_ROLES else None
@@ -193,7 +247,9 @@ def resolve_native(parent, role, config, usage):
     return target
 
 
-def resolve(parent, role, config, codex_model, usage):
+def resolve(parent, role, config, codex_model, usage, now):
+    if borrows(parent, role, config):
+        return resolve_borrowed(role, config, codex_model, usage, now)
     if role not in CROSS_VENDOR_ROLES:
         return resolve_native(parent, role, config, usage)
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
@@ -208,7 +264,7 @@ def resolve(parent, role, config, codex_model, usage):
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
-    left, resets, seen = usage
+    left, resets, seen, _ = usage
     limits = thresholds(config)
     target['usage'] = {'left': left, 'seenAt': seen}
     if left < limits['skipWhenLeft']:
@@ -227,16 +283,16 @@ def main():
         parser.error('Codex runs computer use itself')
     config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
-    codex_model, usage = None, None
+    codex_model, usage, now = None, None, time.time()
     other = 'codex' if args.parent == 'claude-code' else 'claude-code'
-    runs_on = other if args.role in CROSS_VENDOR_ROLES else args.parent
+    runs_on = other if args.role in CROSS_VENDOR_ROLES or borrows(args.parent, args.role, config) else args.parent
     if runs_on == 'codex':
         codex_model = configured_codex_model(home)
         try:
-            usage = read_usage(home / 'sessions', time.time())
+            usage = read_usage(home / 'sessions', now)
         except (OSError, ValueError):
             usage = None
-    target = resolve(args.parent, args.role, config, codex_model, usage)
+    target = resolve(args.parent, args.role, config, codex_model, usage, now)
     print(json.dumps({key: value for key, value in target.items() if value is not None}, ensure_ascii=False))
     return 0
 
