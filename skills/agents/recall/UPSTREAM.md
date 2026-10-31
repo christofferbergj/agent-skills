@@ -16,6 +16,7 @@
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Local-only files: `scripts/history.py`, its tests in `scripts/tests/`, and [`references/history.md`](references/history.md). They replace upstream's Cursor transcript path (`~/.cursor/projects/<slug>/agent-transcripts/`), which neither host has. Codex and Claude Code store sessions under host-specific layouts that do not encode the repository, so discovery must match repository metadata before it emits anything; the script enforces upstream's "never read another project's transcripts" rule and bounds and marks read output as untrusted. Subagents therefore order candidates by the script's last activity instead of `ls -t`, search `--read` output instead of grepping raw files, and cite host and session ID instead of a chat UUID.
+- Runs its subagents on the `swarm workers` role, which keeps the session's model by ADR 0001's explorers revision, instead of upstream's fast, cheap model.
 - Adds the read-only rule and the activity-index sentence: /pstack-mode's Worktree cleanup playbook invokes this skill for repository-scoped activity evidence, and that caller needs to know missing history never proves a worktree inactive.
 
 ## Maintenance

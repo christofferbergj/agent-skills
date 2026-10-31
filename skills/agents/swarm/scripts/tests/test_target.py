@@ -121,11 +121,12 @@ class TargetResolution(unittest.TestCase):
         with redirect_stderr(StringIO()),self.assertRaises(SystemExit):
             self.run_target('computer-use',parent='codex')
 
-    def test_native_roles_run_on_the_parent_host_with_fast_roles_on_its_fast_model(self):
+    def test_native_roles_run_on_the_parent_host_with_fast_code_on_its_fast_model(self):
         self.config.write_text('{}')
         self.log('a.jsonl',event(99))
-        self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet'})
-        self.assertEqual(self.run_target('swarm-workers')['model'],'sonnet')
+        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet'})
+        for role in ('how-explorer','why-investigators','reflect-tooling','swarm-workers'):
+            self.assertEqual(self.run_target(role),{'role':role,'run':'claude-code'},role)
         self.assertEqual(self.run_target('feature-refactoring'),{'role':'feature-refactoring','run':'claude-code'})
         self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex','serviceTier':'default'})
 
@@ -146,7 +147,7 @@ class TargetResolution(unittest.TestCase):
 
     def test_unusable_role_values_fall_back_to_the_role_default(self):
         self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':None,'effort':'auto'},'fast-code':{'model':7,'effort':'ultra'},'bug-fix':{'effort':'inherit-parent'}}},'codex':{'roles':{'swarm-workers':{'serviceTier':'flex'}}}}))
-        self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'sonnet'})
+        self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code'})
         self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet'})
         self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code'})
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
