@@ -2,7 +2,7 @@
 
 Historical evaluation record. Models, plan limits, and timings describe this snapshot; current routing lives in /swarm's [execution contract](../../skills/agents/swarm/references/execution.md).
 
-The owner asked whether Pstack's fast roles should stay on Sonnet in Claude Code. Over the previous 14 days, about 70% of read-only subagents that matched a fast role had run on the session's Opus model anyway, because ad-hoc spawns named no role. Most of them were architecture scans and research, not plain lookups.
+The owner asked whether Pstack's fast roles should stay on Sonnet in Claude Code. Over the previous 14 days, about 70% of read-only subagents that matched a fast role had run on the session's Opus model anyway, because ad-hoc spawns named no role. Most of them were architecture scans and research, not plain lookups. Since /swarm's model roles shipped on 2026-10-28, read-only subagents split 55 on Sonnet and 60 on Opus, and all 28 architecture scans ran on Opus although their skill delegates through /swarm, so coordinators followed the role routing about half the time.
 
 ## Method
 
@@ -14,7 +14,7 @@ Three real read-only briefs from those sessions were rerun unchanged against the
 | Module deep-dive  | fysioscout-web Dashboard `program-templates` slice             |
 | Dependency sweep  | adapt-care monorepo, upstream release notes for 11 bump groups |
 
-Each brief ran once on Sonnet 5.5 and Opus 5.5 as Claude Code subagents and once on GPT-6.1 Sol as a read-only T3 Code child task, all at `xhigh`. The reports were relabeled at random. For each brief, one Opus judge and one GPT judge read all three blind, verified every disputed claim and at least five more per report against the code and upstream sources, and ranked them. An earlier round had three Opus judges compare Sonnet and Opus only.
+Each brief ran once on Sonnet 5.5 and Opus 5.5 as Claude Code subagents and once on GPT-6.1 Sol as a read-only T3 Code child task in fast mode, all at `xhigh`; a second GPT run per brief at standard speed measured timing only. The reports were relabeled at random. For each brief, one Opus judge and one GPT judge read all three blind, verified every disputed claim and at least five more per report against the code and upstream sources, and ranked them. An earlier round had three Opus judges compare Sonnet and Opus only.
 
 ## Results
 
@@ -36,4 +36,4 @@ Nine GPT runs moved the Codex weekly window from 41% to 43% used, and the three 
 
 ## Limits
 
-One run per brief per model, three briefs. Judges could likely tell vendors apart by style. Opus was tested at `xhigh`, while exploration now runs one effort step below the session's level, `high` in an `xhigh` session. GPT at lower effort was not tested.
+One judged run per brief per model, three briefs. Judges could likely tell vendors apart by style. Opus was tested at `xhigh`, while exploration now runs one effort step below the session's level, `high` in an `xhigh` session. GPT at lower effort was not tested.
