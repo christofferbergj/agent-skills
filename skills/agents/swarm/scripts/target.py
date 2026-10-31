@@ -18,7 +18,7 @@ skipWhenLeft a cross-vendor one becomes run "fallback". Claude targets carry no 
 Usage comes from the newest snapshots in $CODEX_HOME/sessions, so the check stays local.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
-Pstack's native roles and runs on the parent host: a fast role on the host's fast model
+Pstack's native roles and runs on the parent host: fast-code on the host's fast model
 (Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. A
 native Codex role runs fast while Codex usage allows, and Claude never runs fast. Native
 roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
@@ -44,10 +44,10 @@ CROSS_VENDOR_ROLES = {
     'computer-use': ('computerUse', 'routine', 'medium'),
     'computer-use-hard': ('computerUse', 'hard', 'high'),
 }
-# Native roles: exploration, collection, tooling review, check runs, and trivial edits run fast;
-# code, judgment, prose, and synthesis keep the parent's model.
-FAST_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'fast-code'}
-PARENT_ROLES = {'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
+# Native roles: trivial edits run fast; exploration, collection, tooling review, check runs, code,
+# judgment, prose, and synthesis keep the parent's model.
+FAST_ROLES = {'fast-code'}
+PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
 FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'fastWhileLeft': 40, 'skipWhenLeft': 5}
