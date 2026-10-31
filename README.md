@@ -28,6 +28,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 | Review a change                           | `review-loop`, `code-review`, or `thermos` |
 | End replies with the next step or choices | `next-options`                             |
 | Shape replies for skimming and action     | `reply-shape`                              |
+| Run a multi-PR project from one T3 thread | `coordinator`                              |
 | Maintain this library                     | `maintain-skills`                          |
 
 ## Browse by task
@@ -51,6 +52,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [audit-agent-documentation](skills/agents/audit-agent-documentation/SKILL.md)
 - [automate-me](skills/agents/automate-me/SKILL.md)
 - [chief-of-staff](skills/agents/chief-of-staff/SKILL.md)
+- [coordinator](skills/agents/coordinator/SKILL.md)
 - [figure-it-out](skills/agents/figure-it-out/SKILL.md)
 - [git-guardrails](skills/agents/git-guardrails/SKILL.md)
 - [maintain-skills](skills/agents/maintain-skills/SKILL.md)
@@ -204,6 +206,7 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 | `setup-pre-commit`                                                                                             |                                                                               | `linting-alignment` when tool ownership is unclear                                                                                                                                           |
 | `update-dependencies`                                                                                          |                                                                               | `linting-alignment` for an included lint or formatting stack update; `pr` for a requested pull request                                                                                       |
 | `pstack-mode`                                                                                                  | `domain-modeling`, `principles`, `swarm`                                      | Install the complete library for all playbooks                                                                                                                                               |
+| `coordinator`                                                                                                  | `swarm`, `pstack-mode`                                                        | `reply-shape` and `next-options` lay out its replies when loaded; install the complete library for the playbooks its workers run                                                             |
 | `pstack-setup`                                                                                                 |                                                                               | `swarm` for the review and Computer Use keys in `scripts/target.py --help`; `create-verification-skill`, `create-formal-verification-skill` for the step 5 offers                            |
 | `architect`                                                                                                    | `codebase-design`, `domain-modeling`, `arena`                                 | `how` for existing-system grounding; `why` when ownership, layering, or historical constraints change; `tdd` at agreed public seams when useful; `interrogate` to review a sketch            |
 | `arena`                                                                                                        | `swarm`                                                                       |                                                                                                                                                                                              |

@@ -10,6 +10,8 @@ When an effort should be written down first, such as work other people will pick
 
 Both paths end implementation with `review-loop`: the other vendor's model reviews the change alongside the main model's own reviewers, and the agent fixes what holds and re-reviews until clean. Invoke `review-loop` directly for a second opinion on any branch or PR, or on a plan when you want one.
 
+For a project of several PRs or research questions in T3 Code, ask `coordinator` to run it from the current thread. It pins the thread, starts a worker per unit, each running a `pstack-mode` playbook in its own worktree, watches their PRs, and brings you one decision at a time; you answer only there. Outside T3 Code, `pstack-mode`'s Orchestrate playbook runs such a program.
+
 Both paths use the same [principles, shared owners, and project artifacts](architecture.md#how-the-workflows-compose). You do not need to remember every helper. Use `pstack-help` for routing or invoke a specialist directly when you know which one you need.
 
 ## Configuration and prerequisites

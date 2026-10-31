@@ -9,6 +9,7 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | [audit-agent-documentation](audit-agent-documentation/SKILL.md) | Audit and improve agent documentation.                        |
 | [automate-me](automate-me/SKILL.md)                             | Create a personal Pstack mode.                                |
 | [chief-of-staff](chief-of-staff/SKILL.md)                       | Coordinate a long-running goal.                               |
+| [coordinator](coordinator/SKILL.md)                             | Run a multi-PR project from one pinned T3 thread.             |
 | [figure-it-out](figure-it-out/SKILL.md)                         | Coordinate large tasks without an existing playbook.          |
 | [git-guardrails](git-guardrails/SKILL.md)                       | Block dangerous Git commands with Codex or Claude Code hooks. |
 | [maintain-skills](maintain-skills/SKILL.md)                     | Adopt upstream changes and audit the library.                 |
