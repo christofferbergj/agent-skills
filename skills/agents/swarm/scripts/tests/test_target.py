@@ -198,6 +198,9 @@ class BorrowedRoles(Harness):
         for used,share,run in cases:
             self.log('a.jsonl',event(used,resets=elapsed(share)))
             self.assertEqual(self.run_target('how-explorer')['run'],run,(used,share))
+        for used,run in [(20.2,'codex'),(20.3,'claude-code')]:
+            self.log('a.jsonl',event(used,resets=NOW+18000-3636,minutes=300))
+            self.assertEqual(self.run_target('how-explorer')['run'],run,used)
         self.log('a.jsonl',event(10,resets=elapsed(0.5),minutes=0))
         self.assertIn('window unknown',self.run_target('how-explorer')['note'])
 

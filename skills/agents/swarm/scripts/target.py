@@ -39,6 +39,7 @@ it. The counterpart's effort defaults to xhigh.
 import argparse
 from collections import namedtuple
 from datetime import datetime, timezone
+from fractions import Fraction
 from itertools import islice
 import json
 import math
@@ -66,7 +67,7 @@ FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'fastWhileLeft': 40, 'skipWhenLeft': 5}
 # left and resets describe the tightest window, rounded for thresholds and reports; windows holds
-# each window's unrounded (left, resets_at, window_minutes) for pacing.
+# each window's exact (share used, resets_at, window_minutes) for pacing.
 Usage = namedtuple('Usage', 'left resets seen windows')
 # Bounds that keep the usage scan to a few small reads.
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
@@ -152,6 +153,14 @@ def window_left(window, now):
     return 100 if resets is not None and resets <= now else max(0, 100 - used)
 
 
+def exact_used(window, now):
+    """Return a window's share used as an exact fraction of the reported decimal, zero once it has reset."""
+    resets = number(window.get('resets_at'))
+    if resets is not None and resets <= now:
+        return Fraction(0)
+    return min(Fraction(100), Fraction(str(number(window.get('used_percent')))))
+
+
 def read_usage(sessions, now):
     """Return the newest snapshot's Usage, or None."""
     snapshots = []
@@ -172,7 +181,7 @@ def read_usage(sessions, now):
     # Windows alone decide: rate_limit_reached_type is an account-wide reason with no reset time,
     # and a live usage-limit error already sends the caller to its fallback.
     left, window = min(windows, key=lambda pair: pair[0])
-    each = [(left, number(window.get('resets_at')), number(window.get('window_minutes'))) for left, window in windows]
+    each = [(exact_used(window, now), number(window.get('resets_at')), number(window.get('window_minutes'))) for _, window in windows]
     return Usage(round(left), number(window.get('resets_at')), seen, each)
 
 
@@ -211,22 +220,22 @@ def borrows(parent, role, config):
     return parent == 'claude-code' and role in BORROWING_ROLES and bool(table(role_entry(parent, role, config).get('counterpart')))
 
 
-def on_pace(left, resets, minutes, now):
+def on_pace(used, resets, minutes, now):
     """Return whether a window's share used is at most its share of time elapsed, or None when its length is unknown."""
     if resets is None or minutes is None or minutes <= 0:
         return None
     length = minutes * 60
-    # Cross-multiplied, so equal shares compare equal.
-    return (100 - left) * length <= (now - (resets - length)) * 100
+    # Cross-multiplied with an exact share used, so equal shares compare equal.
+    return used * length <= (now - (resets - length)) * 100
 
 
 def borrow_refusal(usage, config, now):
     """Return why a borrowed role runs natively, or None when every window allows Codex."""
     if usage is None:
         return 'Codex usage unknown'
-    if min(left for left, _, _ in usage.windows) < thresholds(config)['fastWhileLeft']:
+    if 100 - max(used for used, _, _ in usage.windows) < thresholds(config)['fastWhileLeft']:
         return f'Below the fast threshold: {describe(usage.left, usage.resets)}'
-    paces = [on_pace(left, resets, minutes, now) for left, resets, minutes in usage.windows]
+    paces = [on_pace(used, resets, minutes, now) for used, resets, minutes in usage.windows]
     if None in paces:
         return 'Codex usage window unknown'
     if not all(paces):
