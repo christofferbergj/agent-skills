@@ -26,4 +26,4 @@ The skill responsible for a project document's meaning and update rules, regardl
 A skill-local record of its upstream identity, immutable import history, completed reviews, and intentional adaptations.
 
 **Counterpart model**:
-The other vendor's model: Codex for Claude, and Claude Opus for Codex. It reviews work the current model wrote, seats one runner in each panel, and can take a Claude coordinator's read-only fast roles while Codex usage is on pace.
+The other vendor's model, which reviews work the current model wrote: Codex for Claude, and Claude Opus for Codex.
