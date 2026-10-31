@@ -157,9 +157,13 @@ class TargetResolution(Harness):
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
 
-def elapsed(share):
-    """A reset time that leaves `share` of the weekly window elapsed at NOW."""
-    return NOW+round(WEEK*60*(1-share))
+def elapsed(share,minutes=WEEK):
+    """A reset time that leaves `share` of a window elapsed at NOW."""
+    return NOW+round(minutes*60*(1-share))
+
+
+def short(used,share):
+    return {'used_percent':used,'window_minutes':300,'resets_at':elapsed(share,300)}
 
 
 class BorrowedRoles(Harness):
@@ -172,7 +176,7 @@ class BorrowedRoles(Harness):
 
     def test_on_pace_and_above_the_fast_threshold_runs_on_codex_with_the_native_settings_attached(self):
         self.log('a.jsonl',event(40,resets=elapsed(0.5)))
-        for role in ('how-explorer','why-investigators','reflect-tooling','swarm-workers'):
+        for role in ('how-explorer','why-investigators','swarm-workers'):
             result=self.run_target(role)
             self.assertEqual({key:result[key] for key in ('run','providerInstanceId','model','effort','serviceTier','native')},{'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'xhigh','serviceTier':'priority','native':{'effort':'high'}},role)
             self.assertEqual(result['usage']['left'],60)
@@ -189,6 +193,20 @@ class BorrowedRoles(Harness):
         self.assertEqual((result['run'],result['effort']),('claude-code','high'))
         self.assertIn('unknown',result['note'])
 
+    def test_pace_and_threshold_boundaries_use_unrounded_usage(self):
+        cases=[(40,0.4,'codex'),(40.4,0.4,'claude-code'),(50,0.75,'codex'),(50.4,0.75,'claude-code')]
+        for used,share,run in cases:
+            self.log('a.jsonl',event(used,resets=elapsed(share)))
+            self.assertEqual(self.run_target('how-explorer')['run'],run,(used,share))
+        self.log('a.jsonl',event(10,resets=elapsed(0.5),minutes=0))
+        self.assertIn('window unknown',self.run_target('how-explorer')['note'])
+
+    def test_every_usage_window_must_be_on_pace(self):
+        cases=[(short(50,0.9),40,0.2,'claude-code'),(short(50,0.1),30,0.5,'claude-code'),(short(20,0.5),30,0.5,'codex')]
+        for secondary,used,share,run in cases:
+            self.log('a.jsonl',event(used,resets=elapsed(share),secondary=secondary))
+            self.assertEqual(self.run_target('swarm-workers')['run'],run,(secondary,used,share))
+
     def test_a_reset_window_counts_as_fresh(self):
         self.log('a.jsonl',event(95,resets=NOW-1))
         self.assertEqual(self.run_target('how-explorer')['run'],'codex')
@@ -200,9 +218,10 @@ class BorrowedRoles(Harness):
         result=self.run_target('how-explorer')
         self.assertEqual((result['model'],result['effort'],result['serviceTier'],result['native']),('gpt-configured','xhigh','priority',{'model':'sonnet'}))
 
-    def test_fast_code_parent_roles_and_codex_coordinators_ignore_the_counterpart(self):
+    def test_fast_code_reflect_tooling_parent_roles_and_codex_coordinators_ignore_the_counterpart(self):
         self.log('a.jsonl',event(10,resets=elapsed(0.5)))
         self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','effort':'high'})
+        self.assertEqual(self.run_target('reflect-tooling'),{'role':'reflect-tooling','run':'claude-code','effort':'high'})
         self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code','effort':'high'})
         self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex','serviceTier':'priority','effort':'high'})
 
