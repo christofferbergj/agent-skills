@@ -234,7 +234,7 @@
         ".out-of-scope"
       ],
       "sharedRoot": ".",
-      "sharedReviewedThrough": "a496f5513d4a4cf889bc48e189e579f4b0bdf6aa"
+      "sharedReviewedThrough": "4ae2317ddb22b046e26455e4f9c9b3aaaf62212d"
     },
     "thermos": {
       "repository": "https://github.com/cursor/plugins.git",
