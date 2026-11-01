@@ -158,6 +158,12 @@
           "stage": "in-progress"
         },
         {
+          "upstream": "skills/in-progress/software-factory",
+          "local": "software-factory",
+          "directory": "skills/planning/software-factory",
+          "stage": "in-progress"
+        },
+        {
           "upstream": "skills/in-progress/setup-ts-deep-modules",
           "local": "setup-ts-deep-modules",
           "directory": "skills/engineering/setup-ts-deep-modules",

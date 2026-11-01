@@ -84,6 +84,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [loop-me](skills/planning/loop-me/SKILL.md)
 - [research](skills/planning/research/SKILL.md)
 - [sharpen](skills/planning/sharpen/SKILL.md)
+- [software-factory](skills/planning/software-factory/SKILL.md)
 - [to-questionnaire](skills/planning/to-questionnaire/SKILL.md)
 - [to-spec](skills/planning/to-spec/SKILL.md)
 - [to-tickets](skills/planning/to-tickets/SKILL.md)
