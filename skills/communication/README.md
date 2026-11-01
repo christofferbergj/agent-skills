@@ -16,3 +16,4 @@ Explain work clearly, write technical documents, and edit prose.
 | [teach](teach/SKILL.md)                         | Explain how code works and why it has its shape. |
 | [technical-writing](technical-writing/SKILL.md) | Write technical documents for a clear purpose.   |
 | [unslop](unslop/SKILL.md)                       | Remove formulaic AI writing.                     |
+| [write-like-me](write-like-me/SKILL.md)         | Write chat messages in Christoffer's voice.      |
