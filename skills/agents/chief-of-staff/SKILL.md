@@ -25,7 +25,7 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 
 ## Wiki memory
 
-Keep durable goal knowledge in a **wiki**: interlinked Markdown pages that outlive this session. Use the goal's existing wiki or notes location. If it has none, agree a location with the user before the first write, following project conventions within the authorized workspace.
+Keep durable goal knowledge in a **wiki**: interlinked Markdown pages that outlive this session. Look for a shared wiki first, one the user or other agents already keep, or the goal's existing notes location, and write your pages into it, following its conventions where they differ from the ones below. Only if there is none, agree a location with the user before the first write, following project conventions within the authorized workspace.
 
 - `index.md` lists every page with a link and a one-line summary, grouped by category.
 - Each other page covers one decision, recurring problem, subsystem, or user preference, and links related pages.
@@ -40,6 +40,13 @@ Three operations keep it alive:
 The wiki is a historical record; it describes when something was true, never how things are now. Date every claim. For code, cite the repository and commit where it was true, and write "currently", "now", or "is" about code only beside that date or commit. When evidence changes, add a dated claim and mark the previous one superseded.
 
 Complete the memory checkpoint when durable findings have dated sources, code claims have commit citations, and the index reaches every page.
+
+## Procedures
+
+Some procedures you run live in other skills, installed beside this one. To run one, read its `SKILL.md` at the path below, relative to this skill's directory, and follow it.
+
+- **Retro** (`../retro/SKILL.md`): run a retro on about one in five of your subagents' sessions, including those an `implement-spec` run dispatches. Pick first the ones where something went wrong. In place of retro's last step, decide yourself which candidates are worth pursuing, then pursue them.
+- **Large chunks of work**: write a spec with `../to-spec/SKILL.md`, break it into tickets with `../to-tickets/SKILL.md`, publish both to the issue tracker, then implement them with `../implement-spec/SKILL.md`.
 
 ## Strategic View
 
