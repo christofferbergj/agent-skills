@@ -140,6 +140,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [teach](skills/communication/teach/SKILL.md)
 - [technical-writing](skills/communication/technical-writing/SKILL.md)
 - [unslop](skills/communication/unslop/SKILL.md)
+- [write-like-me](skills/communication/write-like-me/SKILL.md)
 
 ### Principles
 
