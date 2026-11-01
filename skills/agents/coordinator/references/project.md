@@ -4,7 +4,7 @@ The coordinator's memory for one project, at `~/.local/state/coordinator/<projec
 
 - **Goal**: one sentence a stranger could act on, its `Proof:`, and `Follow-ups:`, the scope drift workers found, kept out of the goal. `init` writes it, and you edit it by hand when the plan or its follow-ups change.
 - **Decisions**: `<worker> asked <question> → <answer> · <source>`, the source being "the user: '<their words>'", the plan, standing rule <n>, or what a probe showed.
-- **Workers**: one row per unit, with the columns below. A new row needs `--state`.
+- **Workers**: one row per unit or subthread, with the columns below. A new row needs `--state`.
 - **Learnings**: `<worker>: <lesson a sibling worker should know>`.
 - **Listening**: `Heartbeat` and `Startup`, each a scheduled task id or none, and `Watches`, every watched PR with its owner on one line. `listen` replaces a whole line, so pass the full list.
 
