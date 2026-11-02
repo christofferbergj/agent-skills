@@ -83,9 +83,10 @@ After editing a sourced skill, compare it with the candidate upstream text in bo
 
 - Every upstream rule survives, or the record lists its divergence, whether dropped, softened, reversed, or a changed invocation mode, with the reason.
 - Every recorded divergence is still present and still needed. Remove the ones that are not.
-- Every reason a divergence gives about this library holds at the current head: a skill it names as a consumer invokes this one, which `git grep -n '/<skill-name>\b'` shows, and every other description of the skill, such as its /pstack-help row or README rows, matches what the local skill does. A 2026-10-21 review kept /sharpen's divergence because /pstack-mode "invokes this skill mid-task", which nothing did, while /pstack-help's row still described upstream's behavior.
 
-When both directions pass, set the record's `Fidelity checked through` line to the candidate revision.
+Then check each reason the record gives about this library against the current head, because a wrong reason keeps a divergence alive. A skill it names as a consumer turns up in the consumer search in `CONTRIBUTING.md`, and every other description of the skill, such as its /pstack-help row or README rows, matches what the local skill does. A 2026-10-21 review kept /sharpen's divergence because /pstack-mode "invokes this skill mid-task", which nothing did, while /pstack-help's row still described upstream's behavior.
+
+When both directions pass and the record's reasons hold, set the record's `Fidelity checked through` line to the candidate revision.
 
 ## Recording decisions
 

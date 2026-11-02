@@ -13,10 +13,12 @@ import argparse
 import json
 import os
 import re
-import shlex
 import subprocess
 import sys
 from pathlib import Path
+
+# Skills CLI agent keys, such as claude-code; anything else, such as --all, is not an agent.
+AGENT = re.compile(r'[a-z0-9][a-z0-9-]*')
 
 
 def git(*args):
@@ -24,11 +26,11 @@ def git(*args):
 
 
 def refresh_command(slug, agents):
-    """The install that refreshes every skill without a prompt, for the agents last chosen."""
-    if not agents:
-        return f"npx skills@latest add {slug} --skill '*' --global  (choose your agents when prompted)"
-    # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
-    return f"npx -y skills@latest add {slug} --skill '*' --global --yes --agent {shlex.join(agents)}"
+    """The install that refreshes every skill, and a note when that install asks for the agents."""
+    if isinstance(agents, list) and agents and all(isinstance(a, str) and AGENT.fullmatch(a) for a in agents):
+        # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
+        return f"npx -y skills@latest add {slug} --skill '*' --global --yes --agent {' '.join(agents)}", None
+    return f"npx skills@latest add {slug} --skill '*' --global", 'It asks for your agents, since the lock records no valid earlier choice.'
 
 
 def main():
@@ -76,7 +78,10 @@ def main():
 
     print('\n'.join(problems) or f'All {len(trees)} skills match {arguments.ref}.')
     if any(line.split()[0] in ('missing', 'stale', 'unknown') for line in problems):
-        print(f"\nRefresh with: {refresh_command(slug, lock.get('lastSelectedAgents', []))}")
+        command, note = refresh_command(slug, lock.get('lastSelectedAgents'))
+        print(f"\nRefresh with: {command}")
+        if note:
+            print(note)
     return 1 if problems else 0
 
 
