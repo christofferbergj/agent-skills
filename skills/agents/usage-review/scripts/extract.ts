@@ -1,11 +1,13 @@
 /**
  * Reads the owner's messages from T3 Code's state database for /usage-review.
  * Writes one JSON line per owner message, typed by how it relates to the runs around it.
+ *
+ * Usage: extract.ts --out <file.jsonl> [--days 7 | --since <ISO>] [--db <path>]
  */
 import { DatabaseSync } from "node:sqlite";
-import { writeFileSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { parseArgs } from "node:util";
 
 export type Interaction = "request" | "steer" | "answer" | "unpaired";
@@ -13,7 +15,6 @@ export type Interaction = "request" | "steer" | "answer" | "unpaired";
 export interface MenuOption {
   readonly letter: string;
   readonly text: string;
-  readonly recommended: boolean;
 }
 
 export type Ending =
@@ -27,14 +28,18 @@ export interface OwnerMessage {
   readonly at: string;
   readonly interaction: Interaction;
   readonly text: string;
-  /** Status of the run before an `answer` or `unpaired` message. */
+  /** Status of the run before an `unpaired` message, which left no final reply. */
   readonly previousRunStatus?: string;
   /** How the answered run's final assistant message ended; only on `answer`. */
   readonly ending?: Ending;
   readonly assistantWords?: number;
 }
 
-const OPTION = /^\s*[-*]\s*\**`?([a-z])`?\s*(?:→|->)\s*(.*)$/i;
+const OPTION = /^\s*[-*]\s*\**`?([a-d])`?\s*(?:→|->)\s*(.*)$/i;
+
+export function stateDbPath(flag?: string): string {
+  return flag ?? process.env.T3_STATE_DB ?? join(homedir(), ".t3", "userdata", "statev2.sqlite");
+}
 
 /** Reads the lettered options, plain next step, or Done from a reply's last lines. */
 export function endingOf(reply: string): Ending {
@@ -43,7 +48,7 @@ export function endingOf(reply: string): Ending {
     const match = line.match(OPTION);
     if (!match) return [];
     const text = match[2].replace(/\*\*|`|·\s*_recommended_/g, "").trim();
-    return [{ letter: match[1].toLowerCase(), text, recommended: /_recommended_/.test(match[2]) }];
+    return [{ letter: match[1].toLowerCase(), text }];
   });
   if (options.length > 0) return { kind: "options", options };
   const joined = tail.join("\n");
@@ -97,7 +102,7 @@ export function extract(db: DatabaseSync, since: string): OwnerMessage[] {
     `select run_id runId, status, completed_at completedAt from orchestration_v2_projection_runs
      where thread_id = ? and requested_at <= ?
        and coalesce(json_extract(payload_json, '$.userMessageId'), '') <> ?
-     order by requested_at desc limit 1`,
+     order by ordinal desc limit 1`,
   );
   const finalReply = db.prepare(
     `select json_extract(payload_json, '$.text') text from orchestration_v2_projection_messages
@@ -125,7 +130,6 @@ export function extract(db: DatabaseSync, since: string): OwnerMessage[] {
     return {
       ...base,
       interaction: "answer",
-      previousRunStatus: run.status,
       ending: endingOf(reply),
       assistantWords: reply.split(/\s+/).filter(Boolean).length,
     };
@@ -145,13 +149,14 @@ if (import.meta.main) {
     throw new Error(
       "usage: extract.ts --out <file.jsonl> [--days 7 | --since <ISO>] [--db <path>]",
     );
-  const since =
-    values.since ?? new Date(Date.now() - Number(values.days) * 86_400_000).toISOString();
-  const path =
-    values.db ?? process.env.T3_STATE_DB ?? join(homedir(), ".t3", "userdata", "statev2.sqlite");
-  const db = new DatabaseSync(path, { readOnly: true, timeout: 5_000 });
+  // Stored times are all UTC with milliseconds, so the window compares as text in that form.
+  const since = new Date(
+    values.since ?? Date.now() - Number(values.days) * 86_400_000,
+  ).toISOString();
+  const db = new DatabaseSync(stateDbPath(values.db), { readOnly: true, timeout: 5_000 });
   try {
     const rows = extract(db, since);
+    mkdirSync(dirname(values.out), { recursive: true });
     writeFileSync(values.out, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
     const counts = Object.groupBy(rows, (row) => row.interaction);
     const summary = Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, v?.length]));

@@ -1,20 +1,30 @@
 /**
  * Computes /usage-review's fixed metrics from extract.ts output, and classifies each shipped
- * change's follow-up rate against its baseline by the change's metric contract.
+ * change's follow-up rate against the baseline frozen when it shipped.
+ *
+ * Usage: metrics.ts --in <messages.jsonl> --out <metrics.json> [--shipped <shipped.json>]
+ *        metrics.ts --in <messages.jsonl> --freeze <new-contracts.json>
+ * `--freeze` prints the contracts with each one's baseline rate on these messages, ready to
+ * append to shipped.json.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
 import type { OwnerMessage } from "./extract.ts";
 
-/** Regex sources, matched case-insensitively; every given field must hold. */
+/** Case-insensitive substrings; every given field must hold. */
 export interface Predicate {
-  /** An option on the answered menu matches. */
+  /** An option on the answered menu contains it. */
   readonly offered?: string;
-  /** The option the owner picked matches. */
+  /** The option the owner picked contains it. */
   readonly picked?: string;
-  /** The owner's message matches. */
+  /** The owner's message contains it. */
   readonly text?: string;
+}
+
+export interface Rate {
+  readonly numerator: number;
+  readonly opportunities: number;
 }
 
 export interface Contract {
@@ -23,12 +33,12 @@ export interface Contract {
   readonly opportunity: Predicate;
   readonly success: Predicate;
   readonly direction: "up" | "down";
+  /** Raised to 20 when lower. */
   readonly minExposure?: number;
-}
-
-export interface Rate {
-  readonly numerator: number;
-  readonly opportunities: number;
+  /** The rate on the messages of the run that shipped the change. */
+  readonly baseline?: Rate;
+  /** When installed copies first held the merged change; only messages from then on count. */
+  readonly measureFrom?: string;
 }
 
 export type FollowUp = "moved" | "unchanged" | "wrong-way" | "insufficient-exposure";
@@ -39,21 +49,23 @@ const THRESHOLD_POINTS = 5;
 /** The letter a reply picks: a bare letter, a letter and a tweak, or "option a" phrasing. */
 export function pickedLetter(reply: string): string | null {
   const text = reply.trim();
-  const lead = text.match(/^([a-d])(?:$|[\s,.:!)\-–—])/i);
+  const lead = text.match(/^([a-d])(?:$|[,.:!)]|\s+(?:then|but|and|with|plus)\b)/i);
   if (lead) return lead[1].toLowerCase();
   return text.match(/\b(?:option|do|go with|implement)\s+([a-d])\b/i)?.[1].toLowerCase() ?? null;
 }
 
+const menuOf = (row: OwnerMessage) => (row.ending?.kind === "options" ? row.ending.options : []);
+
 function holds(predicate: Predicate, row: OwnerMessage): boolean {
-  const re = (source: string) => new RegExp(source, "i");
-  const options = row.ending?.kind === "options" ? row.ending.options : [];
-  if (predicate.offered && !options.some((o) => re(predicate.offered!).test(o.text))) return false;
+  const has = (haystack: string, needle: string) =>
+    haystack.toLowerCase().includes(needle.toLowerCase());
+  const options = menuOf(row);
+  if (predicate.offered && !options.some((o) => has(o.text, predicate.offered!))) return false;
   if (predicate.picked) {
-    const letter = pickedLetter(row.text);
-    const picked = options.find((o) => o.letter === letter);
-    if (!picked || !re(predicate.picked).test(picked.text)) return false;
+    const picked = options.find((o) => o.letter === pickedLetter(row.text));
+    if (!picked || !has(picked.text, predicate.picked)) return false;
   }
-  return !predicate.text || re(predicate.text).test(row.text);
+  return !predicate.text || has(row.text, predicate.text);
 }
 
 export function rateOf(contract: Contract, rows: readonly OwnerMessage[]): Rate {
@@ -66,7 +78,7 @@ export function rateOf(contract: Contract, rows: readonly OwnerMessage[]): Rate 
 
 /** Moved means at least five points in the preferred direction, at the minimum exposure. */
 export function classify(contract: Contract, current: Rate, baseline: Rate): FollowUp {
-  const min = contract.minExposure ?? MIN_EXPOSURE;
+  const min = Math.max(MIN_EXPOSURE, contract.minExposure ?? 0);
   if (current.opportunities < min || baseline.opportunities < min) return "insufficient-exposure";
   const points =
     (100 * current.numerator) / current.opportunities -
@@ -75,6 +87,13 @@ export function classify(contract: Contract, current: Rate, baseline: Rate): Fol
   if (signed >= THRESHOLD_POINTS) return "moved";
   if (signed <= -THRESHOLD_POINTS) return "wrong-way";
   return "unchanged";
+}
+
+/** A change is measured only once it is live and has a frozen baseline. */
+export function followUp(contract: Contract, rows: readonly OwnerMessage[]): FollowUp {
+  if (!contract.baseline || !contract.measureFrom) return "insufficient-exposure";
+  const live = rows.filter((row) => row.at >= contract.measureFrom!);
+  return classify(contract, rateOf(contract, live), contract.baseline);
 }
 
 const STOPWORDS = new Set(
@@ -146,7 +165,7 @@ function median(values: number[]): number | null {
 
 export function metrics(rows: readonly OwnerMessage[], contracts: readonly Contract[] = []) {
   const answers = rows.filter((row) => row.interaction === "answer");
-  const menus = answers.filter((row) => row.ending?.kind === "options");
+  const menus = answers.filter((row) => menuOf(row).length > 0);
   const answerKind = (row: OwnerMessage) =>
     /^[a-d][.!]?$/i.test(row.text.trim())
       ? "letter"
@@ -155,7 +174,7 @@ export function metrics(rows: readonly OwnerMessage[], contracts: readonly Contr
         : "ownWords";
   const picksBySize: Record<string, Record<string, number>> = {};
   for (const row of menus) {
-    const size = String(row.ending?.kind === "options" ? row.ending.options.length : 0);
+    const size = String(menuOf(row).length);
     const pick = pickedLetter(row.text) ?? "ownWords";
     picksBySize[size] ??= {};
     picksBySize[size][pick] = (picksBySize[size][pick] ?? 0) + 1;
@@ -174,7 +193,7 @@ export function metrics(rows: readonly OwnerMessage[], contracts: readonly Contr
     ),
     picksByMenuSize: picksBySize,
     medianAssistantWords: median(answers.map((row) => row.assistantWords ?? 0)),
-    rates: Object.fromEntries(contracts.map((c) => [c.rule, rateOf(c, rows)])),
+    followUps: Object.fromEntries(contracts.map((c) => [c.rule, followUp(c, rows)])),
     candidates: phraseCandidates(rows).slice(0, 40),
   };
 }
@@ -185,29 +204,23 @@ if (import.meta.main) {
       in: { type: "string" },
       out: { type: "string" },
       shipped: { type: "string" },
-      baseline: { type: "string" },
+      freeze: { type: "string" },
     },
   });
-  if (!values.in || !values.out)
-    throw new Error(
-      "usage: metrics.ts --in <extract.jsonl> --out <metrics.json> [--shipped <shipped.json>] [--baseline <metrics.json>]",
-    );
+  if (!values.in || !(values.out || values.freeze))
+    throw new Error("metrics.ts needs --in and --out or --freeze; see the usage in its header");
   const rows = readFileSync(values.in, "utf8")
     .split("\n")
     .filter(Boolean)
-    .map((l) => JSON.parse(l) as OwnerMessage);
-  const contracts: Contract[] = values.shipped
-    ? JSON.parse(readFileSync(values.shipped, "utf8"))
-    : [];
-  const result = metrics(rows, contracts);
-  const baseline = values.baseline ? JSON.parse(readFileSync(values.baseline, "utf8")) : null;
-  const followUps = Object.fromEntries(
-    contracts.map((c) => {
-      const before: Rate | undefined = baseline?.rates?.[c.rule];
-      return [c.rule, before ? classify(c, result.rates[c.rule], before) : "insufficient-exposure"];
-    }),
-  );
-  writeFileSync(values.out, JSON.stringify({ ...result, followUps }, null, 2) + "\n");
-  const { candidates, ...summary } = result;
-  console.log(JSON.stringify({ ...summary, candidates: candidates.length, followUps }));
+    .map((line) => JSON.parse(line) as OwnerMessage);
+  const load = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Contract[];
+  if (values.freeze) {
+    const frozen = load(values.freeze).map((c) => ({ ...c, baseline: rateOf(c, rows) }));
+    console.log(JSON.stringify(frozen, null, 2));
+  } else {
+    const result = metrics(rows, values.shipped ? load(values.shipped) : []);
+    writeFileSync(values.out!, JSON.stringify(result, null, 2) + "\n");
+    const { candidates, ...summary } = result;
+    console.log(JSON.stringify({ ...summary, candidates: candidates.length }));
+  }
 }

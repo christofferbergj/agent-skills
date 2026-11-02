@@ -8,48 +8,48 @@ disable-model-invocation: true
 
 Measure the owner's real T3 Code usage, check whether changes from earlier runs worked, and turn patterns that clear the evidence bar into at most one draft PR in this repository. Merging stays with the owner. A weekly scheduled task runs this from the default branch's `skills/` tree.
 
-The state folder, `~/.local/state/usage-review/`, holds `baseline.json` (the last run's metrics), `shipped.json` (every change a run proposed, as metric contracts), `private-names.txt` (names the owner adds for the public check), and `runs/<date>/`. Scripts are in this skill's `scripts/` folder; each prints its usage when run without arguments.
+The state folder `~/.local/state/usage-review/`, written `$STATE` below, holds `baseline.json` (the last run's metrics, for week-over-week comparison), `shipped.json` (every change a run proposed, as metric contracts with frozen baselines), `private-names.txt` (names the owner adds for the public check), and `runs/<date>/`, written `$RUN`. Scripts are in this skill's `scripts/` folder, run with `node`, and document their flags in their header comments.
 
 **This repository is public and the threads hold client work.** Everything published, meaning changed files, commit messages, and the PR title and body, carries counts and paraphrased patterns only: no quoted thread text, client, project, or people names, other repositories' URLs, or ticket ids.
 
 ## 1. Begin
 
-Read the repository's `AGENTS.md`. Create `~/.local/state/usage-review/lock` with this run's date; when it already exists, stop and report its date. Read `baseline.json` and `shipped.json` when they exist.
+Read the repository's `AGENTS.md`. Take the lock with `mkdir $STATE/lock`, which fails when another run holds it. When it fails and the folder is less than two days old, stop and report its age; when it is older, a run died holding it, so remove it, take it again, and say so in the report. Read `baseline.json` and `shipped.json` when they exist.
 
 **Complete when:** this run holds the lock, and the baseline and shipped changes are loaded or known to be absent.
 
 ## 2. Measure
 
-Run `extract.ts --days 7 --out runs/<date>/messages.jsonl`, then `metrics.ts --in runs/<date>/messages.jsonl --out runs/<date>/metrics.json --shipped shipped.json --baseline baseline.json`, leaving out the flags whose files don't exist. Owner messages are typed `request`, `steer` (sent while a run was active), `answer`, or `unpaired` (the run before it has no final reply); menu metrics and assistant length use `answer` rows only. With fewer than 30 owner messages, report "too little data", release the lock, and stop.
+Run `extract.ts --days 7 --out $RUN/messages.jsonl`, then `metrics.ts --in $RUN/messages.jsonl --out $RUN/metrics.json --shipped $STATE/shipped.json`, leaving out `--shipped` before the first change ships. Owner messages are typed `request`, `steer` (sent while a run was active), `answer`, or `unpaired` (the run before it left no final reply); menu metrics and assistant length use `answer` rows only. With fewer than 30 owner messages, report "too little data", remove the lock, and stop.
 
-**Complete when:** `messages.jsonl` and `metrics.json` exist in the run folder, or the run stopped on too little data.
+**Complete when:** `messages.jsonl` and `metrics.json` exist in `$RUN`, or the run stopped on too little data.
 
 ## 3. Follow up
 
-For each entry in `shipped.json`, read its PR with `gh pr view <pr> --json state,mergedAt`. A merged change counts from the first window that starts after installed copies include it, which `scripts/check-installs.py` confirms; earlier windows read as `insufficient-exposure`. Take its result from `metrics.json`'s `followUps`: `moved`, `unchanged`, `wrong-way`, or `insufficient-exposure`. Two `unchanged` results in a row, or one `wrong-way`, make the change a revert candidate for step 4.
+For each entry in `shipped.json` without a `measureFrom`, read its PR with `gh pr view <pr> --json state`. Once it reads merged and the repository's `scripts/check-installs.py` reports no stale installs, set the entry's `measureFrom` to now, since only messages written after installed copies hold the change can show its effect; rerun `metrics.ts` when you set one. Take each result from `metrics.json`'s `followUps`: `moved`, `unchanged`, `wrong-way`, or `insufficient-exposure`, each against the baseline frozen when the change shipped. One `wrong-way`, or `unchanged` here and in the previous run's `metrics.json`, makes the change a revert candidate for step 4.
 
 **Complete when:** every shipped change has a result for this window and every revert candidate is named.
 
 ## 4. Find patterns
 
-Candidates come from `metrics.json`: recurring phrases (`candidates`, each with its message ids), options the owner always extends the same way, options never picked (`picksByMenuSize`), and revert candidates. Validate each by reading its threads with `t3_thread_read`, since a recurring phrase alone shows neither a preference nor a correction. A pattern clears the bar with at least 10 validated messages across at least 5 threads, in this window or the last two combined. Save each validated pattern's message ids to `runs/<date>/patterns.json`.
+Candidates are the recurring phrases in `metrics.json`'s `candidates`, each with its message ids; the `letterAndWords` answers, whose added words show what the owner keeps asking for beyond an option; letters the owner rarely picks, from `picksByMenuSize`; and revert candidates. Validate each by reading its threads with `t3_thread_read`, since a recurring phrase alone shows neither a preference nor a correction. A pattern clears the bar `phraseCandidates` applies, counted in validated messages; when one falls short in 7 days, rerun both scripts with `--days 14` into `$RUN/14d/` and require the bar there. Record each kept pattern's message ids, and each dropped candidate with its reason, in `$RUN/patterns.json`.
 
-**Complete when:** every candidate is validated or dropped with a reason, and every kept pattern has its message ids saved.
+**Complete when:** every candidate is in `patterns.json`, kept with its message ids or dropped with a reason.
 
 ## 5. Decide
 
-Pick at most three changes, each tied to one validated pattern. Skip a rule changed in the last 14 days unless its follow-up reads `wrong-way`. Give each change a metric contract for `shipped.json`: a stable `rule` id, the `opportunity` and `success` predicates, the preferred `direction`, and a `minExposure` of at least 20, as `metrics.ts`'s `Contract` type defines. A change to skill text in this repository goes into the PR; a finding outside it, such as the global instructions in `~/.config/agents`, T3 settings, or scheduled tasks, goes in the report as a lettered option, because edits under `~/.config` publish live.
+Pick at most three changes, each tied to one kept pattern. Skip a rule changed in the last 14 days unless its follow-up reads `wrong-way`. Write each as a metric contract, the `Contract` type in `metrics.ts`: a stable `rule` id, `opportunity` and `success` predicates, the preferred `direction`, and a `minExposure`, which the script raises to 20. A change to skill text in this repository goes into the PR; a finding outside it, such as the global instructions in `~/.config/agents`, T3 settings, or scheduled tasks, goes in the report as a lettered option, because edits under `~/.config` publish live. Save the picks, their contracts, and the outside findings to `$RUN/decisions.json`.
 
-**Complete when:** each picked change has a pattern, a target file, and a metric contract, and each finding outside the repository is written as an option.
+**Complete when:** `decisions.json` holds each pick with its pattern, target file, and contract, and each finding outside the repository as an option.
 
 ## 6. Deliver
 
-When a change was picked, branch `usage-review/<date>` from `origin/main` in its own worktree and make the edits through /writing-for-agents, following this repository's change rules: an `UPSTREAM.md` departure for a sourced skill, and an ADR revision where an ADR owns the area. Run `pnpm check`. Write the PR body through /pr. Before every push, and before creating or editing the PR, run `public-check.ts --pr-title <title> --pr-body <file>` from the worktree; a hit blocks publication and goes in the report by class and position. Then push and open one draft PR. Append the changes to `shipped.json` with the PR number, and write this run's `metrics.json` to `baseline.json`.
+When a change was picked, branch `usage-review/<date>` from `origin/main` in its own worktree and make the edits through /writing-for-agents, following this repository's change rules: an `UPSTREAM.md` departure for a sourced skill, and an ADR revision where an ADR owns the area. Run `pnpm check`. Write the PR body through /pr. Before every push, and before creating or editing the PR, run `public-check.ts --pr-title <title> --pr-body <file>` from the worktree; a hit blocks publication and goes in the report by class and position. Then push and open one draft PR. Freeze each contract's baseline with `metrics.ts --in $RUN/messages.jsonl --freeze <contracts.json>`, add the PR number, and append the result to `shipped.json`.
 
-**Complete when:** a draft PR exists that passed `public-check.ts`, with `shipped.json` and `baseline.json` updated, or the report says why no PR was opened.
+**Complete when:** a draft PR exists that passed `public-check.ts` and its contracts are in `shipped.json` with baselines, or no change was picked, or the report names the check that blocked publication.
 
 ## 7. Report
 
-Reply in the run's thread with this week's metrics against the baseline, each follow-up result, the PR link, and the outside-repository options. Delete the lock.
+Copy `$RUN/metrics.json` to `$STATE/baseline.json`. Reply in the run's thread with this week's metrics against the previous baseline, each follow-up result, the PR link, and the outside-repository options. Remove the lock.
 
-**Complete when:** the reply is posted and the lock is gone.
+**Complete when:** `baseline.json` is this run's metrics, the reply is posted, and the lock is gone.

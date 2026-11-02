@@ -3,8 +3,15 @@ import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
 import { endingOf, extract } from "./extract.ts";
-import { classify, phraseCandidates, pickedLetter, rateOf, type Contract } from "./metrics.ts";
-import { scan, type Rules } from "./public-check.ts";
+import {
+  classify,
+  followUp,
+  phraseCandidates,
+  pickedLetter,
+  rateOf,
+  type Contract,
+} from "./metrics.ts";
+import { scan, scanLog, type Rules } from "./public-check.ts";
 
 /** A state database with only the columns the scripts read. */
 function fixture() {
@@ -12,7 +19,7 @@ function fixture() {
   db.exec(`
     create table projection_projects (project_id text, title text);
     create table orchestration_v2_projection_threads (thread_id text, project_id text, deleted_at text, payload_json text);
-    create table orchestration_v2_projection_runs (run_id text, thread_id text, status text, requested_at text, completed_at text, payload_json text);
+    create table orchestration_v2_projection_runs (run_id text, thread_id text, ordinal integer, status text, requested_at text, completed_at text, payload_json text);
     create table orchestration_v2_projection_messages (message_id text, thread_id text, run_id text, role text, created_at text, payload_json text);
     insert into projection_projects values ('p', 'demo');
   `);
@@ -29,8 +36,8 @@ function fixture() {
     userMessageId: string,
   ) =>
     db
-      .prepare("insert into orchestration_v2_projection_runs values (?, ?, ?, ?, ?, ?)")
-      .run(id, threadId, status, at, done, JSON.stringify({ userMessageId }));
+      .prepare("insert into orchestration_v2_projection_runs values (?, ?, ?, ?, ?, ?, ?)")
+      .run(id, threadId, Number(id.slice(1)), status, at, done, JSON.stringify({ userMessageId }));
   const message = (
     id: string,
     threadId: string,
@@ -108,10 +115,7 @@ test("the corpus keeps owner messages in agent-created roots and drops subagents
 test("endings read options, a plain next step, and Done", () => {
   const menu = endingOf(MENU);
   assert.equal(menu.kind, "options");
-  assert.deepEqual(menu.kind === "options" && menu.options.map((o) => [o.letter, o.recommended]), [
-    ["a", true],
-    ["b", false],
-  ]);
+  assert.deepEqual(menu.kind === "options" && menu.options.map((o) => o.letter), ["a", "b"]);
   assert.equal(endingOf("**Next**: I'll report when CI finishes.").kind, "next");
   assert.equal(endingOf("**Done**. Nothing open.").kind, "done");
 });
@@ -121,6 +125,7 @@ test("picked letters come from bare letters, tweaks, and option phrasing", () =>
   assert.equal(pickedLetter("B, but keep the name"), "b");
   assert.equal(pickedLetter("Do option A, then merge"), "a");
   assert.equal(pickedLetter("add a test"), null);
+  assert.equal(pickedLetter("A small tweak to the copy"), null);
 });
 
 const contract: Contract = {
@@ -210,4 +215,74 @@ test("the public check allows upstream attribution, this repository, and standar
   const text =
     "from https://github.com/mattpocock/skills and https://github.com/christofferbergj/agent-skills/pull/60, UTF-8, ISO-8601, noreply@example.com";
   assert.deepEqual(scan(text, "file", rules), []);
+});
+
+test("a follow-up waits until the change is live and compares with the frozen baseline", () => {
+  const row = (text: string, at: string) => ({
+    messageId: text + at,
+    threadId: "t",
+    project: null,
+    at,
+    interaction: "answer" as const,
+    text,
+    ending: endingOf(MENU),
+  });
+  const rows = [
+    ...Array.from({ length: 30 }, (_, i) => row(i < 6 ? "b" : "a", "2026-11-01T00:00:00.000Z")),
+    ...Array.from({ length: 30 }, (_, i) => row(i < 15 ? "b" : "a", "2026-11-09T00:00:00.000Z")),
+  ];
+  const shipped = { ...contract, baseline: { numerator: 6, opportunities: 30 } };
+  assert.equal(
+    followUp(shipped, rows),
+    "insufficient-exposure",
+    "not live until measureFrom is set",
+  );
+  assert.equal(followUp({ ...shipped, measureFrom: "2026-11-08T00:00:00.000Z" }, rows), "moved");
+  assert.equal(
+    followUp({ ...contract, measureFrom: "2026-11-08T00:00:00.000Z" }, rows),
+    "insufficient-exposure",
+    "no frozen baseline",
+  );
+});
+
+test("the public check reads every pushed commit, its paths, and binaries", () => {
+  const log = [
+    "\u0000COMMIT 1111111aaaa\nAdd notes\n\u0000",
+    "diff --git a/notes.txt b/notes.txt",
+    "--- /dev/null",
+    "+++ b/notes.txt",
+    "@@ -0,0 +1,2 @@",
+    "+see ENG-321 later",
+    "+++ not a header DEV-9",
+    "diff --git a/x/OPS-456.md b/x/OPS-456.md",
+    "@@ -0,0 +1 @@",
+    "+hello",
+    "diff --git a/shot.bin b/shot.bin",
+    "Binary files /dev/null and b/shot.bin differ",
+    "\u0000COMMIT 2222222bbbb\nRemove notes\n\nRefs ENG-999\n\u0000",
+    "diff --git a/notes.txt b/notes.txt",
+    "@@ -1,2 +0,0 @@",
+    "-see ENG-321 later",
+  ].join("\n");
+  assert.deepEqual(scanLog(log, rules), [
+    { class: "ticket-id", where: "notes.txt:1@1111111" },
+    { class: "ticket-id", where: "notes.txt:2@1111111" },
+    { class: "ticket-id", where: "path@1111111:1" },
+    { class: "ticket-id", where: "path@1111111:2" },
+    { class: "binary-file", where: "shot.bin@1111111" },
+    { class: "ticket-id", where: "commit 2222222:3" },
+  ]);
+});
+
+test("the public check decodes URLs, reads git remotes, and finds names split across lines", () => {
+  assert.deepEqual(scan("https://github.com%2Facme%2Fsecret", "f", rules), [
+    { class: "github-url", where: "f:1" },
+  ]);
+  assert.deepEqual(
+    scan("git@github.com:christofferbergj/agent-skills.git and github.com/mattpocock", "f", rules),
+    [],
+  );
+  assert.deepEqual(scan("ask Jane\nDoe today", "f", rules), [
+    { class: "private-name", where: "f:across lines" },
+  ]);
 });
