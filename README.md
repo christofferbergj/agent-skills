@@ -30,6 +30,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 | End replies with the next step or choices | `next-options`                             |
 | Shape replies for skimming and action     | `reply-shape`                              |
 | Run a multi-PR project from one T3 thread | `coordinator`                              |
+| Tune the workflow from measured usage     | `usage-review`                             |
 | Maintain this library                     | `maintain-skills`                          |
 
 ## Browse by task

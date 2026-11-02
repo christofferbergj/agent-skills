@@ -162,6 +162,26 @@ export function phraseCandidates(
     .sort((a, b) => b.messages - a.messages || b.threads - a.threads);
 }
 
+/** What the owner adds when picking a letter, by kind; each kind lists its message ids. */
+const EXTENSIONS: Record<string, RegExp> = {
+  merge: /\bmerg|\bland\b|\bship\b/i,
+  reviewFirst: /\breview|\$thermos|review-loop/i,
+  bothOptions: /\bboth\b|\b[a-d] and [a-d]\b/i,
+  question: /\?/,
+};
+/** Replies that ask for the work to be explained again. */
+const CONFUSION =
+  /^\s*\?\s*$|lost track|don'?t understand|what do you mean|explain (?:to me|what|why)|too (?:long|technical)/i;
+
+function idsBy(rows: readonly OwnerMessage[], kinds: Record<string, RegExp>) {
+  return Object.fromEntries(
+    Object.entries(kinds).map(([kind, re]) => [
+      kind,
+      rows.filter((r) => re.test(r.text)).map((r) => r.messageId),
+    ]),
+  );
+}
+
 function median(values: number[]): number | null {
   if (values.length === 0) return null;
   const sorted = values.toSorted((a, b) => a - b);
@@ -198,6 +218,11 @@ export function metrics(rows: readonly OwnerMessage[], contracts: readonly Contr
       Object.entries(Object.groupBy(menus, answerKind)).map(([k, v]) => [k, v!.length]),
     ),
     picksByMenuSize: picksBySize,
+    extensions: idsBy(
+      menus.filter((row) => answerKind(row) === "letterAndWords"),
+      EXTENSIONS,
+    ),
+    confusion: answers.filter((row) => CONFUSION.test(row.text)).map((row) => row.messageId),
     medianAssistantWords: median(answers.map((row) => row.assistantWords ?? 0)),
     followUps: Object.fromEntries(contracts.map((c) => [c.rule, followUp(c, rows)])),
     candidates: phraseCandidates(rows).slice(0, 40),

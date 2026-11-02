@@ -44,7 +44,9 @@ export function stateDbPath(flag?: string): string {
 /** Reads the lettered options, plain next step, or Done from a reply's last lines. */
 export function endingOf(reply: string): Ending {
   const tail = reply.split("\n").slice(-25);
-  const options = tail.flatMap((line) => {
+  // Options count only under the menu's own `**Next**` heading, not any lettered list nearby.
+  const heading = tail.findLastIndex((line) => /^\s*\*\*Next\*\*\s*$/.test(line));
+  const options = (heading < 0 ? [] : tail.slice(heading + 1)).flatMap((line) => {
     const match = line.match(OPTION);
     if (!match) return [];
     const text = match[2].replace(/\*\*|`|·\s*_recommended_/g, "").trim();
@@ -90,6 +92,8 @@ export function extract(db: DatabaseSync, since: string): OwnerMessage[] {
          and json_extract(m.payload_json, '$.creationSource') in ('web', 'mobile')
          and t.deleted_at is null
          and coalesce(json_extract(t.payload_json, '$.lineage.relationshipToParent'), '') <> 'subagent'
+         and t.thread_id not like 'thread:delegated-task:%'
+         and coalesce(json_extract(t.payload_json, '$.lineage.rootThreadId'), '') not like 'thread:delegated-task:%'
        order by m.thread_id, m.created_at, m.message_id`,
     )
     .all(since) as unknown as MessageRow[];

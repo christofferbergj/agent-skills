@@ -329,3 +329,46 @@ test("the median of an even sample averages the middle pair", () => {
   });
   assert.equal(metrics([row(10), row(20)]).medianAssistantWords, 15);
 });
+
+test("delegated-task threads and their forks stay out of the corpus", () => {
+  const { db, message } = fixture();
+  const insert = db.prepare(
+    "insert into orchestration_v2_projection_threads values (?, 'p', null, ?)",
+  );
+  insert.run("thread:delegated-task:legacy", JSON.stringify({ lineage: {} }));
+  insert.run(
+    "fork",
+    JSON.stringify({
+      lineage: { relationshipToParent: "fork", rootThreadId: "thread:delegated-task:x" },
+    }),
+  );
+  message("m1", "thread:delegated-task:legacy", null, "user", "2026-11-01T10:00:00Z", "hi");
+  message("m2", "fork", null, "user", "2026-11-01T10:00:00Z", "hi");
+  assert.deepEqual(extract(db, "2026-10-01T00:00:00Z"), []);
+});
+
+test("a lettered list outside the Next menu is not a menu", () => {
+  assert.equal(
+    endingOf("Keys:\n- `a` → first\n- `b` → second\n\n**Done**. Nothing open.").kind,
+    "done",
+  );
+});
+
+test("extensions and confusion list their message ids", () => {
+  const row = (messageId: string, text: string) => ({
+    messageId,
+    threadId: "t",
+    project: null,
+    at: "",
+    interaction: "answer" as const,
+    text,
+    ending: endingOf(MENU),
+  });
+  const result = metrics([
+    row("m1", "a, then merge it when green"),
+    row("m2", "?"),
+    row("m3", "b"),
+  ]);
+  assert.deepEqual(result.extensions.merge, ["m1"]);
+  assert.deepEqual(result.confusion, ["m2"]);
+});

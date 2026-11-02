@@ -32,7 +32,7 @@ For each entry in `shipped.json` without a `measureFrom`, read its PR with `gh p
 
 ## 4. Find patterns
 
-Candidates are the recurring phrases in `metrics.json`'s `candidates`, each with its message ids; the `letterAndWords` answers, whose added words show what the owner keeps asking for beyond an option; letters the owner rarely picks, from `picksByMenuSize`; and revert candidates. Validate each by reading its threads with `t3_thread_read`, since a recurring phrase alone shows neither a preference nor a correction. A pattern clears the bar `phraseCandidates` applies, counted in validated messages; when one falls short in 7 days, rerun both scripts with `--days 14` into `$RUN/14d/` and require the bar there. Record each kept pattern's message ids, and each dropped candidate with its reason, in `$RUN/patterns.json`.
+Candidates are the recurring phrases in `metrics.json`'s `candidates`, each with its message ids; the `extensions` the owner adds when picking a letter, such as a merge, a review first, or both options, each with its message ids; `confusion` replies, which ask for the work to be explained again; letters the owner rarely picks, from `picksByMenuSize`; and revert candidates. Validate each by reading its threads with `t3_thread_read`, since a recurring phrase alone shows neither a preference nor a correction. A pattern clears the bar `phraseCandidates` applies, counted in validated messages; when one falls short in 7 days, rerun both scripts with `--days 14` into `$RUN/14d/` and require the bar there. Record each kept pattern's message ids, and each dropped candidate with its reason, in `$RUN/patterns.json`.
 
 **Complete when:** every candidate is in `patterns.json`, kept with its message ids or dropped with a reason.
 
