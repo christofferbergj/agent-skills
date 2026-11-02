@@ -24,5 +24,6 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | [setup-matt-pocock-skills](setup-matt-pocock-skills/SKILL.md)   | Configure project artifacts and issue tracking.               |
 | [show-me-your-work](show-me-your-work/SKILL.md)                 | Record decisions and execution evidence.                      |
 | [swarm](swarm/SKILL.md)                                         | Delegate work and independent reviews.                        |
+| [usage-review](usage-review/SKILL.md)                           | Tune the workflow from measured T3 usage.                     |
 | [wizard](wizard/SKILL.md)                                       | Guide a human through steps an agent cannot perform.          |
 | [writing-for-agents](writing-for-agents/SKILL.md)               | Write effective agent instructions.                           |

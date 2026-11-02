@@ -30,6 +30,8 @@ Installations are snapshots. After changes merge, rerun the complete install to 
 
 For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). Upstream runs adopt upstream changes while keeping the library's local adaptations; audits also recheck skills against current tools and conventions. This is separate from refreshing installed copies.
 
+To tune the workflow from how it is used, `/usage-review` measures the owner's T3 Code threads, follows up on its earlier changes by their metric contracts, and opens at most one draft PR. A weekly T3 scheduled task in this repository's project runs it from the default branch.
+
 ## Agent compatibility
 
 Use `$skill-name` in Codex and `/skill-name` in Claude Code. Native delegation and hook adapters target these two hosts. Skills CLI offers other agents too; workflows that depend on host-specific tools need a compatible integration. Agent selection during installation does not add that integration. The [validation history](reviews/README.md) records exercised branches and remaining limits.

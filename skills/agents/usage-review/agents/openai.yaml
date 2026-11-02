@@ -1,0 +1,6 @@
+interface:
+  display_name: "Usage Review"
+  short_description: "Tune the workflow from measured T3 usage"
+  default_prompt: "Use $usage-review to measure this week's T3 usage and propose improvements."
+policy:
+  allow_implicit_invocation: false
