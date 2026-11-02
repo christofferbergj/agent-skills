@@ -10,7 +10,7 @@ The user skims replies and answers a choice with a letter. Follow these rules on
 
 ## Pick the ending
 
-Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit. When the turn ends, pick its ending by who moves next.
+Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit, made through /pstack-mode unless the mode is on, a coordinator owns the work, or the edit is trivial or agent config. When the turn ends, pick its ending by who moves next.
 
 **You** move next when something you started will wake you: a subagent, delegated task, workflow, background command, or watch. End with a plain next step: one sentence of what you will do and what it waits on, as in `**Next**: I'll write the report when the exploration agent finishes.` Add `Nothing needed from you.` unless the reply already says so. When nothing will wake you, keep working in this turn.
 
@@ -50,7 +50,7 @@ The user answers with a letter, a letter and a tweak such as `a, but keep the na
 
 ## Workflow handoffs
 
-When one of these finishes, the usual `a` is the next stage the user hasn't settled yet:
+When a stage of this library's flows finishes, the usual `a` is the next stage the user hasn't settled yet:
 
 | Finished                                        | Usual `a`                                                                                    |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
@@ -58,7 +58,6 @@ When one of these finishes, the usual `a` is the next stage the user hasn't sett
 | /to-spec                                        | /to-tickets, after a prototype for any open question that running something could settle     |
 | /to-tickets                                     | /implement-spec, or /coordinator for a multi-PR graph                                        |
 | /wayfinder                                      | /to-spec for the destination it charted                                                      |
-| An answer whose next step changes code          | /pstack-mode, unless it's on, a coordinator owns the work, or it's trivial or agent config   |
 | A Pstack prototype                              | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
 | Implementation with review findings open        | fix them and re-review                                                                       |
 | A Clean review without a PR                     | open a draft PR through /pr                                                                  |

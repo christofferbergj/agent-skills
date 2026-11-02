@@ -93,6 +93,7 @@ type Options = {
 };
 type Change = { status: string; path: string };
 type Exclusion = { path: string; reason: "lockfile" | "binary" | "generated" | "vendored" };
+type ChangedFile = { paths: string[]; lines: number };
 type Tier = { tier: "small" | "full"; tierReason: string };
 
 class UsageError extends Error {}
@@ -265,27 +266,34 @@ function sensitive(path: string): boolean {
 }
 
 /**
- * Whether round 1 may run only the counterpart. It reads every changed path and line in scope,
- * including the files the packet leaves out of its diff, so `--keep` and exclusions can't change it.
+ * Whether round 1 may run only the counterpart. It reads every changed file in scope, including the
+ * files the packet leaves out of its diff, so `--keep` and exclusions can't change it.
  */
-function tierOf(paths: string[], lines: number): Tier {
-  const touched = paths.find(sensitive);
+function tierOf(files: ChangedFile[]): Tier {
+  const touched = files.flatMap((file) => file.paths).find(sensitive);
   if (touched) return { tier: "full", tierReason: `touches ${touched}` };
-  if (paths.length > SMALL_FILES) return { tier: "full", tierReason: `${paths.length} files` };
+  if (files.length > SMALL_FILES) return { tier: "full", tierReason: `${files.length} files` };
+  const lines = files.reduce((sum, file) => sum + file.lines, 0);
   if (lines >= SMALL_LINES) return { tier: "full", tierReason: `${lines} changed lines` };
-  const files = paths.length === 1 ? "1 file" : `${paths.length} files`;
-  return { tier: "small", tierReason: `${files}, ${lines} changed lines, no sensitive path` };
+  const count = files.length === 1 ? "1 file" : `${files.length} files`;
+  return { tier: "small", tierReason: `${count}, ${lines} changed lines, no sensitive path` };
 }
 
-/** Added plus deleted lines in scope, renames followed; a binary file counts no lines. */
-function changedLines(repo: string, base: string, head: string, scope: string[]): number {
-  return git(repo, ["diff", "--numstat", "--find-renames", base, head, "--", ...scope])
-    .split("\n")
-    .filter(Boolean)
-    .reduce((sum, line) => {
-      const [added, deleted] = line.split("\t");
-      return sum + (Number(added) || 0) + (Number(deleted) || 0);
-    }, 0);
+/** Each changed file in scope with its added plus deleted lines; a rename is one file. */
+function changedFiles(repo: string, base: string, head: string, scope: string[]): ChangedFile[] {
+  const fields = nulFields(
+    git(repo, ["diff", "--numstat", "-z", "--find-renames", base, head, "--", ...scope]),
+  );
+  const files: ChangedFile[] = [];
+  for (let index = 0; index < fields.length; index += 1) {
+    const [added, deleted, ...rest] = fields[index].split("\t");
+    const path = rest.join("\t");
+    // A rename's record has an empty path, and its old and new paths follow as their own fields.
+    const paths = path === "" ? [fields[++index], fields[++index]] : [path];
+    // A binary file shows `-` for both counts and counts no lines.
+    files.push({ paths, lines: (Number(added) || 0) + (Number(deleted) || 0) });
+  }
+  return files;
 }
 
 function parse(): Options | undefined {
@@ -355,10 +363,7 @@ function build(options: Options) {
     "--",
     ...pathspec,
   ]).trim();
-  const { tier, tierReason } = tierOf(
-    changed.map((change) => change.path),
-    changedLines(repo, base, head, scope),
-  );
+  const { tier, tierReason } = tierOf(changedFiles(repo, base, head, scope));
   const commits = git(repo, ["log", "--format=%h %s", `${base}..${head}`]).trim();
   writeFileSync(
     packet,

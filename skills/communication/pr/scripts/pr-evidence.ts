@@ -6,14 +6,9 @@
  * nothing.
  *
  * usage: node pr-evidence.ts [--dry-run] <png or directory>...
- *        node pr-evidence.ts --check --body <file> [--base <ref>]
  *
  * Names: <view>-before.png and <view>-after.png for a pair, <view>-after.png alone for a new view,
  * and <view>--<state>.png for a state the base branch never reaches. A leading `NN-` is ignored.
- *
- * `--check` reads a PR body and the branch's committed diff against `--base` (default: the remote's
- * default branch) and exits 1 naming what Evidence lacks: a review status line for any diff, and a
- * screenshot or a "Not verified" line for a diff that changes UI source.
  */
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -47,18 +42,6 @@ const PAIR_NAME = /^(?:\d+-)?(?<view>[a-z0-9]+(?:-[a-z0-9]+)*)-(?<side>before|af
 const STATE_NAME =
   /^(?:\d+-)?(?<view>[a-z0-9]+(?:-[a-z0-9]+)*)--(?<state>[a-z0-9]+(?:-[a-z0-9]+)*)\.png$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
-// UI source is what a screenshot can prove; tests, stories, and mocks render nothing a user sees.
-const UI_SOURCE =
-  /\.(?:tsx|jsx|vue|svelte|astro|html?|erb|hbs|ejs|pug|njk|liquid|css|scss|sass|less)$/;
-const NOT_UI = /\.(?:test|spec|stories)\.[a-z]+$|(?:^|\/)(?:__tests__|__mocks__|e2e|stories)\//;
-const EVIDENCE_SECTION = /^## Evidence[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m;
-// Comments and code don't render as evidence, so the checks read the body without them. Images
-// count in the two forms PR bodies use: inline Markdown, as this script prints, and <img> tags.
-const HIDDEN = /<!--[\s\S]*?-->|^(`{3,}|~{3,})[\s\S]*?^\1/gm;
-const INLINE_CODE = /`[^`\n]+`/g;
-const IMAGE = /!\[[^\]]*\]\([^)]+\)|<img\s/i;
-const NOT_VERIFIED = /^\*\*Not verified on .+?:\*\*[ \t]*\S/m;
-const REVIEW_STATUS = /^\*\*(?:Reviewed|Not reviewed):\*\*[ \t]*\S/;
 
 function label(name: string): string {
   const words = name.replaceAll("-", " ");
@@ -187,36 +170,6 @@ export function renderEvidence(files: ScreenshotFile[], imageBaseUrl: string): s
   return `${blocks.join("\n\n")}\n`;
 }
 
-/** The changed files a screenshot could prove: UI source, without tests, stories, or mocks. */
-export function uiFiles(paths: string[]): string[] {
-  return paths.filter((file) => UI_SOURCE.test(file) && !NOT_UI.test(file));
-}
-
-/**
- * What a PR body's Evidence section lacks for a diff, one problem per entry: a review status line
- * for any diff, and for a diff that changes UI source, a screenshot or a line saying why the change
- * was not verified on its surface.
- */
-export function checkEvidence(body: string, changedFiles: string[]): string[] {
-  const visible = body.replaceAll("\r\n", "\n").replace(HIDDEN, "").replace(INLINE_CODE, "code");
-  const evidence = EVIDENCE_SECTION.exec(visible)?.[1]?.trim();
-  if (evidence === undefined) {
-    return ["The body has no `## Evidence` section."];
-  }
-  const problems: string[] = [];
-  if (!REVIEW_STATUS.test(evidence)) {
-    problems.push("Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line.");
-  }
-  const ui = uiFiles(changedFiles);
-  if (ui.length > 0 && !IMAGE.test(evidence) && !NOT_VERIFIED.test(evidence)) {
-    const named = ui.length > 3 ? `${ui.slice(0, 3).join(", ")}, …` : ui.join(", ");
-    problems.push(
-      `The diff changes UI (${named}), and Evidence has neither a screenshot nor a \`**Not verified on <surface>:**\` line.`,
-    );
-  }
-  return problems;
-}
-
 /** `owner/name` of a GitHub remote URL, over HTTPS or SSH. */
 export function githubRepository(remoteUrl: string): string {
   const repository = /github\.com[:/](?<repository>[^/]+\/[^/]+?)(?:\.git)?\/?$/.exec(remoteUrl)
@@ -279,51 +232,17 @@ function listScreenshots(inputs: string[]): string[] {
   );
 }
 
-/** The branch a PR merges into when the caller names none: the remote's default, else `main`. */
-function defaultBase(git: (args: string[]) => string): string {
-  try {
-    return git(["symbolic-ref", "--quiet", "--short", "refs/remotes/origin/HEAD"]);
-  } catch {
-    return "main";
-  }
-}
-
-function check(git: (args: string[]) => string, bodyFile: string, base: string) {
-  const mergeBase = git(["merge-base", base, "HEAD"]);
-  // NUL-separated names arrive unquoted, whatever `core.quotePath` says about non-ASCII paths.
-  const changed = git(["diff", "--name-only", "-z", "--no-renames", mergeBase, "HEAD"])
-    .split("\0")
-    .filter(Boolean);
-  const problems = checkEvidence(readFileSync(bodyFile, "utf-8"), changed);
-  if (problems.length > 0) {
-    throw new Error(problems.join("\n"));
-  }
-  console.error(`Evidence check passed for ${changed.length} changed files against ${base}.`);
-}
-
 function main() {
   const { values, positionals } = parseArgs({
     allowPositionals: true,
-    options: {
-      "dry-run": { type: "boolean", default: false },
-      check: { type: "boolean", default: false },
-      body: { type: "string" },
-      base: { type: "string" },
-    },
+    options: { "dry-run": { type: "boolean", default: false } },
   });
-  const cwd = process.cwd();
-  const git = (args: string[]) => execFileSync("git", args, { cwd, encoding: "utf-8" }).trim();
-  if (values.check) {
-    if (!values.body) {
-      throw new Error("Usage: node pr-evidence.ts --check --body <file> [--base <ref>]");
-    }
-    check(git, values.body, values.base ?? defaultBase(git));
-    return;
-  }
   if (positionals.length === 0) {
     throw new Error("Usage: node pr-evidence.ts [--dry-run] <png or directory>...");
   }
 
+  const cwd = process.cwd();
+  const git = (args: string[]) => execFileSync("git", args, { cwd, encoding: "utf-8" }).trim();
   const branch = git(["branch", "--show-current"]);
   if (!branch || branch === "main") {
     throw new Error("Check out the PR branch first; its name sets the images branch.");

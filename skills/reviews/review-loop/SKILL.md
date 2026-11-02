@@ -23,7 +23,7 @@ For a code target, build the packet from this skill's directory with `node scrip
 
 ## 2. Review
 
-Round 1 is a full review by both models. A plan target gets only the counterpart's review, since the same-model passes assess code. So does a packet whose `tier` is `small`, unless the user asks for the full round: step 1 runs alone, and the report labels the round **small-diff tier** with the packet's `tierReason`. When that counterpart fails, run the full round.
+Round 1 is a full review by both models. A plan target gets only the counterpart's review, since the same-model passes assess code. So does a packet whose `tier` is `small`, unless the user asks for the full round: step 1 runs alone, and the report labels the round **small-diff tier** with the packet's `tierReason`.
 
 1. Dispatch the counterpart first, asynchronously and at full-review effort, through /swarm's counterpart route, with the brief filled in.
 2. When Codex is the counterpart and the diff changes code that runs, not only prose, docs, or skill text, dispatch the **Codex correctness** pass beside it: its own asynchronous task with the full review's model, effort, and speed and the brief's Codex correctness line, under its own `clientRequestId` in T3 Code, or its own prompt and output files through the CLI. It runs beside passes the round already waits for. Retry it once on its route when /swarm's execution contract allows a retry, and take no other route, since the same-model correctness critic already covers that ground; skip it when /swarm resolves the counterpart to `fallback`.
@@ -33,7 +33,7 @@ Round 1 is a full review by both models. A plan target gets only the counterpart
 
 4. Collect the counterpart's reports. Every reviewer belongs to the round, so wait for each one before reporting.
 
-When the counterpart's review fails after the route's retry and fallbacks, continue with the other passes and record it missing; label the round **single model**, with the reason, when no counterpart pass returned. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
+When the counterpart's review fails after the route's retry and fallbacks, continue with the other passes and record it missing; label the round **single model**, with the reason, when no counterpart pass returned. A small-diff tier whose counterpart failed runs the full round instead. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
 
 **Complete when:** every reviewer returned a terminal report or a recorded failure for the same revisions.
 

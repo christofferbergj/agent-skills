@@ -26,7 +26,7 @@ export interface Predicate {
   readonly interaction?: Interaction;
   /** The message's T3 project title contains it. */
   readonly project?: string;
-  /** Whether the reply the message answers links a pull request. */
+  /** Whether the reply the message answers links a pull request; only answers have a reply. */
   readonly replyLinksPr?: boolean;
 }
 
@@ -81,9 +81,7 @@ function holds(predicate: Predicate, row: OwnerMessage): boolean {
   if (predicate.matches && !new RegExp(predicate.matches, "i").test(row.text)) return false;
   if (predicate.interaction && row.interaction !== predicate.interaction) return false;
   if (predicate.project && !has(row.project ?? "", predicate.project)) return false;
-  return (
-    predicate.replyLinksPr === undefined || (row.replyLinksPr ?? false) === predicate.replyLinksPr
-  );
+  return predicate.replyLinksPr === undefined || row.replyLinksPr === predicate.replyLinksPr;
 }
 
 export function rateOf(contract: Contract, rows: readonly OwnerMessage[]): Rate {

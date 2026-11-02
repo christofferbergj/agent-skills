@@ -346,5 +346,5 @@ test("a renamed file counts only its edited lines toward the small tier", () => 
 
   const { tier, tierReason } = packet("--since", base).json;
 
-  assert.equal(`${tier}: ${tierReason}`, "small: 2 files, 2 changed lines, no sensitive path");
+  assert.equal(`${tier}: ${tierReason}`, "small: 1 file, 2 changed lines, no sensitive path");
 });

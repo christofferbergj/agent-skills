@@ -180,7 +180,7 @@ test("predicates also match a pattern, the message type, the project, and a PR l
   assert.deepEqual(rateOf(verifiedAsk, rows), { numerator: 1, opportunities: 1 });
   assert.deepEqual(rateOf({ ...verifiedAsk, opportunity: { replyLinksPr: false } }, rows), {
     numerator: 0,
-    opportunities: 2,
+    opportunities: 1,
   });
   const opportunities = (opportunity: Contract["opportunity"]) =>
     rateOf({ ...verifiedAsk, opportunity }, rows).opportunities;
