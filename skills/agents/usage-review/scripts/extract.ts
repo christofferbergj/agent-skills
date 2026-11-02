@@ -33,9 +33,12 @@ export interface OwnerMessage {
   /** How the answered run's final assistant message ended; only on `answer`. */
   readonly ending?: Ending;
   readonly assistantWords?: number;
+  /** Whether the answered run's final assistant message links a pull request; only on `answer`. */
+  readonly replyLinksPr?: boolean;
 }
 
 const OPTION = /^\s*[-*]\s*\**`?([a-d])`?\s*(?:→|->)\s*(.*)$/i;
+const PR_LINK = /github\.com\/[^\s/]+\/[^\s/]+\/pull\/\d+/;
 
 export function stateDbPath(flag?: string): string {
   return flag ?? process.env.T3_STATE_DB ?? join(homedir(), ".t3", "userdata", "statev2.sqlite");
@@ -136,6 +139,7 @@ export function extract(db: DatabaseSync, since: string): OwnerMessage[] {
       interaction: "answer",
       ending: endingOf(reply),
       assistantWords: reply.split(/\s+/).filter(Boolean).length,
+      replyLinksPr: PR_LINK.test(reply),
     };
   });
 }

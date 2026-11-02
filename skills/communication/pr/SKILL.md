@@ -18,6 +18,10 @@ Use this template for writing the PR body:
 
 ## Evidence
 
+**Reviewed:** <the final review's verdict line, reviewer counts, and head SHA>
+
+<or: **Not reviewed:** <reason>>
+
 <optional: one line naming the screenshots' source, viewport, and baseline>
 
 **<view>**
@@ -31,6 +35,10 @@ Use this template for writing the PR body:
 | <state>      | <state>      |
 | ------------ | ------------ |
 | <screenshot> | <screenshot> |
+
+<or, when the diff changes UI and has no screenshot:>
+
+**Not verified on <surface>:** <reason>
 
 - **Before:** <output/failing test run>
   **After:** <output/passing test run>
@@ -173,6 +181,8 @@ You may use one of these, you may use several, it is unlikely you will use all o
 
 Concrete evidence that the change works. Show a before and after when both exist; otherwise show the states the change adds.
 
+Open it with the review status: `**Reviewed:**` with the final review's verdict line, reviewer counts, and head SHA, such as /review-loop's Clean line, or `**Not reviewed:**` with the reason. When the diff changes UI source and Evidence has no screenshot, add `**Not verified on <surface>:**`, naming the view or route and why it went unchecked. A refactor of UI source counts, even when nobody should see a difference. Before publishing, run `node ~/.agents/skills/pr/scripts/pr-evidence.ts --check --body <file>` from the PR branch's checkout after committing, or the same script beside this skill where it is installed elsewhere, adding `--base <ref>` for a stacked PR; it names what Evidence still lacks.
+
 Screenshots are S-tier. When the change alters what a user sees on a view and capturing it is cheap, such as a running app, a dev server with mocks, or the project's verification skill, screenshot it. Take before-and-after screenshots when the base branch shows the same view in the same state, with the same viewport, data, and scroll position, so the pair lines up. When there is no real before, such as a new view or a state the base branch never reaches (a validation error, an empty result, a new step), screenshot each state the change adds instead. A placeholder or an unrelated base-branch screen is not a before.
 
 Show each view as a bold label, at most one sentence on what changed, and a `Before | After` table whose one row holds the two screenshots. Open the screenshots with one line naming their source, viewport, and baseline, such as "Mocked checkout at 1280px. Before is `main`, after is this branch." Show states the same way, with each state's name as its column heading, as in `Empty | Not looked up`: two screenshots to a row, or three for phone screenshots, with each later row's labels in the cell above it.
@@ -189,4 +199,4 @@ Describe whether it's a one-way or two-way door. You can walk back through two-w
 
 The blast radius is the potential impact or scope of the changes introduced by this PR. Consider all possibilities. Examples are layout shift, breakages for consumers, mobile responsiveness, etc.
 
-Complete when the description matches the final diff, shows observed evidence and limitations, and identifies merge risk. Use the invoking repository's contribution format when it overrides this default. This skill writes descriptions; publication follows the user's action grant.
+Complete when the description matches the final diff, shows observed evidence and limitations, passes `pr-evidence.ts --check`, and identifies merge risk. Use the invoking repository's contribution format when it overrides this default; the check then doesn't apply. This skill writes descriptions; publication follows the user's action grant.

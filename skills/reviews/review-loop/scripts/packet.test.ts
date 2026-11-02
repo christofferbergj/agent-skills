@@ -256,3 +256,51 @@ test("an empty diff fails before any reviewer starts", () => {
   assert.equal(json, undefined);
   assert.ok(JSON.parse(stderr.split("\n")[0]).error);
 });
+
+test("a diff of at most two files and under 50 changed lines is the small tier", () => {
+  const base = git("rev-parse", "HEAD");
+  write("app.ts", "export const a = 2;\n");
+  write("button.tsx", "export const Button = () => null;\n");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "small change");
+
+  const { status, json } = packet("--since", base);
+
+  assert.equal(status, 0);
+  assert.equal(json.tier, "small");
+  assert.equal(json.tierReason, "2 files, 3 changed lines, no sensitive path");
+  assert.match(readFileSync(json.packet, "utf8"), /- Tier: small \(2 files, 3 changed lines/);
+});
+
+test("a third file, 50 changed lines, a sensitive path, or a lockfile makes the full tier", () => {
+  const base = git("rev-parse", "HEAD");
+  const tierAfter = (change: () => void) => {
+    git("reset", "--quiet", "--hard", base);
+    change();
+    git("add", ".");
+    git("commit", "--quiet", "-m", "change");
+    return packet("--since", base).json;
+  };
+
+  const three = tierAfter(() => ["a.ts", "b.ts", "c.ts"].forEach((file) => write(file, "x\n")));
+  assert.deepEqual([three.tier, three.tierReason], ["full", "3 files"]);
+
+  const long = tierAfter(() => write("app.ts", "export const a = 1;\n".repeat(51)));
+  assert.deepEqual([long.tier, long.tierReason], ["full", "50 changed lines"]);
+
+  mkdirSync(join(repo, "src", "auth"), { recursive: true });
+  const auth = tierAfter(() => write("src/auth/guard.ts", "export const guard = true;\n"));
+  assert.deepEqual([auth.tier, auth.tierReason], ["full", "touches src/auth/guard.ts"]);
+
+  const env = tierAfter(() => write(".env.local", "KEY=1\n"));
+  assert.deepEqual([env.tier, env.tierReason], ["full", "touches .env.local"]);
+
+  const lockfile = tierAfter(() => {
+    write("app.ts", "export const a = 2;\n");
+    write("pnpm-lock.yaml", "lockfileVersion: 2\n");
+  });
+  assert.deepEqual(
+    [lockfile.tier, lockfile.tierReason],
+    ["full", "changes dependencies in pnpm-lock.yaml"],
+  );
+});

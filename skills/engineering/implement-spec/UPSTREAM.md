@@ -19,6 +19,7 @@
 - Invoke /principles before implementation and final verification; explicitly pass selected owner instructions and decisions to workers. Honor migration-owner phase and integration-unit gates without treating transitional progress as full acceptance.
 - Use one integration coordinator and existing ticket graph, owned isolated writers, serial accepted merges, and proposed domain edits from workers. Preserve unknown work and real tracker completion boundaries.
 - Without a configured tracker, local artifacts carry the graph while the user runs /setup-matt-pocock-skills, so setup does not block implementation; nothing is published externally until authorized.
+- Each ticket runs through a /pstack-mode playbook, with the ticket's accepted design as /architect's chosen shape, and stops at a verified commit before the single final /review-loop. In T3 Code the writer is a T3 child task that reads pstack-mode's SKILL.md, as /coordinator's workers do, because a native subagent cannot run a playbook that spawns its own subagents; elsewhere the coordinating chat runs the playbook and delegates its writer step. Reason: the owner wants Matt's flow to run Pstack underneath, and a 2026-11-02 review found the writers ran /tdd alone, skipping the playbooks' code reading, design check, live verification, and cleanup passes. Upstream's frontier, worktrees, and merges stay.
 
 ## Maintenance
 

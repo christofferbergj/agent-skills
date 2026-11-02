@@ -32,7 +32,8 @@ const USAGE = `usage: node packet.ts --repo <dir> [--base <ref> | --since <ref>]
   --keep <path>  keep this lockfile, binary, or generated or vendored file in the diff (repeatable)
   --out <dir>    write the packet here (default: a new temporary directory)
 
-Prints JSON naming the packet, its revisions, its size, and its reviewed and excluded files.`;
+Prints JSON naming the packet, its revisions, its size, its review tier (small or full, with the
+reason), and its reviewed and excluded files.`;
 
 const LOCKFILES = new Set([
   "bun.lock",
@@ -57,6 +58,12 @@ const LOCKFILES = new Set([
 ]);
 const GENERATED = /\.min\.(?:js|css)$|\.map$|\.pb\.go$|_pb2\.py$|\.generated\./;
 const VENDORED = /(?:^|\/)(?:vendor|node_modules|third_party)\//;
+// The small-diff tier follows the fan-out skip in Addy Osmani's /ship: at most two files, under
+// 50 changed lines, and nothing near auth, payments, data access, config, env, or dependencies.
+const SMALL_FILES = 2;
+const SMALL_LINES = 50;
+const SENSITIVE =
+  /(?:^|[/._-])(?:auth\w*|login|sessions?|passwords?|secrets?|tokens?|crypto|permissions?|roles?|acl|payments?|billing|checkout|invoices?|stripe|subscriptions?|db|database|prisma|drizzle|sql|queries|repositor(?:y|ies)|migrations?|schema|env|config|settings|middleware|workflows?)(?:[/._-]|$)|(?:^|\/)(?:Dockerfile|package\.json)$/i;
 const SNAPSHOT_IDENTITY = { NAME: "review-loop", EMAIL: "review-loop@localhost" };
 
 type Options = {
@@ -71,6 +78,7 @@ type Options = {
 };
 type Change = { status: string; path: string };
 type Exclusion = { path: string; reason: "lockfile" | "binary" | "generated" | "vendored" };
+type Tier = { tier: "small" | "full"; tierReason: string };
 
 class UsageError extends Error {}
 
@@ -234,6 +242,33 @@ function exclusions(
   });
 }
 
+/** Whether round 1 may run only the counterpart: a small diff away from sensitive paths. */
+function tierOf(
+  repo: string,
+  base: string,
+  head: string,
+  pathspec: string[],
+  reviewed: Change[],
+  excluded: Exclusion[],
+): Tier {
+  const lines = git(repo, ["diff", "--numstat", "--find-renames", base, head, "--", ...pathspec])
+    .split("\n")
+    .filter(Boolean)
+    .reduce((sum, line) => {
+      const [added, deleted] = line.split("\t");
+      return sum + (Number(added) || 0) + (Number(deleted) || 0);
+    }, 0);
+  const lockfile = excluded.find((entry) => entry.reason === "lockfile");
+  if (lockfile) return { tier: "full", tierReason: `changes dependencies in ${lockfile.path}` };
+  const sensitive = reviewed.find((change) => SENSITIVE.test(change.path));
+  if (sensitive) return { tier: "full", tierReason: `touches ${sensitive.path}` };
+  if (reviewed.length > SMALL_FILES)
+    return { tier: "full", tierReason: `${reviewed.length} files` };
+  if (lines >= SMALL_LINES) return { tier: "full", tierReason: `${lines} changed lines` };
+  const files = reviewed.length === 1 ? "1 file" : `${reviewed.length} files`;
+  return { tier: "small", tierReason: `${files}, ${lines} changed lines, no sensitive path` };
+}
+
 function parse(): Options | undefined {
   const { values } = parseArgs({
     options: {
@@ -301,6 +336,7 @@ function build(options: Options) {
     "--",
     ...pathspec,
   ]).trim();
+  const { tier, tierReason } = tierOf(repo, base, head, pathspec, reviewed, excluded);
   const commits = git(repo, ["log", "--format=%h %s", `${base}..${head}`]).trim();
   writeFileSync(
     packet,
@@ -312,6 +348,7 @@ function build(options: Options) {
       `- Head: ${head}${options.working ? " (working snapshot)" : ""}`,
       `- Diff: ${diff}, or \`git -C ${repo} diff --find-renames ${base} ${head}\` limited to the files below`,
       `- Size: ${size}`,
+      `- Tier: ${tier} (${tierReason})`,
       "",
       "## Commits",
       "",
@@ -337,6 +374,8 @@ function build(options: Options) {
     head,
     snapshot: options.working,
     size,
+    tier,
+    tierReason,
     files: reviewed,
     excluded,
   };

@@ -5,7 +5,13 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { afterEach, test } from "node:test";
 
-import { githubRepository, renderEvidence, uploadImages } from "./pr-evidence.ts";
+import {
+  checkEvidence,
+  githubRepository,
+  renderEvidence,
+  uiFiles,
+  uploadImages,
+} from "./pr-evidence.ts";
 
 const BASE = "https://github.com/acme/shop/blob/abc123";
 const desktop = (file: string) => ({ file, width: 2560, height: 1720 });
@@ -204,4 +210,92 @@ test("runs when started through a symlink, as installed skills are", async () =>
 
   assert.equal(run.status, 1);
   assert.match(run.stderr, /Usage: node pr-evidence\.ts/);
+});
+
+const REVIEWED = "**Reviewed:** review-loop Clean at abc1234, Codex 1 · Claude 2";
+const body = (evidence: string) =>
+  `## Summary\n\nA change.\n\n## Evidence\n\n${evidence}\n\n## Merge Danger\n\n**Door:** two-way\n`;
+
+test("counts UI source as provable by screenshot, and leaves out tests, stories, and mocks", () => {
+  assert.deepEqual(
+    uiFiles([
+      "src/app/page.tsx",
+      "src/styles/site.css",
+      "src/lib/date.ts",
+      "src/app/page.test.tsx",
+      "src/Button.stories.tsx",
+      "src/__mocks__/Card.tsx",
+      "e2e/checkout.tsx",
+    ]),
+    ["src/app/page.tsx", "src/styles/site.css"],
+  );
+});
+
+test("a UI diff needs a screenshot or a Not verified line, and every diff needs a review status", () => {
+  const ui = ["src/app/page.tsx", "src/lib/date.ts"];
+
+  assert.deepEqual(checkEvidence(body(REVIEWED), ui), [
+    "The diff changes UI (src/app/page.tsx), and Evidence has neither a screenshot nor a `**Not verified on <surface>:**` line.",
+  ]);
+  assert.deepEqual(
+    checkEvidence(body(`${REVIEWED}\n\n![Page after](https://x/p.png?raw=true)`), ui),
+    [],
+  );
+  assert.deepEqual(
+    checkEvidence(
+      body(`${REVIEWED}\n\n**Not verified on the dashboard:** needs a clinic login.`),
+      ui,
+    ),
+    [],
+  );
+  assert.deepEqual(checkEvidence(body("**Not reviewed:** docs-only change."), ["README.md"]), []);
+  assert.deepEqual(
+    checkEvidence(body("- **Before:** fails\n  **After:** passes"), ["src/lib/date.ts"]),
+    ["Evidence has no `**Reviewed:**` or `**Not reviewed:**` line."],
+  );
+});
+
+test("reads only the Evidence section, and names a missing one", () => {
+  const elsewhere = `## Summary\n\n${REVIEWED}\n\n![Page](https://x/p.png)\n\n## Evidence\n\nTests pass.\n`;
+
+  assert.equal(checkEvidence(elsewhere, ["src/app/page.tsx"]).length, 2);
+  assert.deepEqual(checkEvidence("## Summary\n\nA change.\n", ["src/lib/date.ts"]), [
+    "The body has no `## Evidence` section.",
+  ]);
+});
+
+test("--check reads the branch's committed diff against the base and exits 1 on a gap", async () => {
+  const { root, local } = await createRepository();
+  await writeFile(path.join(local, "readme.md"), "base\n");
+  git(local, ["add", "."]);
+  git(local, ["commit", "--quiet", "-m", "base"]);
+  git(local, ["branch", "-M", "main"]);
+  git(local, ["switch", "--quiet", "-c", "feature"]);
+  await writeFile(path.join(local, "page.tsx"), "export const Page = () => null;\n");
+  git(local, ["add", "."]);
+  git(local, ["commit", "--quiet", "-m", "page"]);
+  const file = path.join(root, "body.md");
+  const run = () =>
+    spawnSync(
+      process.execPath,
+      [
+        path.join(import.meta.dirname, "pr-evidence.ts"),
+        "--check",
+        "--body",
+        file,
+        "--base",
+        "main",
+      ],
+      { cwd: local, encoding: "utf-8" },
+    );
+
+  await writeFile(file, body(REVIEWED));
+  const gap = run();
+  assert.equal(gap.status, 1);
+  assert.match(gap.stderr, /changes UI \(page\.tsx\)/);
+
+  await writeFile(file, body(`${REVIEWED}\n\n**Not verified on the page:** no dev server.`));
+  const passed = run();
+  assert.equal(passed.status, 0, passed.stderr);
+  assert.match(passed.stderr, /Evidence check passed for 1 changed files against main/);
 });

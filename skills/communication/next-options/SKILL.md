@@ -46,7 +46,7 @@ When the user's answer is needed while your own work runs, say in one line what 
 
 ## Answers
 
-The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line.
+The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line. Picking an option that names /pstack-mode invokes it: read its installed SKILL.md and follow it for the rest of the conversation.
 
 ## Workflow handoffs
 
@@ -54,9 +54,10 @@ When a stage of this library's flows finishes, the usual `a` is the next stage t
 
 | Finished                                        | Usual `a`                                                                                    |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| /grill-with-docs                                | /pstack-mode to build the agreed design, or /to-spec when it should be split into tickets    |
+| /grill-with-docs                                | /pstack-mode when the build fits one session, or /to-spec when it spans several              |
 | /to-spec                                        | /to-tickets, after a prototype for any open question that running something could settle     |
-| /to-tickets                                     | /implement-spec                                                                              |
+| /to-tickets                                     | /implement-spec, or /coordinator for a multi-PR graph                                        |
+| An answer whose next step changes code          | /pstack-mode to make it, unless the mode is on or the edit is trivial                        |
 | A Pstack prototype                              | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
 | Implementation with review findings open        | fix them and re-review                                                                       |
 | A Clean review without a PR                     | open a draft PR through /pr                                                                  |

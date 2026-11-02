@@ -6,9 +6,9 @@ disable-model-invocation: true
 
 # Pstack mode
 
-This mode runs for the current conversation once the user invokes /pstack-mode. Invoking a Pstack helper directly does not activate it. Pstack skills install under their upstream names, apart from the renames `suite.json` records. Resolve each skill's installed path through the host's skill index, and put the resolved paths of this file and of every skill a delegate needs in its brief.
+This mode runs for the current conversation once the user invokes /pstack-mode, by typing it or by picking an offered option that names it. Invoking a Pstack helper directly does not activate it. Pstack skills install under their upstream names, apart from the renames `suite.json` records. Resolve each skill's installed path through the host's skill index, and put the resolved paths of this file and of every skill a delegate needs in its brief.
 
-When the task reads or changes project vocabulary, domain docs, or ADRs, resolve them through /domain-modeling first. Reuse the effort's accepted spec and ticket graph rather than starting another.
+When the task reads or changes project vocabulary, domain docs, or ADRs, resolve them through /domain-modeling first. Reuse the effort's accepted spec and ticket graph rather than starting another; /implement-spec runs such a graph ticket by ticket through these playbooks.
 
 ## Non-negotiables
 
