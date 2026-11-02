@@ -268,8 +268,6 @@ test("the public check reads every pushed commit, its paths, and binaries", () =
   assert.deepEqual(scanLog(log, rules), [
     { class: "ticket-id", where: "notes.txt:1@1111111" },
     { class: "ticket-id", where: "notes.txt:2@1111111" },
-    { class: "ticket-id", where: "path@1111111:1" },
-    { class: "ticket-id", where: "path@1111111:2" },
     { class: "binary-file", where: "shot.bin@1111111" },
     { class: "ticket-id", where: "commit 2222222:3" },
   ]);
@@ -371,4 +369,20 @@ test("extensions and confusion list their message ids", () => {
   ]);
   assert.deepEqual(result.extensions.merge, ["m1"]);
   assert.deepEqual(result.confusion, ["m2"]);
+});
+
+test("a stray percent sign doesn't stop the decoding of an encoded host", () => {
+  assert.deepEqual(scan("https://github%2ecom/acme/secret (100% done)", "f", rules), [
+    { class: "github-url", where: "f:1" },
+  ]);
+});
+
+test("a binary file in the log is a hit for a person to check", () => {
+  const log = [
+    "\u0000COMMIT 3333333cccc\nAdd image\n\u0000",
+    "diff --git a/shot.png b/shot.png",
+    "new file mode 100644",
+    "Binary files /dev/null and b/shot.png differ",
+  ].join("\n");
+  assert.deepEqual(scanLog(log, rules), [{ class: "binary-file", where: "shot.png@3333333" }]);
 });

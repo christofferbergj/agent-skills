@@ -5,7 +5,7 @@
  * Usage: metrics.ts --in <messages.jsonl> --out <metrics.json> [--shipped <shipped.json>]
  *        metrics.ts --in <messages.jsonl> --freeze <new-contracts.json>
  * `--freeze` prints the contracts with each one's baseline rate on these messages, ready to
- * append to shipped.json.
+ * append to shipped.json, and exits 1 when a baseline is below the minimum exposure.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
@@ -247,6 +247,13 @@ if (import.meta.main) {
   const load = (path: string) => JSON.parse(readFileSync(path, "utf8")) as Contract[];
   if (values.freeze) {
     const frozen = load(values.freeze).map((c) => ({ ...c, baseline: rateOf(c, rows) }));
+    // A baseline frozen below the minimum exposure could never be compared, so refuse it.
+    const short = frozen.filter(
+      (c) => c.baseline.opportunities < Math.max(MIN_EXPOSURE, c.minExposure ?? 0),
+    );
+    for (const c of short)
+      console.error(`baseline too small: ${c.rule} has ${c.baseline.opportunities} opportunities`);
+    if (short.length > 0) process.exit(1);
     console.log(JSON.stringify(frozen, null, 2));
   } else {
     const result = metrics(rows, values.shipped ? load(values.shipped) : []);

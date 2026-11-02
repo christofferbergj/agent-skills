@@ -55,13 +55,21 @@ const NOT_TICKETS = new Set([
 /** RFC 2606 documentation domains, which name nobody. */
 const RESERVED_DOMAIN = /(^|\.)(example\.(com|org|net)|test|invalid|example)$/i;
 
-/** Percent-decoded and NFKC-normalized, so encoded and full-width forms read as plain text. */
+/**
+ * NFKC-normalized, then each run of percent escapes decoded on its own, so full-width and encoded
+ * forms read as plain text and a stray `%` elsewhere on the line can't stop the decoding.
+ */
 function decoded(line: string): string {
-  let text = line;
-  try {
-    text = decodeURIComponent(line);
-  } catch {}
-  return text.normalize("NFKC");
+  return line
+    .normalize("NFKC")
+    .replace(/(?:%[0-9a-f]{2})+/gi, (run) => {
+      try {
+        return decodeURIComponent(run);
+      } catch {
+        return run;
+      }
+    })
+    .normalize("NFKC");
 }
 
 function contains(text: string, term: string): boolean {
@@ -116,9 +124,10 @@ export function scan(text: string, source: string, rules: Rules): Hit[] {
 }
 
 /**
- * Scans `git log -p` output: each commit's message, every path a diff header names, and each
- * added line, reading header lines as headers until the first hunk so a `++` content line
- * can't pass for one. A binary file can't be read, so it is a hit for a person to check.
+ * Scans `git log -p` output: each commit's message and each added line, reading header lines as
+ * headers until the first hunk so a `++` content line can't pass for one. A binary file can't be
+ * read, so it is a hit for a person to check. Paths are scanned separately from `git diff-tree`,
+ * whose NUL-separated names Git never quotes.
  */
 export function scanLog(log: string, rules: Rules): Hit[] {
   const hits: Hit[] = [];
@@ -141,12 +150,10 @@ export function scanLog(log: string, rules: Rules): Hit[] {
       added = [];
     };
     for (const row of rest.join("\u0000").split("\n")) {
-      const paths = row.match(/^diff --git a\/(.*) b\/(.*)$/);
-      if (paths) {
+      if (row.startsWith("diff --git ")) {
         flush();
-        file = paths[2];
+        file = row.match(/ b\/(.*)$/)?.[1] ?? row.slice(11);
         inHunk = false;
-        hits.push(...scan(`${paths[1]}\n${paths[2]}`, `path@${sha}`, rules));
       } else if (!inHunk && row.startsWith("Binary files ")) {
         hits.push({ class: "binary-file", where: `${file}@${sha}` });
       } else if (row.startsWith("@@")) {
@@ -232,9 +239,11 @@ if (import.meta.main) {
     [
       "-C",
       root,
+      "-c",
+      "core.quotePath=false",
       "log",
       "-p",
-      "--text",
+      "--diff-merges=first-parent",
       "--no-renames",
       "--unified=0",
       "--no-color",
@@ -244,6 +253,19 @@ if (import.meta.main) {
     { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 },
   );
   const hits = scanLog(log, rules);
+  // Every path each commit touches, against its first parent so a merge's own changes count.
+  const commits = execFileSync("git", ["-C", root, "rev-list", `${values.base}..HEAD`], {
+    encoding: "utf8",
+  });
+  for (const sha of commits.split("\n").filter(Boolean)) {
+    const names = execFileSync(
+      "git",
+      ["-C", root, "diff-tree", "-r", "-z", "--name-only", "--no-renames", `${sha}^1`, sha],
+      { encoding: "utf8" },
+    );
+    for (const name of names.split("\0").filter(Boolean))
+      hits.push(...scan(name, `path@${sha.slice(0, 7)}`, rules));
+  }
   if (values["pr-title"]) hits.push(...scan(values["pr-title"], "pr-title", rules));
   if (values["pr-body"])
     hits.push(...scan(readFileSync(values["pr-body"], "utf8"), "pr-body", rules));
