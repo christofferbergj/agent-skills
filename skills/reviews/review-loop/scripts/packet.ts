@@ -64,7 +64,7 @@ const VENDORED = /(?:^|\/)(?:vendor|node_modules|third_party)\//;
 const SMALL_FILES = 2;
 const SMALL_LINES = 50;
 const SENSITIVE_WORD =
-  /^(?:o?auth[nz]?|authenticat\w*|authoriz\w*|log(?:in|out)|sign(?:in|up)|sessions?|passwords?|secrets?|tokens?|jwt|crypto\w*|permissions?|roles?|acl|payments?|billing|checkout|invoices?|stripe|subscriptions?|db|database|prisma|drizzle|sql|quer(?:y|ies)|repositor(?:y|ies)|migrations?|schemas?|env|environment|\w*config\w*|settings|middleware|workflows?|dockerfile|requirements)$/;
+  /^(?:o?auth[nz0-9]?|authenticat\w*|authori[sz]\w*|log(?:in|out)|sign(?:in|up)|sessions?|passwords?|secrets?|tokens?|jwt|crypto\w*|permissions?|roles?|acl|payments?|billing|checkout|invoices?|stripe|subscriptions?|db|database|prisma|drizzle|sql|quer(?:y|ies)|repositor(?:y|ies)|migrations?|schemas?|env|environment|\w*config\w*|settings|middleware|workflows?|dockerfile|requirements)$/;
 const MANIFESTS = new Set([
   ".npmrc",
   ".nvmrc",

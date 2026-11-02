@@ -52,9 +52,11 @@ const UI_SOURCE =
   /\.(?:tsx|jsx|vue|svelte|astro|html?|erb|hbs|ejs|pug|njk|liquid|css|scss|sass|less)$/;
 const NOT_UI = /\.(?:test|spec|stories)\.[a-z]+$|(?:^|\/)(?:__tests__|__mocks__|e2e|stories)\//;
 const EVIDENCE_SECTION = /^## Evidence[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m;
-// Comments and code blocks don't render as evidence, so the checks ignore them.
-const HIDDEN = /<!--[\s\S]*?-->|^```[\s\S]*?^```/gm;
-const IMAGE = /!\[[^\]]*\](?:\([^)]+\)|\[[^\]]*\])|<img\s/i;
+// Comments and code don't render as evidence, so the checks read the body without them. Images
+// count in the two forms PR bodies use: inline Markdown, as this script prints, and <img> tags.
+const HIDDEN = /<!--[\s\S]*?-->|^(`{3,}|~{3,})[\s\S]*?^\1/gm;
+const INLINE_CODE = /`[^`\n]+`/g;
+const IMAGE = /!\[[^\]]*\]\([^)]+\)|<img\s/i;
 const NOT_VERIFIED = /^\*\*Not verified on .+?:\*\*[ \t]*\S/m;
 const REVIEW_STATUS = /^\*\*(?:Reviewed|Not reviewed):\*\*[ \t]*\S/;
 
@@ -196,11 +198,11 @@ export function uiFiles(paths: string[]): string[] {
  * was not verified on its surface.
  */
 export function checkEvidence(body: string, changedFiles: string[]): string[] {
-  const section = EVIDENCE_SECTION.exec(body.replaceAll("\r\n", "\n"))?.[1];
-  if (section === undefined) {
+  const visible = body.replaceAll("\r\n", "\n").replace(HIDDEN, "").replace(INLINE_CODE, "code");
+  const evidence = EVIDENCE_SECTION.exec(visible)?.[1]?.trim();
+  if (evidence === undefined) {
     return ["The body has no `## Evidence` section."];
   }
-  const evidence = section.replace(HIDDEN, "").trim();
   const problems: string[] = [];
   if (!REVIEW_STATUS.test(evidence)) {
     problems.push("Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line.");

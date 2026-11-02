@@ -256,11 +256,10 @@ test("a UI diff needs a screenshot or a Not verified line, and every diff needs 
   );
 });
 
-test("accepts any visible screenshot form and a surface with a colon, read across line endings", () => {
+test("accepts an inline image, an <img> tag, or a surface with a colon, read across line endings", () => {
   const page = ["src/app/page.tsx"];
 
   for (const proof of [
-    "![After][after]\n\n[after]: https://x/after.png",
     '<img src="https://x/after.png" width="600">',
     "**Not verified on http://localhost:3000/users/:id:** needs a signed-in account.",
   ])
@@ -271,10 +270,18 @@ test("accepts any visible screenshot form and a surface with a colon, read acros
   );
 });
 
-test("ignores proof hidden in comments or code, and wants the review status first", () => {
-  const hidden = `<!--\n${REVIEWED}\n![After](https://x/a.png)\n-->\n\n\`\`\`\n${REVIEWED}\n\`\`\``;
+test("ignores proof that doesn't render, and wants the review status first", () => {
+  const page = ["src/app/page.tsx"];
+  const missing = (proof: string) => checkEvidence(body(`${REVIEWED}\n\n${proof}`), page).length;
 
-  assert.equal(checkEvidence(body(hidden), ["src/app/page.tsx"]).length, 2);
+  assert.equal(missing("![After][after]\n\n[after]: https://x/after.png"), 1, "reference image");
+  assert.equal(missing("`![After](https://x/a.png)`"), 1, "inline code");
+  assert.equal(missing("~~~md\n![After](https://x/a.png)\n~~~"), 1, "tilde fence");
+  assert.equal(missing("<!--\n![After](https://x/a.png)\n-->"), 1, "comment");
+  assert.deepEqual(checkEvidence(`<!--\n${body(REVIEWED)}\n-->`, page), [
+    "The body has no `## Evidence` section.",
+  ]);
+  assert.deepEqual(checkEvidence(body(`**Reviewed:** \`abc1234\``), ["src/lib/date.ts"]), []);
   assert.deepEqual(checkEvidence(body(`Tests pass.\n\n${REVIEWED}`), ["src/lib/date.ts"]), [
     "Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line.",
   ]);
