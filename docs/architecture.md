@@ -25,7 +25,7 @@ Both flows end implementation with `/review-loop`. The **counterpart**, the othe
 
 In T3 Code, `coordinator` runs a multi-PR project from one pinned thread: it starts a worker child task per PR or research question, each running a `pstack-mode` playbook in its own worktree, and brings the user one decision card at a time ([ADR 0006](adr/0006-coordinate-t3-projects-from-a-pinned-thread.md)). Elsewhere, `pstack-mode`'s Orchestrate playbook runs such a program.
 
-`pstack-mode` chooses and executes a task playbook once the user invokes it, by typing it or by picking the `/next-options` offer that names it ([ADR 0007](adr/0007-keep-pstack-mode-explicit-and-offer-it.md)). It uses the same selector and shared owners. An accepted spec and ticket graph goes to `implement-spec`, which runs it through the same playbooks, so switching coordinators does not start another planning process. Installation or an individual helper invocation does not activate the mode.
+`pstack-mode` chooses and executes a task playbook once the user invokes it, by typing it or by picking the `/next-options` offer that names it ([ADR 0007](adr/0007-keep-pstack-mode-explicit-and-offer-it.md)). It uses the same selector and shared owners. An accepted spec and ticket graph goes to `implement-spec`, so switching coordinators does not start another planning process. Installation or an individual helper invocation does not activate the mode.
 
 | Responsibility                                            | Shared owner             |
 | --------------------------------------------------------- | ------------------------ |

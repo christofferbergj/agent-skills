@@ -272,35 +272,76 @@ test("a diff of at most two files and under 50 changed lines is the small tier",
   assert.match(readFileSync(json.packet, "utf8"), /- Tier: small \(2 files, 3 changed lines/);
 });
 
-test("a third file, 50 changed lines, a sensitive path, or a lockfile makes the full tier", () => {
+test("a third file, 50 changed lines, or a sensitive path makes the full tier, whatever the packet leaves out", () => {
   const base = git("rev-parse", "HEAD");
-  const tierAfter = (change: () => void) => {
+  const tierAfter = (files: Record<string, string | Buffer>, ...args: string[]) => {
     git("reset", "--quiet", "--hard", base);
-    change();
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(repo, path, ".."), { recursive: true });
+      write(path, text);
+    }
     git("add", ".");
     git("commit", "--quiet", "-m", "change");
-    return packet("--since", base).json;
+    const { tier, tierReason } = packet("--since", base, ...args).json;
+    return `${tier}: ${tierReason}`;
   };
 
-  const three = tierAfter(() => ["a.ts", "b.ts", "c.ts"].forEach((file) => write(file, "x\n")));
-  assert.deepEqual([three.tier, three.tierReason], ["full", "3 files"]);
-
-  const long = tierAfter(() => write("app.ts", "export const a = 1;\n".repeat(51)));
-  assert.deepEqual([long.tier, long.tierReason], ["full", "50 changed lines"]);
-
-  mkdirSync(join(repo, "src", "auth"), { recursive: true });
-  const auth = tierAfter(() => write("src/auth/guard.ts", "export const guard = true;\n"));
-  assert.deepEqual([auth.tier, auth.tierReason], ["full", "touches src/auth/guard.ts"]);
-
-  const env = tierAfter(() => write(".env.local", "KEY=1\n"));
-  assert.deepEqual([env.tier, env.tierReason], ["full", "touches .env.local"]);
-
-  const lockfile = tierAfter(() => {
-    write("app.ts", "export const a = 2;\n");
-    write("pnpm-lock.yaml", "lockfileVersion: 2\n");
-  });
-  assert.deepEqual(
-    [lockfile.tier, lockfile.tierReason],
-    ["full", "changes dependencies in pnpm-lock.yaml"],
+  assert.equal(tierAfter({ "a.ts": "x\n", "b.ts": "x\n", "c.ts": "x\n" }), "full: 3 files");
+  assert.equal(
+    tierAfter({ "a.ts": "x\n", "a.png": Buffer.from([0, 1]), "b.png": Buffer.from([0, 2]) }),
+    "full: 3 files",
   );
+  assert.equal(
+    tierAfter({ "app.ts": "export const a = 1;\n".repeat(51) }),
+    "full: 50 changed lines",
+  );
+  for (const path of [
+    "src/auth/guard.ts",
+    "src/hooks/useAuth.ts",
+    "app/(auth)/sign-in/page.tsx",
+    "src/lib/oauth.ts",
+    "src/components/PaymentForm.tsx",
+    "src/lib/environment.ts",
+    ".env.local",
+    "tsconfig.json",
+    "requirements.txt",
+    "Cargo.toml",
+    "Dockerfile",
+    "package.json",
+  ])
+    assert.equal(tierAfter({ [path]: "x\n" }), `full: touches ${path}`);
+  for (const leftOut of ["src/auth.generated.ts", "vendor/lib/aes.go"])
+    assert.equal(
+      tierAfter({ "app.ts": "export const a = 2;\n", [leftOut]: "x\n" }),
+      `full: touches ${leftOut}`,
+    );
+  assert.equal(
+    tierAfter({ "app.ts": "export const a = 2;\n", "pnpm-lock.yaml": "lockfileVersion: 2\n" }),
+    "full: touches pnpm-lock.yaml",
+  );
+  assert.equal(
+    tierAfter({ "pnpm-lock.yaml": "lockfileVersion: 2\n" }, "--keep", "pnpm-lock.yaml"),
+    "full: touches pnpm-lock.yaml",
+  );
+  assert.equal(
+    tierAfter({ "src/Author.tsx": "export const Author = () => null;\n" }),
+    "small: 1 file, 1 changed lines, no sensitive path",
+  );
+});
+
+test("a renamed file counts only its edited lines toward the small tier", () => {
+  write(
+    "long.ts",
+    Array.from({ length: 40 }, (_, line) => `export const v${line} = ${line};\n`).join(""),
+  );
+  git("add", ".");
+  git("commit", "--quiet", "-m", "long file");
+  const base = git("rev-parse", "HEAD");
+  git("mv", "long.ts", "renamed.ts");
+  write("renamed.ts", readFileSync(join(repo, "renamed.ts"), "utf8").replace("v0 = 0", "v0 = 1"));
+  git("commit", "--quiet", "-am", "rename");
+
+  const { tier, tierReason } = packet("--since", base).json;
+
+  assert.equal(`${tier}: ${tierReason}`, "small: 2 files, 2 changed lines, no sensitive path");
 });

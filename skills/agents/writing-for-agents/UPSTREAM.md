@@ -18,7 +18,6 @@
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Retain the writing mechanics and branch-specific reference as the shared instruction-writing dependency, installed from this repository. Shared reference belongs to a model-invoked owner; its consumers invoke that owner rather than linking outside the owning skill.
 - `SKILL-MECHANICS.md` names Codex's `policy.allow_implicit_invocation` key in `agents/openai.yaml` beside Claude Code's `disable-model-invocation` for both invocation modes, because Codex reads only the former and does not read the frontmatter field.
-- The completion line sends an edit that changes agent behavior through /review-loop before its PR. Reason: in a 2026-11-02 analysis of the owner's threads, two of three merged regressions were unreviewed agent-instruction changes, a hook and a skill, and this skill loaded in both runs.
 
 ## Maintenance
 

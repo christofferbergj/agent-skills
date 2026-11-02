@@ -59,7 +59,7 @@ Mid-chat, "new task" makes the mode match a fresh playbook. `/pstack-mode` brief
 
 The default answer is `/pstack-mode`, which runs most of the others when its steps need them. Name a skill directly when the user wants more or less of something than the playbook gives. Read the skill before you recommend it, and give one example prompt.
 
-Rows marked _user entrypoint_ load only when the user types them. Give the user the command to type, and don't load one to do its work yourself, apart from `/pstack-mode` for a work request, as above.
+Rows marked _user entrypoint_ load only when the user types them or picks an option that names them. Give the user the command to type, and don't load one to do its work yourself, apart from `/pstack-mode` for a work request, as above.
 
 | The user wants to                                                                                                                                                                                        | Skill                                                     |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |

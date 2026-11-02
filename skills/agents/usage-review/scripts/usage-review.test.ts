@@ -153,7 +153,8 @@ test("a follow-up rate counts picks among the menus that offered the option", ()
 });
 
 test("predicates also match a pattern, the message type, the project, and a PR link in the reply", () => {
-  const pr = "Opened https://github.com/acme/shop/pull/12 as a draft.\n\n" + MENU;
+  const pr =
+    "Opened https://github.com/christofferbergj/agent-skills/pull/12 as a draft.\n\n" + MENU;
   const { db, thread, run, message } = fixture();
   thread("t");
   run("r1", "t", "completed", "2026-11-01T10:00:00Z", "2026-11-01T10:05:00Z", "u1");
@@ -172,15 +173,19 @@ test("predicates also match a pattern, the message type, the project, and a PR l
 
   const verifiedAsk: Contract = {
     rule: "pr-verified-ask",
-    opportunity: { interaction: "answer", afterPrLink: true, project: "DEMO" },
+    opportunity: { interaction: "answer", replyLinksPr: true, project: "DEMO" },
     success: { matches: "verif|screenshot|browser" },
     direction: "down",
   };
   assert.deepEqual(rateOf(verifiedAsk, rows), { numerator: 1, opportunities: 1 });
-  assert.deepEqual(rateOf({ ...verifiedAsk, opportunity: { afterPrLink: false } }, rows), {
+  assert.deepEqual(rateOf({ ...verifiedAsk, opportunity: { replyLinksPr: false } }, rows), {
     numerator: 0,
     opportunities: 2,
   });
+  const opportunities = (opportunity: Contract["opportunity"]) =>
+    rateOf({ ...verifiedAsk, opportunity }, rows).opportunities;
+  assert.equal(opportunities({ interaction: "request" }), 1);
+  assert.equal(opportunities({ project: "elsewhere" }), 0);
 });
 
 test("follow-ups need minimum exposure and five points either way", () => {

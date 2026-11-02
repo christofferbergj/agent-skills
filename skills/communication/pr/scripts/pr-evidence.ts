@@ -48,12 +48,15 @@ const STATE_NAME =
   /^(?:\d+-)?(?<view>[a-z0-9]+(?:-[a-z0-9]+)*)--(?<state>[a-z0-9]+(?:-[a-z0-9]+)*)\.png$/;
 const PNG_SIGNATURE = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
 // UI source is what a screenshot can prove; tests, stories, and mocks render nothing a user sees.
-const UI_SOURCE = /\.(?:tsx|jsx|vue|svelte|astro|css|scss|sass|less)$/;
+const UI_SOURCE =
+  /\.(?:tsx|jsx|vue|svelte|astro|html?|erb|hbs|ejs|pug|njk|liquid|css|scss|sass|less)$/;
 const NOT_UI = /\.(?:test|spec|stories)\.[a-z]+$|(?:^|\/)(?:__tests__|__mocks__|e2e|stories)\//;
 const EVIDENCE_SECTION = /^## Evidence[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m;
-const IMAGE = /!\[[^\]]*\]\([^)]+\)|<img\s/i;
-const NOT_VERIFIED = /^\*\*Not verified on [^*:]+:\*\*[ \t]*\S/m;
-const REVIEW_STATUS = /^\*\*(?:Reviewed|Not reviewed):\*\*[ \t]*\S/m;
+// Comments and code blocks don't render as evidence, so the checks ignore them.
+const HIDDEN = /<!--[\s\S]*?-->|^```[\s\S]*?^```/gm;
+const IMAGE = /!\[[^\]]*\](?:\([^)]+\)|\[[^\]]*\])|<img\s/i;
+const NOT_VERIFIED = /^\*\*Not verified on .+?:\*\*[ \t]*\S/m;
+const REVIEW_STATUS = /^\*\*(?:Reviewed|Not reviewed):\*\*[ \t]*\S/;
 
 function label(name: string): string {
   const words = name.replaceAll("-", " ");
@@ -193,13 +196,14 @@ export function uiFiles(paths: string[]): string[] {
  * was not verified on its surface.
  */
 export function checkEvidence(body: string, changedFiles: string[]): string[] {
-  const evidence = EVIDENCE_SECTION.exec(body)?.[1];
-  if (evidence === undefined) {
+  const section = EVIDENCE_SECTION.exec(body.replaceAll("\r\n", "\n"))?.[1];
+  if (section === undefined) {
     return ["The body has no `## Evidence` section."];
   }
+  const evidence = section.replace(HIDDEN, "").trim();
   const problems: string[] = [];
   if (!REVIEW_STATUS.test(evidence)) {
-    problems.push("Evidence has no `**Reviewed:**` or `**Not reviewed:**` line.");
+    problems.push("Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line.");
   }
   const ui = uiFiles(changedFiles);
   if (ui.length > 0 && !IMAGE.test(evidence) && !NOT_VERIFIED.test(evidence)) {
@@ -282,12 +286,13 @@ function defaultBase(git: (args: string[]) => string): string {
   }
 }
 
-function check(git: (args: string[]) => string, body: string, base: string) {
+function check(git: (args: string[]) => string, bodyFile: string, base: string) {
   const mergeBase = git(["merge-base", base, "HEAD"]);
-  const changed = git(["diff", "--name-only", "--no-renames", mergeBase, "HEAD"])
-    .split("\n")
+  // NUL-separated names arrive unquoted, whatever `core.quotePath` says about non-ASCII paths.
+  const changed = git(["diff", "--name-only", "-z", "--no-renames", mergeBase, "HEAD"])
+    .split("\0")
     .filter(Boolean);
-  const problems = checkEvidence(readFileSync(body, "utf-8"), changed);
+  const problems = checkEvidence(readFileSync(bodyFile, "utf-8"), changed);
   if (problems.length > 0) {
     throw new Error(problems.join("\n"));
   }

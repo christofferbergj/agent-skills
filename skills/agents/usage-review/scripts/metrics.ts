@@ -27,7 +27,7 @@ export interface Predicate {
   /** The message's T3 project title contains it. */
   readonly project?: string;
   /** Whether the reply the message answers links a pull request. */
-  readonly afterPrLink?: boolean;
+  readonly replyLinksPr?: boolean;
 }
 
 export interface Rate {
@@ -82,7 +82,7 @@ function holds(predicate: Predicate, row: OwnerMessage): boolean {
   if (predicate.interaction && row.interaction !== predicate.interaction) return false;
   if (predicate.project && !has(row.project ?? "", predicate.project)) return false;
   return (
-    predicate.afterPrLink === undefined || (row.replyLinksPr ?? false) === predicate.afterPrLink
+    predicate.replyLinksPr === undefined || (row.replyLinksPr ?? false) === predicate.replyLinksPr
   );
 }
 

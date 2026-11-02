@@ -221,13 +221,14 @@ test("counts UI source as provable by screenshot, and leaves out tests, stories,
     uiFiles([
       "src/app/page.tsx",
       "src/styles/site.css",
+      "public/index.html",
       "src/lib/date.ts",
       "src/app/page.test.tsx",
       "src/Button.stories.tsx",
       "src/__mocks__/Card.tsx",
       "e2e/checkout.tsx",
     ]),
-    ["src/app/page.tsx", "src/styles/site.css"],
+    ["src/app/page.tsx", "src/styles/site.css", "public/index.html"],
   );
 });
 
@@ -243,7 +244,7 @@ test("a UI diff needs a screenshot or a Not verified line, and every diff needs 
   );
   assert.deepEqual(
     checkEvidence(
-      body(`${REVIEWED}\n\n**Not verified on the dashboard:** needs a clinic login.`),
+      body(`${REVIEWED}\n\n**Not verified on the dashboard:** needs a signed-in account.`),
       ui,
     ),
     [],
@@ -251,8 +252,32 @@ test("a UI diff needs a screenshot or a Not verified line, and every diff needs 
   assert.deepEqual(checkEvidence(body("**Not reviewed:** docs-only change."), ["README.md"]), []);
   assert.deepEqual(
     checkEvidence(body("- **Before:** fails\n  **After:** passes"), ["src/lib/date.ts"]),
-    ["Evidence has no `**Reviewed:**` or `**Not reviewed:**` line."],
+    ["Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line."],
   );
+});
+
+test("accepts any visible screenshot form and a surface with a colon, read across line endings", () => {
+  const page = ["src/app/page.tsx"];
+
+  for (const proof of [
+    "![After][after]\n\n[after]: https://x/after.png",
+    '<img src="https://x/after.png" width="600">',
+    "**Not verified on http://localhost:3000/users/:id:** needs a signed-in account.",
+  ])
+    assert.deepEqual(checkEvidence(body(`${REVIEWED}\n\n${proof}`), page), [], proof);
+  assert.deepEqual(
+    checkEvidence(body(`${REVIEWED}\n\n![After](https://x/a.png)`).replaceAll("\n", "\r\n"), page),
+    [],
+  );
+});
+
+test("ignores proof hidden in comments or code, and wants the review status first", () => {
+  const hidden = `<!--\n${REVIEWED}\n![After](https://x/a.png)\n-->\n\n\`\`\`\n${REVIEWED}\n\`\`\``;
+
+  assert.equal(checkEvidence(body(hidden), ["src/app/page.tsx"]).length, 2);
+  assert.deepEqual(checkEvidence(body(`Tests pass.\n\n${REVIEWED}`), ["src/lib/date.ts"]), [
+    "Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line.",
+  ]);
 });
 
 test("reads only the Evidence section, and names a missing one", () => {
@@ -264,38 +289,34 @@ test("reads only the Evidence section, and names a missing one", () => {
   ]);
 });
 
-test("--check reads the branch's committed diff against the base and exits 1 on a gap", async () => {
+test("--check reads the branch's committed diff against the remote's default branch and exits 1 on a gap", async () => {
   const { root, local } = await createRepository();
   await writeFile(path.join(local, "readme.md"), "base\n");
   git(local, ["add", "."]);
   git(local, ["commit", "--quiet", "-m", "base"]);
   git(local, ["branch", "-M", "main"]);
+  git(local, ["push", "--quiet", "origin", "main"]);
+  git(local, ["remote", "set-head", "origin", "main"]);
   git(local, ["switch", "--quiet", "-c", "feature"]);
-  await writeFile(path.join(local, "page.tsx"), "export const Page = () => null;\n");
+  // Git quotes this name in plain `--name-only` output, which hid its extension.
+  await writeFile(path.join(local, "Økonomi.tsx"), "export const Page = () => null;\n");
   git(local, ["add", "."]);
   git(local, ["commit", "--quiet", "-m", "page"]);
   const file = path.join(root, "body.md");
   const run = () =>
     spawnSync(
       process.execPath,
-      [
-        path.join(import.meta.dirname, "pr-evidence.ts"),
-        "--check",
-        "--body",
-        file,
-        "--base",
-        "main",
-      ],
+      [path.join(import.meta.dirname, "pr-evidence.ts"), "--check", "--body", file],
       { cwd: local, encoding: "utf-8" },
     );
 
   await writeFile(file, body(REVIEWED));
   const gap = run();
   assert.equal(gap.status, 1);
-  assert.match(gap.stderr, /changes UI \(page\.tsx\)/);
+  assert.match(gap.stderr, /changes UI \(Økonomi\.tsx\)/);
 
   await writeFile(file, body(`${REVIEWED}\n\n**Not verified on the page:** no dev server.`));
   const passed = run();
   assert.equal(passed.status, 0, passed.stderr);
-  assert.match(passed.stderr, /Evidence check passed for 1 changed files against main/);
+  assert.match(passed.stderr, /Evidence check passed for 1 changed files against origin\/main/);
 });

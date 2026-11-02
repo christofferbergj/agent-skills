@@ -60,10 +60,25 @@ const GENERATED = /\.min\.(?:js|css)$|\.map$|\.pb\.go$|_pb2\.py$|\.generated\./;
 const VENDORED = /(?:^|\/)(?:vendor|node_modules|third_party)\//;
 // The small-diff tier follows the fan-out skip in Addy Osmani's /ship: at most two files, under
 // 50 changed lines, and nothing near auth, payments, data access, config, env, or dependencies.
+// Paths are read word by word, camelCase included, so `useAuth.ts` and `app/(auth)/` count.
 const SMALL_FILES = 2;
 const SMALL_LINES = 50;
-const SENSITIVE =
-  /(?:^|[/._-])(?:auth\w*|login|sessions?|passwords?|secrets?|tokens?|crypto|permissions?|roles?|acl|payments?|billing|checkout|invoices?|stripe|subscriptions?|db|database|prisma|drizzle|sql|queries|repositor(?:y|ies)|migrations?|schema|env|config|settings|middleware|workflows?)(?:[/._-]|$)|(?:^|\/)(?:Dockerfile|package\.json)$/i;
+const SENSITIVE_WORD =
+  /^(?:o?auth[nz]?|authenticat\w*|authoriz\w*|log(?:in|out)|sign(?:in|up)|sessions?|passwords?|secrets?|tokens?|jwt|crypto\w*|permissions?|roles?|acl|payments?|billing|checkout|invoices?|stripe|subscriptions?|db|database|prisma|drizzle|sql|quer(?:y|ies)|repositor(?:y|ies)|migrations?|schemas?|env|environment|\w*config\w*|settings|middleware|workflows?|dockerfile|requirements)$/;
+const MANIFESTS = new Set([
+  ".npmrc",
+  ".nvmrc",
+  "cargo.toml",
+  "composer.json",
+  "docker-compose.yaml",
+  "docker-compose.yml",
+  "gemfile",
+  "go.mod",
+  "package.json",
+  "pyproject.toml",
+  "turbo.json",
+  "vercel.json",
+]);
 const SNAPSHOT_IDENTITY = { NAME: "review-loop", EMAIL: "review-loop@localhost" };
 
 type Options = {
@@ -242,31 +257,35 @@ function exclusions(
   });
 }
 
-/** Whether round 1 may run only the counterpart: a small diff away from sensitive paths. */
-function tierOf(
-  repo: string,
-  base: string,
-  head: string,
-  pathspec: string[],
-  reviewed: Change[],
-  excluded: Exclusion[],
-): Tier {
-  const lines = git(repo, ["diff", "--numstat", "--find-renames", base, head, "--", ...pathspec])
+function sensitive(path: string): boolean {
+  const name = basename(path);
+  if (LOCKFILES.has(name) || MANIFESTS.has(name.toLowerCase()) || VENDORED.test(path)) return true;
+  const words = path.split(/[^A-Za-z0-9]+|(?<=[a-z0-9])(?=[A-Z])/);
+  return words.some((word) => SENSITIVE_WORD.test(word.toLowerCase()));
+}
+
+/**
+ * Whether round 1 may run only the counterpart. It reads every changed path and line in scope,
+ * including the files the packet leaves out of its diff, so `--keep` and exclusions can't change it.
+ */
+function tierOf(paths: string[], lines: number): Tier {
+  const touched = paths.find(sensitive);
+  if (touched) return { tier: "full", tierReason: `touches ${touched}` };
+  if (paths.length > SMALL_FILES) return { tier: "full", tierReason: `${paths.length} files` };
+  if (lines >= SMALL_LINES) return { tier: "full", tierReason: `${lines} changed lines` };
+  const files = paths.length === 1 ? "1 file" : `${paths.length} files`;
+  return { tier: "small", tierReason: `${files}, ${lines} changed lines, no sensitive path` };
+}
+
+/** Added plus deleted lines in scope, renames followed; a binary file counts no lines. */
+function changedLines(repo: string, base: string, head: string, scope: string[]): number {
+  return git(repo, ["diff", "--numstat", "--find-renames", base, head, "--", ...scope])
     .split("\n")
     .filter(Boolean)
     .reduce((sum, line) => {
       const [added, deleted] = line.split("\t");
       return sum + (Number(added) || 0) + (Number(deleted) || 0);
     }, 0);
-  const lockfile = excluded.find((entry) => entry.reason === "lockfile");
-  if (lockfile) return { tier: "full", tierReason: `changes dependencies in ${lockfile.path}` };
-  const sensitive = reviewed.find((change) => SENSITIVE.test(change.path));
-  if (sensitive) return { tier: "full", tierReason: `touches ${sensitive.path}` };
-  if (reviewed.length > SMALL_FILES)
-    return { tier: "full", tierReason: `${reviewed.length} files` };
-  if (lines >= SMALL_LINES) return { tier: "full", tierReason: `${lines} changed lines` };
-  const files = reviewed.length === 1 ? "1 file" : `${reviewed.length} files`;
-  return { tier: "small", tierReason: `${files}, ${lines} changed lines, no sensitive path` };
 }
 
 function parse(): Options | undefined {
@@ -336,7 +355,10 @@ function build(options: Options) {
     "--",
     ...pathspec,
   ]).trim();
-  const { tier, tierReason } = tierOf(repo, base, head, pathspec, reviewed, excluded);
+  const { tier, tierReason } = tierOf(
+    changed.map((change) => change.path),
+    changedLines(repo, base, head, scope),
+  );
   const commits = git(repo, ["log", "--format=%h %s", `${base}..${head}`]).trim();
   writeFileSync(
     packet,

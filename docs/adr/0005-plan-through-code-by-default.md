@@ -7,3 +7,7 @@ The user rarely writes specs and tickets now but wants to keep that option. So `
 Within Matt's flow, a design question that running something could settle is a fact rather than the user's call. `/grilling` answers it with a throwaway sketch, through `/design-prototype` or a measuring script, and reports the result as a settled decision the user can overturn. A question about how something should look is still the user's, but it is asked with `/design-prototype`'s variants in hand. Product and preference calls stay with the user, and so does the final confirmation of shared understanding.
 
 `/review-loop` still reviews a plan when the user asks, and it remains the final review of every implementation. `/next-options` no longer offers a plan review as the next step after `/to-spec`; it offers a prototype for any open question a run could settle. A plan review names a risk only with the code path or observed behavior that shows it, and the coordinator drops a plan risk that nothing cited supports.
+
+## Revisions
+
+- **2026-11-02, Matt's tickets through Pstack's playbooks.** `implement-spec` now runs each ticket through a `pstack-mode` playbook, so reusing an accepted spec and ticket graph means handing it to `implement-spec`; no playbook reads one itself. Matt Pocock's session-count rule now chooses between the flows: after `/grill-with-docs`, a build that fits one session goes to `pstack-mode`, and one that spans sessions goes through `/to-spec` and `/to-tickets`.
