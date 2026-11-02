@@ -26,9 +26,11 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 | Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed     |
 | Implement agreed work                     | `implement` or `implement-spec`            |
 | Review a change                           | `review-loop`, `code-review`, or `thermos` |
+| Get a PR verified and merged once green   | `babysit-and-ship`                         |
 | End replies with the next step or choices | `next-options`                             |
 | Shape replies for skimming and action     | `reply-shape`                              |
 | Run a multi-PR project from one T3 thread | `coordinator`                              |
+| `babysit-and-ship`                        | `pstack-mode`                              | `next-options` offers it beside a PR watch; `principle-attack-the-premise` after a second failed verdict |
 | Maintain this library                     | `maintain-skills`                          |
 
 ## Browse by task
@@ -50,6 +52,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 ### Agent workflows
 
 - [audit-agent-documentation](skills/agents/audit-agent-documentation/SKILL.md)
+- [babysit-and-ship](skills/agents/babysit-and-ship/SKILL.md)
 - [automate-me](skills/agents/automate-me/SKILL.md)
 - [chief-of-staff](skills/agents/chief-of-staff/SKILL.md)
 - [coordinator](skills/agents/coordinator/SKILL.md)

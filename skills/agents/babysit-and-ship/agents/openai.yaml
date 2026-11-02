@@ -1,0 +1,4 @@
+interface:
+  display_name: "Babysit and Ship"
+  short_description: "Take a PR from draft to merged, verified"
+  default_prompt: "Use $babysit-and-ship to get this PR merged once it's good to go and CI is green."
