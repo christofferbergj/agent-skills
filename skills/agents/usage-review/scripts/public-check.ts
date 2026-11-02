@@ -28,6 +28,9 @@ export interface Rules {
 /** Standards and encodings that share a ticket id's shape. */
 const NOT_TICKETS = new Set(["UTF", "ISO", "RFC", "SHA", "ES", "ECMA", "WCAG", "IEEE", "HTTP"]);
 
+/** RFC 2606 documentation domains, which name nobody. */
+const RESERVED_DOMAIN = /(^|\.)(example\.(com|org|net)|test|invalid|example)$/i;
+
 function contains(line: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}($|[^\\p{L}\\p{N}])`, "iu").test(line);
@@ -41,7 +44,8 @@ export function scanLine(line: string, where: string, rules: Rules): Hit[] {
   }
   for (const match of line.matchAll(/\b([A-Z][A-Z0-9]+)-\d+\b/g))
     if (!NOT_TICKETS.has(match[1])) hits.push({ class: "ticket-id", where });
-  if (/[\w.+-]+@[\w-]+\.[\w.-]+/.test(line)) hits.push({ class: "email", where });
+  for (const match of line.matchAll(/[\w.+-]+@([\w-]+\.[\w.-]+)/g))
+    if (!RESERVED_DOMAIN.test(match[1])) hits.push({ class: "email", where });
   if (rules.projectTitles.some((t) => contains(line, t)))
     hits.push({ class: "project-title", where });
   if (rules.privateNames.some((n) => contains(line, n)))

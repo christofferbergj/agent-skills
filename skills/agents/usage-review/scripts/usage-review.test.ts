@@ -193,7 +193,7 @@ test("the public check rejects each private identifier class by position only", 
   const text = [
     "see https://github.com/acme/secret-repo/pull/3",
     "fixes DEV-1234",
-    "ask someone@example.com",
+    "ask someone@acme.io",
     "in Acme-Portal today",
     "per Jane Doe",
   ].join("\n");
@@ -208,6 +208,6 @@ test("the public check rejects each private identifier class by position only", 
 
 test("the public check allows upstream attribution, this repository, and standards ids", () => {
   const text =
-    "from https://github.com/mattpocock/skills and https://github.com/christofferbergj/agent-skills/pull/60, UTF-8, ISO-8601";
+    "from https://github.com/mattpocock/skills and https://github.com/christofferbergj/agent-skills/pull/60, UTF-8, ISO-8601, noreply@example.com";
   assert.deepEqual(scan(text, "file", rules), []);
 });
