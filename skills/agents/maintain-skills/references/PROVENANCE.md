@@ -22,4 +22,6 @@ For multiple sources within one skill, record paths, revisions, and decisions se
 
 An inherited credit can identify an earlier template rather than a separately tracked import. When that distinction is established, add `Attribution-only source: https://github.com/owner/repo` to the owning provenance record and explain which adapted source is tracked instead. The helper exposes that ancestry without inventing a second review baseline. Unclassified credits remain pending; a credit link alone never establishes a completed upstream review.
 
+An idea taken from a source the library doesn't track, with no text copied, needs no record of its own. Credit it in the receiving skill's `UPSTREAM.md`, in the local adaptation that adopted it, with the reason, as review-loop credits its small-diff threshold. Keep the source's link out of `SKILL.md`, `README.md`, and `CREDITS.md`: beside a credit word such as "based on", the validator reads it as an unclassified source.
+
 List every upstream resource the skill depends on; a skill-body comparison alone cannot complete a multi-file source review. A source enters maintenance through its record, so a future source needs no catalog entry or hardcoded name. `test-audit` keeps its unknown historical import separate from its established reviewed-through position.

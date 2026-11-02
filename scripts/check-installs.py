@@ -13,6 +13,7 @@ import argparse
 import json
 import os
 import re
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -20,6 +21,14 @@ from pathlib import Path
 
 def git(*args):
     return subprocess.run(['git', *args], stdout=subprocess.PIPE, text=True, check=True).stdout
+
+
+def refresh_command(slug, agents):
+    """The install that refreshes every skill without a prompt, for the agents last chosen."""
+    if not agents:
+        return f"npx skills@latest add {slug} --skill '*' --global  (choose your agents when prompted)"
+    # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
+    return f"npx -y skills@latest add {slug} --skill '*' --global --yes --agent {shlex.join(agents)}"
 
 
 def main():
@@ -43,7 +52,8 @@ def main():
             folder = path.rsplit('/', 1)[0]
             trees[folder.rsplit('/', 1)[1]] = (folder, git('rev-parse', f'{arguments.ref}:{folder}').strip())
 
-    installed = json.loads(arguments.lock.read_text()).get('skills', {})
+    lock = json.loads(arguments.lock.read_text())
+    installed = lock.get('skills', {})
     problems = []
     for name, (folder, tree) in sorted(trees.items()):
         entry = installed.get(name)
@@ -66,7 +76,7 @@ def main():
 
     print('\n'.join(problems) or f'All {len(trees)} skills match {arguments.ref}.')
     if any(line.split()[0] in ('missing', 'stale', 'unknown') for line in problems):
-        print(f"\nRefresh with: npx skills@latest add {slug} --skill '*' --global")
+        print(f"\nRefresh with: {refresh_command(slug, lock.get('lastSelectedAgents', []))}")
     return 1 if problems else 0
 
 

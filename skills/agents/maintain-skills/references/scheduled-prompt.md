@@ -5,4 +5,4 @@ Run the copy of this repository's /maintain-skills on the default branch, in the
 
 Read the clock at each step boundary.
 
-This task may commit, push the `skill-maintenance` and `skill-maintenance-process` branches by the guide's push rule, create or update one draft PR for each, and link those PRs to the run's thread. When `scripts/check-installs.py` reports installed skills stale against the default branch, it refreshes them as `AGENTS.md` says. Merging, closing PRs, changing scheduled tasks, production services, and other external messages stay with the owner.
+This task may commit, push the `skill-maintenance` and `skill-maintenance-process` branches by the guide's push rule, create or update one draft PR for each, and link those PRs to the run's thread. When `scripts/check-installs.py` reports installed skills stale against the default branch, it refreshes them as `AGENTS.md` says, with the install command the script prints. Merging, closing PRs, changing scheduled tasks, production services, and other external messages stay with the owner.
