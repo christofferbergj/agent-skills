@@ -8,6 +8,7 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | --------------------------------------------------------------- | ------------------------------------------------------------- |
 | [audit-agent-documentation](audit-agent-documentation/SKILL.md) | Audit and improve agent documentation.                        |
 | [automate-me](automate-me/SKILL.md)                             | Create a personal Pstack mode.                                |
+| [babysit-and-ship](babysit-and-ship/SKILL.md)                   | Take a PR from draft to merged, verified.                     |
 | [chief-of-staff](chief-of-staff/SKILL.md)                       | Coordinate a long-running goal.                               |
 | [coordinator](coordinator/SKILL.md)                             | Run a multi-PR project from one pinned T3 thread.             |
 | [figure-it-out](figure-it-out/SKILL.md)                         | Coordinate large tasks without an existing playbook.          |
