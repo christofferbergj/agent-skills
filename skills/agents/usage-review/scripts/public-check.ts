@@ -55,12 +55,13 @@ const NOT_TICKETS = new Set([
 /** RFC 2606 documentation domains, which name nobody. */
 const RESERVED_DOMAIN = /(^|\.)(example\.(com|org|net)|test|invalid|example)$/i;
 
+/** Percent-decoded and NFKC-normalized, so encoded and full-width forms read as plain text. */
 function decoded(line: string): string {
+  let text = line;
   try {
-    return decodeURIComponent(line);
-  } catch {
-    return line;
-  }
+    text = decodeURIComponent(line);
+  } catch {}
+  return text.normalize("NFKC");
 }
 
 function contains(text: string, term: string): boolean {
@@ -161,14 +162,19 @@ export function scanLog(log: string, rules: Rules): Hit[] {
   return hits;
 }
 
-/** Every `owner/repo` a tracked `UPSTREAM.md` names, plus this repository. */
-export function creditedRepos(root: string, self: string): Set<string> {
-  const files = execFileSync("git", ["-C", root, "ls-files", "*UPSTREAM.md"], { encoding: "utf8" })
+/**
+ * Every `owner/repo` an `UPSTREAM.md` names at the base revision, plus this repository. Read from
+ * the base, never the branch under check, so a branch can't allow its own URLs.
+ */
+export function creditedRepos(root: string, base: string, self: string): Set<string> {
+  const git = (...args: string[]) =>
+    execFileSync("git", ["-C", root, ...args], { encoding: "utf8" });
+  const files = git("ls-tree", "-r", "--name-only", base)
     .split("\n")
-    .filter(Boolean);
+    .filter((path) => path.endsWith("UPSTREAM.md"));
   const repos = new Set([self.toLowerCase()]);
   for (const file of files)
-    for (const match of readFileSync(join(root, file), "utf8").matchAll(GITHUB))
+    for (const match of git("show", `${base}:${file}`).matchAll(GITHUB))
       if (match[2]) repos.add(repoOf(match));
   return repos;
 }
@@ -177,7 +183,7 @@ export function creditedRepos(root: string, self: string): Set<string> {
 export function privateProjectTitles(db: DatabaseSync, repoName: string): string[] {
   const rows = db.prepare("select title from projection_projects").all() as { title: string }[];
   return rows
-    .map((row) => row.title.trim().toLowerCase())
+    .map((row) => row.title.trim().normalize("NFKC").toLowerCase())
     .filter(
       (t) =>
         t.length >= 3 && !t.startsWith(".") && t !== "no project" && t !== repoName.toLowerCase(),
@@ -210,12 +216,12 @@ if (import.meta.main) {
   if (!existsSync(values.names))
     console.error(`public-check: no private names file at ${values.names}`);
   const rules: Rules = {
-    allowedRepos: creditedRepos(root, self),
+    allowedRepos: creditedRepos(root, values.base, self),
     projectTitles: privateProjectTitles(db, self.split("/")[1]),
     privateNames: existsSync(values.names)
       ? readFileSync(values.names, "utf8")
           .split("\n")
-          .map((l) => l.trim().toLowerCase())
+          .map((l) => l.trim().normalize("NFKC").toLowerCase())
           .filter(Boolean)
       : [],
   };

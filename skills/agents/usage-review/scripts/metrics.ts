@@ -51,7 +51,11 @@ export function pickedLetter(reply: string): string | null {
   const text = reply.trim();
   const lead = text.match(/^([a-d])(?:$|[,.:!)]|\s+(?:then|but|and|with|plus)\b)/i);
   if (lead) return lead[1].toLowerCase();
-  return text.match(/\b(?:option|do|go with|implement)\s+([a-d])\b/i)?.[1].toLowerCase() ?? null;
+  // "do a review" is an article, so a letter after a verb counts only when nothing follows it.
+  const named =
+    text.match(/\boption\s+([a-d])\b/i) ??
+    text.match(/\b(?:do|go with|implement)\s+([a-d])(?=$|[,.:;!)]|\s+(?:then|and|but)\b)/i);
+  return named?.[1].toLowerCase() ?? null;
 }
 
 const menuOf = (row: OwnerMessage) => (row.ending?.kind === "options" ? row.ending.options : []);
@@ -80,12 +84,13 @@ export function rateOf(contract: Contract, rows: readonly OwnerMessage[]): Rate 
 export function classify(contract: Contract, current: Rate, baseline: Rate): FollowUp {
   const min = Math.max(MIN_EXPOSURE, contract.minExposure ?? 0);
   if (current.opportunities < min || baseline.opportunities < min) return "insufficient-exposure";
-  const points =
-    (100 * current.numerator) / current.opportunities -
-    (100 * baseline.numerator) / baseline.opportunities;
-  const signed = contract.direction === "up" ? points : -points;
-  if (signed >= THRESHOLD_POINTS) return "moved";
-  if (signed <= -THRESHOLD_POINTS) return "wrong-way";
+  // Cross-multiplied, so an exact five-point change isn't lost to rounding.
+  const scaled =
+    100 * (current.numerator * baseline.opportunities - baseline.numerator * current.opportunities);
+  const threshold = THRESHOLD_POINTS * current.opportunities * baseline.opportunities;
+  const signed = contract.direction === "up" ? scaled : -scaled;
+  if (signed >= threshold) return "moved";
+  if (signed <= -threshold) return "wrong-way";
   return "unchanged";
 }
 
@@ -160,7 +165,8 @@ export function phraseCandidates(
 function median(values: number[]): number | null {
   if (values.length === 0) return null;
   const sorted = values.toSorted((a, b) => a - b);
-  return sorted[Math.floor(sorted.length / 2)];
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 export function metrics(rows: readonly OwnerMessage[], contracts: readonly Contract[] = []) {

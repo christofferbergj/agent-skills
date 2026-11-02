@@ -6,6 +6,7 @@ import { endingOf, extract } from "./extract.ts";
 import {
   classify,
   followUp,
+  metrics,
   phraseCandidates,
   pickedLetter,
   rateOf,
@@ -285,4 +286,46 @@ test("the public check decodes URLs, reads git remotes, and finds names split ac
   assert.deepEqual(scan("ask Jane\nDoe today", "f", rules), [
     { class: "private-name", where: "f:across lines" },
   ]);
+});
+
+test("the public check reads full-width and percent-encoded hosts and decomposed names", () => {
+  assert.deepEqual(scan("https://github%2ecom/acme/secret", "f", rules), [
+    { class: "github-url", where: "f:1" },
+  ]);
+  assert.deepEqual(scan("https://Ｇｉｔｈｕｂ.com/acme/secret", "f", rules), [
+    { class: "github-url", where: "f:1" },
+  ]);
+  const named: Rules = { ...rules, privateNames: ["josé vega"] };
+  assert.deepEqual(scan("per José Vega", "f", named), [{ class: "private-name", where: "f:1" }]);
+});
+
+test("a letter after a verb is a pick only when nothing follows it, and five points is a move", () => {
+  assert.equal(pickedLetter("Do a review instead of merging"), null);
+  assert.equal(pickedLetter("do b"), "b");
+  assert.equal(pickedLetter("Go with c, then ship"), "c");
+  assert.equal(
+    classify(contract, { numerator: 7, opportunities: 60 }, { numerator: 4, opportunities: 60 }),
+    "moved",
+  );
+  assert.equal(
+    classify(
+      { ...contract, direction: "down" },
+      { numerator: 4, opportunities: 60 },
+      { numerator: 7, opportunities: 60 },
+    ),
+    "moved",
+  );
+});
+
+test("the median of an even sample averages the middle pair", () => {
+  const row = (assistantWords: number) => ({
+    messageId: String(assistantWords),
+    threadId: "t",
+    project: null,
+    at: "",
+    interaction: "answer" as const,
+    text: "a",
+    assistantWords,
+  });
+  assert.equal(metrics([row(10), row(20)]).medianAssistantWords, 15);
 });
