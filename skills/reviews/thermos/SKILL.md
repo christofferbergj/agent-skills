@@ -6,13 +6,14 @@ disable-model-invocation: true
 
 # Thermos
 
-Run two independent reviews of the same changes and synthesize their findings. This workflow explicitly delegates to two subagents when the host supports them.
+Run two independent reviews of the same changes and synthesize their findings, or only the maintainability review when /review-loop has already covered correctness. This workflow explicitly delegates to a subagent per review when the host supports them.
 
 ## Prepare
 
-1. Resolve the review scope from the user's branch, PR, commit range, or working changes. Read repository guidance and record the repository path, base and head revisions, and included working changes. For a branch review, use the merge-base with the requested or verified base branch; do not assume `main`. Include untracked files only when they belong to the requested scope. Preparation is complete when both reviewers can identify the same changes.
-2. Resolve the installed `/thermo-nuclear-review` and `/thermo-nuclear-code-quality-review` skills. They are required dependencies. Supply each reviewer its rubric's absolute `SKILL.md` path and have it read that file, or include the full rubric text when child contexts cannot access the skill. Child agents may not inherit skill discovery or parent context. If a dependency is missing, identify it and stop before presenting a Thermos verdict. Resolution is complete when each reviewer has its rubric's absolute path or full text.
-3. Gather the diff, changed-file list, relevant full-file contents, and known constraints. Give both reviewers the same scope and evidence, with repository access for tracing callers and related code. For a large diff, provide accessible artifact paths instead of truncated excerpts. List the repository guidance files already read and the rules from them that bear on the scope, so reviewers read further guidance only for paths that list does not cover. Finish preparation when the evidence and guidance list are accessible to both reviewers.
+1. Resolve the review scope from the user's branch, PR, commit range, or working changes. Read repository guidance and record the repository path, base and head revisions, and included working changes. For a branch review, use the merge-base with the requested or verified base branch; do not assume `main`. Include untracked files only when they belong to the requested scope. Preparation is complete when every reviewer can identify the same changes.
+2. Check whether /review-loop already covered correctness. When its last round, in this session or quoted in the PR, reads Clean at the head you resolved, and its round 1 ran a /thermo-nuclear-review pass on this scope, either its same-model correctness critic or its Codex correctness pass, run only the maintainability reviewer, unless the user asked for both. That loop already applied the correctness rubric, and its later rounds reviewed every fix. A commit after that head, or a wider scope, needs both reviewers. The check is complete when the reviewers to run are known: both, or maintainability alone with the covering verdict line and its head.
+3. Resolve the installed `/thermo-nuclear-review` and `/thermo-nuclear-code-quality-review` skills. They are required dependencies. Supply each reviewer its rubric's absolute `SKILL.md` path and have it read that file, or include the full rubric text when child contexts cannot access the skill. Child agents may not inherit skill discovery or parent context. If a dependency is missing, identify it and stop before presenting a Thermos verdict. Resolution is complete when each reviewer has its rubric's absolute path or full text.
+4. Gather the diff, changed-file list, relevant full-file contents, and known constraints. Give every reviewer the same scope and evidence, with repository access for tracing callers and related code. For a large diff, provide accessible artifact paths instead of truncated excerpts. List the repository guidance files already read and the rules from them that bear on the scope, so reviewers read further guidance only for paths that list does not cover. Finish preparation when the evidence and guidance list are accessible to every reviewer.
 
 ## Delegate
 
@@ -20,27 +21,27 @@ Choose the branch matching the tools exposed in this session. Use the actual too
 
 ### Codex
 
-Use the native `spawn_agent` tool, possibly exposed under a collaboration namespace, to launch two reviewers. Put the rubric and scope in each task message. Use separate task names when supported. Launch both before waiting for either. Collect both results with the host's native wait or completion mechanism, then close the completed agents if that host exposes a close tool.
+Use the native `spawn_agent` tool, possibly exposed under a collaboration namespace, to launch the reviewers. Put the rubric and scope in each task message. Use separate task names when supported. Launch them all before waiting for any. Collect every result with the host's native wait or completion mechanism, then close the completed agents if that host exposes a close tool.
 
 ### Claude Code
 
-Use the native `Agent` tool, called `Task` in older versions, with the built-in `subagent_type: "general-purpose"`. Submit both calls together with `run_in_background: true` when supported. Otherwise use the tool's supported concurrent dispatch. Omit model overrides to inherit the session's choice. Collect both results through completion notifications or the tool's returned output/task handles before synthesizing.
+Use the native `Agent` tool, called `Task` in older versions, with the built-in `subagent_type: "general-purpose"`. Submit the calls together with `run_in_background: true` when supported. Otherwise use the tool's supported concurrent dispatch. Omit model overrides to inherit the session's choice. Collect every result through completion notifications or the tool's returned output/task handles before synthesizing.
 
 ### Unavailable delegation
 
-If subagent tools are unavailable, blocked, or lack two available slots, report the limitation. Complete both rubrics as separate sequential passes when permitted, and label the result as sequential without independent subagents. If one dispatched reviewer fails, retry that reviewer once when the failure is recoverable; otherwise report the missing pass or complete it locally with that limitation stated. Never claim two independent reviews when only one completed.
+If subagent tools are unavailable, blocked, or lack a slot for each reviewer, report the limitation. Complete each rubric as a separate sequential pass when permitted, and label the result as sequential without independent subagents. If one dispatched reviewer fails, retry that reviewer once when the failure is recoverable; otherwise report the missing pass or complete it locally with that limitation stated. Never claim two independent reviews when only one completed.
 
 ## Reviewer tasks
 
-Assign these two tasks, supplying the prepared scope and evidence with each:
+Assign these tasks, only Maintainability when Prepare step 2 found correctness covered, supplying the prepared scope and evidence with each:
 
 - **Correctness and security:** Invoke `/thermo-nuclear-review` using the supplied rubric. Trace bugs, breaking behavior, security risks, developer-experience regressions, and feature-gate leaks introduced by the diff. Finish the independent audit before checking existing PR discussion when the rubric calls for it.
 - **Maintainability:** Invoke `/thermo-nuclear-code-quality-review` using the supplied rubric. Evaluate structural simplification, branching complexity, abstractions, type and ownership boundaries, canonical helpers, and file growth introduced by the diff.
 
-Each reviewer works directly without further delegation, edits, commits, or posting comments. Read surrounding code to verify impact, but report only issues introduced by the scoped changes. Return prioritized findings with file and line references, evidence, impact, and an actionable remedy. Distinguish verified findings from limitations that prevented verification. If no supported findings remain, say so. Keep the reviews independent until both finish.
+Each reviewer works directly without further delegation, edits, commits, or posting comments. Read surrounding code to verify impact, but report only issues introduced by the scoped changes. Return prioritized findings with file and line references, evidence, impact, and an actionable remedy. Distinguish verified findings from limitations that prevented verification. If no supported findings remain, say so. Keep the reviews independent until all finish.
 
 ## Synthesize
 
-Wait for both passes to finish or explicitly account for a failed pass. Check overlapping findings against the code, merge duplicates, and resolve disagreements using evidence. Agreement alone does not raise severity. Keep correctness defects distinct from maintainability recommendations and preserve the rubric's rationale for structural blockers.
+Wait for every pass you started to finish or explicitly account for a failed pass. Check overlapping findings against the code, merge duplicates, and resolve disagreements using evidence. Agreement alone does not raise severity. Keep correctness defects distinct from maintainability recommendations and preserve the rubric's rationale for structural blockers.
 
-Return findings first, ordered by impact, followed by a brief verdict and material limitations. State which passes completed and whether they ran as independent parallel subagents. If the review scope changed while the reviewers were running, reconcile the affected findings before giving a verdict. If individual reviewer summaries are already visible to the user, do not restate them wholesale; surface the unified verdict, the highest-signal findings, and any remaining uncertainty.
+Return findings first, ordered by impact, followed by a brief verdict and material limitations. State which passes completed and whether they ran as independent parallel subagents. For a correctness pass Prepare step 2 skipped, quote the /review-loop verdict line and the head that covered it. If the review scope changed while the reviewers were running, reconcile the affected findings before giving a verdict. If individual reviewer summaries are already visible to the user, do not restate them wholesale; surface the unified verdict, the highest-signal findings, and any remaining uncertainty.
