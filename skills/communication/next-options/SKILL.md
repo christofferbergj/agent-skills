@@ -52,15 +52,16 @@ The user answers with a letter, a letter and a tweak such as `a, but keep the na
 
 When a stage of this library's flows finishes, the usual `a` is the next stage the user hasn't settled yet:
 
-| Finished                                 | Usual `a`                                                                                    |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------- |
-| /grill-with-docs                         | /pstack-mode to build the agreed design, or /to-spec when it should be split into tickets    |
-| /to-spec                                 | /to-tickets, after a prototype for any open question that running something could settle     |
-| /to-tickets                              | /implement-spec                                                                              |
-| A Pstack prototype                       | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
-| Implementation with review findings open | fix them and re-review                                                                       |
-| A Clean review without a PR              | open a draft PR through /pr                                                                  |
-| A draft PR                               | watch it, or address its review comments                                                     |
+| Finished                                        | Usual `a`                                                                                    |
+| ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| /grill-with-docs                                | /pstack-mode to build the agreed design, or /to-spec when it should be split into tickets    |
+| /to-spec                                        | /to-tickets, after a prototype for any open question that running something could settle     |
+| /to-tickets                                     | /implement-spec                                                                              |
+| A Pstack prototype                              | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
+| Implementation with review findings open        | fix them and re-review                                                                       |
+| A Clean review without a PR                     | open a draft PR through /pr                                                                  |
+| A draft PR /thermos hasn't reviewed at its head | /thermos over the whole PR, fixing its findings, then mark it ready                          |
+| A draft PR                                      | watch it, or address its review comments                                                     |
 
 ## Setup
 
