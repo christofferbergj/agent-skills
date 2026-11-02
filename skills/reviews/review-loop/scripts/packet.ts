@@ -32,7 +32,8 @@ const USAGE = `usage: node packet.ts --repo <dir> [--base <ref> | --since <ref>]
   --keep <path>  keep this lockfile, binary, or generated or vendored file in the diff (repeatable)
   --out <dir>    write the packet here (default: a new temporary directory)
 
-Prints JSON naming the packet, its revisions, its size, and its reviewed and excluded files.`;
+Prints JSON naming the packet, its revisions, its size, its review tier (small or full, with the
+reason), and its reviewed and excluded files.`;
 
 const LOCKFILES = new Set([
   "bun.lock",
@@ -57,6 +58,27 @@ const LOCKFILES = new Set([
 ]);
 const GENERATED = /\.min\.(?:js|css)$|\.map$|\.pb\.go$|_pb2\.py$|\.generated\./;
 const VENDORED = /(?:^|\/)(?:vendor|node_modules|third_party)\//;
+// The small-diff tier follows the fan-out skip in Addy Osmani's /ship: at most two files, under
+// 50 changed lines, and nothing near auth, payments, data access, config, env, or dependencies.
+// Paths are read word by word, camelCase included, so `useAuth.ts` and `app/(auth)/` count.
+const SMALL_FILES = 2;
+const SMALL_LINES = 50;
+const SENSITIVE_WORD =
+  /^(?:o?auth[nz0-9]?|authenticat\w*|authori[sz]\w*|log(?:in|out)|sign(?:in|up)|sessions?|passwords?|secrets?|tokens?|jwt|crypto\w*|permissions?|roles?|acl|payments?|billing|checkout|invoices?|stripe|subscriptions?|db|database|prisma|drizzle|sql|quer(?:y|ies)|repositor(?:y|ies)|migrations?|schemas?|env|environment|\w*config\w*|settings|middleware|workflows?|dockerfile|requirements)$/;
+const MANIFESTS = new Set([
+  ".npmrc",
+  ".nvmrc",
+  "cargo.toml",
+  "composer.json",
+  "docker-compose.yaml",
+  "docker-compose.yml",
+  "gemfile",
+  "go.mod",
+  "package.json",
+  "pyproject.toml",
+  "turbo.json",
+  "vercel.json",
+]);
 const SNAPSHOT_IDENTITY = { NAME: "review-loop", EMAIL: "review-loop@localhost" };
 
 type Options = {
@@ -71,6 +93,8 @@ type Options = {
 };
 type Change = { status: string; path: string };
 type Exclusion = { path: string; reason: "lockfile" | "binary" | "generated" | "vendored" };
+type ChangedFile = { paths: string[]; lines: number };
+type Tier = { tier: "small" | "full"; tierReason: string };
 
 class UsageError extends Error {}
 
@@ -234,6 +258,44 @@ function exclusions(
   });
 }
 
+function sensitive(path: string): boolean {
+  const name = basename(path);
+  if (LOCKFILES.has(name) || MANIFESTS.has(name.toLowerCase()) || VENDORED.test(path)) return true;
+  const words = path.split(/[^A-Za-z0-9]+|(?<=[a-z0-9])(?=[A-Z])/);
+  return words.some((word) => SENSITIVE_WORD.test(word.toLowerCase()));
+}
+
+/**
+ * Whether round 1 may run only the counterpart. It reads every changed file in scope, including the
+ * files the packet leaves out of its diff, so `--keep` and exclusions can't change it.
+ */
+function tierOf(files: ChangedFile[]): Tier {
+  const touched = files.flatMap((file) => file.paths).find(sensitive);
+  if (touched) return { tier: "full", tierReason: `touches ${touched}` };
+  if (files.length > SMALL_FILES) return { tier: "full", tierReason: `${files.length} files` };
+  const lines = files.reduce((sum, file) => sum + file.lines, 0);
+  if (lines >= SMALL_LINES) return { tier: "full", tierReason: `${lines} changed lines` };
+  const count = files.length === 1 ? "1 file" : `${files.length} files`;
+  return { tier: "small", tierReason: `${count}, ${lines} changed lines, no sensitive path` };
+}
+
+/** Each changed file in scope with its added plus deleted lines; a rename is one file. */
+function changedFiles(repo: string, base: string, head: string, scope: string[]): ChangedFile[] {
+  const fields = nulFields(
+    git(repo, ["diff", "--numstat", "-z", "--find-renames", base, head, "--", ...scope]),
+  );
+  const files: ChangedFile[] = [];
+  for (let index = 0; index < fields.length; index += 1) {
+    const [added, deleted, ...rest] = fields[index].split("\t");
+    const path = rest.join("\t");
+    // A rename's record has an empty path, and its old and new paths follow as their own fields.
+    const paths = path === "" ? [fields[++index], fields[++index]] : [path];
+    // A binary file shows `-` for both counts and counts no lines.
+    files.push({ paths, lines: (Number(added) || 0) + (Number(deleted) || 0) });
+  }
+  return files;
+}
+
 function parse(): Options | undefined {
   const { values } = parseArgs({
     options: {
@@ -301,6 +363,7 @@ function build(options: Options) {
     "--",
     ...pathspec,
   ]).trim();
+  const { tier, tierReason } = tierOf(changedFiles(repo, base, head, scope));
   const commits = git(repo, ["log", "--format=%h %s", `${base}..${head}`]).trim();
   writeFileSync(
     packet,
@@ -312,6 +375,7 @@ function build(options: Options) {
       `- Head: ${head}${options.working ? " (working snapshot)" : ""}`,
       `- Diff: ${diff}, or \`git -C ${repo} diff --find-renames ${base} ${head}\` limited to the files below`,
       `- Size: ${size}`,
+      `- Tier: ${tier} (${tierReason})`,
       "",
       "## Commits",
       "",
@@ -337,6 +401,8 @@ function build(options: Options) {
     head,
     snapshot: options.working,
     size,
+    tier,
+    tierReason,
     files: reviewed,
     excluded,
   };

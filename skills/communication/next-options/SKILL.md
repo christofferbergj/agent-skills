@@ -10,7 +10,7 @@ The user skims replies and answers a choice with a letter. Follow these rules on
 
 ## Pick the ending
 
-Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit. When the turn ends, pick its ending by who moves next.
+Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit, made through /pstack-mode unless the mode is on, a coordinator owns the work, or the edit is trivial or agent config. When the turn ends, pick its ending by who moves next.
 
 **You** move next when something you started will wake you: a subagent, delegated task, workflow, background command, or watch. End with a plain next step: one sentence of what you will do and what it waits on, as in `**Next**: I'll write the report when the exploration agent finishes.` Add `Nothing needed from you.` unless the reply already says so. When nothing will wake you, keep working in this turn.
 
@@ -46,7 +46,7 @@ When the user's answer is needed while your own work runs, say in one line what 
 
 ## Answers
 
-The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line.
+The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line. Picking an option is the user invoking the skill it names; load a user-invoked one, such as /pstack-mode, from its installed SKILL.md.
 
 ## Workflow handoffs
 
@@ -54,9 +54,10 @@ When a stage of this library's flows finishes, the usual `a` is the next stage t
 
 | Finished                                        | Usual `a`                                                                                    |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| /grill-with-docs                                | /pstack-mode to build the agreed design, or /to-spec when it should be split into tickets    |
+| /grill-with-docs                                | /pstack-mode when the build fits one session, or /to-spec when it spans several              |
 | /to-spec                                        | /to-tickets, after a prototype for any open question that running something could settle     |
-| /to-tickets                                     | /implement-spec                                                                              |
+| /to-tickets                                     | /implement-spec, or /coordinator for a multi-PR graph                                        |
+| /wayfinder                                      | /to-spec for the destination it charted                                                      |
 | A Pstack prototype                              | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
 | Implementation with review findings open        | fix them and re-review                                                                       |
 | A Clean review without a PR                     | open a draft PR through /pr                                                                  |

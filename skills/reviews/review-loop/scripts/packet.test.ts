@@ -256,3 +256,95 @@ test("an empty diff fails before any reviewer starts", () => {
   assert.equal(json, undefined);
   assert.ok(JSON.parse(stderr.split("\n")[0]).error);
 });
+
+test("a diff of at most two files and under 50 changed lines is the small tier", () => {
+  const base = git("rev-parse", "HEAD");
+  write("app.ts", "export const a = 2;\n");
+  write("button.tsx", "export const Button = () => null;\n");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "small change");
+
+  const { status, json } = packet("--since", base);
+
+  assert.equal(status, 0);
+  assert.equal(json.tier, "small");
+  assert.equal(json.tierReason, "2 files, 3 changed lines, no sensitive path");
+  assert.match(readFileSync(json.packet, "utf8"), /- Tier: small \(2 files, 3 changed lines/);
+});
+
+test("a third file, 50 changed lines, or a sensitive path makes the full tier, whatever the packet leaves out", () => {
+  const base = git("rev-parse", "HEAD");
+  const tierAfter = (files: Record<string, string | Buffer>, ...args: string[]) => {
+    git("reset", "--quiet", "--hard", base);
+    for (const [path, text] of Object.entries(files)) {
+      mkdirSync(join(repo, path, ".."), { recursive: true });
+      write(path, text);
+    }
+    git("add", ".");
+    git("commit", "--quiet", "-m", "change");
+    const { tier, tierReason } = packet("--since", base, ...args).json;
+    return `${tier}: ${tierReason}`;
+  };
+
+  assert.equal(tierAfter({ "a.ts": "x\n", "b.ts": "x\n", "c.ts": "x\n" }), "full: 3 files");
+  assert.equal(
+    tierAfter({ "a.ts": "x\n", "a.png": Buffer.from([0, 1]), "b.png": Buffer.from([0, 2]) }),
+    "full: 3 files",
+  );
+  assert.equal(
+    tierAfter({ "app.ts": "export const a = 1;\n".repeat(51) }),
+    "full: 50 changed lines",
+  );
+  for (const path of [
+    "src/auth/guard.ts",
+    "src/hooks/useAuth.ts",
+    "app/(auth)/sign-in/page.tsx",
+    "src/lib/oauth.ts",
+    "src/lib/auth0.ts",
+    "src/lib/Auth0Client.ts",
+    "src/lib/authorisation.ts",
+    "src/components/PaymentForm.tsx",
+    "src/lib/environment.ts",
+    ".env.local",
+    "tsconfig.json",
+    "requirements.txt",
+    "Cargo.toml",
+    "Dockerfile",
+    "package.json",
+  ])
+    assert.equal(tierAfter({ [path]: "x\n" }), `full: touches ${path}`);
+  for (const leftOut of ["src/auth.generated.ts", "vendor/lib/aes.go"])
+    assert.equal(
+      tierAfter({ "app.ts": "export const a = 2;\n", [leftOut]: "x\n" }),
+      `full: touches ${leftOut}`,
+    );
+  assert.equal(
+    tierAfter({ "app.ts": "export const a = 2;\n", "pnpm-lock.yaml": "lockfileVersion: 2\n" }),
+    "full: touches pnpm-lock.yaml",
+  );
+  assert.equal(
+    tierAfter({ "pnpm-lock.yaml": "lockfileVersion: 2\n" }, "--keep", "pnpm-lock.yaml"),
+    "full: touches pnpm-lock.yaml",
+  );
+  assert.equal(
+    tierAfter({ "src/Author.tsx": "export const Author = () => null;\n" }),
+    "small: 1 file, 1 changed lines, no sensitive path",
+  );
+});
+
+test("a renamed file counts only its edited lines toward the small tier", () => {
+  write(
+    "long.ts",
+    Array.from({ length: 40 }, (_, line) => `export const v${line} = ${line};\n`).join(""),
+  );
+  git("add", ".");
+  git("commit", "--quiet", "-m", "long file");
+  const base = git("rev-parse", "HEAD");
+  git("mv", "long.ts", "renamed.ts");
+  write("renamed.ts", readFileSync(join(repo, "renamed.ts"), "utf8").replace("v0 = 0", "v0 = 1"));
+  git("commit", "--quiet", "-am", "rename");
+
+  const { tier, tierReason } = packet("--since", base).json;
+
+  assert.equal(`${tier}: ${tierReason}`, "small: 1 file, 2 changed lines, no sensitive path");
+});

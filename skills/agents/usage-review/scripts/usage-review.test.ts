@@ -152,6 +152,42 @@ test("a follow-up rate counts picks among the menus that offered the option", ()
   });
 });
 
+test("predicates also match a pattern, the message type, the project, and a PR link in the reply", () => {
+  const pr =
+    "Opened https://github.com/christofferbergj/agent-skills/pull/12 as a draft.\n\n" + MENU;
+  const { db, thread, run, message } = fixture();
+  thread("t");
+  run("r1", "t", "completed", "2026-11-01T10:00:00Z", "2026-11-01T10:05:00Z", "u1");
+  message("u1", "t", "r1", "user", "2026-11-01T10:00:00Z", "build it");
+  message("a1", "t", "r1", "assistant", "2026-11-01T10:04:00Z", pr);
+  run("r2", "t", "completed", "2026-11-01T10:06:00Z", "2026-11-01T10:20:00Z", "u2");
+  message("u2", "t", "r2", "user", "2026-11-01T10:06:00Z", "Was this verified in the browser?");
+  message("a2", "t", "r2", "assistant", "2026-11-01T10:19:00Z", MENU);
+  run("r3", "t", "completed", "2026-11-01T10:21:00Z", "2026-11-01T10:30:00Z", "u3");
+  message("u3", "t", "r3", "user", "2026-11-01T10:21:00Z", "a");
+  const rows = extract(db, "2026-11-01T00:00:00Z");
+  assert.deepEqual(
+    rows.map((r) => r.replyLinksPr),
+    [undefined, true, false],
+  );
+
+  const verifiedAsk: Contract = {
+    rule: "pr-verified-ask",
+    opportunity: { interaction: "answer", replyLinksPr: true, project: "DEMO" },
+    success: { matches: "verif|screenshot|browser" },
+    direction: "down",
+  };
+  assert.deepEqual(rateOf(verifiedAsk, rows), { numerator: 1, opportunities: 1 });
+  assert.deepEqual(rateOf({ ...verifiedAsk, opportunity: { replyLinksPr: false } }, rows), {
+    numerator: 0,
+    opportunities: 1,
+  });
+  const opportunities = (opportunity: Contract["opportunity"]) =>
+    rateOf({ ...verifiedAsk, opportunity }, rows).opportunities;
+  assert.equal(opportunities({ interaction: "request" }), 1);
+  assert.equal(opportunities({ project: "elsewhere" }), 0);
+});
+
 test("follow-ups need minimum exposure and five points either way", () => {
   assert.equal(
     classify(contract, { numerator: 5, opportunities: 10 }, { numerator: 0, opportunities: 40 }),

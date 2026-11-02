@@ -10,9 +10,9 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 
-import type { OwnerMessage } from "./extract.ts";
+import type { Interaction, OwnerMessage } from "./extract.ts";
 
-/** Case-insensitive substrings; every given field must hold. */
+/** Every given field must hold; strings match case-insensitively. */
 export interface Predicate {
   /** An option on the answered menu contains it. */
   readonly offered?: string;
@@ -20,6 +20,14 @@ export interface Predicate {
   readonly picked?: string;
   /** The owner's message contains it. */
   readonly text?: string;
+  /** The owner's message matches this regular expression. */
+  readonly matches?: string;
+  /** The message's type is this one. */
+  readonly interaction?: Interaction;
+  /** The message's T3 project title contains it. */
+  readonly project?: string;
+  /** Whether the reply the message answers links a pull request; only answers have a reply. */
+  readonly replyLinksPr?: boolean;
 }
 
 export interface Rate {
@@ -69,7 +77,11 @@ function holds(predicate: Predicate, row: OwnerMessage): boolean {
     const picked = options.find((o) => o.letter === pickedLetter(row.text));
     if (!picked || !has(picked.text, predicate.picked)) return false;
   }
-  return !predicate.text || has(row.text, predicate.text);
+  if (predicate.text && !has(row.text, predicate.text)) return false;
+  if (predicate.matches && !new RegExp(predicate.matches, "i").test(row.text)) return false;
+  if (predicate.interaction && row.interaction !== predicate.interaction) return false;
+  if (predicate.project && !has(row.project ?? "", predicate.project)) return false;
+  return predicate.replyLinksPr === undefined || row.replyLinksPr === predicate.replyLinksPr;
 }
 
 export function rateOf(contract: Contract, rows: readonly OwnerMessage[]): Rate {

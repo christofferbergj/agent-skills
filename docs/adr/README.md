@@ -10,3 +10,4 @@ Accepted decisions about the library's design and maintenance. Numbered records 
 - [Review across vendors and offer lettered next options](0004-review-across-vendors-and-offer-next-options.md)
 - [Plan through code by default](0005-plan-through-code-by-default.md)
 - [Coordinate T3 projects from a pinned thread](0006-coordinate-t3-projects-from-a-pinned-thread.md)
+- [Keep pstack-mode explicit and offer it when an answer turns into a change](0007-keep-pstack-mode-explicit-and-offer-it.md)
