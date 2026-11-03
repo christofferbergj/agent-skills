@@ -26,6 +26,7 @@ Prove each finding. Show behavior with a run against the real code, such as a fa
 Report each finding as: severity · path:line · what fails, for whom, and the input that triggers it · its class, the kind of mistake, with every other place in the change that makes it · the smallest fix that covers the whole class · its proof.
 Blocker: wrong behavior, data loss, a security gap, a missing requirement, a failing check, or a broken documented rule.
 Cleanup: unrequested scope, a smell from the baseline, a pattern a documented standard gives a better form for, or a changed line no test protects, shown by a mutant of that line, in a copy, that the tests still pass.
+When the intent asks for a minimal change, Cleanup also covers each part of the diff the intent still meets without, shown by the checks passing with that part removed.
 Optional: a real improvement that can wait.
 Label a finding Pre-existing, whatever its severity, when the change didn't cause, newly reach, or worsen it.
 No findings is a valid result: say so and name what you checked.
