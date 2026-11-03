@@ -17,9 +17,21 @@ import subprocess
 import sys
 from pathlib import Path
 
+# Skills CLI agent keys, such as claude-code; anything else, such as --all, is not an agent.
+AGENT = re.compile(r'[a-z0-9][a-z0-9-]*')
+
 
 def git(*args):
     return subprocess.run(['git', *args], stdout=subprocess.PIPE, text=True, check=True).stdout
+
+
+def refresh_hint(slug, agents):
+    """The install that refreshes every skill, with a note when it will ask for the agents."""
+    install = f"skills@latest add {slug} --skill '*' --global"
+    if isinstance(agents, list) and agents and all(isinstance(a, str) and AGENT.fullmatch(a) for a in agents):
+        # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
+        return f"Refresh with: npx -y {install} --yes --agent {' '.join(agents)}"
+    return f"Refresh with: npx {install}\nIt asks for your agents, since the lock records no valid earlier choice."
 
 
 def main():
@@ -43,7 +55,8 @@ def main():
             folder = path.rsplit('/', 1)[0]
             trees[folder.rsplit('/', 1)[1]] = (folder, git('rev-parse', f'{arguments.ref}:{folder}').strip())
 
-    installed = json.loads(arguments.lock.read_text()).get('skills', {})
+    lock = json.loads(arguments.lock.read_text())
+    installed = lock.get('skills', {})
     problems = []
     for name, (folder, tree) in sorted(trees.items()):
         entry = installed.get(name)
@@ -66,7 +79,7 @@ def main():
 
     print('\n'.join(problems) or f'All {len(trees)} skills match {arguments.ref}.')
     if any(line.split()[0] in ('missing', 'stale', 'unknown') for line in problems):
-        print(f"\nRefresh with: npx skills@latest add {slug} --skill '*' --global")
+        print(f"\n{refresh_hint(slug, lock.get('lastSelectedAgents'))}")
     return 1 if problems else 0
 
 

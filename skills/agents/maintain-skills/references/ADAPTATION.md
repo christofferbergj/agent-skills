@@ -82,7 +82,7 @@ Every local edit to upstream text is a divergence to record and carry forward. E
 After editing a sourced skill, compare it with the candidate upstream text in both directions:
 
 - Every upstream rule survives, or the record lists its divergence, whether dropped, softened, reversed, or a changed invocation mode, with the reason.
-- Every recorded divergence is still present and still needed. Remove the ones that are not.
+- Every recorded divergence is still present and still needed, for a reason that holds at the current head, such as a consumer it names turning up in the consumer search in `CONTRIBUTING.md`. Remove the ones that are not, and make every other description of the skill, such as its /pstack-help row and README rows, match the divergences that stay.
 
 When both directions pass, set the record's `Fidelity checked through` line to the candidate revision.
 

@@ -147,3 +147,5 @@ Sync each worktree after `begin`, creating it with `git worktree add` when missi
 Push only against the recorded lease, so an owner commit pushed during the run stops the push instead of being overwritten: `git -C "$WORKTREE" push --force-with-lease="$BRANCH:$LEASE" origin "HEAD:$BRANCH"`. When the push is refused, sync again and redo the delivery.
 
 Follow /pr for descriptions, list the open questions in each PR description, and link each PR to the run's thread when the host supports it. PR descriptions carry a run's evidence; add a dated `docs/reviews/` record only for an audit run or a change to how the library is maintained.
+
+When a PR edits a skill that a /usage-review change touched while /usage-review still leaves that change alone, name the change's contract in the description, so the owner can time the merge, since an edit in that window mixes into the change's follow-up. /usage-review's `SKILL.md` says where its contracts live and how long it waits, and `gh pr view <pr> --json mergedAt,files` on a contract's `pr` gives when it merged and which skills it changed.
