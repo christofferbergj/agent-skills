@@ -2,11 +2,11 @@
 
 Issues and specs for this repo live as GitLab issues. Use the [`glab`](https://gitlab.com/gitlab-org/cli) CLI for all operations.
 
-Preflight the installed CLI's help, authentication, resolved project, and supported tracker features before writes. For multiline descriptions and notes, use structured connector arguments or a UTF-8 JSON body file with `glab api <endpoint> --method POST --input <file>`. For example, issue creation uses `projects/:id/issues` with `title` and `description`; notes use `projects/:id/issues/<iid>/notes` with `body`. Verify the endpoint and fields for the installed server. Write JSON through a file API and never interpolate its contents into shell code. See [glab api](https://docs.gitlab.com/cli/api/).
+Preflight the installed CLI's help, authentication, resolved project, and supported tracker features before writes. For multiline issue descriptions, write a UTF-8 file and pass it with `--description-file` (glab 1.115.0 and later). For multiline notes, use structured connector arguments or a UTF-8 JSON body file with `glab api <endpoint> --method POST --input <file>`; notes use `projects/:id/issues/<iid>/notes` with `body`. Verify the endpoint and fields for the installed server. Write JSON through a file API and never interpolate its contents into shell code. See [glab api](https://docs.gitlab.com/cli/api/).
 
 ## Conventions
 
-- **Create an issue**: `glab issue create --title "..." --description "..."` for safely supplied literal arguments; use the JSON-file API path above for multiline content.
+- **Create an issue**: `glab issue create --title "..." --description-file <utf8-body-file>`. Write multiline descriptions to a UTF-8 file using a safe file API or quoted heredoc, then pass the file path.
 - **Read an issue**: `glab issue view <number> --comments`. Use `-F json` for machine-readable output.
 - **List issues**: `glab issue list -O json` with appropriate `--label` filters.
 - **Comment on an issue**: `glab issue note <number> --message "..."`. GitLab calls comments "notes".
