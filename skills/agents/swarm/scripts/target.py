@@ -19,7 +19,7 @@ banked resets cover the gap; a reset counts as a full window when it outlasts th
 pro rata when it expires sooner. Below skipWhenLeft percent left, a cross-vendor target becomes
 run "fallback". Claude targets carry no speed. Usage comes from the newest snapshots in
 $CODEX_HOME/sessions, so the check stays local. Banked resets come from `codex app-server`,
-cached for an hour, and are read only when a window is behind pace.
+cached for an hour per Codex account, and are read only when a window is behind pace.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host: fast-code on the host's fast model
@@ -38,6 +38,7 @@ import math
 import os
 from pathlib import Path
 import re
+import signal
 import subprocess
 import sys
 import threading
@@ -184,7 +185,7 @@ def fetch_reset_credits():
         {'id': 2, 'method': 'account/rateLimits/read', 'params': {}},
     ]
     try:
-        server = subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True)
+        server = subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
     except OSError:
         return None
     reply = {}
@@ -209,11 +210,16 @@ def fetch_reset_credits():
     except OSError:
         return None
     finally:
-        server.kill()
+        # The whole group goes, so a launcher's child cannot hold the reply pipe open past the timeout.
+        try:
+            os.killpg(server.pid, signal.SIGKILL)
+        except OSError:
+            pass
         server.wait()
         if reader.ident is not None:
             reader.join(1)
-        for stream in (server.stdin, server.stdout):
+        streams = (server.stdin,) if reader.is_alive() else (server.stdin, server.stdout)
+        for stream in streams:
             try:
                 stream.close()
             except OSError:
@@ -223,9 +229,13 @@ def fetch_reset_credits():
     summary = table(table(reply['result']).get('rateLimitResetCredits'))
     credits = summary.get('credits')
     if not isinstance(credits, list):
-        # Without detail rows only the count is known, so each reset counts as never expiring.
-        return [None] * max(0, min(int(number(summary.get('availableCount')) or 0), 100))
-    return [number(credit.get('expiresAt')) for credit in map(table, credits) if credit.get('status') == 'available']
+        # A count without detail rows says nothing about expiry, so only a zero count is a reading.
+        return [] if number(summary.get('availableCount')) == 0 else None
+    expiries = [credit.get('expiresAt', '') for credit in map(table, credits) if credit.get('status') == 'available']
+    # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
+    if any(expiry is not None and number(expiry) is None for expiry in expiries):
+        return None
+    return expiries
 
 
 def unexpired(value, now):
@@ -234,22 +244,30 @@ def unexpired(value, now):
     return [entry for entry in value if entry is None or (number(entry) is not None and entry > now)]
 
 
-def reset_credits(cache, now):
+def codex_account(home):
+    """Return the identity whose banked resets a cache entry holds: the Codex home and its signed-in account."""
+    try:
+        account = text(table(table(json.loads((home / 'auth.json').read_text())).get('tokens')).get('account_id'))
+    except (OSError, ValueError):
+        account = None
+    return f'{home.resolve()}:{account}'
+
+
+def reset_credits(cache, account, now):
     """Return the expiry times of the account's banked resets, None for one that never expires, or None when unknown."""
     try:
         cached = table(json.loads(cache.read_text()))
     except (OSError, ValueError):
         cached = {}
-    fetched, expiries = number(cached.get('fetchedAt')), unexpired(cached.get('expiries'), now)
-    if fetched is not None and 0 <= now - fetched < RESETS_TTL:
-        return expiries
-    # A failed read keeps the last known resets, whose expiry still counts against now, and waits
-    # the same hour before trying again, so an offline machine pays the timeout once an hour.
-    fresh = unexpired(fetch_reset_credits(), now)
-    expiries = fresh if fresh is not None else expiries
+    fetched = number(cached.get('fetchedAt'))
+    if cached.get('account') == account and fetched is not None and 0 <= now - fetched < RESETS_TTL:
+        return unexpired(cached.get('expiries'), now)
+    # A failed read is cached as unknown, so an offline machine pays the timeout once an hour
+    # and a stale reading never outlives its hour.
+    expiries = unexpired(fetch_reset_credits(), now)
     try:
         cache.parent.mkdir(parents=True, exist_ok=True)
-        cache.write_text(json.dumps({'fetchedAt': now, 'expiries': expiries}))
+        cache.write_text(json.dumps({'account': account, 'fetchedAt': now, 'expiries': expiries}))
     except OSError:
         pass
     return expiries
@@ -260,19 +278,19 @@ def banked_credit(expiries, resets, now):
     return sum(100 if expiry is None or expiry >= resets else 100 * max(0, expiry - now) / (resets - now) for expiry in expiries)
 
 
-def pace(usage, banked, now):
-    """Return (fast, the window behind pace or None, banked resets read or None).
+def check_pace(usage, read_banked, now):
+    """Return (fast, the window furthest behind pace or None, banked resets read or None).
 
-    banked is called only when a window is behind pace, so an on-pace check reads nothing more."""
+    read_banked is called only when a window is behind pace, so an on-pace check reads nothing more."""
     behind = [window for window in usage['windows'] if window['pace'] is not None and window['left'] < window['pace']]
     if not behind:
         return True, None, None
-    window = min(behind, key=lambda window: window['left'] - window['pace'])
-    expiries = banked()
+    furthest = min(behind, key=lambda window: window['left'] - window['pace'])
+    expiries = read_banked()
     if expiries is None:
-        return False, window, None
+        return False, furthest, None
     covered = all(window['left'] + banked_credit(expiries, window['resets'], now) >= window['pace'] for window in behind)
-    return covered, window, expiries
+    return covered, furthest, expiries
 
 
 def describe(left, resets):
@@ -300,7 +318,7 @@ def pace_note(window, expiries):
     return f"{behind}; {len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}"
 
 
-def resolve_native(parent, role, config, usage, banked, now):
+def resolve_native(parent, role, config, usage, read_banked, now):
     entry = table(table(table(config.get(parent)).get('roles')).get(role))
     model = text(entry.get('model'))
     if model is None:
@@ -311,15 +329,15 @@ def resolve_native(parent, role, config, usage, banked, now):
     target = {'role': role, 'run': parent, 'model': model}
     if parent == 'codex':
         effort = capped(effort)
-        fast = usage is None or pace(usage, banked, now)[0]
+        fast = usage is None or check_pace(usage, read_banked, now)[0]
         target['serviceTier'] = 'priority' if fast else 'default'
     target['effort'] = effort if effort in EFFORTS else None
     return target
 
 
-def resolve(parent, role, config, codex_model, usage, banked, now):
+def resolve(parent, role, config, codex_model, usage, read_banked, now):
     if role not in CROSS_VENDOR_ROLES:
-        return resolve_native(parent, role, config, usage, banked, now)
+        return resolve_native(parent, role, config, usage, read_banked, now)
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
@@ -337,7 +355,7 @@ def resolve(parent, role, config, codex_model, usage, banked, now):
     target['usage'] = {'left': left, 'seenAt': usage['seen']}
     if left < thresholds(config)['skipWhenLeft']:
         return {'role': role, 'run': 'fallback', 'reason': describe(left, tightest['resets']), 'usage': target['usage']}
-    fast, window, expiries = pace(usage, banked, now)
+    fast, window, expiries = check_pace(usage, read_banked, now)
     if expiries is not None:
         target['usage']['bankedResets'] = len(expiries)
     if not fast:
@@ -366,7 +384,7 @@ def main():
             usage = read_usage(home / 'sessions', now)
         except (OSError, ValueError):
             usage = None
-    target = resolve(args.parent, args.role, config, codex_model, usage, lambda: reset_credits(cache, now), now)
+    target = resolve(args.parent, args.role, config, codex_model, usage, lambda: reset_credits(cache, codex_account(home), now), now)
     print(json.dumps({key: value for key, value in target.items() if value is not None}, ensure_ascii=False))
     return 0
 

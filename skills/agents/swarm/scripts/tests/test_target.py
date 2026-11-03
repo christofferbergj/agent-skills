@@ -7,7 +7,7 @@ from pathlib import Path
 import stat
 import sys
 import tempfile
-import textwrap
+import time
 import unittest
 from unittest.mock import patch
 
@@ -113,11 +113,28 @@ class TargetResolution(unittest.TestCase):
         self.run_target('review-full')
         self.run_target('swarm-workers',parent='codex',now=NOW+target.RESETS_TTL-1)
         self.assertEqual(self.fetches,1)
+        # A failed refresh reads as unknown for its hour instead of renewing the old reading.
         self.credits=None
         result=self.run_target('review-full',now=NOW+target.RESETS_TTL)
-        self.assertEqual((self.fetches,result['serviceTier']),(2,'priority'))
+        self.assertEqual((self.fetches,result['serviceTier']),(2,'default'))
         self.run_target('review-full',now=NOW+target.RESETS_TTL+1)
         self.assertEqual(self.fetches,2)
+
+    def test_banked_resets_are_cached_per_codex_account(self):
+        self.credits=[None]
+        self.log('a.jsonl',event(60,resets=MIDWEEK))
+        (self.home/'auth.json').write_text(json.dumps({'tokens':{'account_id':'account-a'}}))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
+        self.credits=[]
+        (self.home/'auth.json').write_text(json.dumps({'tokens':{'account_id':'account-b'}}))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
+        self.assertEqual(self.fetches,2)
+
+    def test_every_window_behind_pace_must_be_covered(self):
+        # The reset outlasts the 5-hour window but lapses a tenth of the way to the weekly reset.
+        self.credits=[NOW+WEEK//20]
+        self.log('a.jsonl',event(70,resets=MIDWEEK,secondary={'used_percent':70,'window_minutes':300,'resets_at':NOW+9000}))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
 
     def test_spent_window_falls_back_until_it_resets_whatever_the_reached_flag_says(self):
         self.log('a.jsonl',event(100,reached='rate_limit_reached'))
@@ -211,13 +228,17 @@ class TargetResolution(unittest.TestCase):
 
 FAKE_CODEX='''\
 #!/usr/bin/env python3
-import json, os, sys, time
+import json, os, subprocess, sys, time
 for line in sys.stdin:
     message = json.loads(line)
     if message.get('id') == 1:
         print(json.dumps({'id': 1, 'result': {}}), flush=True)
     elif message.get('id') == 2:
         if os.environ.get('FAKE_CODEX') == 'hang':
+            time.sleep(30)
+        if os.environ.get('FAKE_CODEX') == 'orphan':
+            # A launcher's child keeps the reply pipe open after the launcher is killed.
+            subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(30)'])
             time.sleep(30)
         print('not json', flush=True)
         print(os.environ['FAKE_CODEX'], flush=True)
@@ -243,13 +264,19 @@ class AppServerRead(unittest.TestCase):
         credits=[{'status':'available','expiresAt':NOW},{'status':'redeemed','expiresAt':NOW},{'status':'available','expiresAt':None}]
         self.assertEqual(self.read({'availableCount':2,'credits':credits}),[NOW,None])
 
-    def test_a_count_without_details_counts_resets_that_never_expire(self):
-        self.assertEqual(self.read({'availableCount':2,'credits':None}),[None,None])
-        self.assertEqual(self.read(None),[])
+    def test_expiry_the_reply_does_not_state_reads_as_unknown(self):
+        self.assertIsNone(self.read({'availableCount':2,'credits':None}))
+        self.assertIsNone(self.read(None))
+        self.assertIsNone(self.read({'availableCount':1,'credits':[{'status':'available','expiresAt':'2026-11-06T00:00:00Z'}]}))
+        self.assertIsNone(self.read({'availableCount':1,'credits':[{'status':'available'}]}))
+        self.assertEqual(self.read({'availableCount':0,'credits':None}),[])
 
     def test_errors_hangs_and_a_missing_cli_read_as_unknown(self):
         self.assertIsNone(self.read(json.dumps({'id':2,'error':{'message':'not signed in'}})))
         self.assertIsNone(self.read('hang'))
+        started=time.monotonic()
+        self.assertIsNone(self.read('orphan'))
+        self.assertLess(time.monotonic()-started,target.RESETS_TIMEOUT+1)
         with patch.dict(os.environ,{'PATH':self.directory.name+'/missing'}):
             self.assertIsNone(target.fetch_reset_credits())
 
