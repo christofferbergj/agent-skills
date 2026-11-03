@@ -8,7 +8,7 @@
 - Original upstream import revision: unrecorded. Neither local history nor the installed copy identifies it. [80930af448ebabc84174146b56bc106d37fab3b4](https://github.com/openclaw/openclaw/commit/80930af448ebabc84174146b56bc106d37fab3b4) predates the local import and contains both source files, but is not a proven import revision. Preserve this gap until evidence resolves it.
 - Reviewed through: [66e2433288b23cb4c4fef5889f2fbcfcc19f9601](https://github.com/openclaw/openclaw/commit/66e2433288b23cb4c4fef5889f2fbcfcc19f9601). This comparison baseline does not replace the unknown historical import.
 - Fidelity checked through: `66e2433288b23cb4c4fef5889f2fbcfcc19f9601`.
-- Last upstream review: 2026-10-29.
+- Last upstream review: 2026-11-03.
 
 Source inputs, initially reviewed at `71b5563397e95d67ad902f79a717559519010ac8`:
 

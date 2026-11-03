@@ -8,7 +8,7 @@
 - Tracking policy: upstream `main`; inspect the entire public skills inventory for additions, removals, category moves, and relevant shared documentation. Exclude personal skills and the recorded user exclusions.
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
 - Reviewed through commit: `59db609eb1e18aaf59b63284d0e52255aff0c63c`.
-- Fidelity checked through: `59db609eb1e18aaf59b63284d0e52255aff0c63c`.
+- Fidelity checked through: `4ae2317ddb22b046e26455e4f9c9b3aaaf62212d`.
 - Last upstream review: 2026-10-27.
 - Upstream stage: `engineering`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.

@@ -8,7 +8,7 @@
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
 - Reviewed through commit: `c742dd61706fbacc1b95f1a20b7b988cf096ce6c`.
-- Fidelity checked through: `c742dd61706fbacc1b95f1a20b7b988cf096ce6c`.
+- Fidelity checked through: `ae5650febf4320793844c12c4adaa937f417f8da`.
 - Last upstream review: 2026-10-28.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
