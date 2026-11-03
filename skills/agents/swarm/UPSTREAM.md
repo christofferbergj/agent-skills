@@ -49,6 +49,8 @@ Local maintenance on 2026-10-31: the library now ships /coordinator ([ADR 0006](
 
 Local maintenance on 2026-10-31, explorers on the session model: `scripts/target.py` keeps only `fast-code` on the host's fast model, and `references/execution.md` lowers exploration's effort one step instead of two. ADR 0001's explorers revision records why.
 
+Local maintenance on 2026-11-03, paced fast mode: `scripts/target.py` replaces the fixed 40% fast-mode line with even pace per usage window, plus banked resets read from `codex app-server` and cached for an hour per account, and `references/execution.md` states the rule. ADR 0004's paced fast mode revision records why.
+
 Local maintenance on 2026-10-17 clarified the restricted reviewer's evidence scope. The Claude wrapper exposes `Read,Glob,Grep` without a shell, and its restricted session denied external runtime paths. Supply relevant snapshots inline and recorded checks; use a native critic for independent execution. The reviewed source candidate is `101b274dd991f694e1f7024be2157e5f3adf07de`; portable host behavior and source exclusions are retained.
 
 ## Second source: T3 delegation
