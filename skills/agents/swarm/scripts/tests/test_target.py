@@ -17,10 +17,10 @@ spec.loader.exec_module(target)
 
 NOW=1_800_000_000
 WEEK=7*24*3600
-# Half the weekly window is still to run, so even pace leaves 50%.
+# Half the weekly window is still to run, so without slack even pace leaves 50%.
 MIDWEEK=NOW+WEEK//2
-# The threshold differs from the script's default, so a resolver that ignored it would fail.
-CONFIG={'codexUsage':{'skipWhenLeft':10},'claude-code':{'review':{'providerInstanceId':'codex','model':'gpt-fixture','effort':{'full':'max','delta':'high'},'serviceTier':'priority'},'computerUse':{'model':'gpt-fixture','effort':{'routine':'medium','hard':'high'},'serviceTier':'priority'}}}
+# The thresholds differ from the script's defaults, so a resolver that ignored them would fail.
+CONFIG={'codexUsage':{'skipWhenLeft':10,'paceSlackHours':0},'claude-code':{'review':{'providerInstanceId':'codex','model':'gpt-fixture','effort':{'full':'max','delta':'high'},'serviceTier':'priority'},'computerUse':{'model':'gpt-fixture','effort':{'routine':'medium','hard':'high'},'serviceTier':'priority'}}}
 
 
 def event(used,resets=NOW+3600,reached=None,secondary=None,stamp='2026-10-24T21:00:00Z',bucket='codex'):
@@ -77,6 +77,16 @@ class TargetResolution(unittest.TestCase):
             result=self.run_target('computer-use')
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
         self.assertIn('9% left until',result['reason'])
+
+    def test_pace_slack_allows_a_lead_and_defaults_to_a_day(self):
+        # One day into the week, 20% used is behind pace without slack but within a day's lead.
+        self.log('a.jsonl',event(20,resets=NOW+6*24*3600))
+        self.credits=[]
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
+        self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':10}}))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
+        self.log('a.jsonl',event(30,resets=NOW+6*24*3600))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
 
     def test_behind_pace_note_names_the_window_and_the_banked_resets(self):
         self.credits=[]
@@ -282,6 +292,8 @@ class AppServerRead(unittest.TestCase):
         self.assertLess(time.monotonic()-started,self.TIMEOUT+0.5)
         with patch.dict(os.environ,{'PATH':self.directory.name+'/missing'}):
             self.assertIsNone(target.fetch_reset_credits())
+        with patch.object(target.os,'name','nt'):
+            self.assertIsNone(self.read({'availableCount':0,'credits':None}))
 
 
 if __name__=='__main__':

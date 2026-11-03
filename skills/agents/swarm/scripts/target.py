@@ -3,7 +3,7 @@
 
 Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
 
-  {"codexUsage": {"skipWhenLeft": 5},
+  {"codexUsage": {"skipWhenLeft": 5, "paceSlackHours": 24},
    "claude-code": {
      "review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
@@ -13,8 +13,9 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
-window is on pace: its percent left is at least the share of the window still to run, so a
-window that resets soon can be spent down. A window behind pace drops it to "default" unless
+window is on pace: its percent left is at least the share of the window still to run less
+paceSlackHours, so a window that resets soon can be spent down and a day's lead, made up by
+the idle night, is allowed. A window behind pace drops it to "default" unless
 banked resets cover the gap; a reset counts as a full window when it outlasts that window and
 pro rata when it expires sooner. Below skipWhenLeft percent left, a cross-vendor target becomes
 run "fallback". Claude targets carry no speed. Usage comes from the newest snapshots in
@@ -31,6 +32,7 @@ the model or sets an effort; "inherit-parent" or "auto" as the model keeps the p
 """
 
 import argparse
+import contextlib
 from datetime import datetime, timezone
 from itertools import islice
 import json
@@ -38,10 +40,10 @@ import math
 import os
 from pathlib import Path
 import re
+import select
 import signal
 import subprocess
 import sys
-import threading
 import time
 
 # role: (config entry, effort key, default effort)
@@ -57,7 +59,7 @@ FAST_ROLES = {'fast-code'}
 PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
 FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
-THRESHOLDS = {'skipWhenLeft': 5}
+THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24}
 # Bounds that keep the usage scan to a few small reads.
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
 # Banked resets change a few times a month, so one app-server read serves an hour.
@@ -144,15 +146,15 @@ def window_left(window, now):
     return 100 if resets is not None and resets <= now else max(0, 100 - used)
 
 
-def even_pace(window, now):
-    """Return the percent left that spending evenly to the reset would leave, or None without a reset time and length."""
+def even_pace(window, now, slack_hours):
+    """Return the percent left that spending evenly to slack_hours before the reset would leave, or None without a reset time and length."""
     resets, minutes = number(window.get('resets_at')), number(window.get('window_minutes'))
     if resets is None or minutes is None or minutes <= 0:
         return None
-    return min(100, max(0, 100 * (resets - now) / (minutes * 60)))
+    return min(100, max(0, 100 * (resets - now - slack_hours * 3600) / (minutes * 60)))
 
 
-def read_usage(sessions, now):
+def read_usage(sessions, now, slack_hours):
     """Return the windows of the newest snapshot and its time, or None.
 
     Each window has its percent left, reset time, and even-pace percent."""
@@ -171,62 +173,54 @@ def read_usage(sessions, now):
     for window in (table(limits.get('primary')), table(limits.get('secondary'))):
         left = window_left(window, now)
         if left is not None:
-            windows.append({'left': left, 'resets': number(window.get('resets_at')), 'pace': even_pace(window, now)})
+            windows.append({'left': left, 'resets': number(window.get('resets_at')), 'pace': even_pace(window, now, slack_hours)})
     # Windows alone decide: rate_limit_reached_type is an account-wide reason with no reset time,
     # and a live usage-limit error already sends the caller to its fallback.
     return {'windows': windows, 'seen': seen} if windows else None
 
 
-def fetch_reset_credits():
-    """Ask Codex's app-server for the account's banked resets and return their expiry times, or None."""
+def read_rate_limits():
+    """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
+    # Bounding the read needs process groups, as review.py's runs do.
+    if os.name != 'posix':
+        return None
     requests = [
         {'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': 'pstack-target', 'version': '1'}}},
         {'method': 'initialized'},
         {'id': 2, 'method': 'account/rateLimits/read', 'params': {}},
     ]
+    deadline = time.monotonic() + RESETS_TIMEOUT
     try:
-        server = subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, start_new_session=True)
+        with subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True) as server:
+            try:
+                # The server exits on end of input before it answers, so input stays open until the reply.
+                server.stdin.write(''.join(json.dumps(request) + '\n' for request in requests).encode())
+                server.stdin.flush()
+                pending = b''
+                while select.select([server.stdout], [], [], max(0, deadline - time.monotonic()))[0]:
+                    chunk = os.read(server.stdout.fileno(), 65536)
+                    if not chunk:
+                        return None
+                    *lines, pending = (pending + chunk).split(b'\n')
+                    for line in lines:
+                        try:
+                            message = table(json.loads(line))
+                        except ValueError:
+                            continue
+                        if message.get('id') == 2:
+                            return message.get('result')
+                return None
+            finally:
+                # The whole group goes, so a launcher's child cannot outlive the read.
+                with contextlib.suppress(OSError):
+                    os.killpg(server.pid, signal.SIGKILL)
     except OSError:
         return None
-    reply = {}
 
-    def read():
-        for line in server.stdout:
-            try:
-                message = table(json.loads(line))
-            except ValueError:
-                continue
-            if message.get('id') == 2:
-                reply.update(message)
-                return
 
-    reader = threading.Thread(target=read, daemon=True)
-    try:
-        # The server exits on end of input before it answers, so input stays open until the reply.
-        server.stdin.write(''.join(json.dumps(request) + '\n' for request in requests))
-        server.stdin.flush()
-        reader.start()
-        reader.join(RESETS_TIMEOUT)
-    except OSError:
-        return None
-    finally:
-        # The whole group goes, so a launcher's child cannot hold the reply pipe open past the timeout.
-        try:
-            os.killpg(server.pid, signal.SIGKILL)
-        except OSError:
-            pass
-        server.wait()
-        if reader.ident is not None:
-            reader.join(1)
-        streams = (server.stdin,) if reader.is_alive() else (server.stdin, server.stdout)
-        for stream in streams:
-            try:
-                stream.close()
-            except OSError:
-                pass
-    if 'result' not in reply:
-        return None
-    summary = table(table(reply['result']).get('rateLimitResetCredits'))
+def banked_expiries(result):
+    """Return the expiry times of the available banked resets in an account/rateLimits/read result, or None."""
+    summary = table(table(result).get('rateLimitResetCredits'))
     credits = summary.get('credits')
     if not isinstance(credits, list):
         # A count without detail rows says nothing about expiry, so only a zero count is a reading.
@@ -236,6 +230,11 @@ def fetch_reset_credits():
     if any(expiry is not None and number(expiry) is None for expiry in expiries):
         return None
     return expiries
+
+
+def fetch_reset_credits():
+    """Ask Codex's app-server for the account's banked resets and return their expiry times, or None."""
+    return banked_expiries(read_rate_limits())
 
 
 def unexpired(value, now):
@@ -381,7 +380,7 @@ def main():
     if runs_on == 'codex':
         codex_model = configured_codex_model(home)
         try:
-            usage = read_usage(home / 'sessions', now)
+            usage = read_usage(home / 'sessions', now, thresholds(config)['paceSlackHours'])
         except (OSError, ValueError):
             usage = None
     target = resolve(args.parent, args.role, config, codex_model, usage, lambda: reset_credits(cache, codex_account(home), now), now)
