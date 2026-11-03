@@ -3,7 +3,7 @@
 
 Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
 
-  {"codexUsage": {"fastWhileLeft": 40, "skipWhenLeft": 5},
+  {"codexUsage": {"skipWhenLeft": 5, "paceSlackHours": 24},
    "claude-code": {
      "review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
@@ -12,10 +12,15 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
      "roles": {"how-explorer": {"model": "haiku", "effort": "low"}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
-codexUsage thresholds are percent of Codex usage left. A Codex target runs at serviceTier
-"priority" unless configured otherwise, drops to "default" below fastWhileLeft, and below
-skipWhenLeft a cross-vendor one becomes run "fallback". Claude targets carry no speed.
-Usage comes from the newest snapshots in $CODEX_HOME/sessions, so the check stays local.
+A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
+window is on pace: its percent left is at least the share of the window still to run less
+paceSlackHours, so a window that resets soon can be spent down and a day's lead, made up by
+the idle night, is allowed. A window behind pace drops it to "default" unless
+banked resets cover the gap; a reset counts as a full window when it outlasts that window and
+pro rata when it expires sooner. Below skipWhenLeft percent left, a cross-vendor target becomes
+run "fallback". Claude targets carry no speed. Usage comes from the newest snapshots in
+$CODEX_HOME/sessions, so the check stays local. Banked resets come from `codex app-server`,
+cached for an hour per Codex account, and are read only when a window is behind pace.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host: fast-code on the host's fast model
@@ -27,6 +32,7 @@ the model or sets an effort; "inherit-parent" or "auto" as the model keeps the p
 """
 
 import argparse
+import contextlib
 from datetime import datetime, timezone
 from itertools import islice
 import json
@@ -34,6 +40,9 @@ import math
 import os
 from pathlib import Path
 import re
+import select
+import signal
+import subprocess
 import sys
 import time
 
@@ -50,9 +59,11 @@ FAST_ROLES = {'fast-code'}
 PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
 FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
-THRESHOLDS = {'fastWhileLeft': 40, 'skipWhenLeft': 5}
+THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24}
 # Bounds that keep the usage scan to a few small reads.
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
+# Banked resets change a few times a month, so one app-server read serves an hour.
+RESETS_TTL, RESETS_TIMEOUT = 3600, 5
 
 
 def table(value):
@@ -135,8 +146,18 @@ def window_left(window, now):
     return 100 if resets is not None and resets <= now else max(0, 100 - used)
 
 
-def read_usage(sessions, now):
-    """Return (percent left in the tightest window, its reset time, snapshot time) from the newest snapshot, or None."""
+def even_pace(window, now, slack_hours):
+    """Return the percent left that spending evenly to slack_hours before the reset would leave, or None without a reset time and length."""
+    resets, minutes = number(window.get('resets_at')), number(window.get('window_minutes'))
+    if resets is None or minutes is None or minutes <= 0:
+        return None
+    return min(100, max(0, 100 * (resets - now - slack_hours * 3600) / (minutes * 60)))
+
+
+def read_usage(sessions, now, slack_hours):
+    """Return the windows of the newest snapshot and its time, or None.
+
+    Each window has its percent left, reset time, and even-pace percent."""
     snapshots = []
     for log in recent_logs(sessions):
         try:
@@ -148,14 +169,127 @@ def read_usage(sessions, now):
     if not snapshots:
         return None
     seen, limits = max(snapshots, key=lambda snapshot: snapshot[0])
-    windows = [(window_left(window, now), window) for window in (table(limits.get('primary')), table(limits.get('secondary')))]
-    windows = [(left, window) for left, window in windows if left is not None]
-    if not windows:
-        return None
+    windows = []
+    for window in (table(limits.get('primary')), table(limits.get('secondary'))):
+        left = window_left(window, now)
+        if left is not None:
+            windows.append({'left': left, 'resets': number(window.get('resets_at')), 'pace': even_pace(window, now, slack_hours)})
     # Windows alone decide: rate_limit_reached_type is an account-wide reason with no reset time,
     # and a live usage-limit error already sends the caller to its fallback.
-    left, window = min(windows, key=lambda pair: pair[0])
-    return round(left), number(window.get('resets_at')), seen
+    return {'windows': windows, 'seen': seen} if windows else None
+
+
+def read_rate_limits():
+    """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
+    # Bounding the read needs process groups, as review.py's runs do.
+    if os.name != 'posix':
+        return None
+    requests = [
+        {'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': 'pstack-target', 'version': '1'}}},
+        {'method': 'initialized'},
+        {'id': 2, 'method': 'account/rateLimits/read', 'params': {}},
+    ]
+    deadline = time.monotonic() + RESETS_TIMEOUT
+    try:
+        with subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True) as server:
+            try:
+                # The server exits on end of input before it answers, so input stays open until the reply.
+                server.stdin.write(''.join(json.dumps(request) + '\n' for request in requests).encode())
+                server.stdin.flush()
+                pending = b''
+                while select.select([server.stdout], [], [], max(0, deadline - time.monotonic()))[0]:
+                    chunk = os.read(server.stdout.fileno(), 65536)
+                    if not chunk:
+                        return None
+                    *lines, pending = (pending + chunk).split(b'\n')
+                    for line in lines:
+                        try:
+                            message = table(json.loads(line))
+                        except ValueError:
+                            continue
+                        if message.get('id') == 2:
+                            return message.get('result')
+                return None
+            finally:
+                # The whole group goes, so a launcher's child cannot outlive the read.
+                with contextlib.suppress(OSError):
+                    os.killpg(server.pid, signal.SIGKILL)
+    except OSError:
+        return None
+
+
+def banked_expiries(result):
+    """Return the expiry times of the available banked resets in an account/rateLimits/read result, or None."""
+    summary = table(table(result).get('rateLimitResetCredits'))
+    credits = summary.get('credits')
+    if not isinstance(credits, list):
+        # A count without detail rows says nothing about expiry, so only a zero count is a reading.
+        return [] if number(summary.get('availableCount')) == 0 else None
+    expiries = [credit.get('expiresAt', '') for credit in map(table, credits) if credit.get('status') == 'available']
+    # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
+    if any(expiry is not None and number(expiry) is None for expiry in expiries):
+        return None
+    return expiries
+
+
+def fetch_reset_credits():
+    """Ask Codex's app-server for the account's banked resets and return their expiry times, or None."""
+    return banked_expiries(read_rate_limits())
+
+
+def unexpired(value, now):
+    if not isinstance(value, list):
+        return None
+    return [entry for entry in value if entry is None or (number(entry) is not None and entry > now)]
+
+
+def codex_account(home):
+    """Return the identity whose banked resets a cache entry holds: the Codex home and its signed-in account."""
+    try:
+        account = text(table(table(json.loads((home / 'auth.json').read_text())).get('tokens')).get('account_id'))
+    except (OSError, ValueError):
+        account = None
+    return f'{home.resolve()}:{account}'
+
+
+def reset_credits(cache, account, now):
+    """Return the expiry times of the account's banked resets, None for one that never expires, or None when unknown."""
+    try:
+        cached = table(json.loads(cache.read_text()))
+    except (OSError, ValueError):
+        cached = {}
+    fetched = number(cached.get('fetchedAt'))
+    if cached.get('account') == account and fetched is not None and 0 <= now - fetched < RESETS_TTL:
+        return unexpired(cached.get('expiries'), now)
+    # A failed read is cached as unknown, so an offline machine pays the timeout once an hour
+    # and a stale reading never outlives its hour.
+    expiries = unexpired(fetch_reset_credits(), now)
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps({'account': account, 'fetchedAt': now, 'expiries': expiries}))
+    except OSError:
+        pass
+    return expiries
+
+
+def banked_credit(expiries, resets, now):
+    """Return the percent of a window that banked resets add before it resets."""
+    return sum(100 if expiry is None or expiry >= resets else 100 * max(0, expiry - now) / (resets - now) for expiry in expiries)
+
+
+def check_pace(usage, read_banked, now):
+    """Return (fast, the window furthest behind pace or None, banked resets read or None).
+
+    read_banked is called only when a window is behind pace, so an on-pace check reads nothing more."""
+    behind = [window for window in usage['windows'] if window['pace'] is not None and window['left'] < window['pace']]
+    if not behind:
+        return True, None, None
+    furthest = min(behind, key=lambda window: window['left'] - window['pace'])
+    expiries = read_banked()
+    if expiries is None:
+        return False, furthest, None
+    covered = all(window['left'] + banked_credit(expiries, window['resets'], now) >= window['pace'] for window in behind)
+    return covered, furthest, expiries
 
 
 def describe(left, resets):
@@ -176,7 +310,14 @@ def thresholds(config):
     return {key: default if number(configured.get(key)) is None else configured[key] for key, default in THRESHOLDS.items()}
 
 
-def resolve_native(parent, role, config, usage):
+def pace_note(window, expiries):
+    behind = f"{describe(round(window['left']), window['resets'])}, under the {round(window['pace'])}% even pace leaves"
+    if expiries is None:
+        return f'{behind}; banked resets unknown'
+    return f"{behind}; {len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}"
+
+
+def resolve_native(parent, role, config, usage, read_banked, now):
     entry = table(table(table(config.get(parent)).get('roles')).get(role))
     model = text(entry.get('model'))
     if model is None:
@@ -187,15 +328,15 @@ def resolve_native(parent, role, config, usage):
     target = {'role': role, 'run': parent, 'model': model}
     if parent == 'codex':
         effort = capped(effort)
-        fast = usage is None or usage[0] >= thresholds(config)['fastWhileLeft']
+        fast = usage is None or check_pace(usage, read_banked, now)[0]
         target['serviceTier'] = 'priority' if fast else 'default'
     target['effort'] = effort if effort in EFFORTS else None
     return target
 
 
-def resolve(parent, role, config, codex_model, usage):
+def resolve(parent, role, config, codex_model, usage, read_banked, now):
     if role not in CROSS_VENDOR_ROLES:
-        return resolve_native(parent, role, config, usage)
+        return resolve_native(parent, role, config, usage, read_banked, now)
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
@@ -208,13 +349,18 @@ def resolve(parent, role, config, codex_model, usage):
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
-    left, resets, seen = usage
-    limits = thresholds(config)
-    target['usage'] = {'left': left, 'seenAt': seen}
-    if left < limits['skipWhenLeft']:
-        return {'role': role, 'run': 'fallback', 'reason': describe(left, resets), 'usage': target['usage']}
-    if left < limits['fastWhileLeft']:
-        target.update(serviceTier='default', note=f'Standard speed: {describe(left, resets)}')
+    tightest = min(usage['windows'], key=lambda window: window['left'])
+    left = round(tightest['left'])
+    target['usage'] = {'left': left, 'seenAt': usage['seen']}
+    if left < thresholds(config)['skipWhenLeft']:
+        return {'role': role, 'run': 'fallback', 'reason': describe(left, tightest['resets']), 'usage': target['usage']}
+    fast, window, expiries = check_pace(usage, read_banked, now)
+    if expiries is not None:
+        target['usage']['bankedResets'] = len(expiries)
+    if not fast:
+        target.update(serviceTier='default', note=f'Standard speed: {pace_note(window, expiries)}')
+    elif window is not None:
+        target['note'] = f'Banked resets keep fast mode: {pace_note(window, expiries)}'
     return target
 
 
@@ -227,16 +373,17 @@ def main():
         parser.error('Codex runs computer use itself')
     config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
-    codex_model, usage = None, None
+    cache = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'codex-reset-credits.json'
+    now, codex_model, usage = time.time(), None, None
     other = 'codex' if args.parent == 'claude-code' else 'claude-code'
     runs_on = other if args.role in CROSS_VENDOR_ROLES else args.parent
     if runs_on == 'codex':
         codex_model = configured_codex_model(home)
         try:
-            usage = read_usage(home / 'sessions', time.time())
+            usage = read_usage(home / 'sessions', now, thresholds(config)['paceSlackHours'])
         except (OSError, ValueError):
             usage = None
-    target = resolve(args.parent, args.role, config, codex_model, usage)
+    target = resolve(args.parent, args.role, config, codex_model, usage, lambda: reset_credits(cache, codex_account(home), now), now)
     print(json.dumps({key: value for key, value in target.items() if value is not None}, ensure_ascii=False))
     return 0
 
