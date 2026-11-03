@@ -25,12 +25,13 @@ def git(*args):
     return subprocess.run(['git', *args], stdout=subprocess.PIPE, text=True, check=True).stdout
 
 
-def refresh_command(slug, agents):
-    """The install that refreshes every skill, and a note when that install asks for the agents."""
+def refresh_hint(slug, agents):
+    """The install that refreshes every skill, with a note when it will ask for the agents."""
+    install = f"skills@latest add {slug} --skill '*' --global"
     if isinstance(agents, list) and agents and all(isinstance(a, str) and AGENT.fullmatch(a) for a in agents):
         # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
-        return f"npx -y skills@latest add {slug} --skill '*' --global --yes --agent {' '.join(agents)}", None
-    return f"npx skills@latest add {slug} --skill '*' --global", 'It asks for your agents, since the lock records no valid earlier choice.'
+        return f"Refresh with: npx -y {install} --yes --agent {' '.join(agents)}"
+    return f"Refresh with: npx {install}\nIt asks for your agents, since the lock records no valid earlier choice."
 
 
 def main():
@@ -78,10 +79,7 @@ def main():
 
     print('\n'.join(problems) or f'All {len(trees)} skills match {arguments.ref}.')
     if any(line.split()[0] in ('missing', 'stale', 'unknown') for line in problems):
-        command, note = refresh_command(slug, lock.get('lastSelectedAgents'))
-        print(f"\nRefresh with: {command}")
-        if note:
-            print(note)
+        print(f"\n{refresh_hint(slug, lock.get('lastSelectedAgents'))}")
     return 1 if problems else 0
 
 

@@ -67,4 +67,4 @@ Report what changed, the questions waiting on the owner, failures such as failed
 
 At the budget's wrap-up point, start no new worklist items: validate, deliver, and checkpoint what is finished, carrying the rest.
 
-**Complete when:** each PR is a draft whose head on the forge equals the pushed commit and whose description lists its open questions; runtime state is settled and the checkpoint saved after that verification; the report is written; every action stayed within the grant; and the lock is released.
+**Complete when:** each PR is a draft whose head on the forge equals the pushed commit and whose description lists its open questions and names each /usage-review contract the guide requires; runtime state is settled and the checkpoint saved after that verification; the report is written; every action stayed within the grant; and the lock is released.
