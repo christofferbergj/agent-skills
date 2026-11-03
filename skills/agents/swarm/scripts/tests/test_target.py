@@ -246,6 +246,8 @@ for line in sys.stdin:
 
 
 class AppServerRead(unittest.TestCase):
+    TIMEOUT=2
+
     def setUp(self):
         self.directory=tempfile.TemporaryDirectory()
         codex=Path(self.directory.name)/'codex'
@@ -257,7 +259,7 @@ class AppServerRead(unittest.TestCase):
 
     def read(self,reply):
         payload=reply if isinstance(reply,str) else json.dumps({'id':2,'result':{'rateLimitResetCredits':reply}})
-        with patch.dict(os.environ,{'PATH':f"{self.directory.name}:{os.environ['PATH']}",'FAKE_CODEX':payload}),patch.object(target,'RESETS_TIMEOUT',2):
+        with patch.dict(os.environ,{'PATH':f"{self.directory.name}:{os.environ['PATH']}",'FAKE_CODEX':payload}),patch.object(target,'RESETS_TIMEOUT',self.TIMEOUT):
             return target.fetch_reset_credits()
 
     def test_available_resets_return_their_expiry_times(self):
@@ -276,7 +278,8 @@ class AppServerRead(unittest.TestCase):
         self.assertIsNone(self.read('hang'))
         started=time.monotonic()
         self.assertIsNone(self.read('orphan'))
-        self.assertLess(time.monotonic()-started,target.RESETS_TIMEOUT+1)
+        # Killing only the launcher leaves its child holding the pipe, so the read overruns the timeout.
+        self.assertLess(time.monotonic()-started,self.TIMEOUT+0.5)
         with patch.dict(os.environ,{'PATH':self.directory.name+'/missing'}):
             self.assertIsNone(target.fetch_reset_credits())
 
