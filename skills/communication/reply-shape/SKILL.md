@@ -65,6 +65,7 @@ End with /next-options' yes-or-no options.
 - **Views**: show code as the smallest view that makes the point, in place of prose: pseudocode for logic; a module's interface with one call site, a module tree, or a flow for structure, with a first-line comment naming where the module lives and what it hides; and a `diff` of that view for a change. Show real code only when most of it is new or the user needs to copy it.
 - **Inline code**: only for a name the user would type or search. Say the rest in words.
 - **Errors**: the cause and the fix, matter-of-fact.
+- **No callouts**: don't use GitHub callouts, such as `> [!TIP]`, in chat.
 - **Tangents**: finish the main thing first. A side issue becomes a later option.
 - **Blank lines**: chat joins adjacent lines, so separate lines with a blank line or make them list items.
 - **Once**: show each piece of code, draft, and warning once per session, and point back to it afterwards. A reply whose next step posts or sends drafts shows each again in full, since what the user approves is what goes out.

@@ -13,7 +13,7 @@ Identify the caller's current phase, accepted scope, existing artifacts, approve
 
 ## 2. Select the owners
 
-Discover the complete installed `/principle-*` inventory through the host's skill index. If that index is partial, enumerate the configured skill roots and resolve duplicate installations before selecting. Evaluate every owner's description against the actual work in this phase, including work about to start. In planning, include the implementation being proposed; in review, include the changes being assessed. Read every matching skill in full and apply its rules to the current artifact. Use the descriptions as the selection rules, including for newly added principles; keep no second trigger catalog here.
+Discover the complete installed `/principle-*` inventory through the host's skill index. If that index is partial or omits any owner's description, enumerate the configured skill roots, read each owner's frontmatter description, and resolve duplicate installations before selecting. Evaluate every owner's description against the actual work in this phase, including work about to start. In planning, include the implementation being proposed; in review, include the changes being assessed. Read every matching skill in full and apply its rules to the current artifact. Use the descriptions as the selection rules, including for newly added principles; keep no second trigger catalog here.
 
 Reuse an already-loaded owner only while its instructions and applicability remain current. A missing dependency is a named coverage gap, never an applied principle. Complete when every discovered owner has been considered and every applicable owner has been read, or its absence is reported.
 
