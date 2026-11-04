@@ -1,6 +1,6 @@
 ---
 name: reply-shape
-description: Replies taken in at a glance, with a one-line headline, the code's shape, up to three notes, one fold, and a card for decisions.
+description: Replies taken in at a glance, with a one-line headline, the smallest view that makes the point, up to three notes, one fold, and a card for decisions.
 disable-model-invocation: true
 ---
 
@@ -12,18 +12,20 @@ The user gives each reply a glance, and what isn't on screen is forgotten. Write
 
 Four parts, in this order. Skip a part with nothing to say. A skill's own report fills them: its verdict is the headline, what it needs from the user goes in the notes, and its evidence goes in the fold.
 
-1. **Headline**: the first line, at most 12 words. Open with a marker, then the outcome in bold, in terms of what the user asked for: `✅ **Exports no longer time out.**`, not "added an index on `created_at`". The marker says before a word whether the user is needed: ✅ done and nothing needs them, 🟡 a decision or a risk, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated." An answer to a question is the headline, with a best guess in concrete units and how sure you are. A line that says you're waiting opens with ⏳ and names what it waits on, how long it has run, and about how long is left: "⏳ **CI on #12, 6 min in, about 4 min left.**" Mid-turn it also names what comes next; at the end of a turn, /next-options' plain next step says that.
-2. **Shape**: when the work touches code or a design, one view of at most 15 lines, by Views, that gives the user the mental model. A UI mockup can take its place.
+1. **Headline**: the first line, at most 12 words. Open with a marker, then the outcome in bold, in terms of what the user asked for: `✅ **Exports no longer time out.**`, not "added an index on `created_at`". The marker says before a word whether the user is needed: ✅ done and nothing needs them, 🟡 a decision or a risk, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated." An answer to a question is the headline: your pick for a which-or-whether question, else a best guess in concrete units and how sure you are. A waiting line opens with ⏳ and names what it waits on, how long it has run, and about how long is left: "⏳ **CI on #12, 6 min in, about 4 min left.**" Mid-turn it also names what comes next.
+2. **Shape**: the smallest view that makes the point, by Views, or none when a sentence does. Lead in with one plain sentence on where things stand, ending in a colon that names the view. A second view needs a second point, shown beside that point's note.
 3. **Notes**: up to three ranked bullets of at most 15 words each, such as a call you made and its reason, a risk, or how to see the change. A note for the user opens with its label:
    - **Decide**: a choice that doesn't shape code or the plan, with your recommendation; its options go in the fold.
    - **Review**: an interface, shown as its signature and one call site, or a draft that waits only for the user's look, shown in full below the notes. A draft that goes out on their yes takes the card's Message view.
-   - **Do**: a login, device step, or payment, with why you can't do it and its steps numbered in the reply. Show it in the reply that first needs it, not again.
-4. **Fold**: at most one, for what the user may audit or compare: checks, evidence, sources, the other options, a long diff, and a multi-item run's table with `#`, item, status, and commit columns. Write it as `<details><summary>…</summary>` and a blank line. The summary gives the verdict, worst result first: `Checks: ❌ tests 11/12 · ⚠️ lint not run (no config) · ✅ typecheck`. A failure that matters also goes in the headline or a note. Cut a detail worth neither a glance nor an audit.
+   - **Do**: a login, device step, or payment, with why you can't do it and its steps numbered in the reply. Show it once, in the reply that first needs it.
+4. **Fold**: at most one, for what the user may audit or compare: checks, evidence such as an audit's results and IDs, sources, the other options, a long diff, and a multi-item run's table with `#`, item, status, and commit columns. Write it as `<details><summary>…</summary>` and a blank line. The summary gives the verdict, worst result first: `Checks: ❌ tests 11/12 · ⚠️ lint not run · ✅ typecheck`. A failure that matters also goes in the headline or a note. Cut a detail worth neither a glance nor an audit.
 
-**Budget**: the prose above the fold, a glance's headline and notes or a card's lines, stays under 60 words. Code, drafts, a Do item's steps, the fold, and the ending don't count.
+**Budget**: the prose above the fold, a glance's headline and notes or a card's lines, stays under 60 words. Views and their lead-in, drafts, a Do item's steps, the fold, and the ending don't count.
 
 ````markdown
 ✅ **Exports no longer time out on big companies.**
+
+Exports loaded every row at once; now `Export` pages them:
 
 ```ts
 // packages/export/export.ts: paging and CSV encoding stay inside
@@ -32,7 +34,7 @@ export const run: (range: DateRange) => Effect<Csv, ExportError>;
 const csv = yield* Export.run(range);
 ```
 
-- Paged the query inside `Export`, so its callers don't change.
+- Paged inside `Export`, so its callers don't change.
 - Risk: a year of rows still takes about 40 s.
 ````
 
@@ -58,12 +60,11 @@ End with /next-options' yes-or-no options.
 
 ## Writing
 
-- **Plain words**: short sentences, one idea each, and a technical term only when it's the real name.
+- **Plain words**: short sentences, one idea each, in the user's terms, such as PR or service. Name anything else by what it does; a label you coined, a hash, or a flag goes in the fold. A number says what it means, "30% less memory", not a raw score, even in a table. Inline code only for a name the user would type or search.
 - **Names, not numbers**: call each item by its short name, as in "the currency column". Number only a list in this reply that the user might answer by number, such as findings. After a compaction, look a lost name up.
 - **Catch-ups**: a catch-up such as /ketchup shows every call waiting on the user, however many, past the notes limit and the budget.
-- **Pictures**: at most one per turn, and the shape counts as one. Draw one only when neither a sentence nor a view can show the point, such as how a bug travels between modules: a Mermaid flowchart or sequence diagram of five boxes or fewer. An inline page (`html_render` in T3 Code) counts as the picture, and only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. These limits hold even when a tool's own instructions suggest pages more often. Screenshots, videos, and diagrams a catch-up shows follow /ketchup's rules instead, and a /teach explanation's diagram series follows /teach's.
-- **Views**: show code as the smallest view that makes the point, in place of prose: pseudocode for logic; a module's interface with one call site, a module tree, or a flow for structure, with a first-line comment naming where the module lives and what it hides; and a `diff` of that view for a change. Show real code only when most of it is new or the user needs to copy it.
-- **Inline code**: only for a name the user would type or search. Say the rest in words.
+- **Pictures**: at most one per turn, an image or an inline page (`html_render` in T3 Code), and only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. Text views don't count. These limits hold even when a tool suggests pages more often. Screenshots, videos, and diagrams a catch-up shows follow /ketchup's rules instead, and a /teach explanation's diagram series follows /teach's.
+- **Views**: pick from the content: pseudocode for logic; a module's interface with one call site, a module tree, or a flow for structure, with a first-line comment on where the module lives and what it hides; a `diff` of that view for a change; a table comparing items on the same points; one real example traced through each step with its value, `←` where it matters, for how something works; a screenshot or mockup for UI. A flow that branches or crosses runtimes can be Mermaid, a text view of five boxes or fewer. A text view is a code block of at most 15 lines or a table of at most six rows, the rest in the fold, with a count. Show real code only when it's mostly new or the user will copy it.
 - **Errors**: the cause and the fix, matter-of-fact.
 - **No callouts**: don't use GitHub callouts, such as `> [!TIP]`, in chat.
 - **Tangents**: finish the main thing first. A side issue becomes a later option.
@@ -72,7 +73,7 @@ End with /next-options' yes-or-no options.
 
 ## Before sending
 
-Delete an opening sentence that announces, a recap, and a closing sign-off. Read only the headline, the shape, the notes, and the ending: they alone must say what happened, what the code looks like now, and what comes next. On a card, read only what's above the fold: the user must be able to answer yes or no from it. Cut each sentence that doesn't change that, then check the budget.
+Delete an opening sentence that announces, a recap, and a closing sign-off. Read only the headline, the shape, the notes, and the ending: they alone must say what happened, what it means for the user, and what comes next, with no "what's X?" left. On a card, read only what's above the fold: the user must be able to answer yes or no from it. Cut each sentence that doesn't change that, then check the budget.
 
 ## Setup
 
