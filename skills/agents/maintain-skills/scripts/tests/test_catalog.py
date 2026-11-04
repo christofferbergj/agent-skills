@@ -977,5 +977,15 @@ class ActualLibraryCoverage(unittest.TestCase):
         self.assertEqual(set(result['completed']), set(all_names))
 
 
+class FrontmatterScalar(unittest.TestCase):
+    def test_plain_value_with_yaml_syntax_needs_quotes(self):
+        for value in ('Use it: when needed', 'Ends with a colon:', 'Text # comment'):
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, 'needs quotes'):
+                catalog.scalar('description: ' + value, 'description')
+
+    def test_quoted_value_with_colon_is_read(self):
+        self.assertEqual(catalog.scalar('description: "Use it: when needed"', 'description'), 'Use it: when needed')
+
+
 if __name__ == '__main__':
     unittest.main()

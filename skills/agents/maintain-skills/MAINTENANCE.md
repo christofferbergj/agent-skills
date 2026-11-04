@@ -32,7 +32,7 @@ It exits 3 when another run holds the lock. Otherwise it prints, and saves as `$
 - `resume`: the newest valid checkpoint, skipping unreadable ones, which it lists in `skippedCheckpoints`.
 - `commentsSince`: when that checkpoint's run started. Owner comments posted since then are new.
 - `questions` and `nextActions` from runtime state. A carried item is `overdue` once an audit has finished since it was first carried. `legacyNextActions` names an older run's `next-actions.md` to convert when `next-actions.json` is missing.
-- `leftovers`: uncommitted changes and unpushed commits an interrupted run left in each worktree. Syncing discards them; the checkpoint and `next-actions.json`, both settled only after delivery, still hold their work.
+- `leftovers`: uncommitted changes and unpushed commits an interrupted run left in each worktree. After a squash merge, the previous run's own commits also show here; they are already on the default branch. Syncing discards them; the checkpoint and `next-actions.json`, both settled only after delivery, still hold their work.
 
 Free the lock after the last write to `$STATE`, the same way:
 
@@ -134,7 +134,7 @@ Sync each worktree after `begin`, creating it with `git worktree add` when missi
   git -C "$WORKTREE" rebase --quiet origin/main
   ```
 
-- **Merged, or no remote branch:** detach at the default branch, and create the branch from it at the first edit.
+- **Merged, or no remote branch:** detach at the default branch, and create the branch from it at the first edit with `git -C "$WORKTREE" checkout --quiet -B "$BRANCH"`, since the last run's local branch may still exist.
 
   ```bash
   git -C "$WORKTREE" fetch --quiet origin

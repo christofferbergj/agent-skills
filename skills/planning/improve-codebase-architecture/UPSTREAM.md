@@ -20,6 +20,7 @@
 - HTML report (`SKILL.md` step 2 and `HTML-REPORT.md`): Mermaid runs with `securityLevel: "strict"` instead of `"loose"`, and repository and issue text is escaped before it enters HTML, attributes, or diagram labels, because the report embeds untrusted repository text and loose mode renders HTML in labels.
 - Grilling loop: upstream offers an ADR with a fixed question when the user rejects a candidate; locally /domain-modeling's ADR criteria decide, a settled qualifying decision is recorded within the current grant, and an unresolved one stays a question. Upstream's future-explorer and ephemeral-reason filter is kept.
 - Implementation requires its own task scope, per the user's grant.
+- Explore (`SKILL.md` step 1) reads the last three merged `Deepen` PRs before ranking hot spots. Reason: in a 2026-11-04 retrospective, five runs in one repository each repeated the same `git log` ranking and re-read the same earlier PRs to avoid redoing them.
 
 Local maintenance on 2026-10-20: Keep established product/domain names in HTML reports while using the shared architectural vocabulary for architectural reasoning. This local repair leaves the upstream reviewed-through position unchanged.
 
