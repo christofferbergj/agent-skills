@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 /**
  * Checks a PR body's Evidence section against the branch's committed diff and names what it lacks:
- * a review status line for any diff, and a screenshot or a "Not verified" line for a diff that
- * changes UI source. Run it from the PR branch's checkout.
+ * a review status line and a Limits line for any diff, and a screenshot, a "Not attached" line, or
+ * a "Not verified" line for a diff that changes UI source. Run it from the PR branch's checkout.
  *
  * usage: node check-evidence.ts --body <file> [--base <ref>]
  *
@@ -24,6 +24,9 @@ const HIDDEN = /<!--[\s\S]*?-->|^(`{3,}|~{3,})[\s\S]*?^\1/gm;
 const INLINE_CODE = /`[^`\n]+`/g;
 const IMAGE = /!\[[^\]]*\]\([^)]+\)|<img\s/i;
 const NOT_VERIFIED = /^\*\*Not verified on .+?:\*\*[ \t]*\S/m;
+// Captures that were checked but that GitHub refused to host, described in words instead.
+const NOT_ATTACHED = /^\*\*Not attached:\*\*[ \t]*\S/m;
+const LIMITS = /^\*\*Limits:\*\*[ \t]*\S/m;
 const REVIEW_STATUS = /^\*\*(?:Reviewed|Not reviewed):\*\*[ \t]*\S/;
 
 class UsageError extends Error {}
@@ -35,8 +38,9 @@ export function uiFiles(paths: string[]): string[] {
 
 /**
  * What a PR body's Evidence section lacks for a diff, one problem per entry: a review status line
- * for any diff, and for a diff that changes UI source, a screenshot or a line saying why the change
- * was not verified on its surface.
+ * and a Limits line for any diff, and for a diff that changes UI source, a screenshot, a line
+ * describing captures GitHub refused to host, or a line saying why the change was not verified on
+ * its surface.
  */
 export function checkEvidence(body: string, changedFiles: string[]): string[] {
   const visible = body.replaceAll("\r\n", "\n").replace(HIDDEN, "").replace(INLINE_CODE, "code");
@@ -48,11 +52,17 @@ export function checkEvidence(body: string, changedFiles: string[]): string[] {
   if (!REVIEW_STATUS.test(evidence)) {
     problems.push("Evidence doesn't open with a `**Reviewed:**` or `**Not reviewed:**` line.");
   }
+  if (!LIMITS.test(evidence)) {
+    problems.push(
+      "Evidence has no `**Limits:**` line naming what failed, couldn't run, or nobody checked.",
+    );
+  }
   const ui = uiFiles(changedFiles);
-  if (ui.length > 0 && !IMAGE.test(evidence) && !NOT_VERIFIED.test(evidence)) {
+  const uiProof = [IMAGE, NOT_ATTACHED, NOT_VERIFIED].some((proof) => proof.test(evidence));
+  if (ui.length > 0 && !uiProof) {
     const named = ui.length > 3 ? `${ui.slice(0, 3).join(", ")}, …` : ui.join(", ");
     problems.push(
-      `The diff changes UI (${named}), and Evidence has neither a screenshot nor a \`**Not verified on <surface>:**\` line.`,
+      `The diff changes UI (${named}), and Evidence has no screenshot, \`**Not attached:**\` line, or \`**Not verified on <surface>:**\` line.`,
     );
   }
   return problems;

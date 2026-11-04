@@ -20,8 +20,9 @@ function git(cwd: string, args: string[]) {
 }
 
 const REVIEWED = "**Reviewed:** review-loop Clean at abc1234, Codex 1 · Claude 2";
-const body = (evidence: string) =>
-  `## Summary\n\nA change.\n\n## Evidence\n\n${evidence}\n\n## Merge Danger\n\n**Door:** two-way\n`;
+const LIMITS = "**Limits:** nobody ran it on a phone.";
+const body = (evidence: string, limits = LIMITS) =>
+  `## Summary\n\nA change.\n\n## Evidence\n\n${evidence}\n\n${limits}\n\n## Merge Danger\n\n**Door:** two-way\n`;
 
 test("counts UI source as provable by screenshot, and leaves out tests, stories, and mocks", () => {
   assert.deepEqual(
@@ -43,7 +44,7 @@ test("a UI diff needs a screenshot or a Not verified line, and every diff needs 
   const ui = ["src/app/page.tsx", "src/lib/date.ts"];
 
   assert.deepEqual(checkEvidence(body(REVIEWED), ui), [
-    "The diff changes UI (src/app/page.tsx), and Evidence has neither a screenshot nor a `**Not verified on <surface>:**` line.",
+    "The diff changes UI (src/app/page.tsx), and Evidence has no screenshot, `**Not attached:**` line, or `**Not verified on <surface>:**` line.",
   ]);
   assert.deepEqual(
     checkEvidence(body(`${REVIEWED}\n\n![Page after](https://x/p.png?raw=true)`), ui),
@@ -63,11 +64,22 @@ test("a UI diff needs a screenshot or a Not verified line, and every diff needs 
   );
 });
 
-test("accepts an inline image, an <img> tag, or a surface with a colon, read across line endings", () => {
+test("every diff needs a Limits line with text", () => {
+  const missing = [
+    "Evidence has no `**Limits:**` line naming what failed, couldn't run, or nobody checked.",
+  ];
+
+  assert.deepEqual(checkEvidence(body(REVIEWED, ""), ["src/lib/date.ts"]), missing);
+  assert.deepEqual(checkEvidence(body(REVIEWED, "**Limits:**"), ["src/lib/date.ts"]), missing);
+  assert.deepEqual(checkEvidence(body(REVIEWED, "**Limits:** none."), ["src/lib/date.ts"]), []);
+});
+
+test("accepts an inline image, an <img> tag, captures GitHub refused, or a surface with a colon, read across line endings", () => {
   const page = ["src/app/page.tsx"];
 
   for (const proof of [
     '<img src="https://x/after.png" width="600">',
+    "**Not attached:** the base repository refuses uploads; the after shot shows the new empty state.",
     "**Not verified on http://localhost:3000/users/:id:** needs a signed-in account.",
   ])
     assert.deepEqual(checkEvidence(body(`${REVIEWED}\n\n${proof}`), page), [], proof);
@@ -97,7 +109,7 @@ test("ignores proof that doesn't render, and wants the review status first", () 
 test("reads only the Evidence section, and names a missing one", () => {
   const elsewhere = `## Summary\n\n${REVIEWED}\n\n![Page](https://x/p.png)\n\n## Evidence\n\nTests pass.\n`;
 
-  assert.equal(checkEvidence(elsewhere, ["src/app/page.tsx"]).length, 2);
+  assert.equal(checkEvidence(elsewhere, ["src/app/page.tsx"]).length, 3);
   assert.deepEqual(checkEvidence("## Summary\n\nA change.\n", ["src/lib/date.ts"]), [
     "The body has no `## Evidence` section.",
   ]);

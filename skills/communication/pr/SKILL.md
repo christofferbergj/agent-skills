@@ -47,7 +47,7 @@ Use this template for writing the PR body:
 - **Before:** <output/failing test run>
   **After:** <output/passing test run>
 
-<what failed, couldn't run, or got worse, and what nobody has checked>
+**Limits:** <what failed, couldn't run, or got worse, and what nobody has checked, or none>
 
 ## Merge Danger
 
@@ -77,6 +77,7 @@ When an AI agent wrote the change, open the body with one quoted line that tells
 | Gave the task and approved the approach                                   | `> Written by an AI agent on behalf of @handle. @handle has not reviewed it yet.`                          |
 | Wrote a spec (an issue, a doc, a plan) that you implemented               | `> Written by an AI agent on behalf of @handle, following their spec. @handle has not reviewed it yet.`    |
 | Worked out the design with you: the architecture, the API, the trade-offs | `> Written by an AI agent on behalf of @handle, who shaped the solution. @handle has not reviewed it yet.` |
+| Set up the scheduled task that ran this, without approving this change    | `> Written by an AI agent in a scheduled task @handle set up. @handle has not reviewed it yet.`            |
 
 Picking one of your options is approving an approach, not shaping the solution; when in doubt, use the plainer line. Change the ending to `@handle has reviewed it.` only when the user says they have reviewed the PR. The line takes the place of a default footer such as "Generated with…". When the repository has a PR template, put the line above it.
 
@@ -203,36 +204,30 @@ You may use one of these, you may use several, it is unlikely you will use all o
 
 Concrete evidence that the change works: what the author saw, so the reviewer doesn't have to rebuild it. Prose that describes a change is a claim, not evidence. Show a before and after when both exist; otherwise show the states the change adds.
 
-Open it with the review status: `**Reviewed:**` with the final review's verdict line, reviewer counts, and head SHA, such as /review-loop's Clean line, or `**Not reviewed:**` with the reason. When the diff changes UI source and Evidence has no screenshot, add `**Not verified on <surface>:**`, naming the view or route and why it went unchecked. A refactor of UI source counts, even when nobody should see a difference. Before publishing, run `node ~/.agents/skills/pr/scripts/check-evidence.ts --body <file>` from the PR branch's checkout after committing, or the same script beside this skill where it is installed elsewhere, adding `--base <ref>` for a stacked PR; it names what Evidence still lacks.
+Open it with the review status: `**Reviewed:**` with the final review's verdict line, reviewer counts, and head SHA, such as /review-loop's Clean line, or `**Not reviewed:**` with the reason. When the diff changes UI source and Evidence has no screenshot, add `**Not attached:**` when GitHub refused captures you took, or `**Not verified on <surface>:**`, naming the view or route and why it went unchecked. A refactor of UI source counts, even when nobody should see a difference. Before publishing, run `node ~/.agents/skills/pr/scripts/check-evidence.ts --body <file>` from the PR branch's checkout after committing, or the same script beside this skill where it is installed elsewhere, adding `--base <ref>` for a stacked PR; it names what Evidence still lacks.
 
 Pick the evidence that fits the change, one item for each row it touches; a screenshot proves a layout and nothing about speed. Put output longer than about 20 lines in a `<details>` block under a one-line verdict:
 
 | Change                     | Evidence                                                                                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI                         | Screenshots, as below. A short video for motion, hover, or a multi-step flow, and a phone width when layout is involved.                                                        |
+| UI                         | Screenshots, by the rule below the honesty list. A short video for motion, hover, or a multi-step flow, and a phone width when layout is involved.                              |
 | CLI, script, or build      | The real output of the same command on the base and on this branch, exit code included, copied as it ran. Give both sides the same fixtures or fakes, not a live account.       |
 | Bug fix                    | The same input on both sides with each result, and the regression test, named in pseudocode, failing on the base. When it can't run there, such as code the base lacks, say so. |
 | Performance                | What was measured and how (machine, runs, inputs), the numbers on both sides, and their spread across runs.                                                                     |
 | AI or agent behaviour      | The same real prompts on both sides, how the answers were graded, time and cost per answer, and where the grading is unreliable.                                                |
 | Agent instructions or docs | A run that follows the new text and shows the behaviour it changes, or a line saying none ran.                                                                                  |
-| New API or feature         | The code a caller writes to use it. A pure addition has no before; show it on its own.                                                                                          |
+| New API or feature         | The code a caller writes to use it.                                                                                                                                             |
 | Anything else              | A small table, a diagram, or a page comparing both versions.                                                                                                                    |
 
 Keep it honest:
 
 - After is this branch. Before is the base branch, production, or the last deploy, captured from its own checkout or deploy; never revert or stash this branch to make one.
-- Look at every capture before using it, and check it shows what changed.
+- Look at every capture before uploading it, and check it shows what changed. An upload can't be deleted, even after its reference leaves the body.
 - Capture demo or sanitised data only: no real users, tokens, emails, or private messages.
-- Close Evidence with what failed, couldn't run, or got worse, and any part of the test plan nobody has done.
+- End Evidence with `**Limits:**`: what failed, couldn't run, or got worse, and any part of the test plan nobody has done, or `none`.
 - For a security fix in a public repository, describe the impact at a high level and keep reproductions, payloads, and exploit steps out of the body until the fix is released, following the project's security policy.
 
-When the change alters what a user sees on a view and capturing it is cheap, such as a running app, a dev server with mocks, or the project's verification skill, screenshot it. Take before-and-after screenshots when the base branch shows the same view in the same state, with the same viewport, data, and scroll position, so the pair lines up. When there is no real before, such as a new view or a state the base branch never reaches (a validation error, an empty result, a new step), screenshot each state the change adds instead. A placeholder or an unrelated base-branch screen is not a before.
-
-Show each view as a bold label, at most one sentence on what changed, and a `Before | After` table whose one row holds the two screenshots. Open the screenshots with one line naming their source, viewport, and baseline, such as "Mocked checkout at 1280px. Before is `main`, after is this branch." Show states the same way, with each state's name as its column heading, as in `Empty | Not looked up`: two screenshots to a row, or three for phone screenshots, with each later row's labels in the cell above it.
-
-The project's verification skill says how to capture the base branch. Name a pair `<view>-before.png` and `<view>-after.png`, a view that is new `<view>-after.png`, and a state the base branch never reaches `<view>--<state>.png`, such as `contact-step--empty.png`, all in kebab case.
-
-Keep captures in a temporary directory outside the repository, beside the body file, and reference each by its relative path, as in `![Checkout before](./checkout-before.png)`. Publish from the PR's checkout with `gh pr create` or `gh pr edit`, passing `--body-file <file>` and one `--attach <absolute path>` per image or video (GitHub CLI 2.99 or newer). `gh` uploads each file to GitHub and rewrites the matching reference to its URL in what it sends, leaving the file as it was. Then save the published body over the file with `gh pr view <number> --json body -q .body > <file>`, check every image and video loads, and make later edits from that file. Asset URLs answer 404 without a GitHub login, so check them with `gh api repos/<owner>/<repo>/pulls/<number> -H 'Accept: application/vnd.github.html+json' -q .body_html`, which lists each rendered `<img>`. When `gh` can't upload, such as on GitHub Enterprise Server or a base repository you can't write to, describe each capture in words and say why it isn't attached.
+When the change alters what a user sees on a view and capturing it is cheap, such as a running app, a dev server with mocks, or the project's verification skill, screenshot it. Take before-and-after screenshots when the base branch shows the same view in the same state, with the same viewport, data, and scroll position, so the pair lines up. When there is no real before, such as a new view or a state the base branch never reaches (a validation error, an empty result, a new step), screenshot each state the change adds instead. A placeholder or an unrelated base-branch screen is not a before. Lay out, name, publish, and check the captures by [the screenshots reference](references/screenshots.md).
 
 ### Merge Danger
 
@@ -244,4 +239,14 @@ The blast radius is the potential impact or scope of the changes introduced by t
 
 Close with two or three plain sentences someone outside the project would follow, such as a reader skimming the changelog. If you can't write them, the change probably isn't clear yet.
 
-Complete when the description matches the final diff; an agent-written change opens with the who-did-what line for what the user did; every claim has evidence next to it or says why there is none; nothing in it is invented, no number, result, or run you didn't see; it passes `check-evidence.ts`; it identifies merge risk; and its ELI5 uses no term a reader outside the project would need explained. Use the invoking repository's contribution format when it overrides this default; the check then doesn't apply. This skill writes descriptions; publication follows the user's action grant.
+Complete when:
+
+- the description matches the final diff;
+- an agent-written change opens with the who-did-what line for what the user did;
+- every claim has evidence next to it or says why there is none;
+- nothing in it is invented: no number, result, or run you didn't see;
+- it passes `check-evidence.ts`;
+- it identifies merge risk; and
+- its ELI5 uses no term a reader outside the project would need explained.
+
+Use the invoking repository's contribution format when it overrides this default; the check then doesn't apply. This skill writes descriptions; publication follows the user's action grant.
