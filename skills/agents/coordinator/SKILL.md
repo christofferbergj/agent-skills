@@ -45,7 +45,7 @@ Standing rules:
 Decisions:
 <each project.md decision this unit needs, one line each, ending `[assumed]` on any the user didn't make>
 Build: unless a standing rule names another flow, read <the installed path of /pstack-mode's SKILL.md> and run the unit through its playbook that fits. Code ends at a draft PR through its Opening a PR playbook; a research question ends at its report and opens no PR.
-You own this branch or stack: push, rebase, and restack it yourself. The coordinator owns every PR watch and every merge: call no `watch_pull_request`, and merge only on a go the coordinator quotes to you.
+You own this branch or stack: push each layer as soon as it builds so checks start on it, and rebase and restack it yourself. The coordinator owns every PR watch and every merge: call no `watch_pull_request`, and merge only on a go the coordinator quotes to you.
 At a call you can't make, stop and end with it undecided: a yes-or-no question, the problem and for whom, your pick and its source, and the evidence.
 List each lesson a sibling worker should know under `## Learnings` in your report.
 Report: at the end of each task in this thread, write its full report, every check with its output and the evidence the proof needs, to <the project folder>/reports/<clientRequestId>-<n>.md, with n counting this thread's tasks from 1. Then end with a short message to the coordinator, without the user's reply conventions: status, branch and head SHA, the PR link, each check with its result, the call if any, your Learnings, and the report path.
