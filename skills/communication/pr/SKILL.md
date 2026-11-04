@@ -82,7 +82,7 @@ Picking one of your options is approving an approach, not shaping the solution; 
 
 ### Summary
 
-Open with the problem in one paragraph: what was wrong or missing, for whom, and how it showed up, with real numbers when there are any. Then pick the smallest view that makes the key point clear.
+Open with the user's goal and the problem in one paragraph: what was wrong or missing, for whom, and how it showed up, with real numbers when there are any. Then pick the smallest view that makes the key point clear.
 
 - Show logic or an algorithm as pseudocode:
 
@@ -205,7 +205,7 @@ Concrete evidence that the change works: what the author saw, so the reviewer do
 
 Open it with the review status: `**Reviewed:**` with the final review's verdict line, reviewer counts, and head SHA, such as /review-loop's Clean line, or `**Not reviewed:**` with the reason. When the diff changes UI source and Evidence has no screenshot, add `**Not verified on <surface>:**`, naming the view or route and why it went unchecked. A refactor of UI source counts, even when nobody should see a difference. Before publishing, run `node ~/.agents/skills/pr/scripts/check-evidence.ts --body <file>` from the PR branch's checkout after committing, or the same script beside this skill where it is installed elsewhere, adding `--base <ref>` for a stacked PR; it names what Evidence still lacks.
 
-Pick the evidence that fits the change; a screenshot proves a layout and nothing about speed:
+Pick the evidence that fits the change, one item for each row it touches; a screenshot proves a layout and nothing about speed. Put output longer than about 20 lines in a `<details>` block under a one-line verdict:
 
 | Change                     | Evidence                                                                                                                                                                        |
 | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -232,7 +232,7 @@ Show each view as a bold label, at most one sentence on what changed, and a `Bef
 
 The project's verification skill says how to capture the base branch. Name a pair `<view>-before.png` and `<view>-after.png`, a view that is new `<view>-after.png`, and a state the base branch never reaches `<view>--<state>.png`, such as `contact-step--empty.png`, all in kebab case.
 
-Keep captures in a temporary directory outside the repository, beside the body file, and reference each by its relative path, as in `![Checkout before](./checkout-before.png)`. Publish with `gh pr create` or `gh pr edit`, passing `--body-file <file>` and one `--attach <file>` per capture (GitHub CLI 2.99 or newer; images, or MP4, MOV, and WebM video). `gh` uploads each file to GitHub and rewrites the matching reference to its URL. Read the body back with `gh pr view` and check every image and video loads.
+Keep captures in a temporary directory outside the repository, beside the body file, and reference each by its relative path, as in `![Checkout before](./checkout-before.png)`. Publish with `gh pr create` or `gh pr edit`, passing `--body-file <file>` and one `--attach <absolute path>` per image or video (GitHub CLI 2.99 or newer). `gh` uploads each file to GitHub and rewrites the matching reference to its URL in what it sends, leaving the file as it was. Then save the published body over the file with `gh pr view <number> --json body -q .body > <file>`, check every image and video loads, and make later edits from that file. When `gh` can't upload, such as on GitHub Enterprise Server or a base repository you can't write to, describe each capture in words and say why it isn't attached.
 
 ### Merge Danger
 
@@ -244,4 +244,4 @@ The blast radius is the potential impact or scope of the changes introduced by t
 
 Close with two or three plain sentences someone outside the project would follow, such as a reader skimming the changelog. If you can't write them, the change probably isn't clear yet.
 
-Complete when the description matches the final diff; its first line matches what the user did; every claim has evidence next to it or says why there is none; nothing in it is invented, no number, result, or run you didn't see; it passes `check-evidence.ts`; it identifies merge risk; and its ELI5 makes sense on its own. Use the invoking repository's contribution format when it overrides this default; the check then doesn't apply. This skill writes descriptions; publication follows the user's action grant.
+Complete when the description matches the final diff; an agent-written change opens with the who-did-what line for what the user did; every claim has evidence next to it or says why there is none; nothing in it is invented, no number, result, or run you didn't see; it passes `check-evidence.ts`; it identifies merge risk; and its ELI5 uses no term a reader outside the project would need explained. Use the invoking repository's contribution format when it overrides this default; the check then doesn't apply. This skill writes descriptions; publication follows the user's action grant.

@@ -19,7 +19,7 @@ const UI_SOURCE =
 const NOT_UI = /\.(?:test|spec|stories)\.[a-z]+$|(?:^|\/)(?:__tests__|__mocks__|e2e|stories)\//;
 const EVIDENCE_SECTION = /^## Evidence[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m;
 // Comments and code don't render as evidence, so the checks read the body without them. Images
-// count in the two forms PR bodies use: inline Markdown, as pr-evidence.ts prints, and <img> tags.
+// count in the two forms PR bodies use: inline Markdown, as `gh --attach` rewrites it, and <img> tags.
 const HIDDEN = /<!--[\s\S]*?-->|^(`{3,}|~{3,})[\s\S]*?^\1/gm;
 const INLINE_CODE = /`[^`\n]+`/g;
 const IMAGE = /!\[[^\]]*\]\([^)]+\)|<img\s/i;
