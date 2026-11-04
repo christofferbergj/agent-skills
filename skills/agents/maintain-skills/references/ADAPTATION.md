@@ -1,6 +1,6 @@
 # Adaptation contract
 
-This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, and two of Emil Kowalski's UI reviews, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills are tracked differently, as the source of [principle-derived skills](#principle-derived-skills).
+This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, and two of Emil Kowalski's UI reviews, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills and Hugo Richard's `pr-writing` are tracked differently, as sources of [principle-derived skills](#principle-derived-skills).
 
 ## Library-wide adaptations
 
