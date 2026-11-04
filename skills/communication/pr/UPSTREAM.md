@@ -26,7 +26,7 @@ The frontmatter and `CREDITS.md` retain Dex Horthy and Humanlayer's credit for t
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Keep the upstream description template and inherited source credit. Repository contribution formats take precedence, and publication follows the invoking grant.
 - Evidence, in the template and its section, states when screenshots are due (a visible change on a view that is cheap to capture), lays them out as a `Before | After` table per view when the base branch shows the same state and as a table of the new states otherwise, and publishes them with `gh pr create` or `gh pr edit --attach`, with the layout, naming, and publishing steps in `references/screenshots.md` because only PRs with captures need them. Reason: owner request (#33, #35). Upstream never says when screenshots are due or where they go, so agents fell back to text evidence for visible UI changes; side-by-side tables spare reviewers scrolling between the two. States joined the rule on owner request, because a forced before for a state the base branch never reaches shows nothing.
-- Principle-derived from the second source below. Against upstream's text, that adds the who-did-what line, a sentence on the skimmer's order after "Skip all preambles", the goal-and-problem paragraph opening Summary, an ELI5 section, and an evidence table that replaces upstream's "Screenshots are S-tier" and "Execution-based evidence is A-tier" tiers, its bug-fix row keeping upstream's failing test named in pseudocode. Reason: owner request, 2026-11-04, after local trials on #67's change where his evidence surfaced a behaviour change this skill's published description had missed.
+- Principle-derived from the second source below. Against upstream's text, that adds a sentence on the skimmer's order after "Skip all preambles", the goal-and-problem paragraph opening Summary, an ELI5 section, and an evidence table that replaces upstream's "Screenshots are S-tier" and "Execution-based evidence is A-tier" tiers, its bug-fix row keeping upstream's failing test named in pseudocode. Reason: owner request, 2026-11-04, after local trials on #67's change where his evidence surfaced a behaviour change this skill's published description had missed.
 - Evidence opens with a review status line, `**Reviewed:**` or `**Not reviewed:**`, ends with a `**Limits:**` line, and a diff that changes UI source without a screenshot says `**Not attached:**` when GitHub refused the captures or `**Not verified on <surface>:**` with the reason; `scripts/check-evidence.ts` names what a body lacks, and the completion line requires it to pass. Reason: a 2026-11-02 analysis of the owner's threads found runs reporting "checks all passed" with no check on the real surface, and every path, Pstack or not, writes its PR body here. The template's screenshot rule never fired on refactors, so silence read as verified.
 
 ## Maintenance
@@ -45,7 +45,7 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 - Original author: Hugo Richard.
 - Source repository: [HugoRCD/hr-folio](https://github.com/HugoRCD/hr-folio).
 - Install route announced by the author: `npx skills add hugorcd.com --skill pr-writing`; on 2026-11-04 it installed a file identical to the original skill below.
-- Original skill: [`skills/pr-writing/SKILL.md`](https://github.com/HugoRCD/hr-folio/blob/f296fa2b7364a62b9e985f1c9d2f69be0654b857/skills/pr-writing/SKILL.md), for the who-did-what line, the skimmer's order, evidence by kind of change, the honesty rules, and the ELI5. His article [What My Pull Requests Look Like Now](https://hugorcd.com/writing/what-my-pull-requests-look-like-now) gives the reasons.
+- Original skill: [`skills/pr-writing/SKILL.md`](https://github.com/HugoRCD/hr-folio/blob/f296fa2b7364a62b9e985f1c9d2f69be0654b857/skills/pr-writing/SKILL.md), for the skimmer's order, evidence by kind of change, the honesty rules, and the ELI5. His article [What My Pull Requests Look Like Now](https://hugorcd.com/writing/what-my-pull-requests-look-like-now) gives the reasons.
 - Supporting sources: [`skills/document-pr/SKILL.md`](https://github.com/HugoRCD/hr-folio/blob/f296fa2b7364a62b9e985f1c9d2f69be0654b857/skills/document-pr/SKILL.md), reviewed for its `gh pr edit --attach` publication; its evidence map and HTML artifacts are left out.
 - Tracking policy: upstream `main`, reviewed as a principle source under the adaptation contract's [principle-derived skills](../../agents/maintain-skills/references/ADAPTATION.md#principle-derived-skills).
 - Imported from commit: `f296fa2b7364a62b9e985f1c9d2f69be0654b857`.
@@ -56,9 +56,8 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 
 ### Local adaptations to preserve
 
-Most wording is first-party, inside Matt's template. The who-did-what lines, the sentence on picking an option, "Prose that describes a change is a claim, not evidence", and the ELI5 test stay close to Hugo's text under his license. Adopted principles:
+Most wording is first-party, inside Matt's template. "Prose that describes a change is a claim, not evidence", and the ELI5 test stay close to Hugo's text under his license. Adopted principles:
 
-- A quoted first line saying an AI agent wrote the change on the user's behalf, how much they shaped it (approved the approach, wrote the spec, or shaped the solution), and whether they have reviewed it, in place of a "Generated with…" footer.
 - The skimmer's order: the problem in one paragraph opens Summary, and an ELI5 of two or three plain sentences closes the body.
 - Evidence picked by kind of change: UI with video and phone width, the real output of the same command with its exit code, the same input for a bug, measured spread for performance, graded prompts for agent behaviour, and caller code for a new API.
 - Honesty rules: before is the base or production, never a reverted copy; look at every capture; demo data only; say what failed or nobody checked; no exploit details for a public security fix.
@@ -66,12 +65,11 @@ Most wording is first-party, inside Matt's template. The who-did-what lines, the
 
 Deliberate departures:
 
-- The handle comes from `gh api user` when that account is the user's own, asking only for a bot or shared account, because autonomous runs here have no one to ask.
+- No who-did-what first line saying an AI agent wrote the change and how much the user shaped and reviewed it. Adopted on 2026-11-04 (#70) and dropped the same day on owner request: the owner doesn't want it at the top of their PRs.
 - No step to show the draft and wait for the user's go-ahead: publication follows the invoking grant, as the library-wide authority rule sets.
 - No rule against `Co-Authored-By` commit trailers: commits are outside a PR description, and the host sets their attribution.
 - Matt's Summary visuals replace Hugo's "What changed" list, and Merge Danger replaces his "Details" section; the trial on #67 showed his list turning into a file-by-file account.
 - Added an "Agent instructions or docs" evidence row, since most PRs in this library change only Markdown and his table had no row for them. The CLI row adds fixtures or fakes, and the bug-fix row a line for a test that can't run on the base, both from the #67 trial.
-- A fourth who-did-what row covers scheduled runs, such as `/usage-review` and `/maintain-skills`, where nobody approved the change, so the plainer line would claim an approval that didn't happen.
 - His closing honesty rule becomes a labelled `**Limits:**` line that `check-evidence.ts` requires, and his "can't host them, say so" a `**Not attached:**` line it accepts for UI evidence.
 - His pointers to `agent-browser` and `before-and-after` are left out: projects name their capture tool in their verification skill, and `gh --attach` replaces the uploader.
 
@@ -80,3 +78,4 @@ Deliberate departures:
 | Review date | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                  |
 | ----------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-11-04  | `f296fa2b7364a62b9e985f1c9d2f69be0654b857` | First review. Adapted the principles above into the template and excluded the departures, with their reasons. `document-pr` reviewed for `--attach` only. Validation: `pnpm check` passes, catalog validates, and a trial of the merged skill on #67's change passed `check-evidence.ts`. |
+| 2026-11-04  | `f296fa2b7364a62b9e985f1c9d2f69be0654b857` | Owner request after #70: dropped the who-did-what first line, recorded under the departures. Reviewed-through position unchanged. Validation: `pnpm check` passes.                                                                                                                        |

@@ -12,8 +12,6 @@ metadata:
 Use this template for writing the PR body:
 
 ```markdown
-> <who-did-what line>
-
 ## Summary
 
 <the problem in one paragraph>
@@ -67,19 +65,6 @@ Use this template for writing the PR body:
 ## Sections
 
 Skip all preambles and keep prose brief. Most readers stop early, so the order puts what matters first. Resolve the project's domain vocabulary through /domain-modeling and use its established language.
-
-### Who did what
-
-When an AI agent wrote the change, open the body with one quoted line that tells the reviewer how much a human is behind it. Take the handle from `gh api user -q .login` when that account is the user's own; for a bot or shared account, ask the user for theirs.
-
-| What the user did                                                         | First line                                                                                                 |
-| ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
-| Gave the task and approved the approach                                   | `> Written by an AI agent on behalf of @handle. @handle has not reviewed it yet.`                          |
-| Wrote a spec (an issue, a doc, a plan) that you implemented               | `> Written by an AI agent on behalf of @handle, following their spec. @handle has not reviewed it yet.`    |
-| Worked out the design with you: the architecture, the API, the trade-offs | `> Written by an AI agent on behalf of @handle, who shaped the solution. @handle has not reviewed it yet.` |
-| Set up the scheduled task that ran this, without approving this change    | `> Written by an AI agent in a scheduled task @handle set up. @handle has not reviewed it yet.`            |
-
-Picking one of your options is approving an approach, not shaping the solution; when in doubt, use the plainer line. Change the ending to `@handle has reviewed it.` only when the user says they have reviewed the PR. The line takes the place of a default footer such as "Generated with…". When the repository has a PR template, put the line above it.
 
 ### Summary
 
@@ -242,7 +227,6 @@ Close with two or three plain sentences someone outside the project would follow
 Complete when:
 
 - the description matches the final diff;
-- an agent-written change opens with the who-did-what line for what the user did;
 - every claim has evidence next to it or says why there is none;
 - nothing in it is invented: no number, result, or run you didn't see;
 - it passes `check-evidence.ts`;
