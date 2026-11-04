@@ -18,7 +18,7 @@ Read configured tracker and project artifacts when the spec requires them; a loc
 
 Whatever the user said is the fixed point (a commit SHA, branch name, tag, `main`, `HEAD~5`, etc.). Reuse a fixed point already supplied by the invoking workflow. If none is established, propose the repository's actual merge-base; ask only when the intended scope is ambiguous.
 
-Resolve the base and reviewed head to immutable SHAs, and capture the diff command once. For a committed branch, the base is their merge-base: capture `git diff <merge-base-sha> <head-sha>` and the commit list via `git log <merge-base-sha>..<head-sha> --oneline`. For requested working changes, include staged, unstaged, and relevant untracked files in a captured snapshot, and record their hashes and the command that reads the snapshot. Both axes review the same artifact.
+Resolve the base and reviewed head to immutable SHAs. For a committed branch, capture the diff command once: `git diff <merge-base-sha> <head-sha>`, against the merge-base of the fixed point and head. Also note the list of commits via `git log <merge-base-sha>..<head-sha> --oneline`. For requested working changes, include staged, unstaged, and relevant untracked files in a captured snapshot, and record their hashes and the command that reads the snapshot. Both axes review the same artifact.
 
 Before going further, confirm the fixed point resolves (`git rev-parse <fixed-point>`) and the diff is non-empty. A bad ref or empty diff should fail here, not inside two parallel sub-agents.
 
