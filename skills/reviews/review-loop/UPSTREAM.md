@@ -50,6 +50,8 @@ Departures:
 
 `agents/openai.yaml`, `references/reviewer-brief.md`, the `scripts/` directory, and this record are locally maintained.
 
+- `scripts/packet.ts` prints its JSON on one line, and step 1 says to read it whole. Reason: in a 2026-11-04 retrospective, about ten runs piped the pretty-printed output through `tail` or `head`, lost the packet path, and built a second packet.
+
 ## Maintenance
 
 Invoke `/maintain-skills` for repository-wide upkeep. Decide each upstream change to the tracked files by the principle-derived rules; /swarm's record tracks Oliver's delegation guide. Advance the reviewed-through position only after the delta is decided and checks pass.

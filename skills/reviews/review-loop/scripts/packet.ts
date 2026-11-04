@@ -411,7 +411,7 @@ function build(options: Options) {
 try {
   const options = parse();
   if (!options) console.log(USAGE);
-  else console.log(JSON.stringify(build(options), null, 2));
+  else console.log(JSON.stringify(build(options)));
 } catch (error) {
   const usage =
     error instanceof UsageError ||

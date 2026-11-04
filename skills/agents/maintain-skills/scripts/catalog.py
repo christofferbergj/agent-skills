@@ -157,6 +157,8 @@ def scalar(front, name):
         value = '\n'.join(line.strip() for line in lines if line.startswith((' ', '\t')))
     elif not value or re.fullmatch(r'(?:null|true|false|yes|no|on|off|~|[-+]?\d+(?:\.\d+)?|\.nan|[-+]?\.inf)', value, re.I) or value[0] in '[{&*!':
         raise ValueError('Frontmatter field ' + name + ' must be a string')
+    elif ': ' in value or value.endswith(':') or ' #' in value:
+        raise ValueError('Frontmatter field ' + name + ' needs quotes: YAML reads its ": " or " #" as syntax')
     if not isinstance(value, str) or not value.strip():
         raise ValueError('Frontmatter field ' + name + ' must be a nonempty string')
     return value

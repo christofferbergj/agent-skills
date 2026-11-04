@@ -33,6 +33,7 @@
 - Keep one maintenance engine in `/maintain-skills`; `suite.json` remains this family's data source. Include category/shared files inside upstream skill roots.
 - The PR watcher preserves explicit review and unknown or blocked merge gates and cycle-safe stack traversal.
 - Keep polling sleeps, retries, and queued partial sweeps within the configured deadline. In-flight queries finish; this option does not cancel subprocesses.
+- Babysit step 6 names the PR flag of `watch-pr` (`--pr <n>`, no positional argument). Reason: in a 2026-11-04 retrospective, four runs passed the number positionally and lost a background run to the error.
 
 ## Maintenance
 
