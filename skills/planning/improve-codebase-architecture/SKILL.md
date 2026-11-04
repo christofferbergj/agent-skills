@@ -22,7 +22,7 @@ This command is _informed_ by the project's domain model and built on a shared d
 **Scope before you scan: YAGNI.** Deepening a module pays off by making future changes to it easier, so put extra weight on the parts of the codebase that have recently changed. Decide _where_ to look before you look:
 
 - If the user named a direction (a module, a subsystem, a pain point), take it, and skip the inference below.
-- Otherwise, first read the bodies of the last three merged PRs from earlier runs (`gh pr list --state merged --search 'Deepen in:title' -L 3`) and start from the candidates they left open, so a run doesn't redo a ranking an earlier one settled. Then walk back a good stretch of the commit history (`git log --oneline`) to find the codebase's hot spots, the files and areas that keep coming up, and let those paths pull your attention first. If the changes are scattered with no clear hot spot, widen the net.
+- Otherwise, first read the bodies of the last three merged PRs from earlier runs (`gh pr list --state merged --search 'Deepen in:title sort:created-desc' -L 3`) and start from the candidates they left open, so a run doesn't redo a ranking an earlier one settled. Then walk back a good stretch of the commit history (`git log --oneline`) to find the codebase's hot spots, the files and areas that keep coming up, and let those paths pull your attention first. If the changes are scattered with no clear hot spot, widen the net.
 
 Read the project's configured vocabulary, model, and relevant ADRs first.
 
