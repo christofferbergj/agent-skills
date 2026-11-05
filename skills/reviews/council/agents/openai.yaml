@@ -1,0 +1,4 @@
+interface:
+  display_name: "Council"
+  short_description: "Review with every provider's top model at once"
+  default_prompt: "Use $council to review this change with every provider's top model."
