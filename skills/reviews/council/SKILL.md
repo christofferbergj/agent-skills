@@ -16,31 +16,38 @@ reach, at high reasoning effort. If the user's instructions name council
 members, use those. Otherwise pick each maker's flagship in daily use, for
 example Claude Opus and GPT Sol, which is not always its newest model.
 
-In T3 Code, call `orchestrator_capabilities` and take every provider with
-`canRunChildTask: true`. A provider's member is its first listed model, the
-top of the user's model order for that provider in T3 Code's settings. Seat
-one member per maker, the company a model's id names, such as `claude-` for
-Anthropic or `gpt-` for OpenAI. Instances of one driver count once, chosen as
-/swarm's T3 route chooses; when two providers' members share a maker, keep the
-maker's own harness, such as Codex for OpenAI. Start every member in parallel
-through /swarm's T3 route as a read-only critic, passing its model and `high`
-effort; /swarm's execution contract sets only a Codex member's speed.
-Elsewhere, seat the session vendor's flagship in daily use as a native
-subagent and the counterpart through /swarm's cross-vendor critic route. If
-fewer than two makers are reachable, or a named member is unavailable, report
-it instead of substituting.
+In T3 Code, call `orchestrator_capabilities` without `search`, since a search
+filters every provider's list. A named member runs on the provider that lists
+it. Otherwise take every provider with `canRunChildTask: true`, and make its
+first listed model its member: the top of its model list in T3 Code, which the
+user can reorder there, decides over model names. Seat one member per maker,
+the company a model's id names, such as `claude-` for Anthropic or `gpt-` for
+OpenAI. Instances of one driver count once, chosen as /swarm's T3 route
+chooses; when two providers' members share a maker, keep the maker's own
+harness, such as Codex for OpenAI. Start every member in parallel through
+/swarm's T3 route. Elsewhere, seat /swarm's panel: the session's model and the
+counterpart.
 
-Give each delegate the request and relevant context. For review or feedback,
-keep their work read-only. Collect their responses, verify each finding as
-/review-loop's Verify and merge step does, and summarize the useful findings,
-disagreements, and recommended next steps.
+On every route, pass each member's model and `high` effort. A Codex member
+takes only its `serviceTier` from /swarm's `review-full` target in Claude Code,
+or its `judgment-and-prose` target in Codex. If fewer than two makers are
+reachable, or a member is unavailable, report it instead of substituting. A
+member is unavailable when it still fails after its route's one retry, or when
+its Codex target is `fallback`; take none of /swarm's other routes or models
+for it.
+
+Give each delegate the request and relevant context, and for a code review the
+proof and report lines of /review-loop's reviewer brief. For review or
+feedback, keep their work read-only. Collect their responses, verify each
+finding as /review-loop's Verify and merge step does, and summarize the useful
+findings, disagreements, and recommended next steps.
 
 For a code review, ask each delegate for a score out of 10.
 Count each full review pass as one round.
 A fresh review after fixes starts a new round.
 
 If the work ends in a pull request, put the results in the PR description.
-Put this section at the end of the description:
+Put this section right after the description's Evidence section:
 
 ```markdown
 ## Council review
@@ -59,7 +66,7 @@ If there is no PR, put the same results in the final reply only.
 
 If you agree with their recommendations, make the changes and request a fresh
 review after. Continue this process until all delegates are satisfied with the
-outcome.
+outcome, stopping sooner where /review-loop's step 5 stops.
 
 Do not let repeated reviews result in scope creep. It is your job to fight to
 keep scope limited.

@@ -19,19 +19,19 @@ Invoke skills through your agent's skill picker or command syntax. [Usage guide 
 
 For a feature or a bug, start with `pstack-mode` and give it the goal and how you will know it works. It plans through code: open design questions get prototypes and `architect` sketches rather than a written plan. When an effort spans sessions and should be written down and split into tickets first, use `grill-with-docs` → `to-spec` → `to-tickets` → `implement-spec`, which runs each ticket through a `pstack-mode` playbook. Relevant Pstack principles apply in both, and implementation ends with `review-loop`, where the other vendor's model reviews the change and the agent fixes what holds until a round is clean.
 
-| You want to                               | Start with                                 |
-| ----------------------------------------- | ------------------------------------------ |
-| Build a feature or fix a bug              | `pstack-mode`                              |
-| Clarify an idea and capture decisions     | `grill-with-docs`                          |
-| Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed     |
-| Implement agreed work                     | `implement` or `implement-spec`            |
-| Review a change                           | `review-loop`, `code-review`, or `thermos` |
-| Get a PR verified and merged once green   | `babysit-and-ship`                         |
-| End replies with the next step or choices | `next-options`                             |
-| Shape replies for skimming and action     | `reply-shape`                              |
-| Run a multi-PR project from one T3 thread | `coordinator`                              |
-| Tune the workflow from measured usage     | `usage-review`                             |
-| Maintain this library                     | `maintain-skills`                          |
+| You want to                               | Start with                                            |
+| ----------------------------------------- | ----------------------------------------------------- |
+| Build a feature or fix a bug              | `pstack-mode`                                         |
+| Clarify an idea and capture decisions     | `grill-with-docs`                                     |
+| Write a spec or split it into tickets     | `to-spec`, then `to-tickets` as needed                |
+| Implement agreed work                     | `implement` or `implement-spec`                       |
+| Review a change                           | `review-loop`, `code-review`, `thermos`, or `council` |
+| Get a PR verified and merged once green   | `babysit-and-ship`                                    |
+| End replies with the next step or choices | `next-options`                                        |
+| Shape replies for skimming and action     | `reply-shape`                                         |
+| Run a multi-PR project from one T3 thread | `coordinator`                                         |
+| Tune the workflow from measured usage     | `usage-review`                                        |
+| Maintain this library                     | `maintain-skills`                                     |
 
 ## Browse by task
 
@@ -256,4 +256,4 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 
 ## License
 
-[MIT](LICENSE). Adapted skills retain the notices and `UPSTREAM.md` records for Matt Pocock, Lauren Tan, Cursor, the OpenClaw Foundation, Emil Kowalski, Oliver Cederborg, Ayoub Ghriss, and Hugo Richard inside their own directories.
+[MIT](LICENSE). Adapted skills retain the notices and `UPSTREAM.md` records for Matt Pocock, Lauren Tan, Cursor, the OpenClaw Foundation, Emil Kowalski, Oliver Cederborg, Ayoub Ghriss, Hugo Richard, and Theo Browne inside their own directories.

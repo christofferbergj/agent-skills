@@ -10,7 +10,7 @@ Assess code, architecture, tests, UI, performance claims, and the effects of a c
 | [blast-radius](blast-radius/SKILL.md)                                             | Trace effects beyond the changed code.                       |
 | [break-ui](break-ui/SKILL.md)                                                     | Stress-test UI with realistic worst-case data.               |
 | [code-review](code-review/SKILL.md)                                               | Review changes against standards and the spec.               |
-| [council](council/SKILL.md)                                                       | Get one review from every provider's top model.              |
+| [council](council/SKILL.md)                                                       | Get one review from each model maker you run, at once.       |
 | [interrogate](interrogate/SKILL.md)                                               | Challenge a concrete diff or design.                         |
 | [no-comments](no-comments/SKILL.md)                                               | Review unnecessary or misleading comments.                   |
 | [review-animations](review-animations/SKILL.md)                                   | Review motion code against a strict craft bar.               |
