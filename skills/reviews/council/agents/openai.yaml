@@ -1,0 +1,4 @@
+interface:
+  display_name: "Council"
+  short_description: "One review from each model maker at once"
+  default_prompt: "Use $council to review this change with one model from each maker."
