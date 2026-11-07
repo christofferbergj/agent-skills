@@ -22,6 +22,9 @@ run "fallback". Claude targets carry no speed. Usage comes from the newest snaps
 $CODEX_HOME/sessions, so the check stays local. Banked resets come from `codex app-server`,
 cached for an hour per Codex account, and are read only when a window is behind pace.
 
+Codex Computer Use drives a Mac desktop, so a computer-use role on any other machine, such as
+a Linux server, is run "fallback" without reading usage.
+
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host: fast-code on the host's fast model
 (Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. A
@@ -300,6 +303,10 @@ def describe(left, resets):
     return f'Codex usage {left}% left{until}'
 
 
+def has_mac_desktop():
+    return sys.platform == 'darwin'
+
+
 def capped(effort):
     # GPT models never run above xhigh.
     return 'xhigh' if effort in ('max', 'ultra') else effort
@@ -374,6 +381,9 @@ def main():
     config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     cache = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'codex-reset-credits.json'
+    if args.role.startswith('computer-use') and not has_mac_desktop():
+        print(json.dumps({'role': args.role, 'run': 'fallback', 'reason': f'Codex Computer Use needs a Mac desktop; this machine runs {sys.platform}'}))
+        return 0
     now, codex_model, usage = time.time(), None, None
     other = 'codex' if args.parent == 'claude-code' else 'claude-code'
     runs_on = other if args.role in CROSS_VENDOR_ROLES else args.parent
