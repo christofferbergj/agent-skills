@@ -224,9 +224,7 @@ if (import.meta.main) {
         messages: rows.length,
         threads: new Set(rows.map((r) => r.threadId)).size,
         ...countBy(rows, (row) => row.interaction),
-        ...(values.remote.length > 0 && {
-          machines: countBy(rows, (row) => row.machine ?? "local", ["local", ...values.remote]),
-        }),
+        machines: countBy(rows, (row) => row.machine ?? "local", ["local", ...values.remote]),
       }),
     );
   } finally {
