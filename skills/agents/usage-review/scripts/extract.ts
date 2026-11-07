@@ -1,13 +1,17 @@
 /**
  * Reads the owner's messages from T3 Code's state database for /usage-review.
  * Writes one JSON line per owner message, typed by how it relates to the runs around it.
+ * Each `--remote` names an SSH host whose own T3 Code state database is read by running this
+ * script there; its rows carry that host as `machine`.
  *
- * Usage: extract.ts --out <file.jsonl> [--days 7 | --since <ISO>] [--db <path>]
+ * Usage: extract.ts --out <file.jsonl> [--days 7 | --since <ISO>] [--db <path>] [--remote <host>]...
  */
 import { DatabaseSync } from "node:sqlite";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 export type Interaction = "request" | "steer" | "answer" | "unpaired";
@@ -25,6 +29,8 @@ export interface OwnerMessage {
   readonly messageId: string;
   readonly threadId: string;
   readonly project: string | null;
+  /** SSH host the message was read from; absent for this machine's messages. */
+  readonly machine?: string;
   readonly at: string;
   readonly interaction: Interaction;
   readonly text: string;
@@ -144,6 +150,30 @@ export function extract(db: DatabaseSync, since: string): OwnerMessage[] {
   });
 }
 
+type Ssh = (host: string, command: string, input?: string) => string;
+
+const ssh: Ssh = (host, command, input) =>
+  execFileSync("ssh", ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", host, command], {
+    input,
+    encoding: "utf8",
+    maxBuffer: 1 << 30,
+  });
+
+/** Runs this script on `host` against that machine's state database, with the same window. */
+export function extractRemote(host: string, since: string, run: Ssh = ssh): OwnerMessage[] {
+  const script = readFileSync(fileURLToPath(import.meta.url), "utf8");
+  const output = run(
+    host,
+    `dir=$(mktemp -d) && trap 'rm -rf "$dir"' EXIT && cat > "$dir/extract.ts" && ` +
+      `node "$dir/extract.ts" --since ${since} --out "$dir/messages.jsonl" >&2 && cat "$dir/messages.jsonl"`,
+    script,
+  );
+  return output
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => ({ ...(JSON.parse(line) as OwnerMessage), machine: host }));
+}
+
 if (import.meta.main) {
   const { values } = parseArgs({
     options: {
@@ -151,11 +181,12 @@ if (import.meta.main) {
       since: { type: "string" },
       db: { type: "string" },
       out: { type: "string" },
+      remote: { type: "string", multiple: true, default: [] },
     },
   });
   if (!values.out)
     throw new Error(
-      "usage: extract.ts --out <file.jsonl> [--days 7 | --since <ISO>] [--db <path>]",
+      "usage: extract.ts --out <file.jsonl> [--days 7 | --since <ISO>] [--db <path>] [--remote <host>]...",
     );
   // Stored times are all UTC with milliseconds, so the window compares as text in that form.
   const since = new Date(
@@ -163,7 +194,10 @@ if (import.meta.main) {
   ).toISOString();
   const db = new DatabaseSync(stateDbPath(values.db), { readOnly: true, timeout: 5_000 });
   try {
-    const rows = extract(db, since);
+    const rows = [
+      ...extract(db, since),
+      ...values.remote.flatMap((host) => extractRemote(host, since)),
+    ];
     mkdirSync(dirname(values.out), { recursive: true });
     writeFileSync(values.out, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
     const counts = Object.groupBy(rows, (row) => row.interaction);
@@ -174,6 +208,14 @@ if (import.meta.main) {
         messages: rows.length,
         threads: new Set(rows.map((r) => r.threadId)).size,
         ...summary,
+        ...(values.remote.length > 0 && {
+          machines: Object.fromEntries(
+            Object.entries(Object.groupBy(rows, (row) => row.machine ?? "local")).map(([k, v]) => [
+              k,
+              v?.length,
+            ]),
+          ),
+        }),
       }),
     );
   } finally {

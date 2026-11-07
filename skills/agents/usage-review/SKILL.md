@@ -8,7 +8,7 @@ disable-model-invocation: true
 
 Measure the owner's real T3 Code usage, check whether changes from earlier runs worked, and turn patterns that clear the evidence bar into at most one draft PR in this repository. Merging stays with the owner. A weekly scheduled task runs this from the default branch's `skills/` tree.
 
-The state folder `~/.local/state/usage-review/`, written `$STATE` below, holds `baseline.json` (the last run's metrics, for week-over-week comparison), `shipped.json` (every change a run proposed, as metric contracts with frozen baselines), `private-names.txt` (names the owner adds for the public check), and `runs/<date>/`, written `$RUN`. Scripts are in this skill's `scripts/` folder, run with `node`, and document their flags in their header comments.
+The state folder `~/.local/state/usage-review/`, written `$STATE` below, holds `baseline.json` (the last run's metrics, for week-over-week comparison), `shipped.json` (every change a run proposed, as metric contracts with frozen baselines), `private-names.txt` (names the owner adds for the public check), `remotes.txt` (SSH hosts such as `user@host`, one per line, for other machines whose T3 Code threads count too), and `runs/<date>/`, written `$RUN`. Scripts are in this skill's `scripts/` folder, run with `node`, and document their flags in their header comments.
 
 **This repository is public and the threads hold client work.** Everything published, meaning changed files, commit messages, and the PR title and body, carries counts and paraphrased patterns only: no quoted thread text, client, project, or people names, other repositories' URLs, or ticket ids.
 
@@ -20,7 +20,7 @@ Read the repository's `AGENTS.md`. Take the lock with `mkdir $STATE/lock`, which
 
 ## 2. Measure
 
-Run `extract.ts --days 7 --out $RUN/messages.jsonl`, then `metrics.ts --in $RUN/messages.jsonl --out $RUN/metrics.json --shipped $STATE/shipped.json`, leaving out `--shipped` before the first change ships. Owner messages are typed `request`, `steer` (sent while a run was active), `answer`, or `unpaired` (the run before it left no final reply); menu metrics and assistant length use `answer` rows only. With fewer than 30 owner messages, report "too little data", remove the lock, and stop.
+Run `extract.ts --days 7 --out $RUN/messages.jsonl`, adding `--remote <host>` for each line of `$STATE/remotes.txt` when it exists, then `metrics.ts --in $RUN/messages.jsonl --out $RUN/metrics.json --shipped $STATE/shipped.json`, leaving out `--shipped` before the first change ships. Owner messages are typed `request`, `steer` (sent while a run was active), `answer`, or `unpaired` (the run before it left no final reply); menu metrics and assistant length use `answer` rows only. Every later `extract.ts` run takes the same `--remote` flags. A host that can't be reached fails the run: report it, remove the lock, and stop, since a week missing a machine's messages would distort the baseline. With fewer than 30 owner messages, report "too little data", remove the lock, and stop.
 
 **Complete when:** `messages.jsonl` and `metrics.json` exist in `$RUN`, or the run stopped on too little data.
 
@@ -32,7 +32,7 @@ For each entry in `shipped.json` without a `measureFrom`, read its PR with `gh p
 
 ## 4. Find patterns
 
-Candidates are the recurring phrases in `metrics.json`'s `candidates`, each with its message ids; the `extensions` the owner adds when picking a letter, such as a merge, a review first, or both options, each with its message ids; `confusion` replies, which ask for the work to be explained again; letters the owner rarely picks, from `picksByMenuSize`; and revert candidates. Validate each by reading its threads with `t3_thread_read`, since a recurring phrase alone shows neither a preference nor a correction. A pattern clears the bar `phraseCandidates` applies, counted in validated messages; when one falls short in 7 days, rerun `extract.ts --days 14 --out $RUN/14d/messages.jsonl`, then `metrics.ts` on that file into `$RUN/14d/metrics.json`, and require the bar there. Record each kept pattern's message ids, and each dropped candidate with its reason, in `$RUN/patterns.json`.
+Candidates are the recurring phrases in `metrics.json`'s `candidates`, each with its message ids; the `extensions` the owner adds when picking a letter, such as a merge, a review first, or both options, each with its message ids; `confusion` replies, which ask for the work to be explained again; letters the owner rarely picks, from `picksByMenuSize`; and revert candidates. Validate each by reading its threads, with `t3_thread_read`, or `ssh <machine> t3 thread show --messages <n> <thread>` for a message whose row names a `machine`, since a recurring phrase alone shows neither a preference nor a correction. A pattern clears the bar `phraseCandidates` applies, counted in validated messages; when one falls short in 7 days, rerun `extract.ts --days 14 --out $RUN/14d/messages.jsonl`, then `metrics.ts` on that file into `$RUN/14d/metrics.json`, and require the bar there. Record each kept pattern's message ids, and each dropped candidate with its reason, in `$RUN/patterns.json`.
 
 **Complete when:** every candidate is in `patterns.json`, kept with its message ids or dropped with a reason.
 
@@ -50,6 +50,6 @@ When a change was picked, branch `usage-review/<date>` from `origin/main` in its
 
 ## 7. Report
 
-Copy `$RUN/metrics.json` to `$STATE/baseline.json`. Reply in the run's thread with this week's metrics against the previous baseline, each follow-up result, the PR link, and the outside-repository options. Remove the lock.
+Copy `$RUN/metrics.json` to `$STATE/baseline.json`. Reply in the run's thread with this week's metrics against the previous baseline, the owner messages from each machine, each follow-up result, the PR link, and the outside-repository options. Remove the lock.
 
 **Complete when:** `baseline.json` is this run's metrics, the reply is posted, and the lock is gone.

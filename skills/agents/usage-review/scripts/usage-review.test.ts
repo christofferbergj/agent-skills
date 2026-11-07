@@ -1,8 +1,12 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
-import { endingOf, extract } from "./extract.ts";
+import { endingOf, extract, extractRemote } from "./extract.ts";
 import {
   classify,
   followUp,
@@ -110,6 +114,31 @@ test("the corpus keeps owner messages in agent-created roots and drops subagents
   assert.deepEqual(
     extract(db, "2026-10-15T00:00:00Z").map((r) => r.messageId),
     ["keep"],
+  );
+});
+
+test("a remote machine's messages come back over ssh with the same window, tagged with its host", () => {
+  const { db, thread, message } = fixture();
+  thread("t");
+  message("new", "t", null, "user", "2026-11-02T10:00:00Z", "hi");
+  message("old", "t", null, "user", "2026-10-01T10:00:00Z", "hi");
+  const remoteDb = join(mkdtempSync(join(tmpdir(), "usage-review-")), "statev2.sqlite");
+  db.exec(`vacuum into '${remoteDb}'`);
+  const hosts: string[] = [];
+  // Runs the remote command in a local shell whose state database is the fixture.
+  const ssh = (host: string, command: string, input?: string) => {
+    hosts.push(host);
+    return execFileSync("bash", ["-c", command], {
+      input,
+      encoding: "utf8",
+      env: { ...process.env, T3_STATE_DB: remoteDb },
+    });
+  };
+  const rows = extractRemote("server", "2026-11-01T00:00:00.000Z", ssh);
+  assert.deepEqual(hosts, ["server"]);
+  assert.deepEqual(
+    rows.map((r) => [r.messageId, r.machine]),
+    [["new", "server"]],
   );
 });
 
