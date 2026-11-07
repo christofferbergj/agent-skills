@@ -34,6 +34,6 @@ Complete when the child or command has returned a terminal report or a recorded 
 
 ## 4. Fall back
 
-When the target is `fallback`, or Codex fails on a usage limit, verify with agent-browser when it can reach the check; otherwise use this session's own computer-use tool when it has one; otherwise tell the user what stays unverified and suggest running the check in Codex.
+When the target is `fallback`, or Codex fails on a usage limit, verify with agent-browser when it can reach the check; otherwise use this session's own computer-use tool when it has one; otherwise tell the user what stays unverified and suggest running the check in Codex on a Mac.
 
 Complete when the report names the tool that verified the behavior, with the Codex model and effort when Codex ran it, or names the gap.
