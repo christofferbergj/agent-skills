@@ -26,7 +26,7 @@ Run `extract.ts --days 7 --out $RUN/messages.jsonl > $RUN/extract.json`, adding 
 
 ## 3. Follow up
 
-For each entry in `shipped.json` without a `measureFrom`, read its PR with `gh pr view <pr> --json state`. Once it reads merged and the repository's `scripts/check-installs.py` reports no stale installs, set the entry's `measureFrom` to now, since only messages written after installed copies hold the change can show its effect; rerun `metrics.ts` when you set one. Take each result from `metrics.json`'s `followUps`: `moved`, `unchanged`, `wrong-way`, or `insufficient-exposure`, each against the baseline frozen when the change shipped. One `wrong-way`, or `unchanged` here and in the previous run's `metrics.json`, makes the change a revert candidate for step 4.
+For each entry in `shipped.json` without a `measureFrom`, read its PR with `gh pr view <pr> --json state`. Once it reads merged and the repository's `scripts/check-installs.py` reports no stale installs, here and for each remote host with `--lock` pointed at a copy of that host's `~/.agents/.skill-lock.json` (from `ssh <host> 'cat ~/.agents/.skill-lock.json'`), set the entry's `measureFrom` to now, since only messages written after installed copies hold the change can show its effect; rerun `metrics.ts` when you set one. Take each result from `metrics.json`'s `followUps`: `moved`, `unchanged`, `wrong-way`, or `insufficient-exposure`, each against the baseline frozen when the change shipped. One `wrong-way`, or `unchanged` here and in the previous run's `metrics.json`, makes the change a revert candidate for step 4.
 
 **Complete when:** every shipped change has a result for this window and every revert candidate is named.
 
