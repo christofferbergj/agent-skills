@@ -3,8 +3,10 @@
  * every commit the branch would push (its message, the paths it touches, and the lines it adds)
  * plus the PR title and body, and reports each hit by class and position, never the matched text.
  *
+ * Each `--remote` host, and its project titles read over SSH, count as private too.
+ *
  * Usage: public-check.ts [--base origin/main] [--pr-title <text>] [--pr-body <file>]
- *        [--names ~/.local/state/usage-review/private-names.txt] [--db <path>]
+ *        [--names ~/.local/state/usage-review/private-names.txt] [--db <path>] [--remote <host>]...
  * Exits 1 on any hit, and on any error, so a failed check never reads as clean.
  */
 import { execFileSync } from "node:child_process";
@@ -14,7 +16,7 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 
-import { stateDbPath } from "./extract.ts";
+import { ssh, stateDbPath, type Ssh } from "./extract.ts";
 
 export type HitClass =
   | "github-url"
@@ -187,10 +189,30 @@ export function creditedRepos(root: string, base: string, self: string): Set<str
 }
 
 /** T3 project titles, leaving out this repository's own and the non-identifying ones. */
+const TITLES_SCRIPT = `
+import { DatabaseSync } from "node:sqlite";
+import { homedir } from "node:os";
+import { join } from "node:path";
+const db = new DatabaseSync(process.env.T3_STATE_DB ?? join(homedir(), ".t3", "userdata", "statev2.sqlite"), { readOnly: true });
+console.log(JSON.stringify(db.prepare("select title from projection_projects").all().map((row) => row.title)));
+`;
+
+/** Reads the project titles in `host`'s own state database. */
+export function remoteProjectTitles(host: string, run: Ssh = ssh): string[] {
+  return JSON.parse(run(host, "node --input-type=module -", TITLES_SCRIPT)) as string[];
+}
+
 export function privateProjectTitles(db: DatabaseSync, repoName: string): string[] {
   const rows = db.prepare("select title from projection_projects").all() as { title: string }[];
-  return rows
-    .map((row) => row.title.trim().normalize("NFKC").toLowerCase())
+  return projectTitleRules(
+    rows.map((row) => row.title),
+    repoName,
+  );
+}
+
+export function projectTitleRules(titles: readonly string[], repoName: string): string[] {
+  return titles
+    .map((title) => title.trim().normalize("NFKC").toLowerCase())
     .filter(
       (t) =>
         t.length >= 3 && !t.startsWith(".") && t !== "no project" && t !== repoName.toLowerCase(),
@@ -208,6 +230,7 @@ if (import.meta.main) {
         default: join(homedir(), ".local/state/usage-review/private-names.txt"),
       },
       db: { type: "string" },
+      remote: { type: "string", multiple: true, default: [] },
     },
   });
   const root = execFileSync("git", ["rev-parse", "--show-toplevel"], { encoding: "utf8" }).trim();
@@ -224,13 +247,18 @@ if (import.meta.main) {
     console.error(`public-check: no private names file at ${values.names}`);
   const rules: Rules = {
     allowedRepos: creditedRepos(root, values.base, self),
-    projectTitles: privateProjectTitles(db, self.split("/")[1]),
-    privateNames: existsSync(values.names)
-      ? readFileSync(values.names, "utf8")
-          .split("\n")
-          .map((l) => l.trim().normalize("NFKC").toLowerCase())
-          .filter(Boolean)
-      : [],
+    projectTitles: [
+      ...privateProjectTitles(db, self.split("/")[1]),
+      ...values.remote.flatMap((host) =>
+        projectTitleRules(remoteProjectTitles(host), self.split("/")[1]),
+      ),
+    ],
+    privateNames: [
+      ...(existsSync(values.names) ? readFileSync(values.names, "utf8").split("\n") : []),
+      ...values.remote.flatMap((host) => [host, host.split("@").at(-1) ?? host]),
+    ]
+      .map((l) => l.trim().normalize("NFKC").toLowerCase())
+      .filter(Boolean),
   };
   db.close();
 

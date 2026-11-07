@@ -150,9 +150,9 @@ export function extract(db: DatabaseSync, since: string): OwnerMessage[] {
   });
 }
 
-type Ssh = (host: string, command: string, input?: string) => string;
+export type Ssh = (host: string, command: string, input?: string) => string;
 
-const ssh: Ssh = (host, command, input) =>
+export const ssh: Ssh = (host, command, input) =>
   execFileSync("ssh", ["-o", "BatchMode=yes", "-o", "ConnectTimeout=15", host, command], {
     input,
     encoding: "utf8",
@@ -164,7 +164,7 @@ export function extractRemote(host: string, since: string, run: Ssh = ssh): Owne
   const script = readFileSync(fileURLToPath(import.meta.url), "utf8");
   const output = run(
     host,
-    `dir=$(mktemp -d) && trap 'rm -rf "$dir"' EXIT && cat > "$dir/extract.ts" && ` +
+    `dir=$(mktemp -d "\${TMPDIR:-/tmp}/usage-review.XXXXXX") && trap 'rm -rf "$dir"' EXIT && cat > "$dir/extract.ts" && ` +
       `node "$dir/extract.ts" --since ${since} --out "$dir/messages.jsonl" >&2 && cat "$dir/messages.jsonl"`,
     script,
   );
@@ -172,6 +172,27 @@ export function extractRemote(host: string, since: string, run: Ssh = ssh): Owne
     .split("\n")
     .filter(Boolean)
     .map((line) => ({ ...(JSON.parse(line) as OwnerMessage), machine: host }));
+}
+
+/** This machine's owner messages followed by each remote host's. */
+export function extractAll(
+  db: DatabaseSync,
+  since: string,
+  remotes: readonly string[],
+  run: Ssh = ssh,
+): OwnerMessage[] {
+  return [...extract(db, since), ...remotes.flatMap((host) => extractRemote(host, since, run))];
+}
+
+/** Counts rows per key, starting each of `keys` at zero so an empty group still shows. */
+export function countBy<T>(
+  rows: readonly T[],
+  key: (row: T) => string,
+  keys: readonly string[] = [],
+): Record<string, number> {
+  const counts: Record<string, number> = Object.fromEntries(keys.map((k) => [k, 0]));
+  for (const row of rows) counts[key(row)] = (counts[key(row)] ?? 0) + 1;
+  return counts;
 }
 
 if (import.meta.main) {
@@ -194,27 +215,17 @@ if (import.meta.main) {
   ).toISOString();
   const db = new DatabaseSync(stateDbPath(values.db), { readOnly: true, timeout: 5_000 });
   try {
-    const rows = [
-      ...extract(db, since),
-      ...values.remote.flatMap((host) => extractRemote(host, since)),
-    ];
+    const rows = extractAll(db, since, values.remote);
     mkdirSync(dirname(values.out), { recursive: true });
     writeFileSync(values.out, rows.map((row) => JSON.stringify(row)).join("\n") + "\n");
-    const counts = Object.groupBy(rows, (row) => row.interaction);
-    const summary = Object.fromEntries(Object.entries(counts).map(([k, v]) => [k, v?.length]));
     console.log(
       JSON.stringify({
         since,
         messages: rows.length,
         threads: new Set(rows.map((r) => r.threadId)).size,
-        ...summary,
+        ...countBy(rows, (row) => row.interaction),
         ...(values.remote.length > 0 && {
-          machines: Object.fromEntries(
-            Object.entries(Object.groupBy(rows, (row) => row.machine ?? "local")).map(([k, v]) => [
-              k,
-              v?.length,
-            ]),
-          ),
+          machines: countBy(rows, (row) => row.machine ?? "local", ["local", ...values.remote]),
         }),
       }),
     );

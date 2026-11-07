@@ -1,12 +1,12 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { test } from "node:test";
 
-import { endingOf, extract, extractRemote } from "./extract.ts";
+import { countBy, endingOf, extract, extractAll } from "./extract.ts";
 import {
   classify,
   followUp,
@@ -16,7 +16,13 @@ import {
   rateOf,
   type Contract,
 } from "./metrics.ts";
-import { scan, scanLog, type Rules } from "./public-check.ts";
+import {
+  projectTitleRules,
+  remoteProjectTitles,
+  scan,
+  scanLog,
+  type Rules,
+} from "./public-check.ts";
 
 /** A state database with only the columns the scripts read. */
 function fixture() {
@@ -117,29 +123,62 @@ test("the corpus keeps owner messages in agent-created roots and drops subagents
   );
 });
 
-test("a remote machine's messages come back over ssh with the same window, tagged with its host", () => {
-  const { db, thread, message } = fixture();
-  thread("t");
-  message("new", "t", null, "user", "2026-11-02T10:00:00Z", "hi");
-  message("old", "t", null, "user", "2026-10-01T10:00:00Z", "hi");
-  const remoteDb = join(mkdtempSync(join(tmpdir(), "usage-review-")), "statev2.sqlite");
-  db.exec(`vacuum into '${remoteDb}'`);
-  const hosts: string[] = [];
-  // Runs the remote command in a local shell whose state database is the fixture.
-  const ssh = (host: string, command: string, input?: string) => {
-    hosts.push(host);
-    return execFileSync("bash", ["-c", command], {
+/** An `ssh` that runs the remote command in a local shell, against a copy of `db` per host. */
+function fakeSsh(dbs: Record<string, DatabaseSync>) {
+  const dir = mkdtempSync(join(tmpdir(), "usage-review-"));
+  const remoteTmp = join(dir, "tmp");
+  mkdirSync(remoteTmp);
+  for (const [host, db] of Object.entries(dbs)) db.exec(`vacuum into '${join(dir, host)}.sqlite'`);
+  const run = (host: string, command: string, input?: string) =>
+    execFileSync("bash", ["-c", command], {
       input,
       encoding: "utf8",
-      env: { ...process.env, T3_STATE_DB: remoteDb },
+      env: { ...process.env, T3_STATE_DB: `${join(dir, host)}.sqlite`, TMPDIR: remoteTmp },
     });
-  };
-  const rows = extractRemote("server", "2026-11-01T00:00:00.000Z", ssh);
-  assert.deepEqual(hosts, ["server"]);
-  assert.deepEqual(
-    rows.map((r) => [r.messageId, r.machine]),
-    [["new", "server"]],
-  );
+  return { run, remoteTmp, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+}
+
+test("each remote machine's messages come back over ssh with the same window, tagged with its host", () => {
+  const local = fixture();
+  local.thread("l");
+  local.message("here", "l", null, "user", "2026-11-02T09:00:00Z", "hi");
+  const busy = fixture();
+  busy.thread("t");
+  busy.message("new", "t", null, "user", "2026-11-02T10:00:00Z", "hi");
+  busy.message("old", "t", null, "user", "2026-10-01T10:00:00Z", "hi");
+  const ssh = fakeSsh({ busy: busy.db, idle: fixture().db });
+  try {
+    const rows = extractAll(local.db, "2026-11-01T00:00:00.000Z", ["busy", "idle"], ssh.run);
+    assert.deepEqual(
+      rows.map((r) => [r.messageId, r.machine]),
+      [
+        ["here", undefined],
+        ["new", "busy"],
+      ],
+    );
+    assert.deepEqual(
+      countBy(rows, (r) => r.machine ?? "local", ["local", "busy", "idle"]),
+      { local: 1, busy: 1, idle: 0 },
+      "a host with no messages still shows",
+    );
+    assert.deepEqual(readdirSync(ssh.remoteTmp), [], "the remote copy of the messages is removed");
+  } finally {
+    ssh.cleanup();
+  }
+});
+
+test("a remote machine's project titles and its host name are private", () => {
+  const remote = fixture();
+  remote.db.exec("insert into projection_projects values ('q', 'Server Only Client')");
+  const ssh = fakeSsh({ server: remote.db });
+  try {
+    assert.deepEqual(projectTitleRules(remoteProjectTitles("server", ssh.run), "skills"), [
+      "demo",
+      "server only client",
+    ]);
+  } finally {
+    ssh.cleanup();
+  }
 });
 
 test("endings read options, a plain next step, and Done", () => {
