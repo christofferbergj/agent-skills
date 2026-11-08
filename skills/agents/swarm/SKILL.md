@@ -17,7 +17,7 @@ Give each writer its own worktree or output directory. A verification or measure
 
 ## 2. Dispatch
 
-Use the host's native delegation tools and actual schema. Start independent jobs before waiting, respecting the available concurrency window. Each brief supplies the goal, boundary, repository guidance, resolved rubric or reference paths, evidence to return, and allowed writes. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first. Prefer cross-vendor critics through the execution contract when available.
+Use the host's native delegation tools and actual schema. Start independent jobs before waiting, respecting the available concurrency window. In T3 Code, a job that needs another machine's tools, or would load this one for long, runs there through [the T3 route's On another machine](references/t3.md#on-another-machine). Each brief supplies the goal, boundary, repository guidance, resolved rubric or reference paths, evidence to return, and allowed writes. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first. Prefer cross-vendor critics through the execution contract when available.
 
 Complete when each job has a handle or an explicit dispatch failure. A dropped worker is a gap, never an implicit success.
 

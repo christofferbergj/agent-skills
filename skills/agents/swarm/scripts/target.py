@@ -23,7 +23,8 @@ $CODEX_HOME/sessions, so the check stays local. Banked resets come from `codex a
 cached for an hour per Codex account, and are read only when a window is behind pace.
 
 Codex Computer Use drives a Mac desktop, so a computer-use role on any other machine, such as
-a Linux server, is run "fallback" without reading usage.
+a Linux server, is run "fallback" without reading usage, unless --on-mac says the child runs on
+a linked macOS machine.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host: fast-code on the host's fast model
@@ -375,13 +376,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('role', choices=sorted({*CROSS_VENDOR_ROLES, *FAST_ROLES, *PARENT_ROLES}))
     parser.add_argument('--parent', choices=['codex', 'claude-code'], required=True, help='The host running this session')
+    parser.add_argument('--on-mac', action='store_true', help='A computer-use child runs on a linked macOS machine, not this one')
     args = parser.parse_args()
     if args.parent == 'codex' and args.role.startswith('computer-use'):
         parser.error('Codex runs computer use itself')
     config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     cache = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'codex-reset-credits.json'
-    if args.role.startswith('computer-use') and not has_mac_desktop():
+    if args.role.startswith('computer-use') and not (args.on_mac or has_mac_desktop()):
         print(json.dumps({'role': args.role, 'run': 'fallback', 'reason': f'Codex Computer Use needs a Mac desktop; this machine runs {sys.platform}'}))
         return 0
     now, codex_model, usage = time.time(), None, None

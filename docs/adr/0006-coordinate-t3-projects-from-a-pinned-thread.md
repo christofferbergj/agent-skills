@@ -7,3 +7,5 @@ So `coordinator` is a first-party skill built on Oliver's ideas, like `review-lo
 Orchestrate stays, because it is sourced Pstack text that runs anywhere. The coordinator restates several of its supervision rules in T3 terms, such as piloting one unit, checking a PR's live state, and retrying by cause, rather than citing a playbook whose host-neutral rules forbid what a T3 coordinator needs: a project script, an hourly heartbeat, and handing watch events to owners. The skill is model-invoked, as upstream's is, so a heartbeat, a worker's completion, or a compaction in a coordinator thread reloads it.
 
 T3 Code replays interval timers missed while the machine slept, so every coordinator timer opens with the user's run gate for interval tasks. Workers on another machine are left out until the user links one.
+
+Revised 2026-11-08: the user linked a second machine, so the coordinator gained placement by what its units need and report-only workers on a machine its own T3 Code server links to; links run one way, so it reaches only those machines.
