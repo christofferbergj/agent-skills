@@ -40,7 +40,7 @@ When the user's answer is needed while your own work runs, say in one line what 
 - **`a` is the recommendation**: bold only its option text and add the italic tag. It serves the session's goal and names every push, post, PR, or issue it creates in a word or two, as in `…, then push`. The option names the action; its plan stays with you. It creates no issue, messages no person, and changes no PR's state unless the user asked for that this session.
 - **Each option** is a step the user would naturally take next, in plain words that make sense on their own, calling each item it cites by name. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.
 - **Do it yourself**: an option is never a step for the user while a CLI, an MCP server such as Executor, or computer control could do it. Hand over only credentials, payment, or physical actions, and say why.
-- **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. When nothing else is left and the PR has checks, bots, or reviews still to report, `a` is the watch (`watch_pull_request` in T3 Code); with none, a watch has nothing to wake on. Beside a watch, or an `a` that marks a PR ready, `b` is /babysit-and-ship, after the Thermos pass while the Thermos row applies.
+- **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. When nothing else is left and the PR has checks, bots, or reviews still to report, `a` is the watch (`watch_pull_request` in T3 Code); with none, a watch has nothing to wake on. Beside a watch, or an `a` that marks a PR ready, `b` is /babysit-and-ship.
 - **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>`, or the same script beside this skill where it is installed elsewhere. On `verdict: person`, such as Chromatic baselines that must be accepted or a deployment that waits for approval, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), list each item with its link as something only the user can do, and end with options. A check like this never finishes on its own, so waiting on it stalls the PR.
 - **Leave out** filler such as stop, done, list what's open, or something else, and any option the user passed over in both of the last two lists, including a past `a`, though not the babysit-and-ship `b`.
 
@@ -64,7 +64,7 @@ When a stage of this library's flows finishes, the usual `a` is the next stage t
 | A draft PR with code /thermos hasn't seen | /thermos, fix in-scope findings, re-review them with /review-loop, then mark it ready        |
 | A draft PR                                | watch it, or address its review comments                                                     |
 
-The Thermos pass is that row's `a` up to mark-ready, over the whole PR. Its fixes, /review-loop's included, and a rebase that keeps patch-ids count as seen. A PR that fits the small-diff tier skips it.
+While the /thermos row applies, `b` is its pass over the whole PR up to mark-ready, then /babysit-and-ship. The pass's fixes, /review-loop's included, and a rebase that keeps patch-ids count as seen. A PR that fits /review-loop's small-diff tier skips the row.
 
 ## Setup
 
