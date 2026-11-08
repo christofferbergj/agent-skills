@@ -51,9 +51,9 @@ class TargetResolution(unittest.TestCase):
         self.fetches+=1
         return self.credits
 
-    def run_target(self,role,parent='claude-code',now=NOW,mac=True):
+    def run_target(self,role,parent='claude-code',now=NOW,mac=True,extra=()):
         stream=StringIO()
-        with patch.dict(os.environ,{'PSTACK_CONFIG':str(self.config),'CODEX_HOME':str(self.home),'XDG_CACHE_HOME':str(self.home/'cache')}),patch.object(sys,'argv',['target.py','--parent',parent,role]),patch.object(target.time,'time',return_value=now),patch.object(target,'fetch_reset_credits',self.fetch),patch.object(target,'has_mac_desktop',return_value=mac),redirect_stdout(stream):
+        with patch.dict(os.environ,{'PSTACK_CONFIG':str(self.config),'CODEX_HOME':str(self.home),'XDG_CACHE_HOME':str(self.home/'cache')}),patch.object(sys,'argv',['target.py','--parent',parent,*extra,role]),patch.object(target.time,'time',return_value=now),patch.object(target,'fetch_reset_credits',self.fetch),patch.object(target,'has_mac_desktop',return_value=mac),redirect_stdout(stream):
             self.assertEqual(target.main(),0)
         return json.loads(stream.getvalue())
 
@@ -211,6 +211,12 @@ class TargetResolution(unittest.TestCase):
             self.assertIn('Mac desktop',result['reason'])
             self.assertNotIn('usage',result)
         self.assertEqual(self.run_target('review-full',mac=False)['run'],'codex')
+
+    def test_computer_use_on_a_linked_mac_resolves_off_a_mac(self):
+        self.log('a.jsonl',event(10))
+        result=self.run_target('computer-use',mac=False,extra=('--on-mac',))
+        self.assertEqual((result['run'],result['effort']),('codex','medium'))
+        self.assertEqual(result['usage']['left'],90)
 
     def test_native_roles_run_on_the_parent_host_with_fast_code_on_its_fast_model(self):
         self.config.write_text('{}')

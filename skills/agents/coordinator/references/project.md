@@ -11,7 +11,7 @@ The coordinator's memory for one project, at `~/.local/state/coordinator/<projec
 ## Workers
 
 - **Proof**: the unit's evidence, which its brief's `Proof:` line repeats.
-- **Thread**: the worker thread's `link`, verbatim as T3 returns it (`<t3-thread://…>`), which every card for that worker carries, with the newest `taskId` beside it for `task_status` and `task_cancel`.
+- **Thread**: the worker thread's `link`, verbatim as T3 returns it (`<t3-thread://…>`), which every card for that worker carries, with the newest `taskId` beside it for `task_status` and `task_cancel`, or the `environmentId` of a worker on another machine.
 - **Branch or PR**: the worker's branch, then its PR once it opens one.
 - **State**: `queued`, `overdue` (launched, not started by the startup deadline), `unknown` (its status read failed), `running`, `waiting` (on a call, a slot, or a shared resource), `stuck`, `done`, `replaced by <worker>`, `absorbed into <worker>`, or `dropped` (after two retries, with the replan under Decisions). While a unit is on a retry, its state reads `running, retry <n>`. `project.py` refuses a state that doesn't start with one of these, and detail may follow it, as in `done: #12 MERGED`.
 - **Waits on**: the call, credential, slot, shared resource, or worker it waits for, with when it started waiting, or `—`. The queue of cards reads this column.
