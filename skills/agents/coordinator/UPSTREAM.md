@@ -52,6 +52,7 @@ Departures:
 - Without T3 Code's tools the skill stops and points to /pstack-mode's Orchestrate playbook, which runs a program on any host.
 - `project.py` drops upstream's `--mode` option and the header's `Mode:` field, adds a Proof column, because step 2 records each unit's proof in Workers and upstream's table had no place for it, and refuses a worker name holding `|`, which upstream wrote unescaped and then could not edit. The Goal section is edited by hand like the close's Result, since no command edits its follow-ups. Its tests sit under `scripts/tests/`, where `pnpm check` discovers them, and use `tempfile.TemporaryDirectory` like the library's other suites.
 - The invocation mode matches upstream's model-invoked skill, so a heartbeat, a worker's completion, or a compaction reloads it in a coordinator thread.
+- Upstream's Notes line is left out, under /review-loop's departure for addystack's per-user notes.
 
 Decide upstream changes to `coordinator/` by the principle-derived rules. Review changes to upstream's `orchestrate/SKILL.md` here only for its brief and Standing rules convention; /swarm's record reviews it and `shared/t3-delegation.md` for the T3 route.
 
