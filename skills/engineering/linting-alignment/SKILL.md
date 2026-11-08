@@ -71,7 +71,7 @@ A change is directly warranted only by current evidence: verified upstream cover
 
 Prefer a source fix when the rule is correct and the fix is smaller than the exception. Prefer the narrowest valid exception when the code is intentionally different. Preserve a standalone analyzer when its CLI covers work the plugin lane cannot, and preserve type-aware checks only with their runtime and project graph requirements intact.
 
-Count the files each source fix, chosen or candidate, touches, whether a formatter, an autofix, a codemod, or a hand edit makes it, and the findings it newly exposes in other rules. A style-only default, one whose purpose is consistency rather than catching bugs, is **defer** when its fix touches more than a tenth of the files its tool checks in the baseline, unless the request names that default.
+Count the files each source fix, chosen or candidate, touches, whether a formatter, an autofix, a codemod, or a hand edit makes it, and the findings it newly exposes in other rules. A style-only default, one whose purpose is consistency rather than catching bugs, is **defer** when its fix touches more than a tenth of the files its tool checks in the baseline, unless the request names that default; a request for upstream defaults in general names none.
 
 An ignore pattern is **remove** when another mechanism excludes its paths for every invocation, including file lists that hooks and editors pass explicitly, or when the files there, including those a tool writes later, pass the checks. A probe with zero changed files proves only the current tree; Changesets, release tooling, and code generators write files after it.
 
@@ -112,4 +112,4 @@ Lead with the outcome. Summarize the ownership graph, directly warranted changes
 
 In Review mode, confirm the worktree is unchanged. In Align mode, stop before publication. In Publish mode, follow repository guidance and publish only the validated alignment files through the explicitly requested boundary, with the deviation list in the review description; report pending hosted checks separately from failures.
 
-**Complete when:** the user can see what owns the toolchain, why each local deviation changed or stayed, how the after-state compares with baseline, and the exact publication state.
+**Complete when:** the user can see what owns the toolchain, why each local deviation changed or stayed, which deferred defaults await their call, how the after-state compares with baseline, and the exact publication state.
