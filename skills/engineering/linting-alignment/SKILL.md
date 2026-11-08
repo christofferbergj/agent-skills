@@ -71,11 +71,15 @@ A change is directly warranted only by current evidence: verified upstream cover
 
 Prefer a source fix when the rule is correct and the fix is smaller than the exception. Prefer the narrowest valid exception when the code is intentionally different. Preserve a standalone analyzer when its CLI covers work the plugin lane cannot, and preserve type-aware checks only with their runtime and project graph requirements intact.
 
-**Complete when:** every changed or retained non-default choice has evidence, an owner, a lane, and a recorded disposition.
+Count the files each source fix, chosen or candidate, touches, whether a formatter, an autofix, a codemod, or a hand edit makes it, and the findings it newly exposes in other rules. A style-only default, one whose purpose is consistency rather than catching bugs, is **defer** when its fix touches more than a tenth of the files its tool checks in the baseline, unless the request names that default; a request for upstream defaults in general names none.
+
+An ignore pattern is **remove** when another mechanism excludes its paths for every invocation, including file lists that hooks and editors pass explicitly, or when the files there, including those a tool writes later, pass the checks. A probe with zero changed files proves only the current tree; Changesets, release tooling, and code generators write files after it.
+
+**Complete when:** every changed or retained non-default choice in scope has evidence, an owner, a lane, and a recorded disposition, and every rule or formatter option in scope that differs from its upstream default has its file count and the findings its fix would expose in other rules.
 
 ## 6. Probe, then apply
 
-Probe one ownership edge or rule group at a time and rerun its focused baseline command. Use temporary worktrees or disposable copies for migrations and generator experiments; keep rejected probes out of the user's worktree.
+Probe one ownership edge or rule group at a time and rerun its focused baseline command. Run migrations and generator experiments in temporary worktrees or disposable copies with their own dependency install, since a probe that shares or symlinks the user's install can rewrite it. Keep rejected probes out of the user's worktree.
 
 In Review mode, keep every probe read-only, leave the worktree unchanged, and continue to comparison and reporting without applying dispositions.
 
@@ -104,8 +108,8 @@ Fix, hold, or split regressions caused by the alignment. Record exact blockers i
 
 ## 8. Report at the requested boundary
 
-Lead with the outcome. Summarize the ownership graph, directly warranted changes, important local policy retained, baseline comparison, validation results, held or deferred work, and any source or comparison gaps.
+Lead with the outcome. Summarize the ownership graph, directly warranted changes, baseline comparison, validation results, held or deferred work, and any source or comparison gaps. List every retained deviation from upstream defaults with its reason and, for a rule or formatter option, its file count and any findings its fix would expose in other rules. Name each deferred default as the user's call.
 
-In Review mode, confirm the worktree is unchanged. In Align mode, stop before publication. In Publish mode, follow repository guidance and publish only the validated alignment files through the explicitly requested boundary; report pending hosted checks separately from failures.
+In Review mode, confirm the worktree is unchanged. In Align mode, stop before publication. In Publish mode, follow repository guidance and publish only the validated alignment files through the explicitly requested boundary, with the deviation list in the review description; report pending hosted checks separately from failures.
 
-**Complete when:** the user can see what owns the toolchain, why each local deviation changed or stayed, how the after-state compares with baseline, and the exact publication state.
+**Complete when:** the user can see what owns the toolchain, why each local deviation changed or stayed, which deferred defaults await their call, how the after-state compares with baseline, and the exact publication state.
