@@ -34,7 +34,7 @@ Prove configuration discovery and inheritance with representative files before s
 - Which root or nested config each file resolves.
 - Whether an explicit config path changes nested discovery.
 - Whether child configs merge with parents or require an explicit extension.
-- Which top-level properties `extends` carries and which, such as ignore propagation, the entry config must preserve explicitly.
+- Which top-level properties `extends` carries, and therefore which of the rest, such as `env`, `settings`, and `ignorePatterns`, the root and each nested config must set themselves.
 
 Treat type-aware linting as a separate lane. Derive its companion package, TypeScript compatibility, program construction, root-only options, and monorepo build requirements from installed versions and current documentation.
 
