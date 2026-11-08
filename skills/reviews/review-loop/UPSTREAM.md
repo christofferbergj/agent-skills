@@ -6,7 +6,7 @@
 - Source repository: [olivercederborg/addystack](https://github.com/olivercederborg/addystack), where Oliver's kit moved on 2026-11-08.
 - Original skill: [`skills/primitive/review-loop/SKILL.md`](https://github.com/olivercederborg/addystack/blob/bcf7d167d0af51fb156c534f023f76156e786417/skills/primitive/review-loop/SKILL.md).
 - Tracking policy: upstream `main`, reviewed as a principle source under the adaptation contract's [principle-derived skills](../../agents/maintain-skills/references/ADAPTATION.md#principle-derived-skills).
-- Imported from commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`, in the earlier repository.
+- Imported from commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`, in the earlier repository: [olivercederborg/skills at `e8db4fa`](https://github.com/olivercederborg/skills/tree/e8db4fa3e2468a0b9e0297955367ff6efde28dee).
 - Reviewed through commit: `bcf7d167d0af51fb156c534f023f76156e786417`.
 - Fidelity checked through: `bcf7d167d0af51fb156c534f023f76156e786417`.
 - Last upstream review: 2026-11-08.

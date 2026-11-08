@@ -7,7 +7,7 @@
 - Original skill: [`skills/optional/reply-shape/SKILL.md`](https://github.com/olivercederborg/addystack/blob/bcf7d167d0af51fb156c534f023f76156e786417/skills/optional/reply-shape/SKILL.md), for its next-step and Done endings.
 - Supporting sources: [`skills/primitive/addystack/core/router.md`](https://github.com/olivercederborg/addystack/blob/bcf7d167d0af51fb156c534f023f76156e786417/skills/primitive/addystack/core/router.md), whose stops decide when the list appears, [`skills/primitive/addystack/hooks/reply-shape-context.py`](https://github.com/olivercederborg/addystack/blob/bcf7d167d0af51fb156c534f023f76156e786417/skills/primitive/addystack/hooks/reply-shape-context.py), the SessionStart hook that loads it, and [`skills/primitive/addystack/hooks/t3_child.py`](https://github.com/olivercederborg/addystack/blob/bcf7d167d0af51fb156c534f023f76156e786417/skills/primitive/addystack/hooks/t3_child.py), which holds that hook's T3 delegated-task lookup.
 - Tracking policy: upstream `main`, reviewed as a principle source under the adaptation contract's [principle-derived skills](../../agents/maintain-skills/references/ADAPTATION.md#principle-derived-skills).
-- Imported from commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`, in the earlier repository.
+- Imported from commit: `e8db4fa3e2468a0b9e0297955367ff6efde28dee`, in the earlier repository: [olivercederborg/skills at `e8db4fa`](https://github.com/olivercederborg/skills/tree/e8db4fa3e2468a0b9e0297955367ff6efde28dee).
 - Reviewed through commit: `bcf7d167d0af51fb156c534f023f76156e786417`.
 - Fidelity checked through: `bcf7d167d0af51fb156c534f023f76156e786417`.
 - Last upstream review: 2026-11-08.
@@ -19,6 +19,8 @@
 ## Local adaptations to preserve
 
 The wording is first-party. These are the principles taken from the source and the deliberate departures.
+
+The lettered `Next` list and the departures that compare against Oliver's rules refer to the workshop's `replies.md` at `ed7f6da`. addystack doesn't ship that file, so the list is kept on purpose as this skill's own rules, and the departures hold against that last tracked version.
 
 Adopted principles:
 
