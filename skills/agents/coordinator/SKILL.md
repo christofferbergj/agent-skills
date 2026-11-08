@@ -30,7 +30,7 @@ A unit waits on another branch only for what it can't build or check on today's 
 
 ## 3. Start workers
 
-Start each worker with `delegate_task`: `isolation: "worktree"`, `mode: "async"`, a stable `clientRequestId`, `role` `implementation` or `research`, and the brief below. Resolve its target through /swarm's model roles, by the playbook its unit runs, such as `feature-refactoring` or `bug-fix`, and `judgment-and-prose` for a research question. Record its thread link and `taskId` in Workers. A unit that needs another machine's tools runs there as [across machines](references/across-machines.md#a-worker-on-another-machine) describes.
+Start each worker with `delegate_task`: the title `◇ <project> · <unit>`, `isolation: "worktree"`, `mode: "async"`, a stable `clientRequestId`, `role` `implementation` or `research`, and the brief below. Resolve its target through /swarm's model roles, by the playbook its unit runs, such as `feature-refactoring` or `bug-fix`, and `judgment-and-prose` for a research question. Record its thread link and `taskId` in Workers. A unit that needs another machine's tools runs there as [across machines](references/across-machines.md#a-worker-on-another-machine) describes.
 
 The brief is the worker's whole context. A research brief names the question and the evidence that decides it, and leaves the answer to the worker: a guess it must include is marked a hypothesis to refute.
 
