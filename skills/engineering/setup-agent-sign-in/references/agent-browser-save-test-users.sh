@@ -6,8 +6,7 @@
 # <sign-in-doc> owns the setup.
 #
 # Usage: scripts/agent-browser-save-test-users.sh [role...]   (prompts for the password)
-#        pbpaste | ssh <host> 'scripts/agent-browser-save-test-users.sh [role...]'   (from a Mac)
-#        scripts/agent-browser-save-test-users.sh [role...]   (prompts)
+#        pbpaste | ssh <host> 'cd <checkout> && scripts/agent-browser-save-test-users.sh [role...]'   (from a Mac)
 #
 
 set -euo pipefail
@@ -26,7 +25,7 @@ else
   IFS= read -r password || true
 fi
 if [ -z "$password" ]; then
-  echo 'No password given. Run this script in a terminal and paste the shared test-user password at the prompt, or from a Mac: pbpaste | ssh <host> '\''scripts/agent-browser-save-test-users.sh'\''' >&2
+  echo 'No password given. Run this script in a terminal and paste the shared test-user password at the prompt, or from a Mac: pbpaste | ssh <host> '\''cd <checkout> && scripts/agent-browser-save-test-users.sh'\''' >&2
   exit 1
 fi
 
