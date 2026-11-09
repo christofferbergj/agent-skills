@@ -50,7 +50,7 @@ When the reply exists to get a decision that shapes code or the plan, or the use
    - **Design**: the pick's interface, data shape, or diff, with a call site, by Views.
    - **Product**: what the customer sees, and how many it reaches, counted from real data.
    - **Message**: the draft in full, in the user's voice, under `**To**: … · **Promises**: …`.
-   - **Ship gate**: one line per PR in merge order, with what it changes and the thread that made it when that isn't you, then its checks and restack state, each warning on its own line, and the rollback.
+   - **Ship gate**: one line per PR in merge order, with what it changes for its users, not its title, and the thread that made it if another did, its checks and restack state, each warning on its own line, and the rollback.
    - **UI**: the screenshot or recording, and the one thing to judge.
    - **Stuck**, a check failing after two fixes: each fix and why it failed, and what the premise test showed.
 4. **Pick**: your answer and what it optimizes. **Source**: the doc, ADR, convention, or measurement it follows. **Cost**, only when the pick is hard to undo, such as a migration, a public API, or a sent message.

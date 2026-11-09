@@ -88,6 +88,26 @@ test("a branch review diffs from the merge-base and leaves out lockfiles, binari
   assert.match(readFileSync(json.packet, "utf8"), /pnpm-lock\.yaml: lockfile/);
 });
 
+test("a file marked generated only at the base is left out when the change deletes it", () => {
+  write(".gitattributes", "schema.gen.ts linguist-generated\n");
+  write("schema.gen.ts", "export type Schema = {};\n");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "generated schema");
+  git("switch", "--quiet", "-c", "feature");
+  git("rm", "--quiet", "schema.gen.ts", ".gitattributes");
+  write("app.ts", "export const a = 2;\n");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "drop the schema");
+
+  const { status, json } = packet("--base", "main", "--head", "feature");
+
+  assert.equal(status, 0);
+  assert.deepEqual(
+    json.excluded.map((entry: { path: string; reason: string }) => [entry.path, entry.reason]),
+    [["schema.gen.ts", "generated"]],
+  );
+});
+
 test("--only reviews only the named paths, and the size counts only the diff the packet holds", () => {
   const base = git("rev-parse", "HEAD");
   git("switch", "--quiet", "-c", "feature");

@@ -41,7 +41,7 @@ It prints the title of a signed-in `Google Chrome for Testing` window and its ag
 
 ## Save the logins
 
-Ask the user to copy the password and run this from their own terminal, so it moves from their clipboard straight into the vault:
+Ask the user to run this from their own terminal and paste the password at its hidden prompt (from a Mac to another machine, pipe `pbpaste` into it over ssh), so the password stays out of the conversation, arguments, and output:
 
 ```bash
 <save-command>

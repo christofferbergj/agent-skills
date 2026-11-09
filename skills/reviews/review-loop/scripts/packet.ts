@@ -227,25 +227,29 @@ function exclusions(
       .filter((line) => line.startsWith("-\t-\t"))
       .map((line) => line.slice(4)),
   );
+  // A file marked at either side is left out, so deleting a generated file together with its
+  // attribute line doesn't count the deletion as written code.
   const attributes = new Map<string, Exclusion["reason"]>();
-  const tokens = nulFields(
-    git(
-      repo,
-      [
-        "check-attr",
-        `--source=${head}`,
-        "--stdin",
-        "-z",
-        "linguist-generated",
-        "linguist-vendored",
-      ],
-      { input: paths.map((path) => `${path}\0`).join("") },
-    ),
-  );
-  for (let index = 0; index < tokens.length; index += 3) {
-    const [path, attribute, value] = tokens.slice(index, index + 3);
-    if (value === "set" || value === "true")
-      attributes.set(path, attribute === "linguist-vendored" ? "vendored" : "generated");
+  for (const source of [base, head]) {
+    const tokens = nulFields(
+      git(
+        repo,
+        [
+          "check-attr",
+          `--source=${source}`,
+          "--stdin",
+          "-z",
+          "linguist-generated",
+          "linguist-vendored",
+        ],
+        { input: paths.map((path) => `${path}\0`).join("") },
+      ),
+    );
+    for (let index = 0; index < tokens.length; index += 3) {
+      const [path, attribute, value] = tokens.slice(index, index + 3);
+      if ((value === "set" || value === "true") && !attributes.has(path))
+        attributes.set(path, attribute === "linguist-vendored" ? "vendored" : "generated");
+    }
   }
   return paths.flatMap((path): Exclusion[] => {
     if (keep.has(path)) return [];
