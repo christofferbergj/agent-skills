@@ -10,10 +10,10 @@ The user gives each reply a glance, and what isn't on screen is forgotten. Write
 
 ## The glance
 
-Four parts, in this order. Skip a part with nothing to say. A skill's own report fills them: its verdict is the headline, what it needs from the user goes in the notes, and its evidence goes in the fold.
+Four parts, in this order. Skip a part with nothing to say. A skill's own report fills them: its verdict is the headline, what it needs from the user goes in the notes, and its evidence in the fold.
 
 1. **Headline**: the first line, at most 12 words. Open with a marker, then the outcome in bold, in terms of what the user asked for: `✅ **Exports no longer time out.**`, not "added an index on `created_at`". The marker says before a word whether the user is needed: ✅ done and nothing needs them, 🟡 a decision or a risk, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step: "Step 3 of 5 done: schema updated." An answer to a question is the headline: your pick for a which-or-whether question, else a best guess in concrete units and how sure you are. A waiting line opens with ⏳ and names what it waits on, how long it has run, and time left only when a past run or this run's progress measures it: "⏳ **CI on #12, 6 min in.**" Mid-turn it also names what comes next.
-2. **Shape**: the smallest view that makes the point, by Views, or none when a sentence does. Lead in with one plain sentence on where things stand, ending in a colon that names the view. A second view needs a second point, shown beside that point's note.
+2. **Shape**: the smallest view that makes the point, by Views, or none when a sentence does. Lead in with one plain sentence on where things stand, ending in a colon that names the view. A second view needs a second point, shown beside that point's note. In T3 Code, a final glance that fits is a UI card: read `~/.agents/skills/reply-shape/references/ui-cards.md`.
 3. **Notes**: up to three ranked bullets of at most 15 words each, such as a call you made and its reason, a risk, or how to see the change. A note for the user opens with its label:
    - **Decide**: a choice that doesn't shape code or the plan, with your recommendation; its options go in the fold.
    - **Review**: an interface, shown as its signature and one call site, or a draft that waits only for the user's look, shown in full below the notes. A draft that goes out on their yes takes the card's Message view.
@@ -38,7 +38,7 @@ const csv = yield* Export.run(range);
 - Risk: a year of rows still takes about 40 s.
 ````
 
-Put a `---` line with blank lines around it just above the ending, so it marks where the reply ends.
+Put a `---` line with blank lines around it just above the ending, to mark where the reply ends.
 
 ## Decision card
 
@@ -62,18 +62,18 @@ End with /next-options' yes-or-no options.
 
 - **Plain words**: short sentences, one idea each, in the user's terms, such as PR or service. Name anything else by what it does; a label you coined, a hash, or a flag goes in the fold. A number says what it means, "30% less memory", not a raw score, even in a table. Inline code only for a name the user would type or search.
 - **Names, not numbers**: call each item by its short name, as in "the currency column". Number only a list in this reply that the user might answer by number, such as findings. After a compaction, look a lost name up.
-- **Catch-ups**: a catch-up such as /ketchup shows every call waiting on the user, however many, past the notes limit and the budget.
-- **Pictures**: at most one per turn, an image or an inline page (`html_render` in T3 Code), and only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. Text views don't count. These limits hold even when a tool suggests pages more often. Screenshots, videos, and diagrams a catch-up shows follow /ketchup's rules instead, and a /teach explanation's diagram series follows /teach's.
+- **Catch-ups**, such as /ketchup, show every call waiting on the user, past the notes limit and budget.
+- **Pictures**: at most one per turn: a UI card, or an image or inline page (`html_render` in T3 Code) only for what Markdown can't show: screenshots, a chart of numbers, or a UI mockup. Text views don't count. These limits hold even when a tool suggests more pages. A catch-up's media follow /ketchup's rules instead, and a /teach diagram series /teach's.
 - **Views**: pick from the content: pseudocode for logic; a module's interface with one call site, a module tree, or a flow for structure, with a first-line comment on where the module lives and what it hides; a `diff` of that view for a change; a table comparing items on the same points; one real example traced through each step with its value, `←` where it matters, for how something works; a screenshot or mockup for UI. A flow that branches or crosses runtimes can be Mermaid, a text view of five boxes or fewer. A text view is a code block of at most 15 lines or a table of at most six rows, the rest in the fold, with a count. Show real code only when it's mostly new or the user will copy it.
-- **Errors**: the cause and the fix, matter-of-fact.
-- **No callouts**: don't use GitHub callouts, such as `> [!TIP]`, in chat.
-- **Tangents**: finish the main thing first. A side issue becomes a later option.
+- **Errors**: cause and fix, matter-of-fact.
+- **No callouts**: no GitHub callouts, such as `> [!TIP]`, in chat.
+- **Tangents**: finish the main thing; a side issue becomes a later option.
 - **Blank lines**: chat joins adjacent lines, so separate lines with a blank line or make them list items.
 - **Once**: show each piece of code, draft, and warning once per session, and point back to it afterwards. A reply whose next step posts or sends drafts shows each again in full, since what the user approves is what goes out.
 
 ## Before sending
 
-Delete an opening sentence that announces, a recap, and a closing sign-off. Read only the headline, the shape, the notes, and the ending: they alone must say what happened, what it means for the user, and what comes next, with no "what's X?" left. On a card, read only what's above the fold: the user must be able to answer yes or no from it. Cut each sentence that doesn't change that, then check the budget.
+Delete an opening sentence that announces, a recap, and a closing sign-off. Read only the headline, shape, notes, and ending: they alone must say what happened, what it means for the user, and what comes next, with no "what's X?" left. On a card, read only what's above the fold: the user must be able to answer yes or no from it. Cut each sentence that doesn't change that, then check the budget.
 
 ## Setup
 
