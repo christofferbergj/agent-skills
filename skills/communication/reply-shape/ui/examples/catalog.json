@@ -1,0 +1,9 @@
+{"ui":[
+{"outcome":{"status":"risk","text":"Exports page faster; one flaky test left"}},
+{"delta":{"label":"Export time, 10k rows","now":"4.1 s","was":"38 s","bars":[["paged",4.1],["main",38]]}},
+{"change":{"pr":212,"state":"draft","title":"Page exports","sha":"3fa9c01","checks":["typecheck","unit 48/48"],"diff":"+120 −64 · 5 files","url":"https://github.com/example/app/pull/212"}},
+{"decision":{"question":"Ship the paging now?","options":[{"key":"a","text":"merge after the flaky test is fixed","rec":true},{"key":"b","text":"merge now and track the test"}]}},
+{"table":{"columns":["Helper","Called by","Keep"],"rows":[["toCsv","export, report","yes"],["pageRows","export","yes"],["wrapRun","export","no, inline it"]],"pick":2}},
+{"checks":[{"status":"fail","text":"unit: 1 flaky ratio test"},{"status":"warn","text":"lint not run"},{"status":"wait","text":"e2e running, 3 min in"},{"status":"skip","text":"device checks, yours"},{"status":"pass","text":"typecheck"}]},
+{"flow":{"label":"After","steps":["request","pageRows","toCsv","stream to client"],"mark":3}}
+]}
