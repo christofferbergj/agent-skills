@@ -13,7 +13,7 @@ The **project folder**, `~/.local/state/coordinator/<project>/`, holds `project.
 
 ## 1. Start or resume
 
-- **Resume** when this thread's title is `◆ <project>`, even behind a status marker an earlier run put in front, or when the project folder exists: read `project.md` and pick up from its Workers table; for `Delivery: one-pr`, reconcile ownership and acceptance through [one-PR delivery](references/one-pr.md#accept-tickets) before redispatch.
+- **Resume** when this thread's title is `◆ <project>`, even behind a status marker an earlier run put in front, or when the project folder exists: read `project.md` and pick up from its Workers table; for `Delivery: one-pr`, reconcile ownership and acceptance through [one-PR delivery](references/one-pr.md#accept-tickets) before redispatch. A parked project wakes on the user's message, as [phases](references/phases.md) says.
 - **Start** otherwise. When /swarm's T3 route lists a linked machine, first place the coordinator by [across machines](references/across-machines.md#placement). Then pin this thread with `t3_thread_organize` `pin`, rename it `◆ <project>` with `t3_thread_update` `rename`, and take its id and `link` from the `currentThreadId` that `t3_thread_list` returns. Run `scripts/project.py <folder> init` with the goal, its proof, this thread's link, and the target repository's checkout, then write `standing-rules.md`.
 
 **Complete when:** `project.md` names the goal, its proof, and this thread's link, `standing-rules.md` holds the chat's rules, and the thread is pinned under its `◆` title.
@@ -82,9 +82,9 @@ A **timer** is a `schedule_task` bound to this thread with `{type: "interval", e
 
 **Queue order**: stuck runs, then calls, then Do items, oldest first within each. Each reply shows only the top one as a decision card: the worker's question as a yes-or-no headline, a strip reading `<n> of <total> need you · <worker> <thread link>`, the problem and for whom, your pick and its source, and a yes and a no option. When /reply-shape is active, its decision card lays these out.
 
-**Answer, then next.** When the user answers, with a letter, a letter and a tweak, or their own words, send the answer as above, quoting their words. In the same reply, show the next card with no recap. When the queue is empty, reply with a one-line status naming what still runs and what wakes you next. When nothing runs and nothing will wake you, go to step 7 if the goal's proof holds, and replan otherwise. The thread stays pinned until step 7.
+**Answer, then next.** When the user answers, with a letter, a letter and a tweak, or their own words, send the answer as above, quoting their words. In the same reply, show the next card with no recap. When the queue is empty, reply with a one-line status naming what still runs and what wakes you next. When nothing runs and nothing will wake you, go to step 7 if the phase's proof holds, and replan otherwise. The thread stays pinned until the close.
 
-**Complete when:** every answer is sent and recorded, and the reply shows the next card, the status line, or the close.
+**Complete when:** every answer is sent and recorded, and the reply shows the next card, the status line, or the phase end's card.
 
 ## 6. Merge
 
@@ -94,8 +94,8 @@ A merge into the delivery target is the user's call unless a standing rule grant
 
 **Complete when:** each merged PR shows `MERGED` in `gh pr view` and is recorded in Workers.
 
-## 7. Close
+## 7. End the phase
 
-When the goal's proof holds, follow [close](references/close.md): the integrated check for its delivery mode, a final state for every worker, and an unpinned thread.
+When the phase's proof holds, follow [phases](references/phases.md): the integrated check for its delivery mode, then one card to start the next phase, park, or, on the user's word only, [close](references/close.md).
 
-**Complete when:** close's completion criterion holds.
+**Complete when:** phases' completion criterion holds.

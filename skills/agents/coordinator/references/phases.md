@@ -1,0 +1,17 @@
+# Phases
+
+Read at coordinator step 7, once the phase's proof holds. A project runs in **phases**, each with its own goal and proof in `project.md`'s Goal. A phase ends here, and the project closes only on the user's word.
+
+1. **Integrated check**, by Goal's delivery. For multi-PR, run [close](close.md)'s integrated check on every unmerged project PR, and record its result, the heads it merged, and the trunk SHA it ran at under Decisions. For one-PR, the integration branch holds the integrated, unmerged work: run the verifier from [prove and ship](one-pr.md#prove-and-ship) at the branch's checked tip, or the final PR's head once it opens, and the current target base, reusing a proof already recorded at those SHAs, and record the SHAs, tested tree, and verdict under Decisions. Skip it when no project work is unmerged.
+2. **Promote**: `phase` moves Decisions and Learnings into the phase's archive, which a wake doesn't read, so carry forward what the next phase needs first. Append each decision and learning that binds later work to `standing-rules.md`. Add to Goal's Follow-ups each follow-up whose detail sits only in Decisions or Learnings, and each later phase the plan or the user named, with its proof. Set each worker whose PR is still open to `waiting`, with Waits on `#<n> open`, so its row, thread, and watch carry into the next phase. In one-PR delivery that worker is the integrator, with Waits on naming the integration branch while it has no PR; a ticket still `waiting: integration` keeps its state, and the accepted tickets' SHAs and merge order and the latest whole-feature proof stay in this phase's archive for the finalize task, the merge card, and the close. `phase` keeps Goal's `Delivery:` line, so a PR left open keeps its delivery's rules; once none is open, the next phase's step 2 records its own delivery.
+3. **One card**: bring the user one decision card, as step 5 lays it out, asking how the project goes on, with three options: start the next phase, park, or close. Pick the next phase when `project.md` or the user already named one, and give its goal and proof.
+
+Then follow the user's pick:
+
+- **Next phase**: run `scripts/project.py <folder> phase <slug> --result <one line> --goal <goal> --proof <proof>`, then plan the new goal from step 2.
+- **Park**: run `scripts/project.py <folder> phase <slug> --result <one line> --park <reason>`. Once no worker is `running`, `waiting`, `overdue`, or `unknown`, delete the heartbeat and any startup timer with `delete_scheduled_task` and set their Listening lines to none. Keep the thread pinned, and reply with step 5's one-line status, naming that the project is parked and wakes on the user's message.
+- **Close**: follow [close](close.md).
+
+`<slug>` names the phase that ended, in lowercase hyphenated words. `phase` archives `project.md` and resets the phase's sections, as [project](project.md#phase-end) describes. When the user's message on a parked project names new work, start the next phase: run `scripts/project.py <folder> start --goal <goal> --proof <proof>`, then plan it from step 2.
+
+**Complete when:** the delivery's integrated check passed or no project work was unmerged; every binding decision and learning is in `standing-rules.md`; every follow-up and named later phase is in Goal's Follow-ups; every worker with an open PR, and a one-PR integrator with an unmerged branch, is `waiting` on it; and the project is in step 2 of its next phase, parked with no timer left once no worker runs, or in close.
