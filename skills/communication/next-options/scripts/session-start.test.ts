@@ -105,7 +105,8 @@ test("every skill the rules offer can be loaded by the agent once the user picks
       .map((category) => join(skills, category, name, "SKILL.md"))
       .filter((path) => existsSync(path));
     assert.ok(file, `/${name} is not a skill in this library`);
-    const frontmatter = readFileSync(file, "utf8").match(/^---\n([\s\S]*?)\n---\n/)?.[1] ?? "";
+    const frontmatter = readFileSync(file, "utf8").match(/^---\n([\s\S]*?)\n---\n/)?.[1];
+    assert.ok(frontmatter, `/${name} has no frontmatter`);
     return /^disable-model-invocation:\s*true\s*$/m.test(frontmatter);
   });
   assert.deepEqual(userInvoked, [], "Claude Code refuses these when the agent loads them");
