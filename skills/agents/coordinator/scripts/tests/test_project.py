@@ -214,6 +214,13 @@ Proofs:
         self.assertEqual(self.files(), ["01-audit.md", "project.md"])
         self.assertIn("· 01-audit: five reports · phases/01-audit.md\n\n## Decisions", self.text())
 
+    def test_a_repeated_phase_end_is_refused_without_a_second_archive(self):
+        self.project("phase", "audit", "--result", "five reports", *NEXT)
+        ended = self.text()
+        self.assertEqual(self.project("phase", "audit", "--result", "five reports", *NEXT, code=1).stderr,
+                         "phase 'audit' already ended with this goal: the project is in its next phase\n")
+        self.assertEqual((self.text(), self.files()), (ended, ["01-audit.md", "project.md"]))
+
     def test_follow_ups_unknown_sections_and_unreadable_rows_carry(self):
         real = (PROJECT.replace("Follow-ups: none\n", "Follow-ups:\n- lockfile risk\n  wraps here\n\n- stray rows\n"
                                 "* starred\n1. numbered\nunindented tail\n\n"

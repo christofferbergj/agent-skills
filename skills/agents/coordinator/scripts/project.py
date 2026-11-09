@@ -168,17 +168,21 @@ PARKED = "Parked "  # a parked Goal's first line: `Parked <date>: <reason>`
 
 
 def phase(lines: list[str], archive: str, result: str, *,
-          goal: str | None = None, proof: str | None = None, park: str | None = None) -> None:
+          goal: str | None = None, proof: str | None = None, park: str | None = None) -> list[str]:
     """Ends the running phase whose snapshot is at `archive` (`phases/<NN>-<slug>.md`): adds
     `- <date> · <NN-slug>: RESULT · ARCHIVE` under Phases, creating it after Goal; empties
     Decisions and Learnings; removes each Result section; drops Workers rows in a FINAL
     state; then writes Goal as GOAL and `Proof: PROOF`, or as `Parked <date>: PARK`, keeping
-    its Delivery line and Follow-ups. Refuses a parked project, and needs goal and proof, or
-    park alone."""
+    its Delivery line and Follow-ups. Refuses a parked project, a rerun of the phase end
+    just recorded, and anything but goal and proof, or park alone. Returns the Worker cells
+    of the rows `_drop_final` kept unread."""
     if _parked(lines):
         raise ProjectError("the project is parked: start its next phase with start")
     if (goal is None or proof is None) == (park is None):
         raise ProjectError("a phase ends with a goal and a proof, or with park alone")
+    slug = Path(archive).stem.split("-", 1)[1]
+    if goal is not None and _rerun(lines, slug, goal):
+        raise ProjectError(f"phase {slug!r} already ended with this goal: the project is in its next phase")
     today = date.today().isoformat()
     body = [f"{PARKED}{today}: {_line('park', park)}"] if park is not None else _next(goal, proof)
     line = f"- {today} · {Path(archive).stem}: {_line('result', result)} · {archive}"
@@ -189,13 +193,26 @@ def phase(lines: list[str], archive: str, result: str, *,
         if f"## {name}" in lines:
             start_at, end = _section(lines, name)
             lines[start_at + 1:end] = [""]
-    _drop_final(lines)
+    unread = _drop_final(lines)
     _goal(lines, body)
     if "## Phases" in lines:
         _insert(lines, "Phases", line)
     else:
         at = _section(lines, "Goal")[1]
         lines[at:at] = ["## Phases", "", line, ""]
+    return unread
+
+
+def _rerun(lines: list[str], slug: str, goal: str) -> bool:
+    """The newest Phases line ended `slug` and Goal's first line is already `goal`."""
+    if "## Phases" not in lines:
+        return False
+    start_at, end = _section(lines, "Phases")
+    entries = [text for text in lines[start_at + 1:end] if text.startswith("- ")]
+    goal_at, goal_end = _section(lines, "Goal")
+    current = next((text for text in lines[goal_at + 1:goal_end] if text.strip()), "")
+    return (bool(entries) and re.search(rf" · \d+-{re.escape(slug)}: ", entries[-1]) is not None
+            and current.strip() == goal.strip())
 
 
 def start(lines: list[str], goal: str, proof: str) -> None:
@@ -264,27 +281,36 @@ def _drop_final(lines: list[str]) -> list[str]:
     return unread
 
 
-def _archive(folder: Path, snapshot: bytes, slug: str) -> str:
-    """Writes `snapshot` to `phases/<NN>-<slug>.md` under `folder`, NN one past the highest
-    there, from 01, never overwriting. A file there that already holds these bytes, left
-    by a run whose project.md write failed, is reused. Returns the path from `folder`."""
+def _archive_name(folder: Path, snapshot: bytes, slug: str) -> str:
+    """The archive path from `folder` for `snapshot`: `phases/<NN>-<slug>.md`, NN one past
+    the highest there, from 01, or a file there that already holds these bytes, left by a
+    run whose project.md write failed."""
     phases = folder / "phases"
-    phases.mkdir(exist_ok=True)
-    numbered = [(m, p) for p in phases.iterdir() if (m := re.match(r"(\d+)-(.+)\.md\Z", p.name))]
+    numbered = [(m, p) for p in phases.iterdir() if (m := re.match(r"(\d+)-(.+)\.md\Z", p.name))] \
+        if phases.is_dir() else []
     for match, path in numbered:
         if match.group(2) == slug and path.read_bytes() == snapshot:
-            os.chmod(path, path.stat().st_mode & (folder / "project.md").stat().st_mode)
             return f"phases/{path.name}"
-    name = f"{max((int(m.group(1)) for m, _ in numbered), default=0) + 1:02d}-{slug}.md"
-    handle, tmp = tempfile.mkstemp(dir=phases, prefix=".phase.")
+    return f"phases/{max((int(m.group(1)) for m, _ in numbered), default=0) + 1:02d}-{slug}.md"
+
+
+def _archive(folder: Path, snapshot: bytes, archive: str) -> None:
+    """Writes `snapshot` to `archive` under `folder`, never overwriting, and no wider than
+    project.md; an archive already there, which `_archive_name` found holds these bytes,
+    only narrows."""
+    path, mode = folder / archive, (folder / "project.md").stat().st_mode
+    if path.exists():
+        os.chmod(path, path.stat().st_mode & mode)
+        return
+    path.parent.mkdir(exist_ok=True)
+    handle, tmp = tempfile.mkstemp(dir=path.parent, prefix=".phase.")
     try:
         with os.fdopen(handle, "wb") as f:
             f.write(snapshot)
-        os.chmod(tmp, (folder / "project.md").stat().st_mode)  # no wider than its source
-        os.link(tmp, phases / name)  # fails if the name exists, where os.replace would overwrite it
+        os.chmod(tmp, mode)  # no wider than its source
+        os.link(tmp, path)  # fails if the name exists, where os.replace would overwrite it
     finally:
         os.unlink(tmp)
-    return f"phases/{name}"
 
 
 def _write(path: Path, text: str) -> None:
@@ -341,12 +367,11 @@ def main(argv: list[str]) -> int:
             lines = snapshot.decode().replace("\r\n", "\n").replace("\r", "\n").split("\n")  # as read_text does
             if not SLUG.match(args.slug):
                 raise ProjectError(f"slug {args.slug!r} isn't lowercase words joined by hyphens")
-            ends = {"goal": args.goal, "proof": args.proof, "park": args.park}
-            phase(lines[:], f"phases/00-{args.slug}.md", args.result, **ends)  # every refusal, before any write
-            archive = _archive(args.dir, snapshot, args.slug)
-            phase(lines, archive, args.result, **ends)
+            archive = _archive_name(args.dir, snapshot, args.slug)
+            unread = phase(lines, archive, args.result, goal=args.goal, proof=args.proof, park=args.park)
+            _archive(args.dir, snapshot, archive)  # after every refusal
             _write(path, "\n".join(lines))
-            if unread := _drop_final(lines):  # phase dropped the rest, so this only names them
+            if unread:
                 print(f"kept {len(unread)} Workers rows whose cells don't match the header, so their"
                       f" State is unread: {', '.join(unread)}. Fix or delete each by hand.", file=sys.stderr)
             print(args.dir / archive)
