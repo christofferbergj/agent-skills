@@ -5,6 +5,7 @@ import {
   type CheckRun,
   type Pr,
   type StatusContext,
+  parsePr,
   requiredKnown,
   verdictOf,
   waitingOn,
@@ -92,6 +93,35 @@ test("a draft run's skip doesn't count as a pass before the ready run reports", 
   );
   assert.equal(verdict, "running");
   assert.match(items[0]!.detail, /draft/);
+});
+
+test("a neutral draft run of a required check doesn't count as a pass either", () => {
+  const draftRun = run("E2E", { conclusion: "NEUTRAL", startedAt: BEFORE_READY });
+  assert.equal(judge(pr([draftRun], { readyAt: READY_AT })).verdict, "running");
+});
+
+test("a required status that hasn't reported keeps the PR running, and an errored one fails it", () => {
+  assert.equal(judge(pr([status("EXPECTED", "", true)])).verdict, "running");
+  assert.equal(judge(pr([status("ERROR", "Build errored", true)])).verdict, "failed");
+});
+
+test("the PR's last ready-for-review time and its head's checks come from the GraphQL response", () => {
+  const check = run("E2E", { conclusion: "SKIPPED", startedAt: BEFORE_READY });
+  const parsed = parsePr({
+    data: {
+      repository: {
+        pullRequest: {
+          state: "OPEN",
+          isDraft: false,
+          mergeStateStatus: "UNSTABLE",
+          reviewDecision: null,
+          timelineItems: { nodes: [{ createdAt: READY_AT }] },
+          commits: { nodes: [{ commit: { statusCheckRollup: { contexts: { nodes: [check] } } } }] },
+        },
+      },
+    },
+  });
+  assert.equal(judge(parsed).verdict, "running");
 });
 
 test("a required check skipped on a PR that was never a draft passes", () => {
