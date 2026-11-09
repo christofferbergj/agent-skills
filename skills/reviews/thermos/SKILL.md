@@ -21,7 +21,7 @@ Choose the branch matching the tools exposed in this session. Use the actual too
 
 ### Codex
 
-Use the native `spawn_agent` tool, possibly exposed under a collaboration namespace, to launch the reviewers. Put the rubric and scope in each task message. Use separate task names when supported. Launch them all before waiting for any. Collect every result with the host's native wait or completion mechanism, then close the completed agents if that host exposes a close tool.
+Use the native `spawn_agent` tool, possibly exposed under a collaboration namespace, to launch the reviewers. Set `fork_turns` to `"none"`, or `fork_context` to false in a schema that has it instead, so each reviewer starts with only its rubric and scope: a full-history fork, `spawn_agent`'s default, inherits the parent's context, model, and effort and accepts no overrides. Put the rubric and scope in each task message. Use separate task names when supported. Launch them all before waiting for any. Collect every result with the host's native wait or completion mechanism, then close the completed agents if that host exposes a close tool.
 
 ### Claude Code
 
