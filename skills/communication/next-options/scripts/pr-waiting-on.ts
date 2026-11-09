@@ -113,6 +113,21 @@ function judgeStatus(status: StatusContext): Omit<Item, "name"> | null {
   return null;
 }
 
+/**
+ * A matrix job skipped on the draft keeps its unexpanded name, such as `E2E (${{ matrix.label }})`,
+ * so no later run shares it. Its expanded jobs from the same workflow, such as `E2E (chromium)`,
+ * replace it once one has started since the PR left draft.
+ */
+function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
+  const template = run.name.indexOf("${{");
+  if (template < 0 || !run.workflow) return false;
+  const prefix = run.name.slice(0, template);
+  return sinceReady.some(
+    (later) =>
+      later.workflow === run.workflow && later.name !== run.name && later.name.startsWith(prefix),
+  );
+}
+
 /** Whether the repository marks any check required; when not, every check counts as required. */
 export function requiredKnown(pr: Pr): boolean {
   return pr.requiredNames.length > 0 || pr.checks.some((check) => check.isRequired);
@@ -137,20 +152,16 @@ export function waitingOn(pr: Pr): Item[] {
     !known || check.isRequired || pr.requiredNames.includes(checkName(check));
   const allRuns = pr.checks.filter((check) => check.__typename === "CheckRun");
   const readyAt = pr.readyAt;
-  // A workflow that has started a run since the PR left draft has replaced its draft runs, even a
-  // matrix job whose draft run kept the unexpanded name.
-  const restarted = new Set(
-    allRuns
-      .filter(
-        (run) => readyAt && run.workflow && (run.startedAt === null || run.startedAt >= readyAt),
-      )
-      .map((run) => run.workflow),
+  const sinceReady = allRuns.filter(
+    (run) => readyAt !== null && (run.startedAt === null || run.startedAt >= readyAt),
   );
   const judged = [
     ...newestRuns(allRuns).map((run) => {
       const ranOnDraft = readyAt !== null && (run.startedAt ?? "") < readyAt;
-      const replaced = run.workflow ? restarted.has(run.workflow) : false;
-      return { check: run, item: judgeRun(run, required(run) && ranOnDraft && !replaced) };
+      return {
+        check: run,
+        item: judgeRun(run, required(run) && ranOnDraft && !expandedSince(run, sinceReady)),
+      };
     }),
     ...pr.checks
       .filter((check) => check.__typename === "StatusContext")

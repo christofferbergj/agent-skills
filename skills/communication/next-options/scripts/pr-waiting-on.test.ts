@@ -154,7 +154,13 @@ test("a required check with no run yet keeps the PR running, and explains a bloc
   );
 });
 
-test("a draft skip counts as replaced once its workflow starts a run after the PR left draft", () => {
+test("an unrelated job in the same workflow doesn't replace a required check's draft skip", () => {
+  const e2e = run("E2E", { conclusion: "SKIPPED", startedAt: BEFORE_READY, workflow: "CI" });
+  const lint = run("Lint", { workflow: "CI", isRequired: false });
+  assert.equal(judge(pr([e2e, lint], { readyAt: READY_AT })).verdict, "running");
+});
+
+test("a matrix job's draft skip counts as replaced once its expanded jobs start after the PR left draft", () => {
   const template = run("E2E (${{ matrix.label }})", {
     conclusion: "SKIPPED",
     startedAt: BEFORE_READY,
