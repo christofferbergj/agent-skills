@@ -5,8 +5,11 @@
  *
  * usage: node pr-waiting-on.ts <PR number or URL> [--repo owner/name]
  *
- * A merged PR reads `ready` with no items. Prints one line per unfinished item, `required: unknown` when the repository shows no required
- * check (every check then counts as required), and a last `verdict:` line:
+ * A required check counts as passed only on a real run of the PR's head: a check skipped while the
+ * PR was a draft, or a required check with no run yet, is still running. A merged PR reads `ready`.
+ *
+ * Prints one line per unfinished item, `required: unknown` when neither the base branch's rules nor
+ * the checks show a required check (every check then counts as required), and a last `verdict:` line:
  *   person   something waits on a person; hand the PR back (exit 2)
  *   failed   a required check failed; fix it or report it (exit 1)
  *   running  a required check is still running; keep the watch (exit 0)
@@ -33,6 +36,8 @@ export type CheckRun = {
   startedAt: string | null;
   detailsUrl?: string | null;
   isRequired: boolean;
+  /** The Actions workflow that created the run, when one did. */
+  workflow?: string | null;
 };
 export type StatusContext = {
   __typename: "StatusContext";
@@ -50,6 +55,8 @@ export type Pr = {
   mergeStateStatus: string;
   /** When the PR last left draft; checks that started earlier ran on the draft. */
   readyAt: string | null;
+  /** Check names the base branch's protection or rulesets require, when the token can read them. */
+  requiredNames: string[];
   checks: (CheckRun | StatusContext)[];
 };
 
@@ -75,8 +82,11 @@ function newestRuns(runs: CheckRun[]): CheckRun[] {
   return [...byName.values()];
 }
 
-/** What the run waits on, or `null` when it passed. */
-function judgeRun(run: CheckRun, readyAt: string | null): Omit<Item, "name"> | null {
+/**
+ * What the run waits on, or `null` when it passed. `draftSkipPending` says a skip on the draft
+ * still stands in for a run the ready PR hasn't started.
+ */
+function judgeRun(run: CheckRun, draftSkipPending: boolean): Omit<Item, "name"> | null {
   const url = run.detailsUrl ?? undefined;
   if (run.status === "WAITING" || run.conclusion === "ACTION_REQUIRED") {
     return { kind: "person", detail: "waits for an approval", url };
@@ -86,7 +96,7 @@ function judgeRun(run: CheckRun, readyAt: string | null): Omit<Item, "name"> | n
     return { kind: "failed", detail: (run.conclusion ?? "").toLowerCase(), url };
   }
   const skipped = run.conclusion === "SKIPPED" || run.conclusion === "NEUTRAL";
-  if (skipped && readyAt && (run.startedAt ?? "") < readyAt) {
+  if (skipped && draftSkipPending) {
     return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
   }
   return null;
@@ -105,7 +115,11 @@ function judgeStatus(status: StatusContext): Omit<Item, "name"> | null {
 
 /** Whether the repository marks any check required; when not, every check counts as required. */
 export function requiredKnown(pr: Pr): boolean {
-  return pr.checks.some((check) => check.isRequired);
+  return pr.requiredNames.length > 0 || pr.checks.some((check) => check.isRequired);
+}
+
+function checkName(check: CheckRun | StatusContext): string {
+  return check.__typename === "CheckRun" ? check.name : check.context;
 }
 
 /** The PR's unfinished items, each labelled with who it waits on. */
@@ -119,25 +133,38 @@ export function waitingOn(pr: Pr): Item[] {
   if (pr.reviewDecision === "REVIEW_REQUIRED" || pr.reviewDecision === "CHANGES_REQUESTED") {
     items.push({ kind: "person", name: "review", detail: pr.reviewDecision.toLowerCase() });
   }
-  const runs = newestRuns(pr.checks.filter((check) => check.__typename === "CheckRun"));
-  const statuses = pr.checks.filter((check) => check.__typename === "StatusContext");
+  const required = (check: CheckRun | StatusContext) =>
+    !known || check.isRequired || pr.requiredNames.includes(checkName(check));
+  const allRuns = pr.checks.filter((check) => check.__typename === "CheckRun");
+  const readyAt = pr.readyAt;
+  // A workflow that has started a run since the PR left draft has replaced its draft runs, even a
+  // matrix job whose draft run kept the unexpanded name.
+  const restarted = new Set(
+    allRuns
+      .filter(
+        (run) => readyAt && run.workflow && (run.startedAt === null || run.startedAt >= readyAt),
+      )
+      .map((run) => run.workflow),
+  );
   const judged = [
-    // A draft run's skip only matters for a check the merge needs.
-    ...runs.map((run) => ({
-      check: run,
-      name: run.name,
-      item: judgeRun(run, run.isRequired || !known ? pr.readyAt : null),
-    })),
-    ...statuses.map((status) => ({
-      check: status,
-      name: status.context,
-      item: judgeStatus(status),
-    })),
+    ...newestRuns(allRuns).map((run) => {
+      const ranOnDraft = readyAt !== null && (run.startedAt ?? "") < readyAt;
+      const replaced = run.workflow ? restarted.has(run.workflow) : false;
+      return { check: run, item: judgeRun(run, required(run) && ranOnDraft && !replaced) };
+    }),
+    ...pr.checks
+      .filter((check) => check.__typename === "StatusContext")
+      .map((status) => ({ check: status, item: judgeStatus(status) })),
   ];
 
-  for (const { check, name, item } of judged) {
+  for (const { check, item } of judged) {
     if (!item) continue;
-    items.push({ ...item, name, kind: check.isRequired || !known ? item.kind : "info" });
+    items.push({ ...item, name: checkName(check), kind: required(check) ? item.kind : "info" });
+  }
+
+  const reported = new Set(pr.checks.map(checkName));
+  for (const name of pr.requiredNames) {
+    if (!reported.has(name)) items.push({ kind: "running", name, detail: "required; no run yet" });
   }
 
   // GitHub also reports BLOCKED for a draft, a missing review or an unfinished required check;
@@ -159,22 +186,39 @@ export function verdictOf(items: Item[]): Verdict {
 
 const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){
   state isDraft mergeStateStatus reviewDecision
+  baseRef{branchProtectionRule{requiredStatusCheckContexts}
+    rules(first:50){nodes{parameters{... on RequiredStatusChecksParameters{requiredStatusChecks{context}}}}}}
   timelineItems(itemTypes:[READY_FOR_REVIEW_EVENT],last:1){nodes{... on ReadyForReviewEvent{createdAt}}}
   commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){nodes{__typename
-    ... on CheckRun{databaseId name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)}
+    ... on CheckRun{databaseId name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)
+      checkSuite{workflowRun{workflow{name}}}}
     ... on StatusContext{context state description targetUrl isRequired(pullRequestNumber:$n)}}}}}}}}}}`;
+
+type ResponseCheck =
+  | (Omit<CheckRun, "workflow"> & {
+      checkSuite?: { workflowRun: { workflow: { name: string } } | null } | null;
+    })
+  | StatusContext;
 
 type Response = {
   data: {
     repository: {
       pullRequest: {
+        baseRef: {
+          branchProtectionRule: { requiredStatusCheckContexts: string[] } | null;
+          rules: {
+            nodes: { parameters: { requiredStatusChecks?: { context: string }[] } | null }[];
+          };
+        } | null;
         state: string;
         isDraft: boolean;
         mergeStateStatus: string;
         reviewDecision: string | null;
         timelineItems: { nodes: { createdAt: string }[] };
         commits: {
-          nodes: { commit: { statusCheckRollup: { contexts: { nodes: Pr["checks"] } } | null } }[];
+          nodes: {
+            commit: { statusCheckRollup: { contexts: { nodes: ResponseCheck[] } } | null };
+          }[];
         };
       };
     };
@@ -183,13 +227,27 @@ type Response = {
 
 export function parsePr(response: Response): Pr {
   const pr = response.data.repository.pullRequest;
+  const fromRules = (pr.baseRef?.rules.nodes ?? []).flatMap(
+    (rule) => rule.parameters?.requiredStatusChecks?.map((check) => check.context) ?? [],
+  );
+  const nodes = pr.commits.nodes[0]?.commit.statusCheckRollup?.contexts.nodes ?? [];
   return {
     state: pr.state,
     isDraft: pr.isDraft,
     reviewDecision: pr.reviewDecision,
     mergeStateStatus: pr.mergeStateStatus,
     readyAt: pr.timelineItems.nodes.at(-1)?.createdAt ?? null,
-    checks: pr.commits.nodes[0]?.commit.statusCheckRollup?.contexts.nodes ?? [],
+    requiredNames: [
+      ...new Set([
+        ...(pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ?? []),
+        ...fromRules,
+      ]),
+    ],
+    checks: nodes.map((node) => {
+      if (node.__typename !== "CheckRun") return node;
+      const { checkSuite, ...run } = node;
+      return { ...run, workflow: checkSuite?.workflowRun?.workflow.name ?? null };
+    }),
   };
 }
 

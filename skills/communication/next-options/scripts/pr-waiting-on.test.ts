@@ -22,6 +22,7 @@ function pr(checks: Pr["checks"], overrides: Partial<Pr> = {}): Pr {
     reviewDecision: null,
     mergeStateStatus: "CLEAN",
     readyAt: null,
+    requiredNames: [],
     checks,
     ...overrides,
   };
@@ -115,6 +116,10 @@ test("the PR's last ready-for-review time and its head's checks come from the Gr
     data: {
       repository: {
         pullRequest: {
+          baseRef: {
+            branchProtectionRule: { requiredStatusCheckContexts: ["E2E"] },
+            rules: { nodes: [{ parameters: { requiredStatusChecks: [{ context: "Lint" }] } }] },
+          },
           state: "OPEN",
           isDraft: false,
           mergeStateStatus: "UNSTABLE",
@@ -125,7 +130,48 @@ test("the PR's last ready-for-review time and its head's checks come from the Gr
       },
     },
   });
-  assert.equal(judge(parsed).verdict, "running");
+  assert.deepEqual(parsed.requiredNames, ["E2E", "Lint"]);
+  assert.deepEqual(
+    judge(parsed).items.map((item) => [item.name, item.detail]),
+    [
+      ["E2E", "skipped on the draft; waiting for the ready run"],
+      ["Lint", "required; no run yet"],
+    ],
+  );
+});
+
+test("a required check with no run yet keeps the PR running, and explains a blocked merge state", () => {
+  const { items, verdict } = judge(
+    pr([run("Code quality", { isRequired: false })], {
+      requiredNames: ["Code quality", "E2E"],
+      mergeStateStatus: "BLOCKED",
+    }),
+  );
+  assert.equal(verdict, "running");
+  assert.deepEqual(
+    items.map((item) => item.name),
+    ["E2E"],
+  );
+});
+
+test("a draft skip counts as replaced once its workflow starts a run after the PR left draft", () => {
+  const template = run("E2E (${{ matrix.label }})", {
+    conclusion: "SKIPPED",
+    startedAt: BEFORE_READY,
+    workflow: "CI",
+  });
+  const chromium = run("E2E (chromium)", {
+    status: "IN_PROGRESS",
+    conclusion: null,
+    workflow: "CI",
+  });
+  assert.deepEqual(
+    judge(pr([template, chromium], { readyAt: READY_AT })).items.map((item) => item.name),
+    ["E2E (chromium)"],
+  );
+  const finished = run("E2E (chromium)", { workflow: "CI" });
+  assert.equal(judge(pr([template, finished], { readyAt: READY_AT })).verdict, "ready");
+  assert.equal(judge(pr([template], { readyAt: READY_AT })).verdict, "running");
 });
 
 test("a required check skipped on a PR that was never a draft passes", () => {
