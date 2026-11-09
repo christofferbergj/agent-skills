@@ -2,7 +2,7 @@
 
 The coordinator's memory for one project, at `~/.local/state/coordinator/<project>/project.md`. Start it with `scripts/project.py <folder> init`, and write decisions, learnings, Workers rows, and Listening lines with its `decide`, `learn`, `worker`, and `listen` commands; `--help` shows each. Its sections:
 
-- **Goal**: one sentence a stranger could act on, its `Proof:`, and `Follow-ups:`, the scope drift workers found, kept out of the goal. `init` writes it, and you edit it by hand when the plan or its follow-ups change.
+- **Goal**: one sentence a stranger could act on, its `Proof:`, and `Follow-ups:`, the scope drift workers found, kept out of the goal. `init` writes it, and you edit it by hand when the plan or its follow-ups change. Record `Delivery: multi-pr` or the one-PR integration branch, original target base, and integrator as [one-PR delivery](one-pr.md#establish-ownership) specifies. Resolve legacy delivery through coordinator step 2, rather than inferring it from PR count.
 - **Decisions**: `<worker> asked <question> → <answer> · <source>`, the source being "the user: '<their words>'", the plan, standing rule <n>, or what a probe showed.
 - **Workers**: one row per unit or subthread, with the columns below. A new row needs `--state`.
 - **Learnings**: `<worker>: <lesson a sibling worker should know>`.
@@ -12,11 +12,11 @@ The coordinator's memory for one project, at `~/.local/state/coordinator/<projec
 
 - **Proof**: the unit's evidence, which its brief's `Proof:` line repeats.
 - **Thread**: the worker thread's `link`, verbatim as T3 returns it (`<t3-thread://…>`), which every card for that worker carries, with the newest `taskId` beside it for `task_status` and `task_cancel`, or the `environmentId` of a worker on another machine.
-- **Branch or PR**: the worker's branch, then its PR once it opens one.
-- **State**: `queued`, `overdue` (launched, not started by the startup deadline), `unknown` (its status read failed), `running`, `waiting` (on a call, a slot, or a shared resource), `stuck`, `done`, `replaced by <worker>`, `absorbed into <worker>`, or `dropped` (after two retries, with the replan under Decisions). While a unit is on a retry, its state reads `running, retry <n>`. `project.py` refuses a state that doesn't start with one of these, and detail may follow it, as in `done: #12 MERGED`.
+- **Branch or PR**: the worker's branch, then its PR once it opens one. In one-PR delivery, ticket rows name their integration base and result SHAs; the integrator row names its integration branch and latest checked SHA, then the sole PR link, retaining its checked SHA under Last side effect.
+- **State**: `queued`, `overdue` (launched, not started by the startup deadline), `unknown` (its status read failed), `running`, `waiting` (on a call, a slot, or a shared resource), `stuck`, `done`, `replaced by <worker>`, `absorbed into <worker>`, or `dropped` (after two retries, with the replan under Decisions). While a unit is on a retry, its state reads `running, retry <n>`. `project.py` refuses a state that doesn't start with one of these, and detail may follow it, as in `done: #12 MERGED`. One-PR tickets use `waiting: integration` after their checked result and `done: integrated at <SHA>` after acceptance; Waits on names the integrator or repair worker until accepted.
 - **Waits on**: the call, credential, slot, shared resource, or worker it waits for, with when it started waiting, or `—`. The queue of cards reads this column.
 - **Last side effect**: the newest commit, push, or PR event seen, with its time, and the worker thread's `itemCount`. The heartbeat compares against it to find a stuck worker.
 
 ## Result
 
-At the close, add `## Result` under Goal by hand: the integrated check's result (the head SHAs it merged, the checks it ran, and a pass, or the limitation the user accepted), what shipped, with each PR and its merge state, each worker's final state, and the follow-ups left open.
+At the close, add `## Result` under Goal by hand: the integrated check's result (the head and base SHAs it checked, the tested tree, the checks it ran, and a pass, or the limitation the user accepted), what shipped, with each PR and its merge state, each worker's final state, and the follow-ups left open.

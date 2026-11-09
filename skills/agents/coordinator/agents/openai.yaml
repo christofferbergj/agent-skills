@@ -1,4 +1,4 @@
 interface:
   display_name: "Coordinator"
-  short_description: "Run a multi-PR project from one pinned T3 thread"
+  short_description: "Coordinate separate PRs or one combined PR in T3"
   default_prompt: "Use $coordinator to run this project from this thread."
