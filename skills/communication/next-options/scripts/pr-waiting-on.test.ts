@@ -160,6 +160,18 @@ test("an unrelated job in the same workflow doesn't replace a required check's d
   assert.equal(judge(pr([e2e, lint], { readyAt: READY_AT })).verdict, "running");
 });
 
+test("a matrix name that starts with an expression is replaced only by jobs that fill it in", () => {
+  const template = run("${{ matrix.project }} E2E", {
+    conclusion: "SKIPPED",
+    startedAt: BEFORE_READY,
+    workflow: "CI",
+  });
+  const lint = run("Lint", { workflow: "CI", isRequired: false });
+  assert.equal(judge(pr([template, lint], { readyAt: READY_AT })).verdict, "running");
+  const dashboard = run("Dashboard E2E", { workflow: "CI" });
+  assert.equal(judge(pr([template, dashboard], { readyAt: READY_AT })).verdict, "ready");
+});
+
 test("a matrix job's draft skip counts as replaced once its expanded jobs start after the PR left draft", () => {
   const template = run("E2E (${{ matrix.label }})", {
     conclusion: "SKIPPED",

@@ -119,12 +119,13 @@ function judgeStatus(status: StatusContext): Omit<Item, "name"> | null {
  * replace it once one has started since the PR left draft.
  */
 function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
-  const template = run.name.indexOf("${{");
-  if (template < 0 || !run.workflow) return false;
-  const prefix = run.name.slice(0, template);
+  const parts = run.name.split(/\$\{\{.*?\}\}/);
+  if (parts.length < 2 || !run.workflow || parts.join("").trim() === "") return false;
+  const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const expanded = new RegExp(`^${parts.map(escape).join(".+")}$`);
   return sinceReady.some(
     (later) =>
-      later.workflow === run.workflow && later.name !== run.name && later.name.startsWith(prefix),
+      later.workflow === run.workflow && later.name !== run.name && expanded.test(later.name),
   );
 }
 
