@@ -1,20 +1,27 @@
 /**
- * Says what a PR's merge waits on, judging only the checks the repository requires, so an agent
- * watching a PR merges it once it is ready, and hands it back when only a person can move it,
- * instead of waiting for a check that never finishes on its own.
+ * Says what a PR's merge waits on, so an agent watching a PR merges it once CI is green, and hands
+ * it back when only a person can move it, instead of waiting for a status that never finishes.
  *
  * usage: node pr-waiting-on.ts <PR number or URL> [--repo owner/name]
  *
- * A required check counts as passed only on a real run of the PR's head: a check skipped while the
- * PR was a draft, or a required check with no run yet, is still running. A merged PR reads `ready`.
+ * Every check run on the PR's head must pass, whether or not the repository requires it. A run only
+ * passes on the ready PR: a check skipped while the PR was a draft is still running, and so is a
+ * required check with no run yet. A merged PR reads `ready`.
  *
- * Prints one line per unfinished item, `required: unknown` when neither the base branch's rules nor
- * the checks show a required check (every check then counts as required), and a last `verdict:` line:
+ * Prints one line per unfinished item, then a last `verdict:` line:
  *   person   something waits on a person; hand the PR back (exit 2)
- *   failed   a required check failed; fix it or report it (exit 1)
- *   running  a required check is still running; keep the watch (exit 0)
- *   ready    every required check passed on this head; the PR can merge (exit 0)
- * `info` lines are checks the repository doesn't require. They never change the verdict.
+ *   failed   a check failed; fix it or report it (exit 1)
+ *   running  a check is still running; keep the watch (exit 0)
+ *   ready    CI is green on this head and nothing waits on a person; the PR can merge (exit 0)
+ * `info` lines are pending commit statuses from outside services the repository doesn't require,
+ * such as a visual-test service stopped by its billing plan. They never change the verdict.
+ * `required: unknown` means neither the base branch's rules nor the checks show a required check,
+ * so every status counts as required too.
+ * While the verdict is `running`, an `auto-merge:` line says whether GitHub's auto-merge, which
+ * waits only for required checks, would wait for everything still running:
+ *   safe         only required checks remain; arming auto-merge is safe
+ *   wait         a check the repository doesn't require is still running
+ *   not allowed  the repository has auto-merge turned off
  */
 import { execFileSync } from "node:child_process";
 
@@ -24,7 +31,10 @@ export type Item = {
   name: string;
   detail: string;
   url?: string;
+  /** Whether GitHub's merge rules wait for this item. */
+  required: boolean;
 };
+export type AutoMerge = "safe" | "wait" | "not allowed";
 
 export type CheckRun = {
   __typename: "CheckRun";
@@ -53,6 +63,7 @@ export type Pr = {
   isDraft: boolean;
   reviewDecision: string | null;
   mergeStateStatus: string;
+  autoMergeAllowed: boolean;
   /** When the PR last left draft; checks that started earlier ran on the draft. */
   readyAt: string | null;
   /** Check names the base branch's protection or rulesets require, when the token can read them. */
@@ -65,12 +76,14 @@ export type Pr = {
 const PERSON_STATUS =
   /must be (accepted|reviewed|approved)|waiting for (a )?(review|approval)|requires? (a )?(review|approval)/i;
 const FAILED_CONCLUSIONS = new Set(["FAILURE", "TIMED_OUT", "STARTUP_FAILURE", "CANCELLED"]);
-const MERGE_STATE_ITEMS: Record<string, Omit<Item, "name">> = {
+const MERGE_STATE_ITEMS: Record<string, Omit<Item, "name" | "required">> = {
   DIRTY: { kind: "person", detail: "conflicts with the base branch; rebase needed" },
   BEHIND: { kind: "person", detail: "behind the base branch, which this repository requires" },
   BLOCKED: { kind: "person", detail: "blocked by a repository rule" },
   UNKNOWN: { kind: "running", detail: "GitHub is still computing whether it can merge" },
 };
+
+type Judgement = Omit<Item, "name" | "required">;
 
 /** Only a check's newest run counts; reruns and the ready run replace the draft run. */
 function newestRuns(runs: CheckRun[]): CheckRun[] {
@@ -80,37 +93,6 @@ function newestRuns(runs: CheckRun[]): CheckRun[] {
     if (!seen || run.databaseId > seen.databaseId) byName.set(run.name, run);
   }
   return [...byName.values()];
-}
-
-/**
- * What the run waits on, or `null` when it passed. `draftSkipPending` says a skip on the draft
- * still stands in for a run the ready PR hasn't started.
- */
-function judgeRun(run: CheckRun, draftSkipPending: boolean): Omit<Item, "name"> | null {
-  const url = run.detailsUrl ?? undefined;
-  if (run.status === "WAITING" || run.conclusion === "ACTION_REQUIRED") {
-    return { kind: "person", detail: "waits for an approval", url };
-  }
-  if (run.status !== "COMPLETED") return { kind: "running", detail: run.status.toLowerCase(), url };
-  if (FAILED_CONCLUSIONS.has(run.conclusion ?? "")) {
-    return { kind: "failed", detail: (run.conclusion ?? "").toLowerCase(), url };
-  }
-  const skipped = run.conclusion === "SKIPPED" || run.conclusion === "NEUTRAL";
-  if (skipped && draftSkipPending) {
-    return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
-  }
-  return null;
-}
-
-function judgeStatus(status: StatusContext): Omit<Item, "name"> | null {
-  const detail = status.description ?? status.state.toLowerCase();
-  const url = status.targetUrl ?? undefined;
-  if (status.state === "PENDING" || status.state === "EXPECTED") {
-    return { kind: PERSON_STATUS.test(detail) ? "person" : "running", detail, url };
-  }
-  if (status.state === "FAILURE" || status.state === "ERROR")
-    return { kind: "failed", detail, url };
-  return null;
 }
 
 /**
@@ -129,7 +111,41 @@ function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
   );
 }
 
-/** Whether the repository marks any check required; when not, every check counts as required. */
+/**
+ * What the run waits on, or `null` when it passed. `draftSkipPending` says a skip on the draft
+ * still stands in for a run the ready PR hasn't started.
+ */
+function judgeRun(run: CheckRun, draftSkipPending: boolean): Judgement | null {
+  const url = run.detailsUrl ?? undefined;
+  if (run.status === "WAITING" || run.conclusion === "ACTION_REQUIRED") {
+    return { kind: "person", detail: "waits for an approval", url };
+  }
+  if (run.status !== "COMPLETED") return { kind: "running", detail: run.status.toLowerCase(), url };
+  if (FAILED_CONCLUSIONS.has(run.conclusion ?? "")) {
+    return { kind: "failed", detail: (run.conclusion ?? "").toLowerCase(), url };
+  }
+  const skipped = run.conclusion === "SKIPPED" || run.conclusion === "NEUTRAL";
+  if (skipped && draftSkipPending) {
+    return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
+  }
+  return null;
+}
+
+/** A status nobody requires that is only pending becomes `info`, since it may never finish. */
+function judgeStatus(status: StatusContext, counts: boolean): Judgement | null {
+  const detail = status.description ?? status.state.toLowerCase();
+  const url = status.targetUrl ?? undefined;
+  if (status.state === "PENDING" || status.state === "EXPECTED") {
+    if (PERSON_STATUS.test(detail)) return { kind: "person", detail, url };
+    return { kind: counts ? "running" : "info", detail, url };
+  }
+  if (status.state === "FAILURE" || status.state === "ERROR") {
+    return { kind: "failed", detail, url };
+  }
+  return null;
+}
+
+/** Whether the base branch or any check shows a required check. */
 export function requiredKnown(pr: Pr): boolean {
   return pr.requiredNames.length > 0 || pr.checks.some((check) => check.isRequired);
 }
@@ -140,51 +156,52 @@ function checkName(check: CheckRun | StatusContext): string {
 
 /** The PR's unfinished items, each labelled with who it waits on. */
 export function waitingOn(pr: Pr): Item[] {
-  const items: Item[] = [];
-  const known = requiredKnown(pr);
-
-  if (pr.state === "MERGED") return items;
-  if (pr.state === "CLOSED") return [{ kind: "person", name: "state", detail: "the PR is closed" }];
-  if (pr.isDraft) items.push({ kind: "person", name: "draft", detail: "the PR is a draft" });
-  if (pr.reviewDecision === "REVIEW_REQUIRED" || pr.reviewDecision === "CHANGES_REQUESTED") {
-    items.push({ kind: "person", name: "review", detail: pr.reviewDecision.toLowerCase() });
+  if (pr.state === "MERGED") return [];
+  if (pr.state === "CLOSED") {
+    return [{ kind: "person", name: "state", detail: "the PR is closed", required: true }];
   }
+
+  const items: Item[] = [];
+  if (pr.isDraft) {
+    items.push({ kind: "person", name: "draft", detail: "the PR is a draft", required: true });
+  }
+  if (pr.reviewDecision === "REVIEW_REQUIRED" || pr.reviewDecision === "CHANGES_REQUESTED") {
+    const detail = pr.reviewDecision.toLowerCase();
+    items.push({ kind: "person", name: "review", detail, required: true });
+  }
+
+  const known = requiredKnown(pr);
   const required = (check: CheckRun | StatusContext) =>
-    !known || check.isRequired || pr.requiredNames.includes(checkName(check));
-  const allRuns = pr.checks.filter((check) => check.__typename === "CheckRun");
+    check.isRequired || pr.requiredNames.includes(checkName(check));
+  const runs = pr.checks.filter((check) => check.__typename === "CheckRun");
   const readyAt = pr.readyAt;
-  const sinceReady = allRuns.filter(
+  const sinceReady = runs.filter(
     (run) => readyAt !== null && (run.startedAt === null || run.startedAt >= readyAt),
   );
-  const judged = [
-    ...newestRuns(allRuns).map((run) => {
-      const ranOnDraft = readyAt !== null && (run.startedAt ?? "") < readyAt;
-      return {
-        check: run,
-        item: judgeRun(run, required(run) && ranOnDraft && !expandedSince(run, sinceReady)),
-      };
-    }),
-    ...pr.checks
-      .filter((check) => check.__typename === "StatusContext")
-      .map((status) => ({ check: status, item: judgeStatus(status) })),
-  ];
 
-  for (const { check, item } of judged) {
-    if (!item) continue;
-    items.push({ ...item, name: checkName(check), kind: required(check) ? item.kind : "info" });
+  for (const run of newestRuns(runs)) {
+    const ranOnDraft = readyAt !== null && (run.startedAt ?? "") < readyAt;
+    const item = judgeRun(run, ranOnDraft && !expandedSince(run, sinceReady));
+    if (item) items.push({ ...item, name: run.name, required: required(run) });
+  }
+  for (const status of pr.checks.filter((check) => check.__typename === "StatusContext")) {
+    const item = judgeStatus(status, required(status) || !known);
+    if (item) items.push({ ...item, name: status.context, required: required(status) });
   }
 
   const reported = new Set(pr.checks.map(checkName));
   for (const name of pr.requiredNames) {
-    if (!reported.has(name)) items.push({ kind: "running", name, detail: "required; no run yet" });
+    if (!reported.has(name)) {
+      items.push({ kind: "running", name, detail: "required; no run yet", required: true });
+    }
   }
 
   // GitHub also reports BLOCKED for a draft, a missing review or an unfinished required check;
   // only when none of those explain it is a rule the agent can't see blocking the merge.
-  const explained = items.some((item) => item.kind !== "info");
+  const explained = items.some((item) => item.kind !== "info" && item.required);
   const mergeState = MERGE_STATE_ITEMS[pr.mergeStateStatus];
   if (mergeState && !(pr.mergeStateStatus === "BLOCKED" && explained)) {
-    items.push({ name: "merge state", ...mergeState });
+    items.push({ ...mergeState, name: "merge state", required: true });
   }
 
   return items;
@@ -196,7 +213,17 @@ export function verdictOf(items: Item[]): Verdict {
   return order.find((kind) => items.some((item) => item.kind === kind)) ?? "ready";
 }
 
-const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){pullRequest(number:$n){
+/** Whether arming auto-merge now would wait for everything still running; `null` unless running. */
+export function autoMergeOf(pr: Pr, items: Item[]): AutoMerge | null {
+  if (verdictOf(items) !== "running") return null;
+  if (!pr.autoMergeAllowed) return "not allowed";
+  const running = items.filter((item) => item.kind === "running");
+  return running.every((item) => item.required) ? "safe" : "wait";
+}
+
+const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){
+  autoMergeAllowed
+  pullRequest(number:$n){
   state isDraft mergeStateStatus reviewDecision
   baseRef{branchProtectionRule{requiredStatusCheckContexts}
     rules(first:50){nodes{parameters{... on RequiredStatusChecksParameters{requiredStatusChecks{context}}}}}}
@@ -215,6 +242,7 @@ type ResponseCheck =
 type Response = {
   data: {
     repository: {
+      autoMergeAllowed: boolean;
       pullRequest: {
         baseRef: {
           branchProtectionRule: { requiredStatusCheckContexts: string[] } | null;
@@ -238,23 +266,21 @@ type Response = {
 };
 
 export function parsePr(response: Response): Pr {
-  const pr = response.data.repository.pullRequest;
+  const repository = response.data.repository;
+  const pr = repository.pullRequest;
   const fromRules = (pr.baseRef?.rules.nodes ?? []).flatMap(
     (rule) => rule.parameters?.requiredStatusChecks?.map((check) => check.context) ?? [],
   );
+  const fromProtection = pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ?? [];
   const nodes = pr.commits.nodes[0]?.commit.statusCheckRollup?.contexts.nodes ?? [];
   return {
     state: pr.state,
     isDraft: pr.isDraft,
     reviewDecision: pr.reviewDecision,
     mergeStateStatus: pr.mergeStateStatus,
+    autoMergeAllowed: repository.autoMergeAllowed,
     readyAt: pr.timelineItems.nodes.at(-1)?.createdAt ?? null,
-    requiredNames: [
-      ...new Set([
-        ...(pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ?? []),
-        ...fromRules,
-      ]),
-    ],
+    requiredNames: [...new Set([...fromProtection, ...fromRules])],
     checks: nodes.map((node) => {
       if (node.__typename !== "CheckRun") return node;
       const { checkSuite, ...run } = node;
@@ -307,6 +333,8 @@ function main(): void {
     console.log([item.kind, item.name, item.detail, item.url].filter(Boolean).join("\t"));
   }
   if (!requiredKnown(pr)) console.log("required: unknown");
+  const autoMerge = autoMergeOf(pr, items);
+  if (autoMerge) console.log(`auto-merge: ${autoMerge}`);
   const verdict = verdictOf(items);
   console.log(`verdict: ${verdict}`);
   process.exitCode = verdict === "person" ? 2 : verdict === "failed" ? 1 : 0;
