@@ -218,7 +218,7 @@ Proofs:
         self.project("phase", "audit", "--result", "five reports", *NEXT)
         ended = self.text()
         self.assertEqual(self.project("phase", "audit", "--result", "five reports", *NEXT, code=1).stderr,
-                         "phase 'audit' already ended with this goal: the project is in its next phase\n")
+                         "phase 'audit' already ended with this goal and proof, and nothing is recorded since: the project is in its next phase; to end a new phase like it, give it another slug\n")
         self.assertEqual((self.text(), self.files()), (ended, ["01-audit.md", "project.md"]))
 
     def test_a_next_phase_with_the_same_slug_and_goal_still_ends(self):

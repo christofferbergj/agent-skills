@@ -182,7 +182,7 @@ def phase(lines: list[str], archive: str, result: str, *,
         raise ProjectError("a phase ends with a goal and a proof, or with park alone")
     slug = Path(archive).stem.split("-", 1)[1]
     if goal is not None and _rerun(lines, slug, goal, proof):
-        raise ProjectError(f"phase {slug!r} already ended with this goal: the project is in its next phase")
+        raise ProjectError(f"phase {slug!r} already ended with this goal and proof, and nothing is recorded since: the project is in its next phase; to end a new phase like it, give it another slug")
     today = date.today().isoformat()
     body = [f"{PARKED}{today}: {_line('park', park)}"] if park is not None else _next(goal, proof)
     line = f"- {today} · {Path(archive).stem}: {_line('result', result)} · {archive}"
@@ -206,7 +206,8 @@ def phase(lines: list[str], archive: str, result: str, *,
 def _rerun(lines: list[str], slug: str, goal: str, proof: str) -> bool:
     """The phase end just recorded: the newest Phases line ended `slug`, Goal already opens
     with `goal` and `proof`, and Decisions and Learnings are still as `phase` left them, empty.
-    A real next phase with the same slug, goal, and proof records something there first."""
+    Content can't tell such a retry from a new phase with the same slug, goal, and proof and
+    nothing recorded, so the refusal names the way out: another slug."""
     if "## Phases" not in lines:
         return False
     start_at, end = _section(lines, "Phases")
