@@ -62,8 +62,12 @@ export type Pr = {
   state: string;
   isDraft: boolean;
   reviewDecision: string | null;
+  /** People or teams asked to review who haven't yet; bots are left out. */
+  pendingReviewers: string[];
   mergeStateStatus: string;
   autoMergeAllowed: boolean;
+  /** Checks on the head beyond the ones fetched, which the script can't judge. */
+  unseenChecks: number;
   /** When the PR last left draft; checks that started earlier ran on the draft. */
   readyAt: string | null;
   /** Check names the base branch's protection or rulesets require, when the token can read them. */
@@ -169,6 +173,18 @@ export function waitingOn(pr: Pr): Item[] {
     const detail = pr.reviewDecision.toLowerCase();
     items.push({ kind: "person", name: "review", detail, required: true });
   }
+  for (const reviewer of pr.pendingReviewers) {
+    items.push({
+      kind: "person",
+      name: "review",
+      detail: `requested from ${reviewer}`,
+      required: true,
+    });
+  }
+  if (pr.unseenChecks > 0) {
+    const detail = `${pr.unseenChecks} more checks than the script reads; check them by hand`;
+    items.push({ kind: "person", name: "checks", detail, required: true });
+  }
 
   const known = requiredKnown(pr);
   const required = (check: CheckRun | StatusContext) =>
@@ -181,8 +197,11 @@ export function waitingOn(pr: Pr): Item[] {
 
   for (const run of newestRuns(runs)) {
     const ranOnDraft = readyAt !== null && (run.startedAt ?? "") < readyAt;
-    const item = judgeRun(run, ranOnDraft && !expandedSince(run, sinceReady));
-    if (item) items.push({ ...item, name: run.name, required: required(run) });
+    const draftSkipPending = ranOnDraft && !expandedSince(run, sinceReady);
+    const item = judgeRun(run, draftSkipPending);
+    // GitHub counts a skipped required check as passed, so it won't wait for the ready run.
+    const waitedFor = required(run) && !(draftSkipPending && run.status === "COMPLETED");
+    if (item) items.push({ ...item, name: run.name, required: waitedFor });
   }
   for (const status of pr.checks.filter((check) => check.__typename === "StatusContext")) {
     const item = judgeStatus(status, required(status) || !known);
@@ -225,10 +244,11 @@ const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$own
   autoMergeAllowed
   pullRequest(number:$n){
   state isDraft mergeStateStatus reviewDecision
+  reviewRequests(first:50){nodes{requestedReviewer{__typename ... on User{login} ... on Team{slug}}}}
   baseRef{branchProtectionRule{requiredStatusCheckContexts}
     rules(first:50){nodes{parameters{... on RequiredStatusChecksParameters{requiredStatusChecks{context}}}}}}
   timelineItems(itemTypes:[READY_FOR_REVIEW_EVENT],last:1){nodes{... on ReadyForReviewEvent{createdAt}}}
-  commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){nodes{__typename
+  commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){totalCount nodes{__typename
     ... on CheckRun{databaseId name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)
       checkSuite{workflowRun{workflow{name}}}}
     ... on StatusContext{context state description targetUrl isRequired(pullRequestNumber:$n)}}}}}}}}}}`;
@@ -254,10 +274,19 @@ type Response = {
         isDraft: boolean;
         mergeStateStatus: string;
         reviewDecision: string | null;
+        reviewRequests: {
+          nodes: {
+            requestedReviewer: { __typename: string; login?: string; slug?: string } | null;
+          }[];
+        };
         timelineItems: { nodes: { createdAt: string }[] };
         commits: {
           nodes: {
-            commit: { statusCheckRollup: { contexts: { nodes: ResponseCheck[] } } | null };
+            commit: {
+              statusCheckRollup: {
+                contexts: { totalCount: number; nodes: ResponseCheck[] };
+              } | null;
+            };
           }[];
         };
       };
@@ -272,13 +301,19 @@ export function parsePr(response: Response): Pr {
     (rule) => rule.parameters?.requiredStatusChecks?.map((check) => check.context) ?? [],
   );
   const fromProtection = pr.baseRef?.branchProtectionRule?.requiredStatusCheckContexts ?? [];
-  const nodes = pr.commits.nodes[0]?.commit.statusCheckRollup?.contexts.nodes ?? [];
+  const contexts = pr.commits.nodes[0]?.commit.statusCheckRollup?.contexts;
+  const nodes = contexts?.nodes ?? [];
+  const pendingReviewers = pr.reviewRequests.nodes.flatMap(({ requestedReviewer: who }) =>
+    who?.__typename === "User" || who?.__typename === "Team" ? [who.login ?? who.slug ?? ""] : [],
+  );
   return {
     state: pr.state,
     isDraft: pr.isDraft,
     reviewDecision: pr.reviewDecision,
+    pendingReviewers,
     mergeStateStatus: pr.mergeStateStatus,
     autoMergeAllowed: repository.autoMergeAllowed,
+    unseenChecks: (contexts?.totalCount ?? 0) - nodes.length,
     readyAt: pr.timelineItems.nodes.at(-1)?.createdAt ?? null,
     requiredNames: [...new Set([...fromProtection, ...fromRules])],
     checks: nodes.map((node) => {

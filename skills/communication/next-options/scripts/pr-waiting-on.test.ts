@@ -21,8 +21,10 @@ function pr(checks: Pr["checks"], overrides: Partial<Pr> = {}): Pr {
     state: "OPEN",
     isDraft: false,
     reviewDecision: null,
+    pendingReviewers: [],
     mergeStateStatus: "CLEAN",
     autoMergeAllowed: true,
+    unseenChecks: 0,
     readyAt: null,
     requiredNames: [],
     checks,
@@ -153,6 +155,11 @@ test("a draft, a requested review, conflicts, or an unexplained blocking rule wa
   }
 });
 
+test("a person asked to review, or checks the script can't read, wait on a person", () => {
+  assert.equal(judge(pr([run("Unit")], { pendingReviewers: ["alice"] })).verdict, "person");
+  assert.equal(judge(pr([run("Unit")], { unseenChecks: 3 })).verdict, "person");
+});
+
 test("a blocked merge state that an unfinished required check explains adds no item of its own", () => {
   const failing = judge(
     pr([run("Unit", { conclusion: "FAILURE" })], { mergeStateStatus: "BLOCKED" }),
@@ -224,6 +231,13 @@ test("auto-merge is safe only when everything still running is a check GitHub wa
   assert.equal(judge(pr([run("E2E")])).autoMerge, null);
   const noneRequired = pr([run("Unit", { ...RUNNING, isRequired: false })]);
   assert.equal(judge(noneRequired).autoMerge, "wait");
+  // GitHub would count the draft's skip as passed and merge before the ready run starts.
+  const draftSkip = run("E2E", { conclusion: "SKIPPED", startedAt: BEFORE_READY });
+  assert.equal(judge(pr([draftSkip], { readyAt: READY_AT })).autoMerge, "wait");
+  assert.equal(
+    judge(pr([run("Code quality")], { requiredNames: ["Code quality", "E2E"] })).autoMerge,
+    "safe",
+  );
 });
 
 test("the GraphQL response gives the required names, the ready time, auto-merge and each run's workflow", () => {
@@ -250,18 +264,29 @@ test("the GraphQL response gives the required names, the ready time, auto-merge 
           isDraft: false,
           mergeStateStatus: "BLOCKED",
           reviewDecision: null,
+          reviewRequests: {
+            nodes: [
+              { requestedReviewer: { __typename: "User", login: "alice" } },
+              { requestedReviewer: { __typename: "Bot", login: "copilot" } },
+              { requestedReviewer: { __typename: "Team", slug: "web" } },
+            ],
+          },
           timelineItems: { nodes: [{ createdAt: READY_AT }] },
           commits: {
-            nodes: [{ commit: { statusCheckRollup: { contexts: { nodes: [check] } } } }],
+            nodes: [
+              { commit: { statusCheckRollup: { contexts: { totalCount: 101, nodes: [check] } } } },
+            ],
           },
         },
       },
     },
   });
   assert.equal(parsed.autoMergeAllowed, false);
+  assert.deepEqual(parsed.pendingReviewers, ["alice", "web"]);
+  assert.equal(parsed.unseenChecks, 100);
   assert.deepEqual(parsed.requiredNames, ["E2E", "Lint"]);
   assert.equal((parsed.checks[0] as CheckRun).workflow, "CI");
-  const { items, autoMerge } = judge(parsed);
+  const { items } = judge({ ...parsed, pendingReviewers: [], unseenChecks: 0 });
   assert.deepEqual(
     items.map((item) => [item.name, item.detail]),
     [
@@ -269,5 +294,4 @@ test("the GraphQL response gives the required names, the ready time, auto-merge 
       ["Lint", "required; no run yet"],
     ],
   );
-  assert.equal(autoMerge, "not allowed");
 });
