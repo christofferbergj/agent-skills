@@ -27,9 +27,13 @@ function pr(checks: Pr["checks"], overrides: Partial<Pr> = {}): Pr {
   };
 }
 
+let nextRunId = 1;
+
+/** Each call creates a newer run, as GitHub numbers them. */
 function run(name: string, fields: Partial<CheckRun> = {}): CheckRun {
   return {
     __typename: "CheckRun",
+    databaseId: nextRunId++,
     name,
     status: "COMPLETED",
     conclusion: "SUCCESS",
@@ -165,11 +169,36 @@ test("a failed check the repository doesn't require is only information", () => 
   );
 });
 
-test("Chromatic baselines waiting for acceptance wait on a person even when every required check passed", () => {
+test("required Chromatic baselines waiting for acceptance wait on a person", () => {
   const { verdict } = judge(
-    pr([run("Unit"), status("PENDING", "4 changes must be accepted as baselines")]),
+    pr([run("Unit"), status("PENDING", "4 changes must be accepted as baselines", true)]),
   );
   assert.equal(verdict, "person");
+});
+
+test("a person's step on a check the merge doesn't need is only information", () => {
+  const { items, verdict } = judge(
+    pr([
+      run("Unit"),
+      status("PENDING", "4 changes must be accepted as baselines"),
+      run("Deploy preview", { status: "WAITING", conclusion: null, isRequired: false }),
+    ]),
+  );
+  assert.equal(verdict, "ready");
+  assert.deepEqual(
+    items.map((item) => item.kind),
+    ["info", "info"],
+  );
+});
+
+test("a rerun that hasn't started, or started in the same second, replaces the older run", () => {
+  const queued = pr([
+    run("Unit"),
+    run("Unit", { status: "QUEUED", conclusion: null, startedAt: null }),
+  ]);
+  assert.equal(judge(queued).verdict, "running");
+  const sameSecond = pr([run("Unit"), run("Unit", { conclusion: "FAILURE" })]);
+  assert.equal(judge(sameSecond).verdict, "failed");
 });
 
 test("a deployment waiting for approval waits on a person", () => {
@@ -183,7 +212,7 @@ test("a person outranks a required check that is still running", () => {
   const { verdict } = judge(
     pr([
       run("E2E", { status: "IN_PROGRESS", conclusion: null }),
-      status("PENDING", "Waiting for review"),
+      status("PENDING", "Waiting for review", true),
     ]),
   );
   assert.equal(verdict, "person");

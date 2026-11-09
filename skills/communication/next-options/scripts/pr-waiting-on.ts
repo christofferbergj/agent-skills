@@ -25,6 +25,8 @@ export type Item = {
 
 export type CheckRun = {
   __typename: "CheckRun";
+  /** Grows with each run GitHub creates, so it orders reruns even before they start. */
+  databaseId: number;
   name: string;
   status: string;
   conclusion: string | null;
@@ -68,7 +70,7 @@ function newestRuns(runs: CheckRun[]): CheckRun[] {
   const byName = new Map<string, CheckRun>();
   for (const run of runs) {
     const seen = byName.get(run.name);
-    if (!seen || (run.startedAt ?? "") > (seen.startedAt ?? "")) byName.set(run.name, run);
+    if (!seen || run.databaseId > seen.databaseId) byName.set(run.name, run);
   }
   return [...byName.values()];
 }
@@ -135,9 +137,7 @@ export function waitingOn(pr: Pr): Item[] {
 
   for (const { check, name, item } of judged) {
     if (!item) continue;
-    // A person's step blocks the user's flow even on a check the merge doesn't need.
-    const counts = check.isRequired || !known || item.kind === "person";
-    items.push({ ...item, name, kind: counts ? item.kind : "info" });
+    items.push({ ...item, name, kind: check.isRequired || !known ? item.kind : "info" });
   }
 
   // GitHub also reports BLOCKED for a draft, a missing review or an unfinished required check;
@@ -161,7 +161,7 @@ const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$own
   state isDraft mergeStateStatus reviewDecision
   timelineItems(itemTypes:[READY_FOR_REVIEW_EVENT],last:1){nodes{... on ReadyForReviewEvent{createdAt}}}
   commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){nodes{__typename
-    ... on CheckRun{name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)}
+    ... on CheckRun{databaseId name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)}
     ... on StatusContext{context state description targetUrl isRequired(pullRequestNumber:$n)}}}}}}}}}}`;
 
 type Response = {
