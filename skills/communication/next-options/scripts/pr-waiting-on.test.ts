@@ -128,6 +128,53 @@ test("a rerun replaces the older run, even before it starts or within the same s
   assert.equal(judge(pr([run("Unit", { conclusion: "CANCELLED" })])).verdict, "failed");
 });
 
+test("jobs with the same name in different workflows or events are different checks", () => {
+  const failing = run("test", { conclusion: "FAILURE", workflow: "Package tests" });
+  assert.equal(judge(pr([failing, run("test", { workflow: "Docs" })])).verdict, "failed");
+  const onPush = run("test", { conclusion: "FAILURE", workflow: "CI", event: "push" });
+  const onPr = run("test", { workflow: "CI", event: "pull_request" });
+  assert.equal(judge(pr([onPush, onPr])).verdict, "failed");
+  const lint = run("lint", { ...RUNNING, workflow: "Dashboard", isRequired: false });
+  const otherLint = run("lint", { workflow: "Website", isRequired: false });
+  assert.equal(judge(pr([lint, otherLint, run("build", RUNNING)])).autoMerge, "wait");
+});
+
+test("an unfinished workflow keeps the PR running, since jobs waiting on others have no run yet", () => {
+  const suite = (status: string) => ({ id: 7, status });
+  const e2e = run("E2E tests", { ...RUNNING, workflow: "CI", suite: suite("IN_PROGRESS") });
+  const playwright = run("Playwright", {
+    workflow: "CI",
+    isRequired: false,
+    suite: suite("IN_PROGRESS"),
+  });
+  const mixed = judge(pr([playwright, e2e]));
+  assert.equal(mixed.verdict, "running");
+  assert.equal(mixed.autoMerge, "wait");
+
+  const done = run("Playwright", {
+    workflow: "CI",
+    isRequired: false,
+    suite: suite("IN_PROGRESS"),
+  });
+  const between = judge(pr([done]));
+  assert.equal(between.verdict, "running");
+  assert.equal(between.autoMerge, "wait");
+
+  const onlyRequired = run("E2E tests", {
+    ...RUNNING,
+    workflow: "Gate",
+    suite: { id: 8, status: "IN_PROGRESS" },
+  });
+  assert.equal(judge(pr([onlyRequired])).autoMerge, "safe");
+
+  const finished = run("Playwright", {
+    workflow: "CI",
+    isRequired: false,
+    suite: suite("COMPLETED"),
+  });
+  assert.equal(judge(pr([finished])).verdict, "ready");
+});
+
 test("an outside status waiting on a person, or failing, blocks the PR whether required or not", () => {
   const baselines = status("PENDING", "4 changes must be accepted as baselines");
   assert.equal(judge(pr([run("Unit"), baselines])).verdict, "person");
@@ -249,7 +296,11 @@ test("the GraphQL response gives the required names, the ready time, auto-merge 
     conclusion: "SKIPPED",
     startedAt: BEFORE_READY,
     isRequired: false,
-    checkSuite: { workflowRun: { workflow: { name: "CI" } } },
+    checkSuite: {
+      databaseId: 7,
+      status: "COMPLETED",
+      workflowRun: { event: "pull_request", workflow: { name: "CI" } },
+    },
   };
   const parsed = parsePr({
     data: {
@@ -285,7 +336,11 @@ test("the GraphQL response gives the required names, the ready time, auto-merge 
   assert.deepEqual(parsed.pendingReviewers, ["alice", "web"]);
   assert.equal(parsed.unseenChecks, 100);
   assert.deepEqual(parsed.requiredNames, ["E2E", "Lint"]);
-  assert.equal((parsed.checks[0] as CheckRun).workflow, "CI");
+  assert.deepEqual(
+    [(parsed.checks[0] as CheckRun).workflow, (parsed.checks[0] as CheckRun).event],
+    ["CI", "pull_request"],
+  );
+  assert.deepEqual((parsed.checks[0] as CheckRun).suite, { id: 7, status: "COMPLETED" });
   const { items } = judge({ ...parsed, pendingReviewers: [], unseenChecks: 0 });
   assert.deepEqual(
     items.map((item) => [item.name, item.detail]),

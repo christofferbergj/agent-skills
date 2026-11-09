@@ -48,6 +48,10 @@ export type CheckRun = {
   isRequired: boolean;
   /** The Actions workflow that created the run, when one did. */
   workflow?: string | null;
+  /** The event that triggered that workflow run, such as `pull_request` or `push`. */
+  event?: string | null;
+  /** The run's check suite, one per workflow run; it completes once all its jobs have. */
+  suite?: { id: number; status: string } | null;
 };
 export type StatusContext = {
   __typename: "StatusContext";
@@ -89,14 +93,37 @@ const MERGE_STATE_ITEMS: Record<string, Omit<Item, "name" | "required">> = {
 
 type Judgement = Omit<Item, "name" | "required">;
 
-/** Only a check's newest run counts; reruns and the ready run replace the draft run. */
+/**
+ * Only a check's newest run counts; reruns and the ready run replace the draft run. A job is the
+ * same check only within one workflow and event, since two workflows may both name a job `test`.
+ */
 function newestRuns(runs: CheckRun[]): CheckRun[] {
-  const byName = new Map<string, CheckRun>();
+  const byKey = new Map<string, CheckRun>();
   for (const run of runs) {
-    const seen = byName.get(run.name);
-    if (!seen || run.databaseId > seen.databaseId) byName.set(run.name, run);
+    const key = JSON.stringify([run.workflow ?? null, run.event ?? null, run.name]);
+    const seen = byKey.get(key);
+    if (!seen || run.databaseId > seen.databaseId) byKey.set(key, run);
   }
-  return [...byName.values()];
+  return [...byKey.values()];
+}
+
+/**
+ * A job that `needs:` another has no check run until that job finishes, so an unfinished check
+ * suite may hold jobs nobody can see yet. Each such suite is unfinished work GitHub's auto-merge
+ * wouldn't wait for, unless every run in it is required.
+ */
+function unfinishedSuites(runs: CheckRun[], required: (run: CheckRun) => boolean): Item[] {
+  const suites = new Map<number, CheckRun[]>();
+  for (const run of runs) {
+    if (!run.suite || run.suite.status === "COMPLETED") continue;
+    suites.set(run.suite.id, [...(suites.get(run.suite.id) ?? []), run]);
+  }
+  return [...suites.values()].map((suiteRuns) => ({
+    kind: "running",
+    name: suiteRuns[0]!.workflow ?? "workflow",
+    detail: "still running; jobs that wait on others may not have started",
+    required: suiteRuns.every(required) && suiteRuns.some((run) => run.status !== "COMPLETED"),
+  }));
 }
 
 /**
@@ -208,6 +235,8 @@ export function waitingOn(pr: Pr): Item[] {
     if (item) items.push({ ...item, name: status.context, required: required(status) });
   }
 
+  items.push(...unfinishedSuites(runs, required));
+
   const reported = new Set(pr.checks.map(checkName));
   for (const name of pr.requiredNames) {
     if (!reported.has(name)) {
@@ -250,12 +279,16 @@ const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$own
   timelineItems(itemTypes:[READY_FOR_REVIEW_EVENT],last:1){nodes{... on ReadyForReviewEvent{createdAt}}}
   commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){totalCount nodes{__typename
     ... on CheckRun{databaseId name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)
-      checkSuite{workflowRun{workflow{name}}}}
+      checkSuite{databaseId status workflowRun{event workflow{name}}}}
     ... on StatusContext{context state description targetUrl isRequired(pullRequestNumber:$n)}}}}}}}}}}`;
 
 type ResponseCheck =
   | (Omit<CheckRun, "workflow"> & {
-      checkSuite?: { workflowRun: { workflow: { name: string } } | null } | null;
+      checkSuite?: {
+        databaseId: number;
+        status: string;
+        workflowRun: { event: string; workflow: { name: string } } | null;
+      } | null;
     })
   | StatusContext;
 
@@ -319,7 +352,12 @@ export function parsePr(response: Response): Pr {
     checks: nodes.map((node) => {
       if (node.__typename !== "CheckRun") return node;
       const { checkSuite, ...run } = node;
-      return { ...run, workflow: checkSuite?.workflowRun?.workflow.name ?? null };
+      return {
+        ...run,
+        workflow: checkSuite?.workflowRun?.workflow.name ?? null,
+        event: checkSuite?.workflowRun?.event ?? null,
+        suite: checkSuite ? { id: checkSuite.databaseId, status: checkSuite.status } : null,
+      };
     }),
   };
 }
