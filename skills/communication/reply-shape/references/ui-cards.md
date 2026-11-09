@@ -41,7 +41,7 @@ Pass `html_render` exactly these two lines as its `html`, with the payload on on
 
 <!-- prettier-ignore -->
 ```html
-<script src="https://cdn.jsdelivr.net/gh/christofferbergj/agent-skills@be1999ffa11ba665be039b36befaf5cef5fdd044/skills/communication/reply-shape/ui/reply.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/christofferbergj/agent-skills@5c95250193f3f5b82b2b056b2836820cb86836b8/skills/communication/reply-shape/ui/reply.js"></script>
 <script type="application/json" id="ui">{"ui":[{"outcome":{"status":"done","text":"Exports no longer time out"}},{"change":{"pr":212,"state":"merged","checks":["typecheck","unit 48/48"]}}]}</script>
 ```
 
