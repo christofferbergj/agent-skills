@@ -26,7 +26,7 @@ quiet npx -y skills@latest add . --list
 step "catalog and provenance"
 quiet python3 skills/agents/maintain-skills/scripts/catalog.py --root . validate
 
-for suite in $(git ls-files 'skills/*/tests/test_*.py' | xargs -n1 dirname | sort -u); do
+for suite in $(git ls-files 'skills/*/test_*.py' | xargs -n1 dirname | sort -u); do
   step "python: $suite"
   python3 -m unittest discover -s "$suite"
 done

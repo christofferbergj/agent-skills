@@ -22,7 +22,7 @@ SOFTWARE.
 
 ---
 
-`ui/reply.js`, `ui/catalog.schema.json`, and `ui/examples/` are copied unchanged from Oliver Cederborg's addystack, under the license above.
+`ui/reply.js`, `ui/catalog.schema.json`, `ui/examples/`, `scripts/validate-card.py`, and `scripts/test_validate_card.py` are copied unchanged from Oliver Cederborg's addystack, under the license above.
 
 ---
 

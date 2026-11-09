@@ -23,34 +23,30 @@ The card's words count toward the 60-word budget with the notes under it.
 
 ## Blocks
 
-`ui/catalog.schema.json` defines the payload: `{"ui": [blocks]}`, at most 12 blocks, each an object with one key naming its type. Text fields hold at most 240 characters, and short fields, such as labels, values, and chips, at most 60. `ui/examples/catalog.json` shows every block, and `ui/examples/reference.json` a whole reply.
+`ui/catalog.schema.json` defines the payload, `{"ui": [blocks]}`, with each block's fields and limits. `ui/examples/catalog.json` shows every block, and `ui/examples/reference.json` a whole reply.
 
-| Block      | Draws                                                    | Fields                                                                                                                               |
-| ---------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `outcome`  | the headline; each one opens a card for the blocks after | `status`: `done`, `risk`, `blocked`, or `working`, matching ✅ 🟡 🔴 ⏳; `text`                                                      |
-| `delta`    | a measured before and after                              | `label`, `now`, `was`; optional `bars` of `[label, number]`                                                                          |
-| `change`   | one PR                                                   | `pr`, `state`: `draft`, `open`, `fixing`, `blocked`, `merged`, or `closed`; optional `title`, `sha`, `checks`, `diff`, `note`, `url` |
-| `decision` | options, the pick marked                                 | `options` of `{key, text, rec}`; optional `question`                                                                                 |
-| `table`    | items compared on the same points, at most six rows      | `columns`, `rows`; optional `pick`, the index of the chosen row                                                                      |
-| `checks`   | check results, worst first                               | items of `{status, text}`, `status` one of `fail`, `warn`, `wait`, `skip`, or `pass`                                                 |
-| `flow`     | steps in order                                           | `steps`; optional `label` and `mark`, the index of the end state, by default the last step                                           |
+| Block      | Draws                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `outcome`  | the headline, its `status` `done`, `risk`, `blocked`, or `working` for ✅ 🟡 🔴 ⏳; each one opens a card for the blocks after |
+| `delta`    | a measured before and after                                                                                                    |
+| `change`   | one PR                                                                                                                         |
+| `decision` | options, the pick marked                                                                                                       |
+| `table`    | items compared on the same points                                                                                              |
+| `checks`   | check results, worst first                                                                                                     |
+| `flow`     | steps in order                                                                                                                 |
 
 ## Call
 
 Pass `html_render` exactly these two lines as its `html`, with the payload on one line:
 
+<!-- prettier-ignore -->
 ```html
 <script src="https://cdn.jsdelivr.net/gh/christofferbergj/agent-skills@be1999ffa11ba665be039b36befaf5cef5fdd044/skills/communication/reply-shape/ui/reply.js"></script>
-<script type="application/json" id="ui">
-  {
-    "ui": [
-      { "outcome": { "status": "done", "text": "Exports no longer time out" } },
-      { "change": { "pr": 212, "state": "merged", "checks": ["typecheck", "unit 48/48"] } }
-    ]
-  }
-</script>
+<script type="application/json" id="ui">{"ui":[{"outcome":{"status":"done","text":"Exports no longer time out"}},{"change":{"pr":212,"state":"merged","checks":["typecheck","unit 48/48"]}}]}</script>
 ```
+
+Inside the payload, write each `<` as `\u003c`, so a `</script>` in a text field can't end the script early.
 
 Copy the URL as written: it pins the renderer to a commit of this library, so a card drawn today looks the same later. Give the call a short `title` and `height: 2000`, the tool's maximum; T3 Code fits the frame to the card, and a smaller height cuts it off on phones. A card taller than that holds too much: move detail to the fold.
 
-No validator ships with the card, so check the payload against the schema before the call. A block the renderer can't read shows as plain text and logs a `reply.js:` console error; when `html_preview` is available, preview the card first and fix any such error.
+Before the call, pipe the two lines into `python3 ~/.agents/skills/reply-shape/scripts/validate-card.py` and fix each problem it prints, until it prints `ok`. A block the renderer can't read shows as plain text and logs a `reply.js:` console error; when `html_preview` is available, preview the card first and fix any such error.
