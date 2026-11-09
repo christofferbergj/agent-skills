@@ -1,6 +1,6 @@
 # One-PR delivery
 
-Read at coordinator step 2 when the user requests one final PR, and on each resume of that delivery mode. This reference owns the coordinator's T3 branch protocol; /implement-spec remains a separate user-invoked workflow. All ticket writers, the integrator, and execution verifiers are direct coordinator children. The coordinator owns planning, canonical-document decisions, timers, watches, and user calls; each worker runs only its bounded task, with no recursive coordinator or ticket dispatch.
+Read at coordinator step 2 when the user requests one final PR, and on each resume of that delivery mode. This reference owns the coordinator's T3 branch protocol; /implement-spec remains a separate user-started workflow. All ticket writers, the integrator, and execution verifiers are direct coordinator children. The coordinator owns planning, canonical-document decisions, timers, watches, and user calls; each worker runs only its bounded task, with no recursive coordinator or ticket dispatch.
 
 ## Establish ownership
 

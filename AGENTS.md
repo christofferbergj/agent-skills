@@ -20,6 +20,8 @@ Invocation has two modes:
 - **User-invoked** skills set `disable-model-invocation: true` and `policy.allow_implicit_invocation: false`. Their description is a short human-facing summary.
 - **Model-invoked** skills omit both restrictions. Their description names the distinct branches that should trigger the skill.
 
+A skill `/next-options` offers as an option is model-invoked, because Claude Code refuses a user-invoked skill when the agent loads it after the user picks a letter. Its description limits triggering to the user naming it or picking an option that names it.
+
 Express dependencies as `/skill-name` prose invocation. Keep shared reference material with the skill that owns it; another skill reaches that material by invoking its owner. Because the Skills CLI does not install dependencies transitively, document required installation pairs in the top-level README.
 
 For skills derived from external sources, maintain a skill-local `UPSTREAM.md` with source identity, tracking policy, imported and reviewed revisions, license attribution, local adaptations, and update decisions. `/maintain-skills` discovers these records; its [provenance guidance](skills/agents/maintain-skills/references/PROVENANCE.md) describes how to add or repair one.

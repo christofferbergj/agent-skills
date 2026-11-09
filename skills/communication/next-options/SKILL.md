@@ -24,7 +24,7 @@ When the user's answer is needed while your own work runs, say in one line what 
 
 **Nobody** moves next when the work is finished. End with **Done**, without options, and one line naming what is still open, or that nothing is. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
 
-**Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. A scope, interface, or product call the grant leaves to the user gets a default you apply and report with its reason, saying in plain words what they could tell you instead, without a letter to type back. Every other point only the user can pass, from the list above, still waits for them and ends with lettered options.
+**Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. For a scope, interface, or product call it leaves to the user, apply a default and report it with its reason and, in plain words, what they could say instead, without a letter to type back. Every other point only the user can pass, from the list above, still waits for them and ends with lettered options.
 
 ## Format
 
@@ -41,30 +41,28 @@ When the user's answer is needed while your own work runs, say in one line what 
 - **Each option** is a step the user would naturally take next, in plain words that make sense on their own, calling each item it cites by name. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.
 - **Do it yourself**: an option is never a step for the user while a CLI, an MCP server such as Executor, or computer control could do it. Hand over only credentials, payment, or physical actions, and say why.
 - **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. When nothing else is left and the PR has checks, bots, or reviews still to report, `a` is the watch (`watch_pull_request` in T3 Code); with none, a watch has nothing to wake on. Beside a watch, or an `a` that marks a PR ready, `b` is /babysit-and-ship.
-- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>`, or the same script beside this skill where it is installed elsewhere. On `verdict: person`, such as Chromatic baselines that must be accepted or a deployment that waits for approval, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), list each item with its link as something only the user can do, and end with options. A check like this never finishes on its own, so waiting on it stalls the PR.
+- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>` (or beside this skill, if installed elsewhere). On `verdict: person`, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), list each item with its link as something only the user can do, and end with options. A check like this never finishes on its own, so waiting on it stalls the PR.
 - **Leave out** filler such as stop, done, list what's open, or something else, and any option the user passed over in both of the last two lists, including a past `a`, though not the babysit-and-ship `b`.
 
 ## Answers
 
-The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line. Picking an option is the user invoking the skill it names; load a user-invoked one, such as /pstack-mode, from its installed SKILL.md.
+The user answers with a letter, a letter and a tweak such as `a, but keep the name`, or their own words. When the reply numbers a list, such as findings, they can answer `3` to discuss item 3, `skip 3`, or a combination such as `a, skip 3`; `?` asks for the current step and open items. A summary or handoff calls each item by name. These answers never get an option line. Picking an option is the user invoking the skill it names. An option never names a user-invoked skill, which Claude Code refuses to the agent; name its command for the user to type, outside the options.
 
 ## Workflow handoffs
 
 When a stage of this library's flows finishes, the usual `a` is the next stage the user hasn't settled yet:
 
-| Finished                                  | Usual `a`                                                                                    |
-| ----------------------------------------- | -------------------------------------------------------------------------------------------- |
-| /grill-with-docs                          | /pstack-mode when the build fits one session, or /to-spec when it spans several              |
-| /to-spec                                  | /to-tickets, after a prototype for any open question that running something could settle     |
-| /to-tickets                               | /implement-spec, or /coordinator for a multi-PR graph                                        |
-| /wayfinder                                | /to-spec for the destination it charted                                                      |
-| A Pstack prototype                        | build the recommended variant through Pstack's Feature playbook, or /architect for its shape |
-| Implementation with review findings open  | fix them and re-review                                                                       |
-| A Clean review without a PR               | open a draft PR through /pr                                                                  |
-| A draft PR with code /thermos hasn't seen | /thermos, fix in-scope findings, re-review them with /review-loop, then mark it ready        |
-| A draft PR                                | watch it, or address its review comments                                                     |
+- /grill-with-docs → /pstack-mode when the build fits one session, or /to-spec when it spans several
+- /to-spec → /to-tickets, after a prototype for any open question that running something could settle
+- /to-tickets → /implement-spec, or /coordinator for a multi-PR graph
+- /wayfinder → /to-spec for the destination it charted
+- A Pstack prototype → build the recommended variant through Pstack's Feature playbook, or /architect for its shape
+- Implementation with review findings open → fix them and re-review
+- A Clean review without a PR → open a draft PR through /pr
+- A draft PR with code /thermos hasn't seen → /thermos, fix in-scope findings, re-review them with /review-loop, then mark it ready
+- A draft PR → watch it, or address its review comments
 
-While the /thermos row applies, `b` is its pass over the whole PR up to mark-ready, then /babysit-and-ship. The pass's fixes, /review-loop's included, and a rebase that keeps patch-ids count as seen. A PR that fits /review-loop's small-diff tier skips the row.
+While the /thermos line applies, `b` is its pass over the whole PR up to mark-ready, then /babysit-and-ship. The pass's fixes, /review-loop's included, and a rebase that keeps patch-ids count as seen. A PR that fits /review-loop's small-diff tier skips that line.
 
 ## Setup
 

@@ -1,7 +1,6 @@
 ---
 name: implement-spec
-description: "Implement the result of /to-spec and /to-tickets in code."
-disable-model-invocation: true
+description: "Implement the result of /to-spec and /to-tickets in code. Use only when the user names /implement-spec or picks an option naming it."
 ---
 
 # Implement a spec

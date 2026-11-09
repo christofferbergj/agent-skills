@@ -1,7 +1,6 @@
 ---
 name: thermos
-description: Run parallel correctness and maintainability reviews, then combine the findings.
-disable-model-invocation: true
+description: "Run parallel correctness and maintainability reviews of a change, then combine the findings. Use only when the user names /thermos or picks an option naming it, not for a general review request."
 ---
 
 # Thermos
