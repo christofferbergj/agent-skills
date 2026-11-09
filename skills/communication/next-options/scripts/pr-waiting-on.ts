@@ -117,7 +117,7 @@ function unfinishedSuites(runs: CheckRun[]): Item[] {
   }
   return [...suites.values()].map((suiteRuns) => ({
     kind: "running",
-    name: suiteRuns[0]!.workflow ?? "workflow",
+    name: suiteRuns[0]!.workflow ?? suiteRuns[0]!.name,
     detail: "still running; jobs that wait on others may not have started",
     required: false,
   }));
