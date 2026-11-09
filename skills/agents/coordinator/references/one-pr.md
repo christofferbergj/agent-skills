@@ -45,4 +45,17 @@ Before offering the final merge, require the integrator's Clean /review-loop and
 
 Read the live PR head, target base, and checks before offering the merge. Send the integrator a Shipping task carrying the user's go, verified head and target-base SHAs, tested tree, independent verdict and report, and the requirement to stop for refreshed coordinator-managed proof on any mismatch. Its execution-time gate is part of the integrator brief above. A draft whose required CI starts only when marked ready may get a conditional approval card only after local whole-feature proof and review; Shipping must wait for green required CI and revalidate the artifact before merging. If head or base changes, re-prove it before continuing. The user's go authorizes only the final PR into its target, unless a standing rule already grants it.
 
-Complete when the single PR shows MERGED, the shipped tree is checked against the verifier's tested tree as [close](close.md) describes, and all ticket branches remain implementation history rather than separate deliveries.
+Complete when the single PR shows MERGED, the shipped tree is checked against the verifier's tested tree as [phase end and close](#phase-end-and-close) describes, and all ticket branches remain implementation history rather than separate deliveries.
+
+## Phase end and close
+
+Read at a [phase](phases.md) end and at the [close](close.md).
+
+- **Phase-end check**: when the integration branch holds unmerged work, run [prove and ship](#prove-and-ship)'s verifier at the branch's checked tip, or the final PR's head once it opens, and the current target base. Reuse a proof already recorded at those same SHAs. Record the SHAs, tested tree, and verdict under Decisions.
+- **Carry**: the integrator stays `waiting` on the integration branch, or on its PR once one opens. Tickets at `waiting: integration` keep that state. The accepted tickets' SHAs, the merge order, and the latest whole-feature proof stay in the ended phase's archive; read them there for the finalize task, the merge card, and the close.
+- **Close**, by the final PR's state, reading the proof from Decisions, its verifier's row, or a phase's archive. Never combine the ticket branches again, and record the proof and any tree comparison under Result.
+  - **Merged**: compare the merge commit's tree with the verifier's tested tree; a squash merge changes commit SHAs, so tree equality decides reuse. Reuse the evidence only for the same tree and checks. Otherwise start a fresh isolated verifier at the shipped merge commit, running the whole-goal checks and reporting the difference; any failure remains open for repair or an explicitly accepted limitation.
+  - **Open**: reuse the proof only at the PR's current head and target base, and otherwise run the verifier again at them.
+  - **No PR**: ask the user in one decision card whether to open the final PR first, as prove and ship does, or close with the integration branch unshipped. Unshipped, record the branch, its checked tip, the target base, and the latest proof at those SHAs, reusing one or running the verifier again, and give the integrator `dropped`.
+
+Complete a phase end when its check passed or no work was unmerged and the integrator and tickets carry; complete a close when Result holds the merged tree's comparison or shipped-commit verification, the open PR's proof at its current head and base, or the unshipped branch's record.
