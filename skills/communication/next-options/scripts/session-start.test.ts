@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync } from "node:fs";
+import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -91,4 +91,23 @@ test("loads the rules when T3's schema has changed", () => {
 
   assert.match(run().hookSpecificOutput.additionalContext, /\*\*Next\*\*/);
   assert.match(JSON.parse(stdout([], path)).hookSpecificOutput.additionalContext, /\*\*Next\*\*/);
+});
+
+test("every skill the rules offer can be loaded by the agent once the user picks it", () => {
+  const skills = join(import.meta.dirname, "..", "..", "..");
+  const context: string = run().hookSpecificOutput.additionalContext;
+  // User-invoked skills the rules mention but never offer.
+  const userInvokedReferences = new Set(["reply-shape"]);
+  const named = new Set([...context.matchAll(/(?<![\w./-])\/([a-z][a-z0-9-]+)/g)].map((m) => m[1]));
+  const offered = [...named].filter((name) => !userInvokedReferences.has(name));
+  const userInvoked = offered.filter((name) => {
+    const [file] = readdirSync(skills)
+      .map((category) => join(skills, category, name, "SKILL.md"))
+      .filter((path) => existsSync(path));
+    assert.ok(file, `/${name} is not a skill in this library`);
+    const frontmatter = readFileSync(file, "utf8").match(/^---\n([\s\S]*?)\n---\n/)?.[1];
+    assert.ok(frontmatter, `/${name} has no frontmatter`);
+    return /^disable-model-invocation:\s*true\s*$/m.test(frontmatter);
+  });
+  assert.deepEqual(userInvoked, [], "Claude Code refuses these when the agent loads them");
 });

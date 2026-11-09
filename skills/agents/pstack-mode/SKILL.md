@@ -1,7 +1,6 @@
 ---
 name: pstack-mode
-description: "Poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work."
-disable-model-invocation: true
+description: "Poteto's agent style for concise, detailed responses, deliberate subagents, unslopped prose, simple code, and verified work. Use only when the user names /pstack-mode or picks an option naming it."
 ---
 
 # Pstack mode

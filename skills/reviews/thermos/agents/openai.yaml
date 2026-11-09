@@ -1,5 +1,3 @@
 interface:
   display_name: "Thermos"
   short_description: "Run parallel correctness and maintainability reviews"
-policy:
-  allow_implicit_invocation: false
