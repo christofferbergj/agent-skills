@@ -11,6 +11,6 @@ Order work as a sequence of small units, each ending in a state you can check, a
 
 **Execution.** In a sweep, migration, or any run of similar edits, verify each change at its declared gate before starting dependent work. Each unit is a before/after bracket: known-good state, one change, run the check, then proceed. Use the invoking workflow's verified base, including an integration revision; preserve unrelated work and existing branch ownership. When a lever does the edits, the per-unit check is nearly free. Run it anyway.
 
-**Delivery.** Stack commits and PRs in the order that proves the work. The canonical shape is the failing test first, then the fix on top. Other story orders are a subtraction before the reshape, a baseline capture before the treatment, the scaffold before the feature. Intermediate proof commits can show red; the checked delivery unit includes the fix. Independently landed units must pass their acceptance gates.
+**Delivery.** Stack commits and PRs in the order that proves the work. The canonical shape is the failing test first, then the fix on top. Other story orders are a subtraction before the reshape, a baseline capture before the treatment, the scaffold before the feature. Intermediate proof commits can show red; the checked delivery unit includes the fix. Independently landed units must pass their acceptance gates, and the sequence reads as an argument.
 
 The sequencing complement to the /principle-prove-it-works, which keeps each check real, and the /principle-build-the-lever, which makes the per-unit check cheap.
