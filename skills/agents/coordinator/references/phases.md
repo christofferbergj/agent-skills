@@ -9,7 +9,7 @@ Read at coordinator step 7, once the phase's proof holds. A project runs in **ph
 Then follow the user's pick:
 
 - **Next phase**: run `scripts/project.py <folder> phase <slug> --result <one line> --goal <goal> --proof <proof>`, then plan the new goal from step 2.
-- **Park**: run `scripts/project.py <folder> phase <slug> --result <one line> --park <reason>`. Once no worker is `running`, `waiting`, `overdue`, or `unknown`, delete the heartbeat and any startup timer with `delete_scheduled_task` and set their Listening lines to none. Keep the thread pinned, and reply with step 5's one-line status, naming that the project is parked and wakes on the user's message.
+- **Park**: run `scripts/project.py <folder> phase <slug> --result <one line> --park <reason>`. Once no worker is `running`, `stuck`, `overdue`, `unknown`, or `waiting` on anything but its open PR or integration branch, delete the heartbeat and any startup timer with `delete_scheduled_task` and set their Listening lines to none. Keep every PR watch, so a review or merge on a parked project still wakes you; a merged PR sets its worker `done`. Keep the thread pinned, and reply with step 5's one-line status, naming that the project is parked and wakes on the user's message.
 - **Close**: follow [close](close.md).
 
 `<slug>` names the phase that ended, in lowercase hyphenated words. `phase` archives `project.md` and resets the phase's sections, as [project](project.md#phase-end) describes. When the user's message on a parked project names new work, start the next phase: run `scripts/project.py <folder> start --goal <goal> --proof <proof>`, then plan it from step 2.
