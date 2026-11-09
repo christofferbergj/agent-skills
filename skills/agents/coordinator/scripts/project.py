@@ -181,7 +181,7 @@ def phase(lines: list[str], archive: str, result: str, *,
     if (goal is None or proof is None) == (park is None):
         raise ProjectError("a phase ends with a goal and a proof, or with park alone")
     slug = Path(archive).stem.split("-", 1)[1]
-    if goal is not None and _rerun(lines, slug, goal):
+    if goal is not None and _rerun(lines, slug, goal, proof):
         raise ProjectError(f"phase {slug!r} already ended with this goal: the project is in its next phase")
     today = date.today().isoformat()
     body = [f"{PARKED}{today}: {_line('park', park)}"] if park is not None else _next(goal, proof)
@@ -203,16 +203,21 @@ def phase(lines: list[str], archive: str, result: str, *,
     return unread
 
 
-def _rerun(lines: list[str], slug: str, goal: str) -> bool:
-    """The newest Phases line ended `slug` and Goal's first line is already `goal`."""
+def _rerun(lines: list[str], slug: str, goal: str, proof: str) -> bool:
+    """The phase end just recorded: the newest Phases line ended `slug`, Goal already opens
+    with `goal` and `proof`, and Decisions and Learnings are still as `phase` left them, empty.
+    A real next phase with the same slug, goal, and proof records something there first."""
     if "## Phases" not in lines:
         return False
     start_at, end = _section(lines, "Phases")
     entries = [text for text in lines[start_at + 1:end] if text.startswith("- ")]
     goal_at, goal_end = _section(lines, "Goal")
-    current = next((text for text in lines[goal_at + 1:goal_end] if text.strip()), "")
+    current = [text.strip() for text in lines[goal_at + 1:goal_end] if text.strip()][:2]
+    untouched = all(not any(text.strip() for text in lines[a + 1:b])
+                    for a, b in (_section(lines, name) for name in ("Decisions", "Learnings")
+                                 if f"## {name}" in lines))
     return (bool(entries) and re.search(rf" · \d+-{re.escape(slug)}: ", entries[-1]) is not None
-            and current.strip() == goal.strip())
+            and current == _next(goal, proof) and untouched)
 
 
 def start(lines: list[str], goal: str, proof: str) -> None:

@@ -221,6 +221,14 @@ Proofs:
                          "phase 'audit' already ended with this goal: the project is in its next phase\n")
         self.assertEqual((self.text(), self.files()), (ended, ["01-audit.md", "project.md"]))
 
+    def test_a_next_phase_with_the_same_slug_and_goal_still_ends(self):
+        self.project("phase", "audit", "--result", "five reports", *NEXT)
+        self.assertEqual(self.project("phase", "audit", "--result", "r", "--goal", NEXT[1], "--proof", "another proof").returncode, 0)
+        self.project("phase", "audit", "--result", "r", "--goal", NEXT[1], "--proof", "another proof", code=1)
+        (self.dir / "project.md").write_text(self.text().replace("## Decisions\n", "## Decisions\n\n- picked the retry fix\n"))
+        self.assertEqual(self.project("phase", "audit", "--result", "r", "--goal", NEXT[1], "--proof", "another proof").returncode, 0)
+        self.assertEqual(self.files(), ["01-audit.md", "02-audit.md", "03-audit.md", "project.md"])
+
     def test_follow_ups_unknown_sections_and_unreadable_rows_carry(self):
         real = (PROJECT.replace("Follow-ups: none\n", "Follow-ups:\n- lockfile risk\n  wraps here\n\n- stray rows\n"
                                 "* starred\n1. numbered\nunindented tail\n\n"
