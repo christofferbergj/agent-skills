@@ -5,7 +5,6 @@ import {
   type CheckRun,
   type Pr,
   type StatusContext,
-  autoMergeOf,
   parsePr,
   requiredKnown,
   verdictOf,
@@ -23,7 +22,6 @@ function pr(checks: Pr["checks"], overrides: Partial<Pr> = {}): Pr {
     reviewDecision: null,
     pendingReviewers: [],
     mergeStateStatus: "CLEAN",
-    autoMergeAllowed: true,
     unseenChecks: 0,
     readyAt: null,
     requiredNames: [],
@@ -60,7 +58,7 @@ function status(state: string, description: string, isRequired = false): StatusC
 
 function judge(input: Pr) {
   const items = waitingOn(input);
-  return { items, verdict: verdictOf(items), autoMerge: autoMergeOf(input, items) };
+  return { items, verdict: verdictOf(items) };
 }
 
 const RUNNING = { status: "IN_PROGRESS", conclusion: null };
@@ -134,38 +132,21 @@ test("jobs with the same name in different workflows or events are different che
   const onPush = run("test", { conclusion: "FAILURE", workflow: "CI", event: "push" });
   const onPr = run("test", { workflow: "CI", event: "pull_request" });
   assert.equal(judge(pr([onPush, onPr])).verdict, "failed");
-  const lint = run("lint", { ...RUNNING, workflow: "Dashboard", isRequired: false });
-  const otherLint = run("lint", { workflow: "Website", isRequired: false });
-  assert.equal(judge(pr([lint, otherLint, run("build", RUNNING)])).autoMerge, "wait");
 });
 
 test("an unfinished workflow keeps the PR running, since jobs waiting on others have no run yet", () => {
   const suite = (status: string) => ({ id: 7, status });
-  const e2e = run("E2E tests", { ...RUNNING, workflow: "CI", suite: suite("IN_PROGRESS") });
-  const playwright = run("Playwright", {
+  const passed = run("Playwright", {
     workflow: "CI",
     isRequired: false,
     suite: suite("IN_PROGRESS"),
   });
-  const mixed = judge(pr([playwright, e2e]));
-  assert.equal(mixed.verdict, "running");
-  assert.equal(mixed.autoMerge, "wait");
-
-  const done = run("Playwright", {
-    workflow: "CI",
-    isRequired: false,
-    suite: suite("IN_PROGRESS"),
-  });
-  const between = judge(pr([done]));
-  assert.equal(between.verdict, "running");
-  assert.equal(between.autoMerge, "wait");
-
-  const onlyRequired = run("E2E tests", {
-    ...RUNNING,
-    workflow: "Gate",
-    suite: { id: 8, status: "IN_PROGRESS" },
-  });
-  assert.equal(judge(pr([onlyRequired])).autoMerge, "safe");
+  const { items, verdict } = judge(pr([passed]));
+  assert.equal(verdict, "running");
+  assert.deepEqual(
+    items.map((item) => item.name),
+    ["CI"],
+  );
 
   const finished = run("Playwright", {
     workflow: "CI",
@@ -266,28 +247,18 @@ test("a matrix job's draft skip is replaced only by its own expanded jobs", () =
   assert.equal(judge(pr([leading, later("Dashboard E2E")], ready)).verdict, "ready");
 
   assert.equal(judge(pr([template("E2E"), later("Lint")], ready)).verdict, "running");
+
+  const onPr = run("E2E (${{ matrix.label }})", {
+    conclusion: "SKIPPED",
+    startedAt: BEFORE_READY,
+    workflow: "CI",
+    event: "pull_request",
+  });
+  const onPush = later("E2E (chromium)", { event: "push" });
+  assert.equal(judge(pr([onPr, onPush], ready)).verdict, "running");
 });
 
-test("auto-merge is safe only when everything still running is a check GitHub waits for", () => {
-  const unitPassed = run("Unit", { isRequired: false });
-  assert.equal(judge(pr([unitPassed, run("E2E", RUNNING)])).autoMerge, "safe");
-  const unitRunning = run("Unit", { ...RUNNING, isRequired: false });
-  assert.equal(judge(pr([run("E2E"), unitRunning])).autoMerge, "wait");
-  const disallowed = pr([run("E2E", RUNNING)], { autoMergeAllowed: false });
-  assert.equal(judge(disallowed).autoMerge, "not allowed");
-  assert.equal(judge(pr([run("E2E")])).autoMerge, null);
-  const noneRequired = pr([run("Unit", { ...RUNNING, isRequired: false })]);
-  assert.equal(judge(noneRequired).autoMerge, "wait");
-  // GitHub would count the draft's skip as passed and merge before the ready run starts.
-  const draftSkip = run("E2E", { conclusion: "SKIPPED", startedAt: BEFORE_READY });
-  assert.equal(judge(pr([draftSkip], { readyAt: READY_AT })).autoMerge, "wait");
-  assert.equal(
-    judge(pr([run("Code quality")], { requiredNames: ["Code quality", "E2E"] })).autoMerge,
-    "safe",
-  );
-});
-
-test("the GraphQL response gives the required names, the ready time, auto-merge and each run's workflow", () => {
+test("the GraphQL response gives the required names, the ready time, reviewers and each run's workflow", () => {
   const check = {
     __typename: "CheckRun" as const,
     databaseId: 1,
@@ -305,7 +276,6 @@ test("the GraphQL response gives the required names, the ready time, auto-merge 
   const parsed = parsePr({
     data: {
       repository: {
-        autoMergeAllowed: false,
         pullRequest: {
           baseRef: {
             branchProtectionRule: { requiredStatusCheckContexts: ["E2E"] },
@@ -332,7 +302,6 @@ test("the GraphQL response gives the required names, the ready time, auto-merge 
       },
     },
   });
-  assert.equal(parsed.autoMergeAllowed, false);
   assert.deepEqual(parsed.pendingReviewers, ["alice", "web"]);
   assert.equal(parsed.unseenChecks, 100);
   assert.deepEqual(parsed.requiredNames, ["E2E", "Lint"]);

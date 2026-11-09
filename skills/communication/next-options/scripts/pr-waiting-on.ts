@@ -17,11 +17,6 @@
  * such as a visual-test service stopped by its billing plan. They never change the verdict.
  * `required: unknown` means neither the base branch's rules nor the checks show a required check,
  * so every status counts as required too.
- * While the verdict is `running`, an `auto-merge:` line says whether GitHub's auto-merge, which
- * waits only for required checks, would wait for everything still running:
- *   safe         only required checks remain; arming auto-merge is safe
- *   wait         a check the repository doesn't require is still running
- *   not allowed  the repository has auto-merge turned off
  */
 import { execFileSync } from "node:child_process";
 
@@ -31,10 +26,9 @@ export type Item = {
   name: string;
   detail: string;
   url?: string;
-  /** Whether GitHub's merge rules wait for this item. */
+  /** Whether GitHub's merge rules wait for this item, so it explains a BLOCKED merge state. */
   required: boolean;
 };
-export type AutoMerge = "safe" | "wait" | "not allowed";
 
 export type CheckRun = {
   __typename: "CheckRun";
@@ -69,7 +63,6 @@ export type Pr = {
   /** People or teams asked to review who haven't yet; bots are left out. */
   pendingReviewers: string[];
   mergeStateStatus: string;
-  autoMergeAllowed: boolean;
   /** Checks on the head beyond the ones fetched, which the script can't judge. */
   unseenChecks: number;
   /** When the PR last left draft; checks that started earlier ran on the draft. */
@@ -109,10 +102,9 @@ function newestRuns(runs: CheckRun[]): CheckRun[] {
 
 /**
  * A job that `needs:` another has no check run until that job finishes, so an unfinished check
- * suite may hold jobs nobody can see yet. Each such suite is unfinished work GitHub's auto-merge
- * wouldn't wait for, unless every run in it is required.
+ * suite may hold jobs nobody can see yet. Each such suite is still running.
  */
-function unfinishedSuites(runs: CheckRun[], required: (run: CheckRun) => boolean): Item[] {
+function unfinishedSuites(runs: CheckRun[]): Item[] {
   const suites = new Map<number, CheckRun[]>();
   for (const run of runs) {
     if (!run.suite || run.suite.status === "COMPLETED") continue;
@@ -122,13 +114,13 @@ function unfinishedSuites(runs: CheckRun[], required: (run: CheckRun) => boolean
     kind: "running",
     name: suiteRuns[0]!.workflow ?? "workflow",
     detail: "still running; jobs that wait on others may not have started",
-    required: suiteRuns.every(required) && suiteRuns.some((run) => run.status !== "COMPLETED"),
+    required: false,
   }));
 }
 
 /**
  * A matrix job skipped on the draft keeps its unexpanded name, such as `E2E (${{ matrix.label }})`,
- * so no later run shares it. Its expanded jobs from the same workflow, such as `E2E (chromium)`,
+ * so no later run shares it. Its expanded jobs from the same workflow and event, such as `E2E (chromium)`,
  * replace it once one has started since the PR left draft.
  */
 function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
@@ -138,7 +130,10 @@ function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
   const expanded = new RegExp(`^${parts.map(escape).join(".+")}$`);
   return sinceReady.some(
     (later) =>
-      later.workflow === run.workflow && later.name !== run.name && expanded.test(later.name),
+      later.workflow === run.workflow &&
+      later.event === run.event &&
+      later.name !== run.name &&
+      expanded.test(later.name),
   );
 }
 
@@ -235,7 +230,7 @@ export function waitingOn(pr: Pr): Item[] {
     if (item) items.push({ ...item, name: status.context, required: required(status) });
   }
 
-  items.push(...unfinishedSuites(runs, required));
+  items.push(...unfinishedSuites(runs));
 
   const reported = new Set(pr.checks.map(checkName));
   for (const name of pr.requiredNames) {
@@ -261,16 +256,7 @@ export function verdictOf(items: Item[]): Verdict {
   return order.find((kind) => items.some((item) => item.kind === kind)) ?? "ready";
 }
 
-/** Whether arming auto-merge now would wait for everything still running; `null` unless running. */
-export function autoMergeOf(pr: Pr, items: Item[]): AutoMerge | null {
-  if (verdictOf(items) !== "running") return null;
-  if (!pr.autoMergeAllowed) return "not allowed";
-  const running = items.filter((item) => item.kind === "running");
-  return running.every((item) => item.required) ? "safe" : "wait";
-}
-
 const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$owner,name:$name){
-  autoMergeAllowed
   pullRequest(number:$n){
   state isDraft mergeStateStatus reviewDecision
   reviewRequests(first:50){nodes{requestedReviewer{__typename ... on User{login} ... on Team{slug}}}}
@@ -295,7 +281,6 @@ type ResponseCheck =
 type Response = {
   data: {
     repository: {
-      autoMergeAllowed: boolean;
       pullRequest: {
         baseRef: {
           branchProtectionRule: { requiredStatusCheckContexts: string[] } | null;
@@ -345,7 +330,6 @@ export function parsePr(response: Response): Pr {
     reviewDecision: pr.reviewDecision,
     pendingReviewers,
     mergeStateStatus: pr.mergeStateStatus,
-    autoMergeAllowed: repository.autoMergeAllowed,
     unseenChecks: (contexts?.totalCount ?? 0) - nodes.length,
     readyAt: pr.timelineItems.nodes.at(-1)?.createdAt ?? null,
     requiredNames: [...new Set([...fromProtection, ...fromRules])],
@@ -406,8 +390,6 @@ function main(): void {
     console.log([item.kind, item.name, item.detail, item.url].filter(Boolean).join("\t"));
   }
   if (!requiredKnown(pr)) console.log("required: unknown");
-  const autoMerge = autoMergeOf(pr, items);
-  if (autoMerge) console.log(`auto-merge: ${autoMerge}`);
   const verdict = verdictOf(items);
   console.log(`verdict: ${verdict}`);
   process.exitCode = verdict === "person" ? 2 : verdict === "failed" ? 1 : 0;
