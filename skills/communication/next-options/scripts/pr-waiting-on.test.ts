@@ -129,6 +129,11 @@ test("a rerun replaces the older run, even before it starts or within the same s
 test("jobs with the same name in different workflows or events are different checks", () => {
   const failing = run("test", { conclusion: "FAILURE", workflow: "Package tests" });
   assert.equal(judge(pr([failing, run("test", { workflow: "Docs" })])).verdict, "failed");
+  const first = run("test", { conclusion: "FAILURE", workflow: "CI", workflowId: 1 });
+  assert.equal(
+    judge(pr([first, run("test", { workflow: "CI", workflowId: 2 })])).verdict,
+    "failed",
+  );
   const onPush = run("test", { conclusion: "FAILURE", workflow: "CI", event: "push" });
   const onPr = run("test", { workflow: "CI", event: "pull_request" });
   assert.equal(judge(pr([onPush, onPr])).verdict, "failed");
@@ -270,7 +275,7 @@ test("the GraphQL response gives the required names, the ready time, reviewers a
     checkSuite: {
       databaseId: 7,
       status: "COMPLETED",
-      workflowRun: { event: "pull_request", workflow: { name: "CI" } },
+      workflowRun: { event: "pull_request", workflow: { databaseId: 42, name: "CI" } },
     },
   };
   const parsed = parsePr({
@@ -309,6 +314,7 @@ test("the GraphQL response gives the required names, the ready time, reviewers a
     [(parsed.checks[0] as CheckRun).workflow, (parsed.checks[0] as CheckRun).event],
     ["CI", "pull_request"],
   );
+  assert.equal((parsed.checks[0] as CheckRun).workflowId, 42);
   assert.deepEqual((parsed.checks[0] as CheckRun).suite, { id: 7, status: "COMPLETED" });
   const { items } = judge({ ...parsed, pendingReviewers: [], unseenChecks: 0 });
   assert.deepEqual(

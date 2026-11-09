@@ -40,8 +40,9 @@ export type CheckRun = {
   startedAt: string | null;
   detailsUrl?: string | null;
   isRequired: boolean;
-  /** The Actions workflow that created the run, when one did. */
+  /** The Actions workflow that created the run, when one did; two workflows may share a name. */
   workflow?: string | null;
+  workflowId?: number | null;
   /** The event that triggered that workflow run, such as `pull_request` or `push`. */
   event?: string | null;
   /** The run's check suite, one per workflow run; it completes once all its jobs have. */
@@ -93,7 +94,11 @@ type Judgement = Omit<Item, "name" | "required">;
 function newestRuns(runs: CheckRun[]): CheckRun[] {
   const byKey = new Map<string, CheckRun>();
   for (const run of runs) {
-    const key = JSON.stringify([run.workflow ?? null, run.event ?? null, run.name]);
+    const key = JSON.stringify([
+      run.workflowId ?? run.workflow ?? null,
+      run.event ?? null,
+      run.name,
+    ]);
     const seen = byKey.get(key);
     if (!seen || run.databaseId > seen.databaseId) byKey.set(key, run);
   }
@@ -130,7 +135,7 @@ function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
   const expanded = new RegExp(`^${parts.map(escape).join(".+")}$`);
   return sinceReady.some(
     (later) =>
-      later.workflow === run.workflow &&
+      (later.workflowId ?? later.workflow) === (run.workflowId ?? run.workflow) &&
       later.event === run.event &&
       later.name !== run.name &&
       expanded.test(later.name),
@@ -265,7 +270,7 @@ const QUERY = `query($owner:String!,$name:String!,$n:Int!){repository(owner:$own
   timelineItems(itemTypes:[READY_FOR_REVIEW_EVENT],last:1){nodes{... on ReadyForReviewEvent{createdAt}}}
   commits(last:1){nodes{commit{statusCheckRollup{contexts(first:100){totalCount nodes{__typename
     ... on CheckRun{databaseId name status conclusion startedAt detailsUrl isRequired(pullRequestNumber:$n)
-      checkSuite{databaseId status workflowRun{event workflow{name}}}}
+      checkSuite{databaseId status workflowRun{event workflow{databaseId name}}}}
     ... on StatusContext{context state description targetUrl isRequired(pullRequestNumber:$n)}}}}}}}}}}`;
 
 type ResponseCheck =
@@ -273,7 +278,7 @@ type ResponseCheck =
       checkSuite?: {
         databaseId: number;
         status: string;
-        workflowRun: { event: string; workflow: { name: string } } | null;
+        workflowRun: { event: string; workflow: { databaseId: number; name: string } } | null;
       } | null;
     })
   | StatusContext;
@@ -339,6 +344,7 @@ export function parsePr(response: Response): Pr {
       return {
         ...run,
         workflow: checkSuite?.workflowRun?.workflow.name ?? null,
+        workflowId: checkSuite?.workflowRun?.workflow.databaseId ?? null,
         event: checkSuite?.workflowRun?.event ?? null,
         suite: checkSuite ? { id: checkSuite.databaseId, status: checkSuite.status } : null,
       };
