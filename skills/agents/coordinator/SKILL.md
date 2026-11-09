@@ -1,6 +1,6 @@
 ---
 name: coordinator
-description: "Runs a multi-PR project from one pinned T3 Code thread that starts worker tasks and brings the user one call at a time. Use to start or resume such a project, and on every turn or wake in a `◆` coordinator thread."
+description: "Runs a project delivered as several PRs or one combined PR from one pinned T3 Code thread that starts worker tasks and brings the user one call at a time. Use to start or resume such a project, and on every turn or wake in a `◆` coordinator thread."
 ---
 
 # Coordinator
@@ -13,16 +13,18 @@ The **project folder**, `~/.local/state/coordinator/<project>/`, holds `project.
 
 ## 1. Start or resume
 
-- **Resume** when this thread's title is `◆ <project>`, even behind a status marker an earlier run put in front, or when the project folder exists: read `project.md` and pick up from its Workers table.
+- **Resume** when this thread's title is `◆ <project>`, even behind a status marker an earlier run put in front, or when the project folder exists: read `project.md` and pick up from its Workers table; for `Delivery: one-pr`, reconcile ownership and acceptance through [one-PR delivery](references/one-pr.md#accept-tickets) before redispatch.
 - **Start** otherwise. When /swarm's T3 route lists a linked machine, first place the coordinator by [across machines](references/across-machines.md#placement). Then pin this thread with `t3_thread_organize` `pin`, rename it `◆ <project>` with `t3_thread_update` `rename`, and take its id and `link` from the `currentThreadId` that `t3_thread_list` returns. Run `scripts/project.py <folder> init` with the goal, its proof, this thread's link, and the target repository's checkout, then write `standing-rules.md`.
 
 **Complete when:** `project.md` names the goal, its proof, and this thread's link, `standing-rules.md` holds the chat's rules, and the thread is pinned under its `◆` title.
 
 ## 2. Plan the units
 
-Split the goal into **units**: one per PR or stack, and one per research question. Give each unit its **proof**, the evidence that shows it done, such as a passing check at a head SHA, a PR state, or a report's finding. A unit whose proof you can't name stays unstarted until you can.
+Record `Delivery: multi-pr` in Goal by default; a missing Delivery line on resume means `multi-pr`. When the user requests one combined feature merge, record `Delivery: one-pr` in Goal and their words under Decisions and follow [one-PR delivery](references/one-pr.md) before launching workers. Changing delivery after work starts is a scope call.
 
-Run a **pilot** first among units that share one brief, such as five audits or four ports. Run one of them until the brief is proven: by its report, or for code by its draft PR with a Clean /review-loop, not by its merge. Fix the brief from what the pilot showed, then start its siblings, so a flaw in the brief costs one worker. A unit with a brief of its own waits for no pilot.
+Split the goal into **units**: one per PR or stack in multi-PR delivery, or one per ticket plus an integrator in one-PR delivery, and one per research question. Give each unit its **proof**, the evidence that shows it done, such as a passing check at a head SHA, a PR state, or a report's finding. A unit whose proof you can't name stays unstarted until you can.
+
+Run a **pilot** first among units that share one brief, such as five audits or four ports. Run one of them until the brief is proven: by its report, or for code by its draft PR with a Clean /review-loop, not by its merge. For a one-PR ticket pilot, use the acceptance gate in [one-PR delivery](references/one-pr.md#accept-tickets). Fix the brief from what the pilot showed, then start its siblings, so a flaw in the brief costs one worker. A unit with a brief of its own waits for no pilot.
 
 A unit waits on another branch only for what it can't build or check on today's base. When the overlap is conflicts that a re-runnable step, such as a codemod, regenerates, start it now, and make "regenerates on either merge order" part of its proof.
 
@@ -31,6 +33,8 @@ A unit waits on another branch only for what it can't build or check on today's 
 ## 3. Start workers
 
 Start each worker with `delegate_task`: the title `◇ <project> · <unit>`, `isolation: "worktree"`, `mode: "async"`, a stable `clientRequestId`, `role` `implementation` or `research`, and the brief below. Resolve its target through /swarm's model roles, by the playbook its unit runs, such as `feature-refactoring` or `bug-fix`, and `judgment-and-prose` for a research question. Record its thread link and `taskId` in Workers. A unit that needs another machine's tools runs there as [across machines](references/across-machines.md#a-worker-on-another-machine) describes.
+
+For one-PR delivery, replace the brief's Build and branch-ownership lines with the ticket or integrator variant in [one-PR delivery](references/one-pr.md); keep its reporting and user-call contract.
 
 The brief is the worker's whole context. A research brief names the question and the evidence that decides it, and leaves the answer to the worker: a guess it must include is marked a hypothesis to refute.
 
@@ -61,9 +65,9 @@ Report: at the end of each task in this thread, write its full report, every che
 ## 4. On each wake
 
 - **The user's message**: an answer goes through step 5; anything else updates the plan.
-- **A worker result**: read `task_status` once, then **check its claims**: read its diff, and the PR's live state with `gh pr view` and `gh pr checks` at the head it reports; a claim that needs running goes to a verifier subthread. Copy its Learnings into `project.md`, keep only the fixes the goal needs, and log the rest under Follow-ups. A call in the result joins the queue (step 5).
+- **A worker result**: read `task_status` once, then **check its claims**: read its diff and reported commit evidence, and, when it has a PR, the PR's live state with `gh pr view` and `gh pr checks` at the head it reports; a claim that needs running goes to a verifier subthread. Copy its Learnings into `project.md`, keep only the fixes the goal needs, and log the rest under Follow-ups. A call in the result joins the queue (step 5). A one-PR ticket result goes through [acceptance](references/one-pr.md#accept-tickets), and final-feature proof through [the merge gate](references/one-pr.md#prove-and-ship).
 - **A worker's pending question**: a question a worker asks mid-run wakes you once your current turn ends, unless it is answered first. Read it with `t3_pending_request` `list`, then `read`, on the worker's thread. Set the worker `waiting`, so the stuck rule passes it over, and queue the call.
-- **A PR watch**: a worker that opens a PR keeps building its stack, so start maintenance at its code-ready result: `watch_pull_request` each of its PRs by URL, rewrite Listening's Watches line to list every watched PR with its owner, and send the owner a first Babysit pass. On each watch wake after that, once step 3 lets its task start, send the event to the PR's owner with `t3_thread_send` as a **Babysit pass**: work /pstack-mode's Babysit playbook in `drive` mode as the stack's owner, the way it treats an Autopilot owner, so rebase conflicts yourself; read status once with its `watch-pr --status-only` instead of polling, since the coordinator keeps the watch; push one wave, and report merge-ready or what the next wake waits for. When the owner reports the PR merge-ready, `unwatch_pull_request` it and drop it from the Watches line. Something only a person can clear, such as a deployment approval or a visual baseline to accept, joins the queue as a Do item.
+- **A PR watch**: start maintenance at the owner's code-ready result. For one-PR delivery, this means the integrator's whole-feature result and only its final PR; use [one-PR delivery](references/one-pr.md#prove-and-ship) for final proof and Shipping. For multi-PR delivery, wait until the worker finishes building its stack, then watch each PR. In both modes, call `watch_pull_request` by URL, rewrite Listening's Watches line with every watched PR and its owner, and send that owner a first Babysit pass. On each watch wake after that, once step 3 lets its task start, send the event with `t3_thread_send` as a **Babysit pass**: work /pstack-mode's Babysit playbook in `drive` mode as the PR or stack owner, the way it treats an Autopilot owner, so handle its own conflicts; read status once with its `watch-pr --status-only` instead of polling, since the coordinator keeps the watch; push one wave, and report merge-ready or what the next wake waits for. When the owner reports merge-ready, `unwatch_pull_request` and drop it from Watches. Something only a person can clear, such as a deployment approval or visual baseline, joins the queue as a Do item.
 - **The heartbeat**: while any worker is `running`, `waiting`, `stuck`, `overdue`, or `unknown`, keep one hourly timer, recorded under Listening as `Heartbeat`, and delete it when none is. Each tick checks every worker by the stuck rule, reading a worker on another machine as [across machines](references/across-machines.md#a-worker-on-another-machine) says, and posts only changes.
 
 A **timer** is a `schedule_task` bound to this thread with `{type: "interval", everyMs: <interval>}`. Its prompt opens with the gate the user's instructions set for interval tasks, when they set one, because T3 replays the runs missed while the machine slept. It then says to use /coordinator and to read `project.md` at its full path first. Delete a timer with `delete_scheduled_task`.
@@ -74,7 +78,7 @@ A **timer** is a `schedule_task` bound to this thread with `{type: "interval", e
 
 ## 5. Bring the user one call
 
-**Answer before asking.** Settle a worker's call yourself when the plan, its decisions, the standing rules, or running something settles it: a probe subthread runs it, and you answer from its report. Record the answer under Decisions with its source and send it: a pending question gets `t3_pending_request` `respond`, and a call in a result gets `t3_thread_send` once step 3 lets its task start, with the worker `waiting` and its Waits on naming the slot or shared resource until then. Once it's sent, set the worker back to `running` and its Waits on to `—`. Only a **real call** reaches the user: a merge or another irreversible write, a message to a person, a scope or product call no probe settles, a credential, payment, or physical step, or a dead end that survived a replan.
+**Answer before asking.** Settle a worker's call yourself when the plan, its decisions, the standing rules, or running something settles it: a probe subthread runs it, and you answer from its report. Record the answer under Decisions with its source and send it: a pending question gets `t3_pending_request` `respond`, and a call in a result gets `t3_thread_send` once step 3 lets its task start, with the worker `waiting` and its Waits on naming the slot or shared resource until then. Once it's sent, set the worker back to `running` and its Waits on to `—`. Only a **real call** reaches the user: a merge into the delivery target or another irreversible write, a message to a person, a scope or product call no probe settles, a credential, payment, or physical step, or a dead end that survived a replan. One-PR internal merges into the owned integration branch are reversible implementation steps covered by the agreed scope; route them to the integrator without a user card.
 
 **Queue order**: stuck runs, then calls, then Do items, oldest first within each. Each reply shows only the top one as a decision card: the worker's question as a yes-or-no headline, a strip reading `<n> of <total> need you · <worker> <thread link>`, the problem and for whom, your pick and its source, and a yes and a no option. When /reply-shape is active, its decision card lays these out.
 
@@ -84,12 +88,14 @@ A **timer** is a `schedule_task` bound to this thread with `{type: "interval", e
 
 ## 6. Merge
 
-A merge is the user's call unless a standing rule grants it. Offer one only after the PR's owner reports it merge-ready: restacked, a Clean /review-loop, and checks green, or not yet run on a draft whose CI starts when it's marked ready; Shipping marks a draft ready right before its merge. Before offering it, read the PR's live state with `gh pr view` and `gh pr checks`, then offer it as a card listing each PR in merge order with what it changes, its checks, and its stack state. Send the go to the PR's owner with `t3_thread_send`, quoting the user's words; the owner lands it through /pstack-mode's Shipping playbook.
+For one-PR delivery, first satisfy [the final-artifact gate](references/one-pr.md#prove-and-ship); the card names the single PR, verified head and target base. The rest of this step applies to its integrator as PR owner.
+
+A merge into the delivery target is the user's call unless a standing rule grants it. Offer one only after the PR's owner reports it merge-ready: restacked, a Clean /review-loop, and checks green, or not yet run on a draft whose CI starts when it's marked ready; Shipping marks a draft ready right before its merge. Before offering it, read the PR's live state with `gh pr view` and `gh pr checks`, then offer it as a card listing each PR in merge order with what it changes, its checks, and its stack state. Send the go to the PR's owner with `t3_thread_send`, quoting the user's words; the owner lands it through /pstack-mode's Shipping playbook.
 
 **Complete when:** each merged PR shows `MERGED` in `gh pr view` and is recorded in Workers.
 
 ## 7. Close
 
-When the goal's proof holds, follow [close](references/close.md): the integrated check across every PR, a final state for every worker, and an unpinned thread.
+When the goal's proof holds, follow [close](references/close.md): the integrated check for its delivery mode, a final state for every worker, and an unpinned thread.
 
 **Complete when:** close's completion criterion holds.
