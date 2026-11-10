@@ -108,6 +108,24 @@ test("a file marked generated only at the base is left out when the change delet
   );
 });
 
+test("a file that loses its generated mark and stays is reviewed", () => {
+  write(".gitattributes", "schema.gen.ts linguist-generated\n");
+  write("schema.gen.ts", "export type Schema = {};\n");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "generated schema");
+  git("switch", "--quiet", "-c", "feature");
+  git("rm", "--quiet", ".gitattributes");
+  write("schema.gen.ts", "export type Schema = { handWritten: true };\n");
+  git("add", ".");
+  git("commit", "--quiet", "-m", "own the schema");
+
+  const { status, json } = packet("--base", "main", "--head", "feature");
+
+  assert.equal(status, 0);
+  assert.deepEqual(json.excluded, []);
+  assert.match(readFileSync(json.diff, "utf8"), /handWritten/);
+});
+
 test("--only reviews only the named paths, and the size counts only the diff the packet holds", () => {
   const base = git("rev-parse", "HEAD");
   git("switch", "--quiet", "-c", "feature");

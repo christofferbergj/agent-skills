@@ -227,10 +227,30 @@ function exclusions(
       .filter((line) => line.startsWith("-\t-\t"))
       .map((line) => line.slice(4)),
   );
-  // A file marked at either side is left out, so deleting a generated file together with its
-  // attribute line doesn't count the deletion as written code.
+  // Marks come from the head. A file the change deletes also takes the base's marks, so deleting a
+  // generated file together with its attribute line doesn't count as written code, while a file
+  // that loses its mark and stays is reviewed.
+  const deleted = new Set(
+    nulFields(
+      git(repo, [
+        "diff",
+        "--name-only",
+        "--no-renames",
+        "--diff-filter=D",
+        "-z",
+        base,
+        head,
+        "--",
+        ...scope,
+      ]),
+    ),
+  );
   const attributes = new Map<string, Exclusion["reason"]>();
-  for (const source of [base, head]) {
+  for (const [source, sourcePaths] of [
+    [head, paths],
+    [base, paths.filter((path) => deleted.has(path))],
+  ] as const) {
+    if (sourcePaths.length === 0) continue;
     const tokens = nulFields(
       git(
         repo,
@@ -242,7 +262,7 @@ function exclusions(
           "linguist-generated",
           "linguist-vendored",
         ],
-        { input: paths.map((path) => `${path}\0`).join("") },
+        { input: sourcePaths.map((path) => `${path}\0`).join("") },
       ),
     );
     for (let index = 0; index < tokens.length; index += 3) {
