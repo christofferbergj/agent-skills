@@ -31,7 +31,9 @@ Pstack's native roles and runs on the parent host: fast-code on the host's fast 
 (Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. A
 native Codex role runs fast while Codex usage allows, and Claude never runs fast. Native
 roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
-divergent, synthesizer", and fast-code names its "fast code model". A roles entry overrides
+divergent, synthesizer", and fast-code names its "fast code model". long-running, the one
+local role, is a thread that runs for hours, such as a coordinator or one of its workers, so a
+roles entry can move those threads off a model with a tight weekly allowance. A roles entry overrides
 the model or sets an effort; "inherit-parent" or "auto" as the model keeps the parent's.
 """
 
@@ -60,7 +62,7 @@ CROSS_VENDOR_ROLES = {
 # Native roles: trivial edits run fast; exploration, collection, tooling review, check runs, code,
 # judgment, prose, and synthesis keep the parent's model.
 FAST_ROLES = {'fast-code'}
-PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment'}
+PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment', 'long-running'}
 FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24}

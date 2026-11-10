@@ -225,14 +225,16 @@ class TargetResolution(unittest.TestCase):
         for role in ('how-explorer','why-investigators','reflect-tooling','swarm-workers'):
             self.assertEqual(self.run_target(role),{'role':role,'run':'claude-code'},role)
         self.assertEqual(self.run_target('feature-refactoring'),{'role':'feature-refactoring','run':'claude-code'})
+        self.assertEqual(self.run_target('long-running'),{'role':'long-running','run':'claude-code'})
         self.log('a.jsonl',event(99,resets=MIDWEEK))
         self.assertEqual(self.run_target('how-explorer',parent='codex'),{'role':'how-explorer','run':'codex','serviceTier':'default'})
 
     def test_configured_native_role_wins_and_inherit_aliases_keep_the_parent_model(self):
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'effort':'max'}}},'codex':{'roles':{'why-investigators':{'model':'gpt-small','effort':'ultra'}}}}))
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'how-explorer':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'effort':'max'},'long-running':{'model':'claude-opus-5-5','effort':'high'}}},'codex':{'roles':{'why-investigators':{'model':'gpt-small','effort':'ultra'}}}}))
         self.assertEqual(self.run_target('how-explorer'),{'role':'how-explorer','run':'claude-code','model':'haiku','effort':'low'})
         self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code'})
         self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','effort':'max'})
+        self.assertEqual(self.run_target('long-running'),{'role':'long-running','run':'claude-code','model':'claude-opus-5-5','effort':'high'})
         self.assertEqual(self.run_target('why-investigators',parent='codex'),{'role':'why-investigators','run':'codex','model':'gpt-small','serviceTier':'priority','effort':'xhigh'})
 
     def test_codex_native_roles_run_fast_while_usage_allows_and_claude_never_does(self):
