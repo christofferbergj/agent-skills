@@ -57,12 +57,13 @@ When a stage of this library's flows finishes, the usual `a` is the next stage t
 - /to-tickets → /implement-spec, or /coordinator for a multi-PR graph
 - /wayfinder → /to-spec for the destination it charted
 - A Pstack prototype → build the recommended variant through Pstack's Feature playbook, or /architect for its shape
+- Code no /review-loop or /thermos pass has seen, off the /thermos line → /review-loop over it, fix its findings, then the step that ships it, such as a PR update or merge; it isn't **Done** before that
 - Implementation with review findings open → fix them and re-review
 - A Clean review without a PR → open a draft PR through /pr
 - A draft PR with code /thermos hasn't seen → /thermos, fix in-scope findings, re-review them with /review-loop, then mark it ready
 - A draft PR → watch it, or address its review comments
 
-While the /thermos line applies, `b` is its pass over the whole PR up to mark-ready, then /babysit-and-ship. The pass's fixes, /review-loop's included, and a rebase that keeps patch-ids count as seen. A PR that fits /review-loop's small-diff tier skips that line.
+While the /thermos line applies, `b` is its pass over the whole PR up to mark-ready, then /babysit-and-ship; on a PR, the /review-loop line's `b` is that review, then /babysit-and-ship. The pass's fixes, /review-loop's included, and a rebase that keeps patch-ids count as seen. A PR that fits /review-loop's small-diff tier skips that line.
 
 ## Setup
 
