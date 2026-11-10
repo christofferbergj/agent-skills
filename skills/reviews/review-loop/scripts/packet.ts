@@ -227,25 +227,49 @@ function exclusions(
       .filter((line) => line.startsWith("-\t-\t"))
       .map((line) => line.slice(4)),
   );
-  const attributes = new Map<string, Exclusion["reason"]>();
-  const tokens = nulFields(
-    git(
-      repo,
-      [
-        "check-attr",
-        `--source=${head}`,
-        "--stdin",
+  // Marks come from the head. A file the change deletes also takes the base's marks, so deleting a
+  // generated file together with its attribute line doesn't count as written code, while a file
+  // that loses its mark and stays is reviewed.
+  const deleted = new Set(
+    nulFields(
+      git(repo, [
+        "diff",
+        "--name-only",
+        "--no-renames",
+        "--diff-filter=D",
         "-z",
-        "linguist-generated",
-        "linguist-vendored",
-      ],
-      { input: paths.map((path) => `${path}\0`).join("") },
+        base,
+        head,
+        "--",
+        ...scope,
+      ]),
     ),
   );
-  for (let index = 0; index < tokens.length; index += 3) {
-    const [path, attribute, value] = tokens.slice(index, index + 3);
-    if (value === "set" || value === "true")
-      attributes.set(path, attribute === "linguist-vendored" ? "vendored" : "generated");
+  const attributes = new Map<string, Exclusion["reason"]>();
+  for (const [source, sourcePaths] of [
+    [head, paths],
+    [base, paths.filter((path) => deleted.has(path))],
+  ] as const) {
+    if (sourcePaths.length === 0) continue;
+    const tokens = nulFields(
+      git(
+        repo,
+        [
+          "check-attr",
+          `--source=${source}`,
+          "--stdin",
+          "-z",
+          "linguist-generated",
+          "linguist-vendored",
+        ],
+        { input: sourcePaths.map((path) => `${path}\0`).join("") },
+      ),
+    );
+    for (let index = 0; index < tokens.length; index += 3) {
+      const [path, attribute, value] = tokens.slice(index, index + 3);
+      if ((value === "set" || value === "true") && !attributes.has(path))
+        attributes.set(path, attribute === "linguist-vendored" ? "vendored" : "generated");
+    }
   }
   return paths.flatMap((path): Exclusion[] => {
     if (keep.has(path)) return [];

@@ -30,4 +30,5 @@ When the intent asks for a minimal change, Cleanup also covers each part of the 
 Optional: a real improvement that can wait.
 Label a finding Pre-existing, whatever its severity, when the change didn't cause, newly reach, or worsen it.
 No findings is a valid result: say so and name what you checked.
+On a Code pass, end the report with a rating of the whole change as `<n>/10: <what cost the most>`. The worst finding you report sets the band, a Blocker only a contrived setup reaches, such as an unreadable folder or a huge file, counting as a Cleanup: 9-10 for none or Optional only, 10 when the change sets a pattern worth copying; 7-8 for Cleanups; 4-6 for a Blocker the change can be reworked around; 1-3 for a Blocker in the approach itself: wrong approach, unsafe, or broken on its main path. Scope creep, a shape that fights the repository or the user's taste, thin test proof, or hard-to-follow code takes the band's lower half. On a later round, rate the whole change at the new head, counting the previous findings still open. The rating changes no severity.
 ```

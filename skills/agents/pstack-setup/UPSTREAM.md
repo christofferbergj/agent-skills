@@ -19,7 +19,7 @@
 - Effort is a separate option checked against the host's supported values, not a slug suffix, so the four budget labels and the slug-ladder fallback become a task budget mapped through those options.
 - Panel role lists and the arena cross-judge pool are not configured here: /swarm seats each panel on the parent model and the counterpart, and the judge on the counterpart. Single-model roles live under the host section's `roles` entry, with the defaults the library-wide model roles adaptation sets.
 - Keeps credentials in the providers' stores.
-- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex pace slack and fallback threshold. /swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route. Step 2 drops `codexUsage` keys the helper no longer reads, beside upstream's retired roles, because these keys are local and the helper ignores retired ones silently.
+- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex pace slack and fallback threshold. /swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route. Step 2 drops every saved entry /swarm's `scripts/target.py --help` doesn't list, apart from the schema version and source location, beside upstream's retired roles, because those keys are local and the helper ignores unlisted ones silently.
 
 ## Maintenance
 
