@@ -22,10 +22,6 @@ SOFTWARE.
 
 ---
 
-`ui/reply.js`, `ui/catalog.schema.json`, `ui/examples/`, `scripts/validate-card.py`, and `scripts/test_validate_card.py` are copied unchanged from Oliver Cederborg's addystack, under the license above.
-
----
-
 The reply layout descends from Ayoub Ghriss's i-have-adhd skill, under this license:
 
 MIT License
