@@ -42,9 +42,9 @@ Remaining triggers:
 
 ## Autonomy
 
-**Just do it.** Use any MCP tool. Reversible work proceeds without asking, and so do external actions (team chat, ticket updates, kicking off evals) within the user's existing authorization.
+**Just do it.** Use any MCP tool. Reversible work proceeds without asking, and so do ticket updates and evals within the user's existing authorization.
 
-**Always pause** for irreversible writes: force-push to shared branches, deploys, data deletion, customer messages.
+**Always pause** for a merge or a message to a person the user has not asked for this session, and for irreversible writes: force-push to shared branches, deploys, data deletion.
 
 **Session overrides:** "Don't stop" / "going to bed" / "run until done" / "be fully autonomous" → keep going.
 
