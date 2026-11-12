@@ -7,9 +7,9 @@
 - Original skill: [`skills/council/SKILL.md`](https://github.com/t3dotgg/tstack/blob/1085050f3baed1ac724caa4a8166145fb2ac88af/skills/council/SKILL.md), the skill's only file.
 - Tracking policy: upstream `main`; review the listed skill directory and the license.
 - Imported from commit: `1085050f3baed1ac724caa4a8166145fb2ac88af`.
-- Reviewed through commit: `1085050f3baed1ac724caa4a8166145fb2ac88af`.
-- Fidelity checked through: `1085050f3baed1ac724caa4a8166145fb2ac88af`.
-- Last upstream review: 2026-11-05.
+- Reviewed through commit: `11e37a74d0a6868c121cd0910ab2b3bd9873b92a`.
+- Fidelity checked through: `11e37a74d0a6868c121cd0910ab2b3bd9873b92a`.
+- Last upstream review: 2026-11-12.
 - License: [MIT, copyright 2026 Theo Browne](LICENSE), retained from the [pinned upstream license](https://github.com/t3dotgg/tstack/blob/1085050f3baed1ac724caa4a8166145fb2ac88af/LICENSE). Retain the notice with derived material.
 
 ## Local adaptations to preserve
@@ -35,3 +35,4 @@ Compare future upstream changes against the reviewed-through revision for the li
 | Date       | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | ---------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 2026-11-05 | `1085050f3baed1ac724caa4a8166145fb2ac88af` | Imported `SKILL.md` on the user's request, with the adaptations above. The member rule, applied to the live `orchestrator_capabilities` listing, seated `claude-opus-5-5` on `claudeAgent` and `gpt-6.1-sol` on `codex`, and a fresh Sonnet agent following the skill chose the same members, instances, and effort. Repository checks and catalog validation pass. A /review-loop round with Codex Sol and three Claude critics found the effort, failure, proof, loop, and placement gaps fixed here. |
+| 2026-11-12 | `11e37a74d0a6868c121cd0910ab2b3bd9873b92a` | Adopted 11e37a7 ("act on results as they arrive") as written: check each result's findings as it lands and decide fixes while the other members run, edit nothing while a member still reviews the same checkout, and treat a non-blocking member's late result as feedback without recording its score. It fits the local Verify-and-merge step and /swarm's T3 route. Fidelity passes both directions.                                                                                                |

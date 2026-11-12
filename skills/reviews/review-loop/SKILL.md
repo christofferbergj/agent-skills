@@ -47,7 +47,7 @@ Group verified findings by root cause and number them; numbers continue across r
 - **follow-up**: outside this change's scope; it goes in the PR description's open items.
 - **skip**: with a few-word reason.
 
-A finding the change did not cause, newly reach, or worsen, such as one a reviewer labeled Pre-existing, is context, not a finding. One that nobody can reach yet, behind an off flag or an input the real configuration cannot produce, is Optional at most.
+A finding the change did not cause, newly reach, or worsen, such as one a reviewer labeled Pre-existing, is context, not a finding. One that nobody can reach yet, behind an off flag or an input the real configuration cannot produce, is Cleanup at most and needs no shim.
 
 For code, the round's **rating** is the counterpart's, moved to the band of the worst kept finding when a finding it rests on was dropped or its severity changed. A rating never changes a verdict or a severity.
 
