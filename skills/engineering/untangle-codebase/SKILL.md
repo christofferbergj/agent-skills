@@ -96,7 +96,7 @@ You're done when:
 - Every import is reasonable, and nothing imports anything more volatile than itself.
 - Subagents have no issues left that are worth fixing.
 - Intended behavior is the same as when you started, apart from bugs the refactor fixed. Test this at the end.
-- /review-loop has reviewed the whole refactor, and each finding is fixed or reported to the user.
+- /review-loop has run once, after everything above, as this workflow's final review of the whole refactor, from the commit the refactor started at. Each finding is fixed or reported to the user, and intended behavior is tested again after its fixes.
 
 **Tips**
 
