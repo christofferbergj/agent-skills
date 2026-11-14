@@ -31,4 +31,5 @@ Build and debug software, configure development tools, and verify behavior.
 | [statechart](statechart/SKILL.md)                                                 | Chart how a system moves between states from a TLA+ model. |
 | [tdd](tdd/SKILL.md)                                                               | Develop behavior through red/green test slices.            |
 | [typescript-best-practices](typescript-best-practices/SKILL.md)                   | Apply TypeScript type and boundary discipline.             |
+| [untangle-codebase](untangle-codebase/SKILL.md)                                   | Untangle a whole codebase in one pass.                     |
 | [update-dependencies](update-dependencies/SKILL.md)                               | Update and validate project dependencies.                  |

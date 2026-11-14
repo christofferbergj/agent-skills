@@ -126,6 +126,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [statechart](skills/engineering/statechart/SKILL.md)
 - [tdd](skills/engineering/tdd/SKILL.md)
 - [typescript-best-practices](skills/engineering/typescript-best-practices/SKILL.md)
+- [untangle-codebase](skills/engineering/untangle-codebase/SKILL.md)
 - [update-dependencies](skills/engineering/update-dependencies/SKILL.md)
 
 ### Reviews
@@ -235,6 +236,7 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 | `reply-shape`                                                                                                  | `next-options`                                                                |                                                                                                                                                                                                                                       |
 | `setup-pre-commit`                                                                                             |                                                                               | `linting-alignment` when tool ownership is unclear                                                                                                                                                                                    |
 | `update-dependencies`                                                                                          |                                                                               | `linting-alignment` for an included lint or formatting stack update; `pr` for a requested pull request                                                                                                                                |
+| `untangle-codebase`                                                                                            | `swarm`, `review-loop`                                                        | `principle-test-behavior-not-implementation` when it cleans up tests                                                                                                                                                                  |
 | `pstack-mode`                                                                                                  | `domain-modeling`, `principles`, `swarm`                                      | Install the complete library for all playbooks                                                                                                                                                                                        |
 | `coordinator`                                                                                                  | `swarm`, `pstack-mode`, `domain-modeling`, `review-loop`                      | `reply-shape` and `next-options` lay out its replies when loaded; install the complete library for the playbooks its workers run                                                                                                      |
 | `babysit-and-ship`                                                                                             | `pstack-mode`, `next-options`                                                 | `principle-attack-the-premise` after two failed fixes for one verifier finding                                                                                                                                                        |
@@ -276,4 +278,4 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 
 ## License
 
-[MIT](LICENSE). Adapted skills retain the notices and `UPSTREAM.md` records for Matt Pocock, Lauren Tan, Cursor, the OpenClaw Foundation, Emil Kowalski, Oliver Cederborg, Ayoub Ghriss, Hugo Richard, and Theo Browne inside their own directories.
+[MIT](LICENSE). Adapted skills retain the notices and `UPSTREAM.md` records for Matt Pocock, Lauren Tan, Cursor, the OpenClaw Foundation, Emil Kowalski, Oliver Cederborg, Ayoub Ghriss, Hugo Richard, Theo Browne, and Maze inside their own directories.
