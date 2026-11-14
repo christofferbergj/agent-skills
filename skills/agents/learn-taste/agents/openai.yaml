@@ -1,0 +1,6 @@
+interface:
+  display_name: "Learn Taste"
+  short_description: "Turn design corrections into written rules"
+  default_prompt: "Use $learn-taste to turn this session's design corrections into rules."
+policy:
+  allow_implicit_invocation: false

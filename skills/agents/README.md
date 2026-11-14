@@ -13,6 +13,7 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | [coordinator](coordinator/SKILL.md)                             | Coordinate separate PRs or one combined PR in T3.             |
 | [figure-it-out](figure-it-out/SKILL.md)                         | Coordinate large tasks without an existing playbook.          |
 | [git-guardrails](git-guardrails/SKILL.md)                       | Block dangerous Git commands with Codex or Claude Code hooks. |
+| [learn-taste](learn-taste/SKILL.md)                             | Turn design corrections into written rules.                   |
 | [maintain-skills](maintain-skills/SKILL.md)                     | Adopt upstream changes and audit the library.                 |
 | [principles](principles/SKILL.md)                               | Apply shared principles inside Matt or Pstack flows.          |
 | [pstack-help](pstack-help/SKILL.md)                             | Find the right Pstack workflow.                               |

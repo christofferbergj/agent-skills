@@ -10,7 +10,7 @@ This repository owns one skill library, combining upstream adaptations with loca
 | [Lauren Tan's Pstack](https://github.com/cursor/plugins/tree/main/pstack)    | Task playbooks, design and coding principles, evidence requirements, and specialist helpers.                           |
 | [Cursor's Thermos](https://github.com/cursor/plugins/tree/main/thermos)      | Independent correctness and maintainability review rubrics.                                                            |
 | [OpenClaw](https://github.com/openclaw/openclaw)                             | The source material adapted into `test-audit`.                                                                         |
-| [Emil Kowalski's skills](https://github.com/emilkowalski/skill)              | UI craft reviews: `review-animations` and `break-ui`.                                                                  |
+| [Emil Kowalski's skills](https://github.com/emilkowalski/skill)              | Web UI craft: building, reviewing, and auditing motion, gestures, and interface polish.                                |
 | [Oliver Cederborg's addystack](https://github.com/olivercederborg/addystack) | The cross-model review loop, lettered next options, reply layout, and the T3 project coordinator, taken as principles. |
 | [Theo Browne's tstack](https://github.com/t3dotgg/tstack)                    | The council, one review from each model maker the session can run.                                                     |
 | [Hugo Richard's pr-writing](https://github.com/HugoRCD/hr-folio)             | Evidence by kind of change, honesty rules, and the ELI5 in `pr`, taken as principles.                                  |

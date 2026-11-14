@@ -58,6 +58,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [coordinator](skills/agents/coordinator/SKILL.md)
 - [figure-it-out](skills/agents/figure-it-out/SKILL.md)
 - [git-guardrails](skills/agents/git-guardrails/SKILL.md)
+- [learn-taste](skills/agents/learn-taste/SKILL.md)
 - [maintain-skills](skills/agents/maintain-skills/SKILL.md)
 - [principles](skills/agents/principles/SKILL.md)
 - [pstack-help](skills/agents/pstack-help/SKILL.md)
@@ -75,6 +76,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 
 ### Planning and design
 
+- [animation-vocabulary](skills/planning/animation-vocabulary/SKILL.md)
 - [architect](skills/planning/architect/SKILL.md)
 - [arena](skills/planning/arena/SKILL.md)
 - [codebase-design](skills/planning/codebase-design/SKILL.md)
@@ -86,6 +88,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [how](skills/planning/how/SKILL.md)
 - [improve-codebase-architecture](skills/planning/improve-codebase-architecture/SKILL.md)
 - [loop-me](skills/planning/loop-me/SKILL.md)
+- [pick-ui-library](skills/planning/pick-ui-library/SKILL.md)
 - [research](skills/planning/research/SKILL.md)
 - [sharpen](skills/planning/sharpen/SKILL.md)
 - [software-factory](skills/planning/software-factory/SKILL.md)
@@ -98,17 +101,25 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 
 ### Implementation and tooling
 
+- [animate](skills/engineering/animate/SKILL.md)
+- [animation-performance](skills/engineering/animation-performance/SKILL.md)
+- [ask-sonner](skills/engineering/ask-sonner/SKILL.md)
+- [choreograph](skills/engineering/choreograph/SKILL.md)
 - [correct](skills/engineering/correct/SKILL.md)
 - [create-formal-verification-skill](skills/engineering/create-formal-verification-skill/SKILL.md)
 - [create-verification-skill](skills/engineering/create-verification-skill/SKILL.md)
 - [diagnosing-bugs](skills/engineering/diagnosing-bugs/SKILL.md)
+- [emil-design-eng](skills/engineering/emil-design-eng/SKILL.md)
+- [gestures](skills/engineering/gestures/SKILL.md)
 - [implement](skills/engineering/implement/SKILL.md)
 - [implement-spec](skills/engineering/implement-spec/SKILL.md)
 - [linting-alignment](skills/engineering/linting-alignment/SKILL.md)
 - [maintain-formal-verification-skill](skills/engineering/maintain-formal-verification-skill/SKILL.md)
 - [maintain-verification-skill](skills/engineering/maintain-verification-skill/SKILL.md)
 - [make-bot-ui](skills/engineering/make-bot-ui/SKILL.md)
+- [mobile-native](skills/engineering/mobile-native/SKILL.md)
 - [pstack-tdd](skills/engineering/pstack-tdd/SKILL.md)
+- [remove-animations](skills/engineering/remove-animations/SKILL.md)
 - [setup-agent-sign-in](skills/engineering/setup-agent-sign-in/SKILL.md)
 - [setup-pre-commit](skills/engineering/setup-pre-commit/SKILL.md)
 - [setup-ts-deep-modules](skills/engineering/setup-ts-deep-modules/SKILL.md)
@@ -124,6 +135,8 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [break-ui](skills/reviews/break-ui/SKILL.md)
 - [code-review](skills/reviews/code-review/SKILL.md)
 - [council](skills/reviews/council/SKILL.md)
+- [find-animation-opportunities](skills/reviews/find-animation-opportunities/SKILL.md)
+- [improve-animations](skills/reviews/improve-animations/SKILL.md)
 - [interrogate](skills/reviews/interrogate/SKILL.md)
 - [no-comments](skills/reviews/no-comments/SKILL.md)
 - [review-animations](skills/reviews/review-animations/SKILL.md)
@@ -210,6 +223,10 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 | `council`                                                                                                      | `swarm`, `review-loop`                                                        |                                                                                                                                                                                                                                       |
 | `review-loop`                                                                                                  | `code-review`, `thermo-nuclear-review`, `swarm`, `principles`                 | `principle-attack-the-premise` for a repeated class of finding; `pr` for draft PR delivery                                                                                                                                            |
 | `test-audit`                                                                                                   | `swarm`, `principle-test-behavior-not-implementation`                         |                                                                                                                                                                                                                                       |
+| `animate`                                                                                                      |                                                                               | `choreograph` for group entrances; `pick-ui-library` when the task needs a component                                                                                                                                                  |
+| `gestures`                                                                                                     |                                                                               | `pick-ui-library` for a drawer or sheet a library covers; `animation-performance` when a gesture drops frames                                                                                                                         |
+| `emil-design-eng`, `find-animation-opportunities`, `review-animations`                                         |                                                                               | `choreograph` for group entrances                                                                                                                                                                                                     |
+| `improve-animations`                                                                                           |                                                                               | `choreograph` for group entrances; `review-animations` when it executes a plan                                                                                                                                                        |
 | `pr`                                                                                                           | `domain-modeling`                                                             |                                                                                                                                                                                                                                       |
 | `next-options`                                                                                                 |                                                                               | `principle-never-block-on-the-human`; the stages its handoff table names; `babysit-and-ship` for its babysit-and-ship option                                                                                                          |
 | `reply-shape`                                                                                                  | `next-options`                                                                |                                                                                                                                                                                                                                       |

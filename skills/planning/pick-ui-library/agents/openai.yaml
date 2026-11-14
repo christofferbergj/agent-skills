@@ -1,0 +1,6 @@
+interface:
+  display_name: "Pick UI Library"
+  short_description: "Pick a frontend library from a curated list"
+  default_prompt: "Use $pick-ui-library to pick the library for this frontend task."
+policy:
+  allow_implicit_invocation: false

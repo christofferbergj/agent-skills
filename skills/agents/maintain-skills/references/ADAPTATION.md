@@ -1,6 +1,6 @@
 # Adaptation contract
 
-This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, two of Emil Kowalski's UI reviews, and Theo Browne's council, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills and Hugo Richard's `pr-writing` are tracked differently, as sources of [principle-derived skills](#principle-derived-skills).
+This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, Emil Kowalski's web UI skills, and Theo Browne's council, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills and Hugo Richard's `pr-writing` are tracked differently, as sources of [principle-derived skills](#principle-derived-skills).
 
 ## Library-wide adaptations
 
@@ -31,6 +31,13 @@ Matt Pocock:
 
 - Upstream stages such as `in-progress` stay recorded in the catalog.
 - Matt's interview, planning, implementation, testing, and review owners invoke /principles in the current phase and before completion, so Pstack's principles improve Matt's workflow without Pstack mode.
+
+Emil Kowalski:
+
+- Upstream's "Initial Response" section is dropped from every skill. It makes an invocation without a specific question answer with a fixed greeting and wait, which stalls a model invocation mid-task; /reply-shape and /next-options own how replies are laid out and end.
+- Upstream text that hands work to `prototype` names `design-prototype`, this library's owner of UI variant prototypes. The catalog excludes `prototype` and the other skills left out, each with its reason.
+- Upstream text that names an excluded skill only to mark the edge of its own scope, such as `animate-expo` for React Native, stays as written.
+- A sibling skill linked by relative path, such as `../choreograph/SKILL.md`, stays as written. It resolves once both skills are installed, and the README's companion rows name each pair.
 
 ## Shared owners
 

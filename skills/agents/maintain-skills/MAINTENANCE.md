@@ -107,7 +107,7 @@ python3 "$HELPER" prune --state "$STATE" --keep 14
 
 ## Catalog
 
-`catalog.json` holds a policy for each tracked suite: Matt Pocock, Pstack (its mapping is in `skills/agents/pstack-mode/suite.json`), and Thermos. Each policy maps upstream skills to local ones. A mapping whose local name differs from upstream's gives the reason in `renamed`, by [the adaptation contract's names rule](references/ADAPTATION.md#library-wide-adaptations). Each policy also sets:
+`catalog.json` holds a policy for each tracked suite: Matt Pocock, Pstack (its mapping is in `skills/agents/pstack-mode/suite.json`), Thermos, and Emil Kowalski. Each policy maps upstream skills to local ones. A mapping whose local name differs from upstream's gives the reason in `renamed`, by [the adaptation contract's names rule](references/ADAPTATION.md#library-wide-adaptations). Each policy also sets:
 
 - `excludedNames` and `excludedPaths`: upstream skills and paths left out, each with a reason; `excludedPathComponents`: directory names, such as personal folders, left out wherever they appear. Exclusions apply to new imports and shared inputs, never to an existing local skill.
 - `sharedRoot`, or else `sharedPaths`: suite-wide inputs such as READMEs, guides, and agent wrappers. When both are set, only `sharedRoot` is compared.
