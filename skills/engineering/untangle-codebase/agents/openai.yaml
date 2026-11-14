@@ -1,0 +1,6 @@
+interface:
+  display_name: "Untangle Codebase"
+  short_description: "Untangle a whole codebase in one pass"
+  default_prompt: "Use $untangle-codebase to untangle this codebase."
+policy:
+  allow_implicit_invocation: false
