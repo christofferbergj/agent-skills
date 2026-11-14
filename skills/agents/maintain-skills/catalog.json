@@ -268,6 +268,7 @@
     },
     "emil": {
       "repository": "https://github.com/emilkowalski/skill.git",
+      "renamedTo": "emilkowalski/skills",
       "branch": "main",
       "skillRoot": "skills",
       "skills": [

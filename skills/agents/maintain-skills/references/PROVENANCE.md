@@ -18,7 +18,7 @@ For each original source, include:
 
 When adding a new source record, recover the original import from repository history or other verifiable evidence. Do not label today's upstream head as the historical baseline. If no baseline can be recovered, record the gap and request the missing source/version or authorization for a fresh full reconciliation; other sourced skills can still be updated.
 
-For multiple sources within one skill, record paths, revisions, and decisions separately. A completed comparison of one source does not advance the others. If a source moves, preserve the old import identity and record verified continuity to the new location.
+For multiple sources within one skill, record paths, revisions, and decisions separately. A completed comparison of one source does not advance the others. If a source moves, preserve the old import identity and record verified continuity to the new location: in the catalog policy's `renamedTo` for a suite the catalog maps, and in the skill's record otherwise.
 
 An inherited credit can identify an earlier template rather than a separately tracked import. When that distinction is established, add `Attribution-only source: https://github.com/owner/repo` to the owning provenance record and explain which adapted source is tracked instead. The helper exposes that ancestry without inventing a second review baseline. Unclassified credits remain pending; a credit link alone never establishes a completed upstream review.
 
