@@ -7,7 +7,7 @@ The coordinator's memory for one project, at `~/.local/state/coordinator/<projec
 - **Decisions**: `<worker> asked <question> → <answer> · <source>`, the source being "the user: '<their words>'", the plan, standing rule <n>, or what a probe showed.
 - **Workers**: one row per unit or subthread, with the columns below. A new row needs `--state`.
 - **Learnings**: `<worker>: <lesson a sibling worker should know>`.
-- **Listening**: `Heartbeat` and `Startup`, each a scheduled task id or none, and `Watches`, every watched PR with its owner on one line. `listen` replaces a whole line, so pass the full list.
+- **Listening**: `Heartbeat`, `tick` while the [tick](tick.md) checks the project, or none; `Startup`, a scheduled task id or none; and `Watches`, every watched PR with its owner on one line. `listen` replaces a whole line, so pass the full list.
 
 ## Workers
 
@@ -16,7 +16,9 @@ The coordinator's memory for one project, at `~/.local/state/coordinator/<projec
 - **Branch or PR**: the worker's branch, then its PR once it opens one. In one-PR delivery, ticket rows name their integration base and result SHAs; the integrator row names its integration branch and latest checked SHA, then the sole PR link, retaining its checked SHA under Last side effect.
 - **State**: `queued`, `overdue` (launched, not started by the startup deadline), `unknown` (its status read failed), `running`, `waiting` (on a call, a slot, a shared resource, or its open delivery from an ended phase), `stuck`, `done`, `replaced by <worker>`, `absorbed into <worker>`, or `dropped` (after two retries, with the replan under Decisions). While a unit is on a retry, its state reads `running, retry <n>`. `project.py` refuses a state that doesn't start with one of these, and detail may follow it, as in `done: #12 MERGED`. One-PR tickets use `waiting: integration` after their checked result and `done: integrated at <SHA>` after acceptance; Waits on names the integrator or repair worker until accepted.
 - **Waits on**: the call, credential, slot, shared resource, or worker it waits for, with when it started waiting, or `—`. A worker whose delivery stays open from an ended phase waits on `<#n | branch> open`: its PR, or a one-PR integration branch with no PR yet. The queue of cards reads this column.
-- **Last side effect**: the newest commit, push, or PR event seen, with its time, and the worker thread's `itemCount`. The heartbeat compares against it to find a stuck worker.
+- **Last side effect**: the newest commit, push, or PR event seen, with its time, and the worker thread's `itemCount`.
+
+The tick keeps what it last saw in `tick.json` beside `project.md`, and is its only writer.
 
 ## Phase end
 

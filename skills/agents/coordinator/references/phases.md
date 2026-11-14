@@ -13,7 +13,7 @@ Read at coordinator step 7, once the phase's proof holds. A project runs in **ph
 Then follow the user's pick, with `<slug>` naming the phase that ended:
 
 - **Next phase**: run `scripts/project.py <folder> phase <slug> --result <one line> --goal <goal> --proof <proof>`, remove the new goal's entry from Goal's Follow-ups by hand, then plan it from step 2.
-- **Park**: run `scripts/project.py <folder> phase <slug> --result <one line> --park <reason>`. Delete any startup timer with `delete_scheduled_task` and set its Listening line to none; step 4's heartbeat rule decides whether the heartbeat stays. Keep the thread pinned, and reply with step 5's one-line status, naming that the project is parked and wakes on the user's message.
+- **Park**: run `scripts/project.py <folder> phase <slug> --result <one line> --park <reason>`. Delete any startup timer with `delete_scheduled_task` and set its Listening line to none; step 4's tick rule decides whether Heartbeat stays `tick`. Keep the thread pinned, and reply with step 5's one-line status, naming that the project is parked and wakes on the user's message.
 - **Close**: follow [close](close.md).
 
 `phase` archives and resets the phase as [project](project.md#phase-end) describes.
