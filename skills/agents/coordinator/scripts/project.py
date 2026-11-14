@@ -333,7 +333,7 @@ THREAD_ROW = re.compile(r"(running|overdue|unknown)\b")  # a row whose thread sh
 PR_ROW = re.compile(r"(running|overdue|unknown|waiting|stuck)\b")  # a row whose PR is still open work
 LINK = re.compile(r"t3-thread://v2/([^/>\s)]+)/([^>\s)]+)")  # bare, in <…>, or a Markdown link's (…)
 # A PR as its URL, owner/repo#N, repo#N (the checkout's owner), or #N (the checkout's repo).
-PR_REF = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)|(?<![\w/.-])([\w.-]+(?:/[\w.-]+)?)#(\d+)\b"
+PR_REF = re.compile(r"github\.com/([\w.-]+/[\w.-]+)/pull/(\d+)|(?<![\w/.-])([\w.-]*\w(?:/[\w.-]+)?)#(\d+)\b"
                     r"|(?<![\w/#])#(\d+)\b")
 REMOTE = re.compile(r"github\.com[:/]([\w.-]+/[\w.-]+?)(?:\.git)?/?$")
 STALL = 3600  # seconds with no new thread item before a running worker counts as stalled
@@ -356,12 +356,11 @@ def show_thread(thread: str) -> dict | None:
         return None
     # A t3 CLI older than the server can still log a multi-line warning to stdout ahead of
     # the JSON, so parse from the first line that opens an object holding the thread.
-    for at in [0] + [i + 1 for i, char in enumerate(out) if char == "\n"]:
-        if out.startswith("{", at):
-            try:
-                return json.JSONDecoder().raw_decode(out, at)[0]["thread"]
-            except (ValueError, KeyError, TypeError):
-                continue
+    for start in re.finditer(r"^\{", out, re.M):
+        try:
+            return json.JSONDecoder().raw_decode(out, start.start())[0]["thread"]
+        except (ValueError, KeyError, TypeError):
+            continue
     return None
 
 
@@ -408,10 +407,10 @@ def _listened(lines: list[str], key: str) -> str:
 def _pr_refs(text: str, origin: str, refs: set[str]) -> None:
     """Adds each PR the text names to refs as `owner/repo#N`: `#N` and `repo#N` resolve
     against the checkout's origin, `owner/repo`, and a range `#20–#22` names each PR in
-    it. Without an origin, `#N` becomes `?#N` and `repo#N` `?/repo#N`, which tick reports. A `none` Watches value names none."""
+    it (`#20–22` too, but `#20 - 22` stays one PR, since 22 may count something else). Without an origin, `#N` becomes `?#N` and `repo#N` `?/repo#N`, which tick reports. A `none` Watches value names none."""
     if text.startswith("none"):
         return
-    text = re.sub(r"(?<![\w/#])#(\d+)\s*[–-]\s*#?(\d+)\b", lambda m: " ".join(
+    text = re.sub(r"(?<![\w/#])#(\d+)(?:\s*[–-]\s*#|–)(\d+)\b", lambda m: " ".join(
         f"#{n}" for n in range(int(m[1]), int(m[2]) + 1)) if 0 < int(m[2]) - int(m[1]) <= 20 else m[0], text)
     owner = origin.split("/")[0] if origin else "?"
     for url_repo, url_n, repo, n, local in PR_REF.findall(text):
@@ -464,7 +463,7 @@ def tick(lines: list[str], state: dict, now: float, show=show_thread, view=view_
     refs = set(watched)
     rows, odd = _workers(lines)
     for line in odd:
-        if any(re.match(r"(running|overdue|unknown|waiting)\b", cell) for cell in _cells(line)):  # a cell that opens with a state
+        if any(PR_ROW.match(cell) for cell in _cells(line)):  # a cell that opens with a state
             first = (_cells(line) or ["?"])[0]
             found.append((f"odd:{first}", f"{first}: its row's cells don't match the Workers header, so the tick "
                                           "can't read it"))

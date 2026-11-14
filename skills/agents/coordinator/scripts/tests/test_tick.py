@@ -201,6 +201,19 @@ class Tick(unittest.TestCase):
         self.tick("--send")
         self.assertEqual(sorted(self.state()["prs"]), ["acme/app#12", "acme/app#20", "acme/app#21", "acme/app#22"])
 
+    def test_a_count_after_a_pr_is_not_a_range(self):
+        self.write_project(rows={"- Watches: #12 (build), acme/app#7 (the user)": "- Watches: #12 - 15 files, fix-#30 branch, #20–22"})
+        for n in (20, 21, 22, 30):
+            self.prs[f"acme/app#{n}"] = {"state": "OPEN", "isDraft": False}
+        self.assertEqual(self.tick("--send").stderr, "")
+        self.assertEqual(sorted(self.state()["prs"]), ["acme/app#12", "acme/app#20", "acme/app#21", "acme/app#22", "acme/app#30"])
+
+    def test_a_stuck_row_the_tick_cant_parse_is_flagged(self):
+        self.write_project(rows={"| probe | report | <t3-thread://v2/env/w2> · task t2 | — | done | — | report |":
+                                 "| probe | report | <t3-thread://v2/env/w2> | stuck: no items |"})
+        self.tick("--send")
+        self.assertIn("- probe: its row's cells don't match the Workers header", self.sent()[0]["message"])
+
     def test_a_repo_ref_without_a_known_owner_is_flagged(self):
         subprocess.run(["git", "-C", str(self.checkout), "remote", "remove", "origin"], check=True)
         self.write_project(rows={"- Watches: #12 (build), acme/app#7 (the user)": "- Watches: skills#246"})
