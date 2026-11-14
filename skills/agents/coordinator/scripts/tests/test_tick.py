@@ -355,7 +355,11 @@ class Tick(unittest.TestCase):
     def test_a_log_line_before_the_cli_json_still_reads_the_thread(self):
         t3 = self.fake / "bin" / "t3"
         t3.write_text(FAKE_T3.replace('if sys.argv[1:3] == ["thread", "show"]:',
-                                      'print("[04:13:56.902] WARN (#29): Database migration history diverges")\n'
+                                      'print("[04:13:56.902] WARN (#29): Database migration history diverges from this build; recorded migration ids are skipped, not reconciled by name. {")\n'
+                                      'print("  divergent: [")\n'
+                                      'print("    \\\'80:ScheduledTaskThreadMode (unknown to this build)\\\'")\n'
+                                      'print("  ]")\n'
+                                      'print("}")\n'
                                       'if sys.argv[1:3] == ["thread", "show"]:'))
         self.tick("--send")
         self.threads["w1"] = thread("failed", 1, 12)

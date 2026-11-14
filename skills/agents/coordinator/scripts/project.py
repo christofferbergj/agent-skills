@@ -351,13 +351,18 @@ def _run(args: list[str], cwd: Path | None = None, stdin: str | None = None) -> 
 
 def show_thread(thread: str) -> dict | None:
     """The thread's state from `t3 thread show`, or None when it can't be read."""
-    code, out = _run(["t3", "thread", "show", thread, "--json", "--messages", "0"])
-    # A t3 CLI older than the server logs a migration warning to stdout ahead of the JSON.
-    body = out[out.find("\n{") + 1:] if code == 0 and not out.startswith("{") and "\n{" in out else out
-    try:
-        return json.loads(body)["thread"] if code == 0 else None
-    except (ValueError, KeyError, TypeError):
+    code, out = _run(["t3", "thread", "show", thread, "--json", "--messages", "0", "--log-level", "error"])
+    if code != 0:
         return None
+    # A t3 CLI older than the server can still log a multi-line warning to stdout ahead of
+    # the JSON, so parse from the first line that opens an object holding the thread.
+    for at in [0] + [i + 1 for i, char in enumerate(out) if char == "\n"]:
+        if out.startswith("{", at):
+            try:
+                return json.JSONDecoder().raw_decode(out, at)[0]["thread"]
+            except (ValueError, KeyError, TypeError):
+                continue
+    return None
 
 
 def view_pr(ref: str) -> list | None:
