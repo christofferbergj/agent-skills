@@ -3,7 +3,7 @@
 ## Source and credit
 
 - Original author: Emil Kowalski.
-- Canonical source: [emilkowalski/skill](https://github.com/emilkowalski/skill).
+- Canonical source: [emilkowalski/skill](https://github.com/emilkowalski/skill). GitHub now serves the repository as `emilkowalski/skills` and redirects this name, with the same commits (checked 2026-11-14); the record keeps the name it was imported under.
 - Original skill and resources: [`skills/animation-vocabulary`](https://github.com/emilkowalski/skill/tree/0f2e23b32bb1265e84cff8d3e75785fec953fb1b/skills/animation-vocabulary), with `SKILL.md`.
 - Tracking policy: upstream `main`; review the listed skill directory and the license.
 - Imported from commit: `0f2e23b32bb1265e84cff8d3e75785fec953fb1b`.

@@ -3,7 +3,7 @@
 ## Source and credit
 
 - Original author: Emil Kowalski.
-- Canonical source: [emilkowalski/skill](https://github.com/emilkowalski/skill).
+- Canonical source: [emilkowalski/skill](https://github.com/emilkowalski/skill). GitHub now serves the repository as `emilkowalski/skills` and redirects this name, with the same commits (checked 2026-11-14); the record keeps the name it was imported under.
 - Original skill and resources: [`skills/break-ui`](https://github.com/emilkowalski/skill/tree/a81dbca07f2217b7103e510c0f13f8d5b017afc9/skills/break-ui), with `SKILL.md` and `CATALOG.md`.
 - Tracking policy: upstream `main`; review the listed skill directory and the license.
 - Imported from commit: `a81dbca07f2217b7103e510c0f13f8d5b017afc9`.
