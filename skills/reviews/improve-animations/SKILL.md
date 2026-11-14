@@ -54,7 +54,7 @@ Audit against the eight categories in [AUDIT.md](AUDIT.md):
 7. Cohesion & tokens
 8. Missed opportunities
 
-At `standard` and `deep` effort, fan out read-only subagents — one per category (or per app area for large monorepos). Each subagent prompt must include: the absolute path to AUDIT.md and its section heading, the recon facts (stack, motion libraries, token conventions, frequency map), an instruction to return findings only (file:line + evidence, no fixes), and Hard Rule 4 verbatim.
+At `standard` and `deep` effort, fan out read-only subagents through /swarm — one per category (or per app area for large monorepos). Each subagent prompt must include: the absolute path to AUDIT.md and its section heading, the recon facts (stack, motion libraries, token conventions, frequency map), an instruction to return findings only (file:line + evidence, no fixes), and Hard Rule 4 verbatim.
 
 Depth follows effort level (default `standard`):
 
@@ -91,14 +91,14 @@ Finish by creating or updating `README.md` in the plan directory: a table of pla
 
 ## Invocation Variants
 
-| Invocation                                                   | Behavior                                                                                                                                                           |
-| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| a request with no variant ("improve the animations")         | Full workflow: recon → audit all categories → vet → confirm → plans                                                                                                |
-| `quick` / `deep`                                             | Adjust audit effort (see table); composes with a focus                                                                                                             |
-| a category focus (`performance`, `accessibility`, `easing`…) | Recon + audit that category only                                                                                                                                   |
-| `plan <description>`                                         | Skip the audit; recon just enough to specify, then write a single plan for the described improvement                                                               |
-| `execute <plan>`                                             | Dispatch an executor subagent to implement the plan in an isolated worktree, then review its diff against `../review-animations/STANDARDS.md` and render a verdict |
-| `reconcile`                                                  | Re-check the plan directory against the current code: mark done plans DONE, refresh stale file:line references, retire fixed findings                              |
+| Invocation                                                   | Behavior                                                                                                                                                                          |
+| ------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| a request with no variant ("improve the animations")         | Full workflow: recon → audit all categories → vet → confirm → plans                                                                                                               |
+| `quick` / `deep`                                             | Adjust audit effort (see table); composes with a focus                                                                                                                            |
+| a category focus (`performance`, `accessibility`, `easing`…) | Recon + audit that category only                                                                                                                                                  |
+| `plan <description>`                                         | Skip the audit; recon just enough to specify, then write a single plan for the described improvement                                                                              |
+| `execute <plan>`                                             | Dispatch an executor subagent through /swarm to implement the plan in an isolated worktree, then review its diff against `../review-animations/STANDARDS.md` and render a verdict |
+| `reconcile`                                                  | Re-check the plan directory against the current code: mark done plans DONE, refresh stale file:line references, retire fixed findings                                             |
 
 ## Tone
 

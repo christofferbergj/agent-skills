@@ -22,7 +22,7 @@ It does ONE thing: write rules. It never changes component code, and it never ad
 
 ### Phase 1: Collect corrections
 
-Read the current conversation from the first turn. If the user names earlier sessions and you can read their transcripts (Claude Code stores them as JSONL under `projects/<project>/` in its config directory, `~/.claude` unless `CLAUDE_CONFIG_DIR` is set; Codex under `~/.codex/sessions/`), read those too.
+Read the current conversation from the first turn. If the user names earlier sessions, invoke /recall to find them among this repository's Codex and Claude Code sessions, and read those too.
 
 Explicit corrections are the minority. Look for all five signals:
 
@@ -94,7 +94,7 @@ Check candidate?
         Surfaces · Color · Typography · Spacing & layout · Motion · Interaction · Copy
 ```
 
-Create DESIGN.md or the section if it's missing.
+Create DESIGN.md or the section if it's missing. Write a project skill, or a line in the project's agent instructions, through /writing-for-agents.
 
 **Make sure it gets read.** A DESIGN.md that no agent loads changes nothing. If neither CLAUDE.md nor AGENTS.md points to it, propose adding this line to whichever one the project uses: `Before building or changing UI, read DESIGN.md.`
 

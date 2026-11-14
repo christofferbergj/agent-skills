@@ -14,7 +14,7 @@
 
 ## Local adaptations to preserve
 
-- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply, including those for Emil Kowalski's skills; this list holds only this skill's own divergences.
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 
 `agents/openai.yaml`, this record, and the retained license are locally maintained packaging.
 

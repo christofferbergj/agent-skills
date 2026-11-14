@@ -35,9 +35,7 @@ Matt Pocock:
 Emil Kowalski:
 
 - Upstream's "Initial Response" section is dropped from every skill. It makes an invocation without a specific question answer with a fixed greeting and wait, which stalls a model invocation mid-task; /reply-shape and /next-options own how replies are laid out and end.
-- Upstream text that hands work to `prototype` names `design-prototype`, this library's owner of UI variant prototypes. The catalog excludes `prototype` and the other skills left out, each with its reason.
-- Upstream text that names an excluded skill only to mark the edge of its own scope, such as `animate-expo` for React Native, stays as written.
-- A sibling skill linked by relative path, such as `../choreograph/SKILL.md`, stays as written. It resolves once both skills are installed, and the README's companion rows name each pair.
+- A reference to an excluded upstream skill names its local counterpart where one exists, as `prototype` becomes `design-prototype`, and otherwise stays as written, as `animate-expo` does. The catalog holds each exclusion with its reason.
 
 ## Shared owners
 

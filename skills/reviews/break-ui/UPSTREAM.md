@@ -14,7 +14,7 @@
 
 ## Local adaptations to preserve
 
-- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply, including those for Emil Kowalski's skills: the dropped greeting, and redesign routed to `design-prototype` where upstream names `prototype`. This skill has no divergence of its own.
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 
 `agents/openai.yaml`, this record, and the retained license are locally maintained packaging. The repository's `.prettierignore` keeps `CATALOG.md` byte-identical to upstream, because the formatter would trim the spaces its padded-name test value depends on.
 

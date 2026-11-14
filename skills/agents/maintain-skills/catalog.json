@@ -349,11 +349,11 @@
       ],
       "excludedNames": {
         "animate-expo": "Wrong stack: React Native and Expo animation, which none of the owner's projects use",
-        "apple-design": "Its gesture and spring sections repeat gestures and animate, and no adopted skill refers to it",
+        "apple-design": "Its gesture and spring sections repeat gestures and animate, its typography and materials sections fall outside this suite's motion and interaction scope, and no adopted skill refers to it",
         "prototype": "design-prototype already builds UI variants behind a picker",
         "write-swift": "Wrong stack: Swift, which none of the owner's projects use"
       },
-      "sharedPaths": ["README.md", "LICENSE", "ui-cheatsheet.md", "performance-cheatsheet.md"],
+      "sharedRoot": ".",
       "sharedReviewedThrough": "0f2e23b32bb1265e84cff8d3e75785fec953fb1b"
     }
   },

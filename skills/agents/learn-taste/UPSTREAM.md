@@ -14,8 +14,9 @@
 
 ## Local adaptations to preserve
 
-- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply, including those for Emil Kowalski's skills; this list holds only this skill's own divergences.
-- Phase 1 names where both hosts keep session transcripts. Upstream names Claude Code's default folder alone, which misses Codex sessions and a Claude Code profile that sets `CLAUDE_CONFIG_DIR`.
+- The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
+- Phase 1 finds earlier sessions through /recall, which owns where Codex and Claude Code keep transcripts and scopes them to the repository. Upstream names Claude Code's default folder alone, which misses Codex sessions and a Claude Code profile with its own config directory.
+- Phase 4 writes a project skill or an agent-instructions line through /writing-for-agents, the owner of agent-instruction writing.
 
 `agents/openai.yaml`, this record, and the retained license are locally maintained packaging.
 
@@ -25,6 +26,6 @@ Compare future upstream changes against the reviewed-through revision for the li
 
 ## Review history
 
-| Date       | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                        |
-| ---------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2026-11-14 | `0f2e23b32bb1265e84cff8d3e75785fec953fb1b` | Imported `SKILL.md`. Adapted Phase 1's transcript location to cover Codex and a Claude Code profile with its own config directory; the divergence is recorded above. First import; the skill was not installed before. Fidelity passes in both directions: the only differences from upstream are the transcript locations and formatter output. Repository checks and catalog validation pass. |
+| Date       | Candidate revision                         | Decision                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ---------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-14 | `0f2e23b32bb1265e84cff8d3e75785fec953fb1b` | Imported `SKILL.md`. Adapted Phase 1 to find earlier sessions through /recall and Phase 4 to write agent instructions through /writing-for-agents; both divergences are recorded above. First import; the skill was not installed before. Fidelity passes in both directions: the only differences from upstream are those two owner invocations and formatter output. Repository checks and catalog validation pass. |
