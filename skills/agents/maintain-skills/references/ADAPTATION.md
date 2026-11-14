@@ -1,6 +1,6 @@
 # Adaptation contract
 
-This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, two of Emil Kowalski's UI reviews, and Theo Browne's council, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills and Hugo Richard's `pr-writing` are tracked differently, as sources of [principle-derived skills](#principle-derived-skills).
+This library tracks Pstack, Matt Pocock's skills, Thermos, OpenClaw's test audit, Emil Kowalski's web UI skills, and Theo Browne's council, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. Oliver Cederborg's skills and Hugo Richard's `pr-writing` are tracked differently, as sources of [principle-derived skills](#principle-derived-skills).
 
 ## Library-wide adaptations
 
@@ -31,6 +31,11 @@ Matt Pocock:
 
 - Upstream stages such as `in-progress` stay recorded in the catalog.
 - Matt's interview, planning, implementation, testing, and review owners invoke /principles in the current phase and before completion, so Pstack's principles improve Matt's workflow without Pstack mode.
+
+Emil Kowalski:
+
+- Upstream's "Initial Response" section is dropped from every skill. It makes an invocation without a specific question answer with a fixed greeting and wait, which stalls a model invocation mid-task; /reply-shape and /next-options own how replies are laid out and end.
+- A reference to an excluded upstream skill names its local counterpart where one exists, as `prototype` becomes `design-prototype`, and otherwise stays as written, as `animate-expo` does. The catalog holds each exclusion with its reason.
 
 ## Shared owners
 

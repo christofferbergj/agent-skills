@@ -265,6 +265,96 @@
           "directory": "skills/reviews/thermo-nuclear-code-quality-review"
         }
       ]
+    },
+    "emil": {
+      "repository": "https://github.com/emilkowalski/skill.git",
+      "branch": "main",
+      "skillRoot": "skills",
+      "skills": [
+        {
+          "upstream": "skills/animate",
+          "local": "animate",
+          "directory": "skills/engineering/animate"
+        },
+        {
+          "upstream": "skills/animation-performance",
+          "local": "animation-performance",
+          "directory": "skills/engineering/animation-performance"
+        },
+        {
+          "upstream": "skills/animation-vocabulary",
+          "local": "animation-vocabulary",
+          "directory": "skills/planning/animation-vocabulary"
+        },
+        {
+          "upstream": "skills/ask-sonner",
+          "local": "ask-sonner",
+          "directory": "skills/engineering/ask-sonner"
+        },
+        {
+          "upstream": "skills/break-ui",
+          "local": "break-ui",
+          "directory": "skills/reviews/break-ui"
+        },
+        {
+          "upstream": "skills/choreograph",
+          "local": "choreograph",
+          "directory": "skills/engineering/choreograph"
+        },
+        {
+          "upstream": "skills/emil-design-eng",
+          "local": "emil-design-eng",
+          "directory": "skills/engineering/emil-design-eng"
+        },
+        {
+          "upstream": "skills/find-animation-opportunities",
+          "local": "find-animation-opportunities",
+          "directory": "skills/reviews/find-animation-opportunities"
+        },
+        {
+          "upstream": "skills/gestures",
+          "local": "gestures",
+          "directory": "skills/engineering/gestures"
+        },
+        {
+          "upstream": "skills/improve-animations",
+          "local": "improve-animations",
+          "directory": "skills/reviews/improve-animations"
+        },
+        {
+          "upstream": "skills/learn-taste",
+          "local": "learn-taste",
+          "directory": "skills/agents/learn-taste"
+        },
+        {
+          "upstream": "skills/mobile-native",
+          "local": "mobile-native",
+          "directory": "skills/engineering/mobile-native"
+        },
+        {
+          "upstream": "skills/pick-ui-library",
+          "local": "pick-ui-library",
+          "directory": "skills/planning/pick-ui-library"
+        },
+        {
+          "upstream": "skills/remove-animations",
+          "local": "remove-animations",
+          "directory": "skills/engineering/remove-animations"
+        },
+        {
+          "upstream": "skills/review-animations",
+          "local": "review-animations",
+          "directory": "skills/reviews/review-animations"
+        }
+      ],
+      "excludedNames": {
+        "animate-expo": "Wrong stack: React Native and Expo animation, which none of the owner's projects use",
+        "apple-design": "Its gesture and spring sections repeat gestures and animate, its typography and materials sections fall outside this suite's motion and interaction scope, and no adopted skill refers to it",
+        "prototype": "design-prototype already builds UI variants behind a picker",
+        "write-swift": "Wrong stack: Swift, which none of the owner's projects use"
+      },
+      "sharedRoot": ".",
+      "sharedReviewedThrough": "0f2e23b32bb1265e84cff8d3e75785fec953fb1b"
     }
   },
   "owners": {

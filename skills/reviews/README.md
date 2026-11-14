@@ -11,6 +11,8 @@ Assess code, architecture, tests, UI, performance claims, and the effects of a c
 | [break-ui](break-ui/SKILL.md)                                                     | Stress-test UI with realistic worst-case data.               |
 | [code-review](code-review/SKILL.md)                                               | Review changes against standards and the spec.               |
 | [council](council/SKILL.md)                                                       | Get one review from each model maker you run, at once.       |
+| [find-animation-opportunities](find-animation-opportunities/SKILL.md)             | Find where motion would help and where it wouldn't.          |
+| [improve-animations](improve-animations/SKILL.md)                                 | Audit a codebase's motion and plan the fixes.                |
 | [interrogate](interrogate/SKILL.md)                                               | Challenge a concrete diff or design.                         |
 | [no-comments](no-comments/SKILL.md)                                               | Review unnecessary or misleading comments.                   |
 | [review-animations](review-animations/SKILL.md)                                   | Review motion code against a strict craft bar.               |

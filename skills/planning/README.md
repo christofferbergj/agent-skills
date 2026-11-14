@@ -6,6 +6,7 @@ Understand a codebase, research a problem, clarify requirements, and choose a de
 
 | Skill                                                                   | Use it to                                              |
 | ----------------------------------------------------------------------- | ------------------------------------------------------ |
+| [animation-vocabulary](animation-vocabulary/SKILL.md)                   | Find the exact name for a motion effect.               |
 | [architect](architect/SKILL.md)                                         | Design interfaces and module boundaries.               |
 | [arena](arena/SKILL.md)                                                 | Compare competing designs and artifacts.               |
 | [codebase-design](codebase-design/SKILL.md)                             | Reason about module boundaries and interfaces.         |
@@ -17,6 +18,7 @@ Understand a codebase, research a problem, clarify requirements, and choose a de
 | [how](how/SKILL.md)                                                     | Explain how code and subsystems work.                  |
 | [improve-codebase-architecture](improve-codebase-architecture/SKILL.md) | Find and discuss architectural improvements.           |
 | [loop-me](loop-me/SKILL.md)                                             | Specify repeatable project workflows.                  |
+| [pick-ui-library](pick-ui-library/SKILL.md)                             | Pick a frontend library from a curated list.           |
 | [research](research/SKILL.md)                                           | Investigate a question using primary sources.          |
 | [sharpen](sharpen/SKILL.md)                                             | Clarify a task's outcome and approach.                 |
 | [software-factory](software-factory/SKILL.md)                           | Design an agent software factory's tasks and services. |

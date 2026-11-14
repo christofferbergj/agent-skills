@@ -3,3 +3,6 @@ skills/engineering/statechart/scripts/test/corpus/**/report.md
 
 # Upstream break-ui test values keep the exact spaces they test.
 skills/reviews/break-ui/CATALOG.md
+
+# The formatter rewrites the nested code fences upstream improve-animations escapes with zero-width spaces.
+skills/reviews/improve-animations/PLAN-TEMPLATE.md
