@@ -112,6 +112,7 @@ python3 "$HELPER" prune --state "$STATE" --keep 14
 - `excludedNames` and `excludedPaths`: upstream skills and paths left out, each with a reason; `excludedPathComponents`: directory names, such as personal folders, left out wherever they appear. Exclusions apply to new imports and shared inputs, never to an existing local skill.
 - `sharedRoot`, or else `sharedPaths`: suite-wide inputs such as READMEs, guides, and agent wrappers. When both are set, only `sharedRoot` is compared.
 - `sharedReviewedThrough`: the revision through which those shared inputs are decided. Advance it with the same rule as a skill's reviewed-through position.
+- `renamedTo`: the name the host now serves a moved repository under. `repository` and the skills' records keep the name the source was imported under while the host redirects it; when a fetch of that name fails, change `repository` and every record's source links to the new name in one change.
 
 `owners` names the shared-owner roles. `contextPaths` and `contextOwners` name the governing inputs whose change lapses earlier local reviews.
 

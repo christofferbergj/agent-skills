@@ -1,6 +1,6 @@
 # Adaptation contract
 
-This library tracks the upstream sources the repository's `docs/architecture.md` lists and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. A source the library takes ideas from, rather than text, is tracked differently, as a source of [principle-derived skills](#principle-derived-skills).
+This library tracks each upstream source that a skill's `UPSTREAM.md` records, which the repository's `docs/architecture.md` lists, and adapts them lightly so they work together in Codex and Claude Code. Upstream authors keep improving these skills; the library stays close enough to their text to keep receiving those improvements, and diverges only where this setup needs it. A source the library takes ideas from, rather than text, is tracked differently, as a source of [principle-derived skills](#principle-derived-skills).
 
 ## Library-wide adaptations
 
