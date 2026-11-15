@@ -45,7 +45,7 @@ If cost is the worry, say where the tokens go and how to spend fewer. pstack spe
 
 pstack is built for Cursor. This library adapts it to Codex and Claude Code: type `$pstack-mode` in Codex or `/pstack-mode` in Claude Code, and the same for every other skill. Delegation, model roles, and cross-vendor review run through `/swarm` on each host's native tools, and a step that needs a Cursor-only feature, such as Bugbot or Automations, is translated or skipped with a one-line note.
 
-Other tools can read the skills, because they use the Agent Skills format. But most workflow skills, including `/pstack-mode`, `/how`, `/why`, and `/teach`, spawn subagents through `/swarm`, which targets Codex and Claude Code, so those parts may not work there.
+Other tools can read the skills, because they use the Agent Skills format. But most workflow skills, including `/pstack-mode`, `/how`, and `/teach`, spawn subagents through `/swarm`, which targets Codex and Claude Code, so those parts may not work there.
 
 ## Start a task with `/pstack-mode`
 

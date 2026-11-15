@@ -131,7 +131,7 @@ Each live lane runs in its own isolated environment at the PR head, a cloud VM w
 
 ## Appendix D. Links and reading list
 
-<Docs to read before editing. Which PRs get /how and /interrogate. The trail per /show-me-your-work.>
+<Docs to read before editing. Which PRs get /interrogate. The trail per /show-me-your-work.>
 ```
 
 For an inapplicable live block, replace its lane sentence and boxes with `Not applicable. <concrete reason>`. For an inapplicable perf block, replace its four boxes with one `Not applicable. <concrete reason>` box.

@@ -9,7 +9,7 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
      "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                      "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
-     "roles": {"how-explorer": {"model": "haiku", "effort": "low"}}},
+     "roles": {"swarm-workers": {"model": "haiku", "effort": "low"}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
@@ -62,7 +62,7 @@ CROSS_VENDOR_ROLES = {
 # Native roles: trivial edits run fast; exploration, collection, tooling review, check runs, code,
 # judgment, prose, and synthesis keep the parent's model.
 FAST_ROLES = {'fast-code'}
-PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment', 'long-running'}
+PARENT_ROLES = {'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'reflect-judgment', 'long-running'}
 FAST_MODEL = {'claude-code': 'sonnet'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24}
