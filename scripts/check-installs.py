@@ -21,9 +21,24 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import NamedTuple
 
 # Skills CLI agent keys, such as claude-code; anything else, such as --all, is not an agent.
 AGENT = re.compile(r'[a-z0-9][a-z0-9-]*')
+OUTDATED = ('missing', 'stale', 'unknown')
+UNNAMED = 'skills'
+
+
+class Problem(NamedTuple):
+    kind: str
+    name: str
+    detail: str = ''
+
+    def __str__(self):
+        line = f'{self.kind:<8} {self.name}'
+        if self.kind == 'failed':
+            return f'{line}: {self.detail}'
+        return f'{line} {self.detail}' if self.detail else line
 
 
 def git(*args):
@@ -51,7 +66,7 @@ def refresh_hint(slug, agents):
 
 def outdated(problems):
     """The skills an install fixes: stale, missing, and unknown ones."""
-    return [line.split()[1] for line in problems if line.split()[0] in ('missing', 'stale', 'unknown')]
+    return [problem.name for problem in problems if problem.kind in OUTDATED]
 
 
 def install(command):
@@ -77,8 +92,24 @@ def install(command):
         failures = [(None, f'the installer exited {result.returncode} without a JSON report')]
         print((result.stdout + result.stderr)[-2000:].rstrip(), file=sys.stderr)
     for skill, reason in failures:
-        print(f'Failed to install {skill or "skills"}: {reason}', file=sys.stderr)
+        print(f'Failed to install {skill or UNNAMED}: {reason}', file=sys.stderr)
     return failures
+
+
+def refresh(arguments, slug, trees, agents):
+    """Install, recheck, and retry once what is still outdated or failed; return the last check and failures."""
+    skills = ['*']
+    for attempt in range(2):
+        if attempt:
+            # GitHub can serve the previous tree for a short while after a merge.
+            time.sleep(arguments.retry_delay)
+        failures = install(install_command(slug, agents, skills))
+        problems, lock = check(arguments, slug, trees)
+        named = {skill for skill, _ in failures if skill}
+        skills = ['*'] if any(skill is None for skill, _ in failures) else sorted(set(outdated(problems)) | named)
+        if not skills:
+            break
+    return problems, lock, failures
 
 
 def main():
@@ -108,18 +139,10 @@ def main():
     agents = lock.get('lastSelectedAgents')
     failures = []
     if arguments.refresh and install_command(slug, agents) and outdated(problems):
-        failures = install(install_command(slug, agents))
-        problems, lock = check(arguments, slug, trees)
-        named = {skill for skill, _ in failures if skill}
-        retry = ['*'] if any(skill is None for skill, _ in failures) else sorted(set(outdated(problems)) | named)
-        if retry:
-            # GitHub can serve the previous tree for a short while after a merge.
-            time.sleep(arguments.retry_delay)
-            failures = install(install_command(slug, agents, retry))
-            problems, lock = check(arguments, slug, trees)
-    problems += [f'failed   {skill or "install"}: {" ".join(reason.split())}' for skill, reason in failures]
+        problems, lock, failures = refresh(arguments, slug, trees, agents)
+    problems += [Problem('failed', skill or UNNAMED, ' '.join(reason.split())) for skill, reason in failures]
 
-    print('\n'.join(problems) or f'All {len(trees)} skills match {arguments.ref}.')
+    print('\n'.join(map(str, problems)) or f'All {len(trees)} skills match {arguments.ref}.')
     if outdated(problems):
         print(f"\n{refresh_hint(slug, lock.get('lastSelectedAgents'))}")
     return 1 if problems else 0
@@ -134,20 +157,20 @@ def check(arguments, slug, trees):
         entry = installed.get(name)
         shared = arguments.shared_skills / name
         if entry is None or not (shared / 'SKILL.md').is_file():
-            problems.append(f'missing  {name}')
+            problems.append(Problem('missing', name))
         elif entry.get('source') != slug:
-            problems.append(f'foreign  {name} is installed from {entry.get("source")}')
+            problems.append(Problem('foreign', name, f'is installed from {entry.get("source")}'))
         elif not re.fullmatch(r'[0-9a-f]{40}', entry.get('skillFolderHash', '')):
             # Skills CLI falls back to another hash when it cannot read the GitHub tree.
-            problems.append(f'unknown  {name} has no git tree hash in the lock; reinstall it to compare')
+            problems.append(Problem('unknown', name, 'has no git tree hash in the lock; reinstall it to compare'))
         elif entry['skillFolderHash'] != tree:
-            problems.append(f'stale    {name}')
+            problems.append(Problem('stale', name))
         shadow = arguments.claude_skills / name
         if shadow.exists() and shadow.resolve() != shared.resolve():
-            problems.append(f'shadow   {name} loads {shadow.resolve()} instead of {shared}')
+            problems.append(Problem('shadow', name, f'loads {shadow.resolve()} instead of {shared}'))
     for name, entry in sorted(installed.items()):
         if entry.get('source') == slug and name not in trees:
-            problems.append(f'retired  {name} is installed but no longer in {arguments.ref}')
+            problems.append(Problem('retired', name, f'is installed but no longer in {arguments.ref}'))
     return problems, lock
 
 
