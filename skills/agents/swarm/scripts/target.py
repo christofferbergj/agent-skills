@@ -396,7 +396,7 @@ def speed_note(fast, window, expiries):
     resets = f"{len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapse)} expiring before then"
     if not fast:
         return f'Standard speed: {under}; {resets}'
-    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. The reset guard redeems it automatically at the fallback threshold or before it expires'
+    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. The reset guard redeems it automatically before it expires, or once the week reaches the fallback threshold'
 
 
 def budgeted(effort, budget):

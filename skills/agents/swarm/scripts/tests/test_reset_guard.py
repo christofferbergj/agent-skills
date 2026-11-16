@@ -190,18 +190,25 @@ class Guard(unittest.TestCase):
         self.assertEqual((code,err),(0,''))
         self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1'])
 
-    def test_a_credit_list_shorter_than_the_count_warns_and_carries_on(self):
+    def test_a_credit_list_shorter_than_the_count_redeems_what_it_lists_then_exits_1(self):
         code,out,err=self.run_guard(reading(96,NOW+DAY,count=3))
-        self.assertEqual(code,0)
+        self.assertEqual(code,1)
         self.assertIn('Codex lists 1 of 3 banked resets',err)
         self.assertTrue(out.startswith('Redeemed'),out)
+
+    def test_banked_resets_with_only_a_short_window_exit_1(self):
+        reply=reading(98,NOW+DAY)
+        reply['rateLimits']['primary']['windowDurationMins']=300
+        code,out,err=self.run_guard(reply)
+        self.assertEqual((code,out,self.consumed()),(1,'',[]))
+        self.assertIn('no usage window a day or longer',err)
 
     def test_banked_resets_without_a_window_reset_time_exit_1(self):
         reply=reading(96,NOW+DAY)
         reply['rateLimits']['primary']['resetsAt']=None
         code,out,err=self.run_guard(reply)
         self.assertEqual((code,out,self.consumed()),(1,'',[]))
-        self.assertIn('no usage window with a reset time',err)
+        self.assertIn('no usage window a day or longer with a reset time',err)
 
     def test_the_heads_up_is_printed_once_across_runs(self):
         code,out,_=self.run_guard(reading(10,NOW+DAY))

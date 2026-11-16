@@ -11,7 +11,8 @@ redeemed. The first run that sees a lapsing reset it doesn't redeem prints a hea
 remembered in --state. Prints one line per heads-up or redeem and nothing otherwise.
 
 Exits 1, with the reason on stderr, when Codex's rate limits can't be read, hide a banked
-reset's id or expiry, or give no window a reset time while resets are banked; when a redeem
+reset's id or expiry, list fewer resets than they count, or give no window a day or longer a
+reset time while resets are banked; when a redeem
 neither resets Codex nor finds the reset already redeemed; or when --state can't be written,
 which never holds up a redeem.
 """
@@ -46,11 +47,12 @@ class Decision(NamedTuple):
 
 
 def parse_windows(result):
+    """Return the usage windows a day or longer, since a shorter window never decides a redeem."""
     limits = target.table(target.table(result).get('rateLimits'))
     windows = []
     for window in map(target.table, (limits.get('primary'), limits.get('secondary'))):
-        used = target.number(window.get('usedPercent'))
-        if used is not None:
+        used, minutes = target.number(window.get('usedPercent')), target.number(window.get('windowDurationMins'))
+        if used is not None and minutes is not None and minutes >= 1440:
             windows.append(Window(max(0, 100 - used), target.number(window.get('resetsAt'))))
     return windows
 
@@ -128,12 +130,13 @@ def main():
         print("Codex's rate limits don't state each banked reset's id and expiry.", file=sys.stderr)
         return 1
     count = target.number(result['rateLimitResetCredits'].get('availableCount'))
-    if count is not None and len(credits) < count:
+    short = count is not None and len(credits) < count
+    if short:
         print(f'Codex lists {len(credits)} of {count:g} banked resets; the others go unchecked.', file=sys.stderr)
     announced = load_announced(args.state)
     decision = decide(windows, credits, now, announced, args.redeem_when_left, args.margin_hours)
     if credits and decision.week is None:
-        print('Codex reports banked resets but no usage window with a reset time.', file=sys.stderr)
+        print('Codex reports banked resets but no usage window a day or longer with a reset time.', file=sys.stderr)
         return 1
     prefix = 'Dry run: ' if args.dry_run else ''
     for credit in decision.notices:
@@ -151,7 +154,7 @@ def main():
         except OSError as error:
             print(f'Could not save the announced resets to {args.state}: {error}.', file=sys.stderr)
             return 1
-    return code
+    return 1 if short else code
 
 
 if __name__ == '__main__':
