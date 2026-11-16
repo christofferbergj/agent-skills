@@ -16,7 +16,7 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
 window keeps two lines. Even pace: its percent left is at least the share of the window still
 to run less paceSlackHours, so a day's lead, made up by the idle night, is allowed. The floor:
-at least reservePerDay percent for each day the window still runs, capped at floorPercent, so
+at least reservePerDay percent for each day a window of a day or longer still runs, capped at floorPercent, so
 the window's last days keep enough for standard-speed work and a window that resets soon can
 still be spent down. A window under either line drops it to "default" unless a banked reset
 expires before that window resets: such a reset lapses unless redeemed now, so fast mode runs
@@ -25,7 +25,7 @@ its worth for a later week and keeps nothing fast. Below skipWhenLeft percent le
 cross-vendor target becomes run "fallback". Claude targets carry no speed. Usage comes from the
 newest snapshots in $CODEX_HOME/sessions, so the check stays local. Banked resets come from
 `codex app-server`, cached for an hour per Codex account, and are read only when a window is
-under a line.
+under a line or a cross-vendor target falls back.
 
 Codex Computer Use drives a Mac desktop, so a computer-use role on any other machine, such as
 a Linux server, is run "fallback" without reading usage, unless --on-mac says the child runs on
@@ -179,11 +179,11 @@ def even_pace(window, now, slack_hours):
 def binding_line(window, now, settings):
     """Return (percent, name) of the line fast mode keeps the window above: even pace or the floor, whichever asks for more.
 
-    Without a reset time the window has neither line and returns (None, None)."""
-    resets = number(window.get('resets_at'))
+    Without a reset time the window has neither line and returns (None, None). Only a window a day or longer keeps a floor."""
+    resets, minutes = number(window.get('resets_at')), number(window.get('window_minutes'))
     if resets is None:
         return None, None
-    floor = min(100, settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400))
+    floor = min(100, settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400)) if minutes and minutes >= 1440 else 0
     pace = even_pace(window, now, settings['paceSlackHours'])
     return (pace, 'even pace leaves') if pace is not None and pace >= floor else (floor, 'floor')
 
@@ -313,6 +313,11 @@ def lapsing(expiries, window):
     return [expiry for expiry in expiries if expiry is not None and expiry < window['resets']]
 
 
+def first_lapse(expiries, window):
+    """Return when the earliest banked reset that lapses before the window resets expires, as text."""
+    return moment(min(lapsing(expiries, window))) or 'soon'
+
+
 def check_speed(usage, read_banked):
     """Return (fast, the window furthest under its line or None, banked resets read or None).
 
@@ -362,8 +367,7 @@ def speed_note(fast, window, expiries):
     resets = f"{len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapse)} expiring before then"
     if not fast:
         return f'Standard speed: {under}; {resets}'
-    expiry = moment(min(lapse)) or 'soon'
-    return f'A banked reset expiring {expiry} keeps fast mode: {under}; {resets}. Redeem it once Codex usage runs out, and before it expires at the latest'
+    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. Redeem it once Codex usage runs out, and before it expires at the latest'
 
 
 def budgeted(effort, budget):
@@ -415,9 +419,8 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     target['usage'] = {'left': left, 'seenAt': usage['seen']}
     if left < thresholds(config)['skipWhenLeft']:
         reason, expiries = describe(left, tightest['resets']), read_banked()
-        lapse = lapsing(expiries, tightest) if expiries and tightest['resets'] is not None else []
-        if lapse:
-            reason += f'; a banked reset expiring {moment(min(lapse)) or "soon"} lapses first, so redeem it to refill Codex'
+        if expiries and tightest['resets'] is not None and lapsing(expiries, tightest):
+            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first, so redeem it to refill Codex'
         return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:

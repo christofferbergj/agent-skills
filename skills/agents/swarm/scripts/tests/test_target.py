@@ -139,6 +139,12 @@ class TargetResolution(unittest.TestCase):
         (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
         self.assertNotIn('banked reset',self.run_target('review-full')['reason'])
 
+    def test_a_window_shorter_than_a_day_keeps_no_floor(self):
+        # With a day's slack, even pace asks nothing of a 5-hour window, so only a floor could slow it.
+        self.config.write_text('{}')
+        self.log('a.jsonl',event(10,secondary={'used_percent':98,'window_minutes':300,'resets_at':NOW+4*3600}))
+        self.assertEqual(self.run_target('bug-fix',parent='codex')['serviceTier'],'priority')
+
     def test_floor_never_asks_for_more_than_the_whole_window(self):
         self.config.write_text(json.dumps({'codexUsage':{'floorPercent':1000}}))
         self.log('a.jsonl',event(0,resets=NOW+WEEK))
