@@ -46,7 +46,8 @@ class Decide(unittest.TestCase):
         self.assertEqual(guard.decide(WEEK,[],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((),None))
 
     def test_a_reset_that_outlasts_the_week_is_never_redeemed(self):
-        self.assertEqual(guard.decide(Window(0,WEEK_ENDS),[credit('a',WEEK_ENDS+HOUR)],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((),None))
+        for expires in (WEEK_ENDS,WEEK_ENDS+HOUR):
+            self.assertEqual(guard.decide(Window(0,WEEK_ENDS),[credit('a',expires)],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((),None),expires)
 
     def test_a_lapsing_reset_with_plenty_left_gets_one_heads_up(self):
         lapsing=credit('a',NOW+DAY)
