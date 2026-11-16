@@ -48,8 +48,8 @@ Standing rules:
 <standing-rules.md in full>
 Decisions:
 <each project.md decision this unit needs, one line each, ending `[assumed]` on any the user didn't make>
-Pstack: unless a standing rule names another flow, invoke /pstack-mode now, by name or by reading <the installed path of /pstack-mode's SKILL.md>. The mode and its Non-negotiables are on for every task in this thread, later sends and Babysit passes included.
-Build: run the unit through that flow's playbook that fits. Code ends at a draft PR through /pstack-mode's Opening a PR playbook; a research question ends at its report and opens no PR.
+Pstack: unless a standing rule names another flow, invoke /pstack-mode now, by name or by reading <the installed path of /pstack-mode's SKILL.md>, and keep the mode and its Non-negotiables on for every task in this thread, later sends and Babysit passes included.
+Build: run the unit through the playbook that fits. Code ends at a draft PR through the Opening a PR playbook; a research question ends at its report and opens no PR.
 You own this branch or stack: push each layer as soon as it builds so checks start on it, and rebase and restack it yourself. The coordinator owns every PR watch and every merge: call no `watch_pull_request`, and merge only on a go the coordinator quotes to you.
 At a call you can't make, stop and end with it undecided: a yes-or-no question, the problem and for whom, your pick and its source, and the evidence.
 List each lesson a sibling worker should know under `## Learnings` in your report.
