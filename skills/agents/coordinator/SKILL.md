@@ -34,7 +34,7 @@ A unit waits on another branch only for what it can't build or check on today's 
 
 Start each worker with `delegate_task`: the title `◇ <project> · <unit>`, `isolation: "worktree"`, `mode: "async"`, a stable `clientRequestId`, `role` `implementation` or `research`, and the brief below. Resolve its target through /swarm's `long-running` role, since a worker's thread runs for hours; the delegates it starts resolve their own roles by the playbook its unit runs. Record its thread link and `taskId` in Workers. A unit that needs another machine's tools runs there as [across machines](references/across-machines.md#a-worker-on-another-machine) describes.
 
-For one-PR delivery, replace the brief's Build and branch-ownership lines with the ticket or integrator variant in [one-PR delivery](references/one-pr.md); keep its reporting and user-call contract.
+For one-PR delivery, replace the brief's Build and branch-ownership lines with the ticket or integrator variant in [one-PR delivery](references/one-pr.md); keep its Pstack line and its reporting and user-call contract.
 
 The brief is the worker's whole context. A research brief names the question and the evidence that decides it, and leaves the answer to the worker: a guess it must include is marked a hypothesis to refute.
 
@@ -48,7 +48,8 @@ Standing rules:
 <standing-rules.md in full>
 Decisions:
 <each project.md decision this unit needs, one line each, ending `[assumed]` on any the user didn't make>
-Build: unless a standing rule names another flow, read <the installed path of /pstack-mode's SKILL.md> and run the unit through its playbook that fits. Code ends at a draft PR through its Opening a PR playbook; a research question ends at its report and opens no PR.
+Pstack: unless a standing rule names another flow, invoke /pstack-mode now, by name or by reading <the installed path of /pstack-mode's SKILL.md>. The mode and its Non-negotiables are on for every task in this thread, later sends and Babysit passes included.
+Build: run the unit through that flow's playbook that fits. Code ends at a draft PR through /pstack-mode's Opening a PR playbook; a research question ends at its report and opens no PR.
 You own this branch or stack: push each layer as soon as it builds so checks start on it, and rebase and restack it yourself. The coordinator owns every PR watch and every merge: call no `watch_pull_request`, and merge only on a go the coordinator quotes to you.
 At a call you can't make, stop and end with it undecided: a yes-or-no question, the problem and for whom, your pick and its source, and the evidence.
 List each lesson a sibling worker should know under `## Learnings` in your report.

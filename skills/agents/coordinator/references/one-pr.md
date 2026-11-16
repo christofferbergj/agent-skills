@@ -16,7 +16,7 @@ Replace both the Build and branch-ownership lines of the standard brief. Paste t
 **Ticket writer**:
 
 ```text
-Build: read <pstack-mode SKILL.md> and run the fitting playbook against this ticket's accepted scope. Start <ticket branch> from integration <branch>@<base SHA>, verifying the actual worktree base. Implement this ticket directly, dispatching no code writers. Request independent execution verifiers or probes from the coordinator; only bounded read-only review delegates are allowed. Stop at a checked, pushed commit; skip Opening a PR and per-ticket /review-loop. Return proposed canonical-document edits for coordinator reconciliation.
+Build: run the fitting /pstack-mode playbook against this ticket's accepted scope. Start <ticket branch> from integration <branch>@<base SHA>, verifying the actual worktree base. Implement this ticket directly, dispatching no code writers. Request independent execution verifiers or probes from the coordinator; only bounded read-only review delegates are allowed. Stop at a checked, pushed commit; skip Opening a PR and per-ticket /review-loop. Return proposed canonical-document edits for coordinator reconciliation.
 Ownership: write only this ticket branch and its scoped files. Before reporting, merge the current checked integration tip into this branch, rerun ticket checks, and push. Report base, result SHA, checks and their outputs. Open no PR, create no stack or watch, and merge nothing into the integration branch or delivery target.
 ```
 
