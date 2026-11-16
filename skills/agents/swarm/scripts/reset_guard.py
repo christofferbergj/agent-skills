@@ -12,9 +12,8 @@ remembered in --state. Prints one line per heads-up or redeem and nothing otherw
 
 Exits 1, with the reason on stderr, when Codex's rate limits can't be read, hide a banked
 reset's id or expiry, list fewer resets than they count, or give no window a day or longer a
-reset time while resets are banked; when a redeem
-neither resets Codex nor finds the reset already redeemed; or when --state can't be written,
-which never holds up a redeem.
+reset time while a banked reset could expire; when a redeem neither resets Codex nor finds the
+reset already redeemed; or when --state can't be written, which never holds up a redeem.
 """
 
 from __future__ import annotations
@@ -135,8 +134,8 @@ def main():
         print(f'Codex lists {len(credits)} of {count:g} banked resets; the others go unchecked.', file=sys.stderr)
     announced = load_announced(args.state)
     decision = decide(windows, credits, now, announced, args.redeem_when_left, args.margin_hours)
-    if credits and decision.week is None:
-        print('Codex reports banked resets but no usage window a day or longer with a reset time.', file=sys.stderr)
+    if decision.week is None and any(credit.kind == target.CODEX_RESET and credit.expires is not None and credit.expires > now for credit in credits):
+        print('Codex reports a banked reset that could expire but no usage window a day or longer with a reset time.', file=sys.stderr)
         return 1
     prefix = 'Dry run: ' if args.dry_run else ''
     for credit in decision.notices:

@@ -203,6 +203,11 @@ class Guard(unittest.TestCase):
         self.assertEqual((code,out,self.consumed()),(1,'',[]))
         self.assertIn('no usage window a day or longer',err)
 
+    def test_a_never_expiring_reset_with_only_a_short_window_is_quiet(self):
+        reply=reading(98,None)
+        reply['rateLimits']['primary']['windowDurationMins']=300
+        self.assertEqual(self.run_guard(reply)[:2],(0,''))
+
     def test_banked_resets_without_a_window_reset_time_exit_1(self):
         reply=reading(96,NOW+DAY)
         reply['rateLimits']['primary']['resetsAt']=None
