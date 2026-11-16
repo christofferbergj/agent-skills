@@ -183,7 +183,7 @@ def binding_line(window, now, settings):
     resets = number(window.get('resets_at'))
     if resets is None:
         return None, None
-    floor = min(settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400))
+    floor = min(100, settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400))
     pace = even_pace(window, now, settings['paceSlackHours'])
     return (pace, 'even pace leaves') if pace is not None and pace >= floor else (floor, 'floor')
 
@@ -363,7 +363,7 @@ def speed_note(fast, window, expiries):
     if not fast:
         return f'Standard speed: {under}; {resets}'
     expiry = moment(min(lapse)) or 'soon'
-    return f'A banked reset expiring {expiry} keeps fast mode: {under}; {resets}. Redeem it before it expires if Codex usage runs out'
+    return f'A banked reset expiring {expiry} keeps fast mode: {under}; {resets}. Redeem it once Codex usage runs out, and before it expires at the latest'
 
 
 def budgeted(effort, budget):
@@ -414,7 +414,11 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     left = round(tightest['left'])
     target['usage'] = {'left': left, 'seenAt': usage['seen']}
     if left < thresholds(config)['skipWhenLeft']:
-        return {'role': role, 'run': 'fallback', 'reason': describe(left, tightest['resets']), 'usage': target['usage']}
+        reason, expiries = describe(left, tightest['resets']), read_banked()
+        lapse = lapsing(expiries, tightest) if expiries and tightest['resets'] is not None else []
+        if lapse:
+            reason += f'; a banked reset expiring {moment(min(lapse)) or "soon"} lapses first, so redeem it to refill Codex'
+        return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:
         target['usage']['bankedResets'] = len(expiries)

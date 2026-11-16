@@ -20,7 +20,7 @@
 - Panel role lists and the arena cross-judge pool are not configured here: /swarm seats each panel on the parent model and the counterpart, and the judge on the counterpart. Single-model roles live under the host section's `roles` entry, with the defaults the library-wide model roles adaptation sets.
 - Writes no `# defaults: 2` marker and migrates no old default values: the file holds only the user's overrides and a schema version, and /swarm's defaults live in `target.py`, so a default change reaches the user without a rerun.
 - Keeps credentials in the providers' stores.
-- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex pace slack and fallback threshold. /swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route. Step 2 drops every saved entry /swarm's `scripts/target.py --help` doesn't list, apart from the schema version and source location, beside upstream's retired roles, because those keys are local and the helper ignores unlisted ones silently.
+- Asks for the counterpart reviewer's provider instance, model, full and delta effort, and speed, the Computer Use delegate's settings, and the Codex pace slack, floor, and fallback threshold. /swarm's `scripts/target.py` resolves them on every route; only the provider instance is specific to its T3 route. Step 2 drops every saved entry /swarm's `scripts/target.py --help` doesn't list, apart from the schema version and source location, beside upstream's retired roles, because those keys are local and the helper ignores unlisted ones silently.
 
 ## Maintenance
 

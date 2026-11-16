@@ -111,7 +111,7 @@ class TargetResolution(unittest.TestCase):
         self.credits=[MIDWEEK+1,NOW+WEEK//20]
         note=self.run_target('review-full')['note']
         self.assertIn(f'A banked reset expiring {target.moment(NOW+WEEK//20)} keeps fast mode',note)
-        self.assertIn(f'under the 50% even pace leaves; 2 banked resets, 1 expiring before then. Redeem it before it expires',note)
+        self.assertIn(f'under the 50% even pace leaves; 2 banked resets, 1 expiring before then. Redeem it once Codex usage runs out',note)
 
     def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
@@ -134,6 +134,15 @@ class TargetResolution(unittest.TestCase):
             self.log('a.jsonl',event(used,resets=NOW+2*DAY))
             result=self.run_target('review-full')
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
+        self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first, so redeem it',result['reason'])
+        self.credits=[NOW+3*DAY]
+        (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
+        self.assertNotIn('banked reset',self.run_target('review-full')['reason'])
+
+    def test_floor_never_asks_for_more_than_the_whole_window(self):
+        self.config.write_text(json.dumps({'codexUsage':{'floorPercent':1000}}))
+        self.log('a.jsonl',event(0,resets=NOW+WEEK))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
 
     def test_native_codex_roles_have_no_fallback_and_stay_fast_on_a_lapsing_reset(self):
         self.credits=[NOW+DAY]
