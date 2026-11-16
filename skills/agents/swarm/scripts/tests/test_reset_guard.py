@@ -82,7 +82,7 @@ for line in sys.stdin:
     elif message.get('method') == 'account/rateLimitResetCredit/consume':
         with open(os.environ['FAKE_LOG'], 'a') as log:
             log.write(json.dumps(message['params']) + '\\n')
-        print(json.dumps({'id': message['id'], 'result': {'outcome': 'reset'}}), flush=True)
+        print(os.environ.get('FAKE_CONSUME', '{"id": "ID", "result": {"outcome": "reset"}}').replace('"ID"', str(message['id'])), flush=True)
 '''
 
 
@@ -110,10 +110,12 @@ class Guard(unittest.TestCase):
     def tearDown(self):
         self.directory.cleanup()
 
-    def run_guard(self,reply,*extra):
+    def run_guard(self,reply,*extra,consume=None):
         read=reply if isinstance(reply,str) else json.dumps({'id':'ID','result':reply})
         out,err=StringIO(),StringIO()
         env={'PATH':f"{self.dir}:{os.environ['PATH']}",'FAKE_READ':read,'FAKE_LOG':str(self.log),'PSTACK_CONFIG':str(self.config)}
+        if consume is not None:
+            env['FAKE_CONSUME']=consume if isinstance(consume,str) else json.dumps({'id':'ID','result':consume})
         with patch.dict(os.environ,env),patch.object(sys,'argv',['reset_guard.py','--state',str(self.state),*extra]),patch.object(guard.time,'time',return_value=NOW),redirect_stdout(out),redirect_stderr(err):
             code=guard.main()
         return code,out.getvalue(),err.getvalue()
@@ -126,6 +128,18 @@ class Guard(unittest.TestCase):
         self.assertEqual(code,0)
         self.assertEqual(self.consumed(),[{'creditId':'credit-1','idempotencyKey':'reset-guard:credit-1'}])
         self.assertEqual(out,f'Redeemed the banked Codex reset expiring {guard.target.moment(NOW+DAY)}: 4% was left of the week ending {guard.target.moment(WEEK_ENDS)}.\n')
+
+    def test_a_redeem_that_does_not_reset_codex_exits_1(self):
+        for consume in ({'outcome':'noCredit'},{'outcome':'nothingToReset'},{'outcome':'cooldown_active'},{},json.dumps({'id':'ID','error':{'code':-32000,'message':'boom'}})):
+            code,out,err=self.run_guard(reading(96,NOW+DAY),consume=consume)
+            self.assertEqual((code,out),(1,''),consume)
+            self.assertTrue(err.startswith('Could not redeem the banked Codex reset expiring'),err)
+        self.assertEqual(len(self.consumed()),5)
+
+    def test_a_reset_already_redeemed_exits_0(self):
+        code,out,err=self.run_guard(reading(96,NOW+DAY),consume={'outcome':'alreadyRedeemed'})
+        self.assertEqual((code,err),(0,''))
+        self.assertTrue(out.startswith('Codex had already redeemed the banked Codex reset expiring'),out)
 
     def test_dry_run_neither_redeems_nor_writes_state(self):
         code,out,_=self.run_guard(reading(96,NOW+DAY),'--dry-run')

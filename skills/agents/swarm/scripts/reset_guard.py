@@ -9,7 +9,8 @@ within --margin-hours; at most one per run. A shorter window running low never t
 a redeem. Resets that never expire or outlast the week, and resets of another type, are never
 redeemed. The first run that sees a
 lapsing reset prints a heads-up, remembered in --state. Prints one line per heads-up or redeem
-and nothing otherwise. Exits 1 when Codex's app-server can't be read or the redeem fails.
+and nothing otherwise. Exits 1 when Codex's app-server can't be read or a redeem neither resets
+Codex nor finds the reset already redeemed.
 """
 
 from __future__ import annotations
@@ -129,11 +130,15 @@ def main():
         print(f'Dry run: would redeem {summary}.')
         return 0
     reply = target.app_server_call('account/rateLimitResetCredit/consume', {'creditId': decision.redeem.id, 'idempotencyKey': f'reset-guard:{decision.redeem.id}'}, CALL_TIMEOUT, CLIENT)
-    outcome = target.text(target.table(reply).get('outcome'))
-    if outcome is None:
-        print(f'Could not redeem {summary}.', file=sys.stderr)
+    outcome = target.table(reply).get('outcome')
+    if outcome == 'reset':
+        print(f'Redeemed {summary}.')
+    elif outcome == 'alreadyRedeemed':
+        print(f'Codex had already redeemed {summary}.')
+    else:
+        detail = 'codex app-server gave no result' if reply is None else f'Codex answered {json.dumps(outcome)}'
+        print(f'Could not redeem {summary}: {detail}.', file=sys.stderr)
         return 1
-    print(f'Redeemed {summary}.' if outcome == 'reset' else f'Redeeming {summary} returned {outcome}.')
     return 0
 
 
