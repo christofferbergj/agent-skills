@@ -7,9 +7,9 @@
 - Original skill: [`pstack/skills/teach/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/teach/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Last upstream review: 2026-10-21.
+- Reviewed through commit: `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7`.
+- Fidelity checked through: `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7`.
+- Last upstream review: 2026-11-16.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -30,3 +30,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                                                                                                                               |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8`. First fidelity check: the local skill was a rewrite that dropped most upstream rules, including the build-up diagram series, the framing-label and pacing bans, the `why` narrowing contract, the target-density style rules, and the Reply line, and added an unrecorded change-on-request exception. Restored the upstream body with installed names, swarm delegation, and an image-tool condition; recorded the model-invoked mode. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                                      |
+| 2026-11-16  | `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7` | Adopted upstream's removal of step 2's /why narrowing sentences (the slow full sweep and recorded skipped categories), which the one-file /why no longer has. Kept "Keep /why's confidence language intact", as upstream does. The /swarm and image-tool divergence still holds. Fidelity check passes in both directions.                                                                                                                                                  |

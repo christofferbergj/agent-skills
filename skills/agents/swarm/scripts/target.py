@@ -9,7 +9,7 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
      "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                      "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
-     "roles": {"how-explorer": {"model": "haiku", "effort": "low"}}},
+     "roles": {"swarm-workers": {"model": "haiku", "effort": "low"}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
@@ -28,7 +28,8 @@ a linked macOS machine.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host: fast-code on the host's fast model
-(Sonnet in Claude Code; Codex keeps its own model), the rest on the parent's model. A
+(Sonnet in Claude Code; Codex keeps its own model), hardest-tasks on Fable in Claude Code
+(Codex keeps its own model), the rest on the parent's model. A
 native Codex role runs fast while Codex usage allows, and Claude never runs fast. Native
 roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
 divergent, synthesizer", and fast-code names its "fast code model". long-running, the one
@@ -59,11 +60,13 @@ CROSS_VENDOR_ROLES = {
     'computer-use': ('computerUse', 'routine', 'medium'),
     'computer-use-hard': ('computerUse', 'hard', 'high'),
 }
-# Native roles: trivial edits run fast; exploration, collection, tooling review, check runs, code,
-# judgment, prose, and synthesis keep the parent's model.
+# Native roles: trivial edits run fast, the hardest changes run on Claude Code's strongest model, and
+# exploration, collection, tooling review, check runs, code, judgment, prose, and synthesis keep the
+# parent's model.
 FAST_ROLES = {'fast-code'}
-PARENT_ROLES = {'how-explorer', 'why-investigators', 'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'how-explainer', 'why-synthesizer', 'reflect-judgment', 'long-running'}
+PARENT_ROLES = {'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'reflect-judgment', 'long-running'}
 FAST_MODEL = {'claude-code': 'sonnet'}
+HARDEST_MODEL = {'claude-code': 'fable'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
 THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24}
 # Bounds that keep the usage scan to a few small reads.
@@ -331,7 +334,7 @@ def resolve_native(parent, role, config, usage, read_banked, now):
     entry = table(table(table(config.get(parent)).get('roles')).get(role))
     model = text(entry.get('model'))
     if model is None:
-        model = FAST_MODEL.get(parent) if role in FAST_ROLES else None
+        model = FAST_MODEL.get(parent) if role in FAST_ROLES else HARDEST_MODEL.get(parent) if role == 'hardest-tasks' else None
     elif model in ('inherit-parent', 'auto'):
         model = None
     effort = text(entry.get('effort'))

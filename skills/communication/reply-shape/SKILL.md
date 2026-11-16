@@ -13,7 +13,7 @@ The user gives each reply a glance, and what isn't on screen is forgotten. Write
 Four parts, in order; skip an empty one. A skill's own report fills them: its verdict is the headline, what it needs from the user goes in rows, and its evidence in the fold.
 
 1. **Headline**: the first line, at most 12 words. Open with a marker, then the outcome in bold, in terms of what the user asked for, not the code you changed. The marker says whether the user is needed: ✅ done and nothing needs them, 🟡 a decision or a risk, 🔴 broken or blocked on them, ⏳ still working. On multi-step work, name the step. An answer to a question is the headline: your pick for a which-or-whether question, else a best guess in concrete units and how sure you are. A waiting line opens with ⏳ and names what it waits on, how long it has run, and time left only when measured: "⏳ **CI on #12, 6 min in.**" Mid-turn it also names what comes next.
-2. **Fact table** for one subject: two columns, right under the headline, none when the whole point is one sentence. A report on several things gets **items** instead: a list item per PR, finding, option, or job, its name in bold and a clause of at most 12 words, details under it or in the fold, grouped by the thing, findings under **Must fix**, then **Cleanups**.
+2. **Fact table** for one subject: two columns, right under the headline, none when the whole point is one sentence. A report on several things gets **items** instead: a list item per PR, finding, option, or job, its name in bold and a clause of at most 12 words, details under it or in the fold, grouped by the thing, findings under **Must fix**, **Cleanups**, then **Optional**.
    - **Header row**: the subject: a PR with what it changes, its state, and size, or one word, such as Change, then the point.
    - **Rows**: at most five `label | value` rows of at most 20 words a value, the header's too. The label is one word: Risk, Unsure (what you couldn't check), Why, Effect (measured), Proof (checks or how to see it), Undo, Skipped, Queued, a decision's Pick, Source, and Cost, and the user items below. Risk and Unsure come first, each value opening with ⚠️.
 3. **View**: only what the table can't hold, in its own block under it, by Views.
@@ -25,7 +25,7 @@ User items are rows, or a line under their item:
 - **Review**: an interface or a draft that waits only for the user's look, shown as the view. A draft that goes out on their yes takes the card's Message view.
 - **Do**: a login, device step, or payment, with why you can't do it, its steps numbered below. Show it once, in the reply that first needs it.
 
-**Budget**: prose outside the table, up to six items, and view stays under 60 words; a fact that fits no row goes in the fold. Drafts, steps, the fold, and the ending don't count.
+**Budget**: up to six items; other prose, lines under items too, and the view stay under 60 words; a fact that fits no row goes in the fold. Drafts, steps, the fold, and the ending don't count.
 
 ```markdown
 ✅ **Exports no longer time out on big companies.**
@@ -47,8 +47,8 @@ When the reply exists to get a decision that shapes code or the plan, or the use
 3. **One view** under it, for the kind of call:
    - **Design**: the pick's interface, data shape, or diff, with a call site.
    - **Product**: what the customer sees, and how many it reaches, counted from real data.
-   - **Message**: the header row is `To`, not Problem, then who gets it; Cost is what it commits the user to; the draft follows in full, in their voice.
-   - **Ship gate**: the header row is the PR, then what it changes for users rather than its title, its state and size, and the thread that made it if another did. Risk rows hold each warning, Proof the checks and restack state, and Undo the rollback only when a revert won't do. The `You accept` view gives each PR's New, Changes, Edits, Goes live and who runs it, and Left out, `none` when empty. Several PRs share a `Stack` table in merge order, a view column each, or a table each past three.
+   - **Message**: the header row is `To`, then who gets it; Cost is what it commits the user to; the draft follows in full, in their voice.
+   - **Ship gate**: the header row is the PR, then what it changes for users rather than its title, its state and size, and the thread that made it if another did. Risk rows hold each warning, Proof the checks and restack state, and Undo the rollback only when a revert won't do. The `You accept` view gives each PR's New (didn't exist), Changes (behavior), Edits (files), Goes live and who runs it, and Left out, each `none` if empty. Several PRs share a `Stack` table in merge order, a view column each, or a table each past three.
    - **UI**: the screenshot or recording, and the one thing to judge as a Review row.
    - **Stuck**, a check failing after two fixes: each fix and why it failed, and what the premise test showed as Why.
 4. **One fold** for the proof, the other options, and the sources.
