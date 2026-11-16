@@ -124,14 +124,14 @@ def main():
     if not isinstance(result, dict):
         print('Could not read Codex rate limits from codex app-server.', file=sys.stderr)
         return 1
-    windows, credits = parse_windows(result), target.banked_credits(result)
-    if credits is None:
+    banked = target.banked_credits(result)
+    if banked is None:
         print("Codex's rate limits don't state each banked reset's id and expiry.", file=sys.stderr)
         return 1
-    count = target.number(result['rateLimitResetCredits'].get('availableCount'))
-    short = count is not None and len(credits) < count
+    windows, credits = parse_windows(result), banked.credits
+    short = banked.short
     if short:
-        print(f'Codex lists {len(credits)} of {count:g} banked resets; the others go unchecked.', file=sys.stderr)
+        print(f'Codex lists {len(credits)} of {banked.count:g} banked resets; the others go unchecked.', file=sys.stderr)
     announced = load_announced(args.state)
     decision = decide(windows, credits, now, announced, args.redeem_when_left, args.margin_hours)
     if decision.week is None and any(credit.kind == target.CODEX_RESET and credit.expires is not None and credit.expires > now for credit in credits):

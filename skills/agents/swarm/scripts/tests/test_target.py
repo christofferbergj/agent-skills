@@ -389,8 +389,12 @@ class BankedCredits(unittest.TestCase):
 
     def test_available_rows_become_credits(self):
         rows=[self.ROW,{**self.ROW,'id':'b','resetType':'otherLimits','expiresAt':None},{'status':'used'},{'id':'d','status':'expired','expiresAt':NOW-1}]
-        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':2,'credits':rows}}),[('a','codexRateLimits',NOW),('b','otherLimits',None)])
-        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':0}}),[])
+        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':2,'credits':rows}}),([('a','codexRateLimits',NOW),('b','otherLimits',None)],2))
+        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':0}}),([],0))
+
+    def test_a_list_shorter_than_the_count_is_short(self):
+        for count,short in [(1,False),(2,True),(None,False)]:
+            self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':count,'credits':[self.ROW]}}).short,short,count)
 
     def test_a_reply_that_hides_an_available_resets_id_or_expiry_is_unreadable(self):
         expiry_missing={key:value for key,value in self.ROW.items() if key!='expiresAt'}
