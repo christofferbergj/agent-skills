@@ -16,7 +16,8 @@ target=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(target)
 
 NOW=1_800_000_000
-WEEK=7*24*3600
+DAY=24*3600
+WEEK=7*DAY
 # Half the weekly window is still to run, so without slack even pace leaves 50%.
 MIDWEEK=NOW+WEEK//2
 # The thresholds differ from the script's defaults, so a resolver that ignored them would fail.
@@ -80,12 +81,12 @@ class TargetResolution(unittest.TestCase):
 
     def test_pace_slack_allows_a_lead_and_defaults_to_a_day(self):
         # One day into the week, 20% used is behind pace without slack but within a day's lead.
-        self.log('a.jsonl',event(20,resets=NOW+6*24*3600))
+        self.log('a.jsonl',event(20,resets=NOW+6*DAY))
         self.credits=[]
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':10}}))
         self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
-        self.log('a.jsonl',event(30,resets=NOW+6*24*3600))
+        self.log('a.jsonl',event(30,resets=NOW+6*DAY))
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
 
     def test_behind_pace_note_names_the_window_and_the_banked_resets(self):
@@ -95,17 +96,66 @@ class TargetResolution(unittest.TestCase):
         self.assertIn('40% left until',note)
         self.assertIn('under the 50% even pace leaves; 0 banked resets',note)
 
-    def test_banked_resets_keep_fast_mode_in_full_when_they_outlast_the_window_and_pro_rata_before(self):
-        # 40% left at midweek is 10 points behind pace; a reset lapsing within a tenth of the time left covers them.
+    def test_only_a_banked_reset_that_lapses_before_the_window_resets_keeps_fast_mode(self):
+        # 40% left at midweek is 10 points behind pace. A reset that outlasts the window is worth a later week.
         self.log('a.jsonl',event(60,resets=MIDWEEK))
-        for credits,tier in [([None],'priority'),([MIDWEEK+1],'priority'),([NOW+WEEK//20],'priority'),([NOW+WEEK//40],'default'),([NOW-1],'default')]:
+        for credits,tier in [([None],'default'),([MIDWEEK+1],'default'),([MIDWEEK-1],'priority'),([NOW+WEEK//40],'priority'),([NOW-1],'default')]:
             self.credits=credits
             result=self.run_target('review-full')
             (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
             self.assertEqual(result['serviceTier'],tier,credits)
         self.assertEqual(result['usage']['bankedResets'],0)
-        self.credits=[None]
-        self.assertIn('Banked resets keep fast mode',self.run_target('review-full')['note'])
+        self.credits=[MIDWEEK+1]
+        self.assertIn('Standard speed: Codex usage 40% left',self.run_target('review-full')['note'])
+        (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
+        self.credits=[MIDWEEK+1,NOW+WEEK//10,NOW+WEEK//20,NOW+WEEK//8]
+        note=self.run_target('review-full')['note']
+        self.assertIn('A banked reset expiring 2027-01-15T16:24Z keeps fast mode',note)
+        self.assertIn(f'under the 50% even pace leaves; 4 banked resets, 3 expiring before then. Redeem it once Codex usage runs out',note)
+
+    def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
+        self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
+        self.credits=[]
+        # Two days out, even pace with a day's slack asks for 14%, so the 25% floor decides; half a day out it asks for 7.5%.
+        for used,resets,tier in [(70,NOW+2*DAY,'priority'),(80,NOW+2*DAY,'default'),(90,NOW+DAY//2,'priority'),(94,NOW+DAY//2,'default')]:
+            self.log('a.jsonl',event(used,resets=resets))
+            result=self.run_target('review-full')
+            self.assertEqual(result['serviceTier'],tier,used)
+        self.assertIn('under the 8% floor; 0 banked resets, 0 expiring before then',result['note'])
+        self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5,'floorPercent':20,'reservePerDay':10}}))
+        for used,resets in [(80,NOW+2*DAY),(94,NOW+DAY//2)]:
+            self.log('a.jsonl',event(used,resets=resets))
+            self.assertEqual(self.run_target('review-full')['serviceTier'],'priority',used)
+
+    def test_a_lapsing_reset_runs_fast_mode_below_the_floor_to_the_fallback(self):
+        self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
+        self.credits=[NOW+DAY]
+        for used,run,tier in [(90,'codex','priority'),(96,'fallback',None)]:
+            self.log('a.jsonl',event(used,resets=NOW+2*DAY))
+            result=self.run_target('review-full')
+            self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
+        self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first, so redeem it',result['reason'])
+        for credits,resets in [([NOW+3*DAY],NOW+2*DAY),([NOW+DAY],'soon')]:
+            self.credits=credits
+            self.log('a.jsonl',event(96,resets=resets))
+            (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
+            self.assertNotIn('banked reset',self.run_target('review-full')['reason'],resets)
+
+    def test_a_window_shorter_than_a_day_keeps_no_floor(self):
+        # With a day's slack, even pace asks nothing of a 5-hour window, so only a floor could slow it.
+        self.config.write_text('{}')
+        self.log('a.jsonl',event(10,secondary={'used_percent':98,'window_minutes':300,'resets_at':NOW+4*3600}))
+        self.assertEqual(self.run_target('bug-fix',parent='codex')['serviceTier'],'priority')
+
+    def test_floor_never_asks_for_more_than_the_whole_window(self):
+        self.config.write_text(json.dumps({'codexUsage':{'floorPercent':1000}}))
+        self.log('a.jsonl',event(0,resets=NOW+WEEK))
+        self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
+
+    def test_native_codex_roles_have_no_fallback_and_stay_fast_on_a_lapsing_reset(self):
+        self.credits=[NOW+DAY]
+        self.log('a.jsonl',event(96,resets=NOW+2*DAY))
+        self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
     def test_unknown_banked_resets_leave_a_window_behind_pace_at_standard_speed(self):
         self.log('a.jsonl',event(60,resets=MIDWEEK))
@@ -131,7 +181,7 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.fetches,2)
 
     def test_banked_resets_are_cached_per_codex_account(self):
-        self.credits=[None]
+        self.credits=[NOW+DAY]
         self.log('a.jsonl',event(60,resets=MIDWEEK))
         (self.home/'auth.json').write_text(json.dumps({'tokens':{'account_id':'account-a'}}))
         self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
@@ -140,8 +190,8 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
         self.assertEqual(self.fetches,2)
 
-    def test_every_window_behind_pace_must_be_covered(self):
-        # The reset outlasts the 5-hour window but lapses a tenth of the way to the weekly reset.
+    def test_every_window_under_its_line_needs_a_lapsing_reset(self):
+        # The reset lapses before the weekly reset but outlasts the 5-hour window, so it covers only the weekly one.
         self.credits=[NOW+WEEK//20]
         self.log('a.jsonl',event(70,resets=MIDWEEK,secondary={'used_percent':70,'window_minutes':300,'resets_at':NOW+9000}))
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
@@ -153,7 +203,7 @@ class TargetResolution(unittest.TestCase):
         result=self.run_target('review-full')
         self.assertEqual((result['serviceTier'],result['usage']['left']),('priority',80))
 
-    def test_any_window_behind_pace_decides(self):
+    def test_any_window_under_its_line_decides(self):
         self.log('a.jsonl',event(10,secondary={'used_percent':70,'window_minutes':300,'resets_at':NOW+9000}))
         result=self.run_target('review-full')
         self.assertEqual((result['usage']['left'],result['serviceTier']),(30,'default'))
