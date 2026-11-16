@@ -110,11 +110,12 @@ def main():
     if arguments.refresh and install_command(slug, agents) and outdated(problems):
         failures = install(install_command(slug, agents))
         problems, lock = check(arguments, slug, trees)
-        retry = sorted(set(outdated(problems)) | {skill for skill, _ in failures if skill})
-        if retry or failures:
+        named = {skill for skill, _ in failures if skill}
+        retry = ['*'] if any(skill is None for skill, _ in failures) else sorted(set(outdated(problems)) | named)
+        if retry:
             # GitHub can serve the previous tree for a short while after a merge.
             time.sleep(arguments.retry_delay)
-            failures = install(install_command(slug, agents, retry or ('*',)))
+            failures = install(install_command(slug, agents, retry))
             problems, lock = check(arguments, slug, trees)
     problems += [f'failed   {skill or "install"}: {" ".join(reason.split())}' for skill, reason in failures]
 

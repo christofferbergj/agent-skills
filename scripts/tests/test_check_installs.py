@@ -17,7 +17,8 @@ OLD_TREE = '0' * 40
 # Names under `lag` stay stale for that many calls, as GitHub can serve the
 # previous tree. Names under `fail` are written to the lock but reported failed
 # for that many calls, as the CLI does when one agent's target fails. With
-# `text_exit`, it prints the failures as text and exits with that code instead.
+# `text_exit`, it prints the failures as text and exits with that code instead,
+# for the first `text_calls` calls when that is set.
 FAKE_NPX = textwrap.dedent('''\
     #!/usr/bin/env python3
     import json, os, sys
@@ -45,7 +46,7 @@ FAKE_NPX = textwrap.dedent('''\
     lock_path.write_text(json.dumps(lock))
     state_path.write_text(json.dumps(state))
     failed = [entry for entry in report if entry['status'] == 'failed']
-    if state['text_exit'] is not None:
+    if state['text_exit'] is not None and len(state['calls']) <= (state['text_calls'] or len(state['calls'])):
         for entry in failed:
             print(f"Failed to install {entry['name']} for cursor: {entry['error']}")
         sys.exit(state['text_exit'])
@@ -100,12 +101,12 @@ class Refresh(unittest.TestCase):
     def git(self, *args):
         return subprocess.run(['git', '-C', str(self.repo), *args], stdout=subprocess.PIPE, text=True, check=True).stdout
 
-    def install(self, hashes, lag=None, fail=None, text_exit=None, agents=('claude-code', 'codex')):
+    def install(self, hashes, lag=None, fail=None, text_exit=None, text_calls=None, agents=('claude-code', 'codex')):
         skills = {name: {'source': SLUG, 'skillFolderHash': tree} for name, tree in hashes.items()}
         self.lock.write_text(json.dumps({'skills': skills, 'lastSelectedAgents': list(agents)}))
         self.state.write_text(json.dumps({
             'calls': [], 'lock': str(self.lock), 'slug': SLUG, 'trees': self.trees,
-            'lag': lag or {}, 'fail': fail or {}, 'text_exit': text_exit,
+            'lag': lag or {}, 'fail': fail or {}, 'text_exit': text_exit, 'text_calls': text_calls,
         }))
 
     def run_check(self, *extra):
@@ -171,6 +172,13 @@ class Refresh(unittest.TestCase):
                 self.assertEqual(code, 1, output)
                 self.assertIn('Failed to install alpha for cursor: EACCES', output)
                 self.assertEqual(self.calls(), [refresh('*'), refresh('*')])
+
+    def test_refresh_retries_every_skill_after_a_failure_it_cannot_name(self):
+        self.install({'alpha': OLD_TREE, 'beta': OLD_TREE}, lag={'beta': 1}, fail={'alpha': 2}, text_exit=0, text_calls=1)
+        code, output = self.run_check('--refresh')
+        self.assertEqual(code, 1, output)
+        self.assertIn('failed   alpha: EACCES: permission denied, symlink alpha', output)
+        self.assertEqual(self.calls(), [refresh('*'), refresh('*')])
 
     def test_refresh_installs_nothing_when_every_skill_matches(self):
         self.install(self.trees)
