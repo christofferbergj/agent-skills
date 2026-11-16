@@ -111,7 +111,7 @@ class TargetResolution(unittest.TestCase):
         self.credits=[MIDWEEK+1,NOW+WEEK//10,NOW+WEEK//20,NOW+WEEK//8]
         note=self.run_target('review-full')['note']
         self.assertIn('A banked reset expiring 2027-01-15T16:24Z keeps fast mode',note)
-        self.assertIn(f'under the 50% even pace leaves; 4 banked resets, 3 expiring before then. The reset guard redeems it automatically',note)
+        self.assertIn(f'under the 50% even pace leaves; 4 banked resets, 3 expiring before then; the reset guard redeems it before it expires',note)
 
     def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
@@ -134,7 +134,7 @@ class TargetResolution(unittest.TestCase):
             self.log('a.jsonl',event(used,resets=NOW+2*DAY))
             result=self.run_target('review-full')
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
-        self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first; the reset guard redeems it',result['reason'])
+        self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first; the reset guard redeems it before it expires',result['reason'])
         for credits,resets in [([NOW+3*DAY],NOW+2*DAY),([NOW+DAY],'soon')]:
             self.credits=credits
             self.log('a.jsonl',event(96,resets=resets))

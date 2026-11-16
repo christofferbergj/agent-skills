@@ -405,7 +405,7 @@ def speed_note(fast, window, expiries):
     resets = f"{len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapse)} expiring before then"
     if not fast:
         return f'Standard speed: {under}; {resets}'
-    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. The reset guard redeems it automatically before it expires, or once the week reaches the fallback threshold'
+    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}; the reset guard redeems it before it expires'
 
 
 def budgeted(effort, budget):
@@ -458,7 +458,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     if left < thresholds(config)['skipWhenLeft']:
         reason, expiries = describe(left, tightest['resets']), read_banked()
         if expiries and tightest['resets'] is not None and lapsing(expiries, tightest):
-            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first; the reset guard redeems it to refill Codex'
+            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first; the reset guard redeems it before it expires'
         return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:
