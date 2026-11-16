@@ -563,9 +563,10 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
                 since, carried = prior, True
             delta = name_status(upstream, since, candidate, record['paths'])
             status = 'removed' if not any(primary in actual for primary in record['primaryPaths']) else 'changed' if delta else 'unchanged'
-            changes.append({'local': record['local'], 'directory': directories.get(record['local']), 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': status, 'files': delta})
+            outcome = {'status': status, 'files': delta}
         except (OSError, ValueError) as error:
-            changes.append({'local': record['local'], 'directory': directories.get(record['local']), 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': 'blocked', 'reason': str(error)})
+            outcome = {'status': 'blocked', 'reason': str(error)}
+        changes.append({'local': record['local'], 'directory': directories.get(record['local']), 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, **outcome})
     suite_results, shared = {}, []
     covered = {entry['local'] for definition in policies.values() for entry in definition.get('skills', [])}
     for name, definition in policies.items():
@@ -823,6 +824,11 @@ def shared_changed(report):
     return any(entry.get('files') or entry.get('status') == 'blocked' for entry in report['sharedInputs'])
 
 
+def to_review(report):
+    fields = ('local', 'directory', 'status', 'since', 'upstream', 'files', 'reason')
+    return [{field: change[field] for field in fields if field in change} for change in report['skills'] if change['status'] != 'unchanged']
+
+
 def compared_reviews(comparisons, candidates):
     """Turn compare reports into source reviews: unchanged skills, and empty inventories and shared inputs, need no decision."""
     reviews = {}
@@ -1004,10 +1010,7 @@ def main():
                     statuses = {}
                     for change in report['skills']:
                         statuses[change['status']] = statuses.get(change['status'], 0) + 1
-                    # Enough to diff each skill without reopening the report: git -C <checkout> diff <since> <candidate> -- <upstream>.
-                    fields = ('local', 'directory', 'status', 'since', 'upstream', 'files', 'reason')
-                    review = [{field: change[field] for field in fields if field in change} for change in report['skills'] if change['status'] != 'unchanged']
-                    result[key] = {'output': str(path), 'checkout': fetched['checkouts'][key], 'candidate': report['candidate'], 'skills': statuses, 'toReview': review, 'suitesChanged': suites_changed(report), 'sharedChanged': shared_changed(report)}
+                    result[key] = {'output': str(path), 'checkout': fetched['checkouts'][key], 'candidate': report['candidate'], 'skills': statuses, 'toReview': to_review(report), 'suitesChanged': suites_changed(report), 'sharedChanged': shared_changed(report)}
             elif arguments.source and arguments.upstream and arguments.candidate:
                 result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate, resume)
             else:
