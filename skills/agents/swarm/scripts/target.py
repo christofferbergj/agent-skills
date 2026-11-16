@@ -19,8 +19,8 @@ to run less paceSlackHours, so a day's lead, made up by the idle night, is allow
 at least reservePerDay percent for each day the window still runs, capped at floorPercent, so
 the window's last days keep enough for standard-speed work and a window that resets soon can
 still be spent down. A window under either line drops it to "default" unless a banked reset
-expires before that window resets: such a reset lapses unless redeemed now, so fast mode may
-run on to skipWhenLeft, and the note names its expiry. A reset that outlasts the window keeps
+expires before that window resets: such a reset lapses unless redeemed now, so fast mode runs
+on, to skipWhenLeft for a cross-vendor target, and the note names its expiry. A reset that outlasts the window keeps
 its worth for a later week and keeps nothing fast. Below skipWhenLeft percent left, a
 cross-vendor target becomes run "fallback". Claude targets carry no speed. Usage comes from the
 newest snapshots in $CODEX_HOME/sessions, so the check stays local. Banked resets come from
@@ -176,19 +176,22 @@ def even_pace(window, now, slack_hours):
     return min(100, max(0, 100 * (resets - now - slack_hours * 3600) / (minutes * 60)))
 
 
-def reserve(window, now, settings):
-    """Return the percent the window keeps for standard-speed work until it resets, or None without a reset time."""
+def binding_line(window, now, settings):
+    """Return (percent, name) of the line fast mode keeps the window above: even pace or the floor, whichever asks for more.
+
+    Without a reset time the window has neither line and returns (None, None)."""
     resets = number(window.get('resets_at'))
     if resets is None:
-        return None
-    return min(settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400))
+        return None, None
+    floor = min(settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400))
+    pace = even_pace(window, now, settings['paceSlackHours'])
+    return (pace, 'even pace leaves') if pace is not None and pace >= floor else (floor, 'floor')
 
 
 def read_usage(sessions, now, settings):
     """Return the windows of the newest snapshot and its time, or None.
 
-    Each window has its percent left, reset time, and the line fast mode keeps above: even pace
-    or the floor, whichever asks for more, with which one it is."""
+    Each window has its percent left, reset time, and binding line's percent and name."""
     snapshots = []
     for log in recent_logs(sessions):
         try:
@@ -205,9 +208,8 @@ def read_usage(sessions, now, settings):
         left = window_left(window, now)
         if left is None:
             continue
-        lines = [(value, name) for value, name in ((even_pace(window, now, settings['paceSlackHours']), 'even pace leaves'), (reserve(window, now, settings), 'floor')) if value is not None]
-        need, line = max(lines, key=lambda entry: entry[0]) if lines else (None, None)
-        windows.append({'left': left, 'resets': number(window.get('resets_at')), 'need': need, 'line': line})
+        line, line_name = binding_line(window, now, settings)
+        windows.append({'left': left, 'resets': number(window.get('resets_at')), 'line': line, 'lineName': line_name})
     # Windows alone decide: rate_limit_reached_type is an account-wide reason with no reset time,
     # and a live usage-limit error already sends the caller to its fallback.
     return {'windows': windows, 'seen': seen} if windows else None
@@ -307,18 +309,18 @@ def reset_credits(cache, account, now):
 
 
 def lapsing(expiries, window):
-    """Return the expiry times of banked resets that lapse before the window resets, earliest first."""
-    return sorted(expiry for expiry in expiries if expiry is not None and expiry < window['resets'])
+    """Return the expiry times of banked resets that lapse before the window resets."""
+    return [expiry for expiry in expiries if expiry is not None and expiry < window['resets']]
 
 
 def check_speed(usage, read_banked):
     """Return (fast, the window furthest under its line or None, banked resets read or None).
 
     read_banked is called only when a window is under its line, so a check above every line reads nothing more."""
-    under = [window for window in usage['windows'] if window['need'] is not None and window['left'] < window['need']]
+    under = [window for window in usage['windows'] if window['line'] is not None and window['left'] < window['line']]
     if not under:
         return True, None, None
-    furthest = min(under, key=lambda window: window['left'] - window['need'])
+    furthest = min(under, key=lambda window: window['left'] - window['line'])
     expiries = read_banked()
     if expiries is None:
         return False, furthest, None
@@ -333,8 +335,8 @@ def moment(stamp):
 
 
 def describe(left, resets):
-    until = moment(resets) if resets else None
-    return f"Codex usage {left}% left{f' until {until}' if until else ''}"
+    until = moment(resets)
+    return f'Codex usage {left}% left until {until}' if until else f'Codex usage {left}% left'
 
 
 def has_mac_desktop():
@@ -351,11 +353,17 @@ def thresholds(config):
     return {key: default if number(configured.get(key)) is None else configured[key] for key, default in THRESHOLDS.items()}
 
 
-def pace_note(window, expiries):
-    under = f"{describe(round(window['left']), window['resets'])}, under the {round(window['need'])}% {window['line']}"
+def speed_note(fast, window, expiries):
+    """Return the note for a window under its line: why it runs at standard speed, or which lapsing reset keeps it fast."""
+    under = f"{describe(round(window['left']), window['resets'])}, under the {round(window['line'])}% {window['lineName']}"
     if expiries is None:
-        return f'{under}; banked resets unknown'
-    return f"{under}; {len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapsing(expiries, window))} expiring before then"
+        return f'Standard speed: {under}; banked resets unknown'
+    lapse = lapsing(expiries, window)
+    resets = f"{len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapse)} expiring before then"
+    if not fast:
+        return f'Standard speed: {under}; {resets}'
+    expiry = moment(min(lapse)) or 'soon'
+    return f'A banked reset expiring {expiry} keeps fast mode: {under}; {resets}. Redeem it before it expires if Codex usage runs out'
 
 
 def budgeted(effort, budget):
@@ -411,10 +419,9 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     if expiries is not None:
         target['usage']['bankedResets'] = len(expiries)
     if not fast:
-        target.update(serviceTier='default', note=f'Standard speed: {pace_note(window, expiries)}')
-    elif window is not None:
-        expiry = moment(lapsing(expiries, window)[0])
-        target['note'] = f'A banked reset expiring {expiry} keeps fast mode: {pace_note(window, expiries)}. Redeem it by {expiry} if Codex usage runs out'
+        target['serviceTier'] = 'default'
+    if window is not None:
+        target['note'] = speed_note(fast, window, expiries)
     return target
 
 

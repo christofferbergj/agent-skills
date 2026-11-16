@@ -81,12 +81,12 @@ class TargetResolution(unittest.TestCase):
 
     def test_pace_slack_allows_a_lead_and_defaults_to_a_day(self):
         # One day into the week, 20% used is behind pace without slack but within a day's lead.
-        self.log('a.jsonl',event(20,resets=NOW+6*24*3600))
+        self.log('a.jsonl',event(20,resets=NOW+6*DAY))
         self.credits=[]
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':10}}))
         self.assertEqual(self.run_target('review-full')['serviceTier'],'priority')
-        self.log('a.jsonl',event(30,resets=NOW+6*24*3600))
+        self.log('a.jsonl',event(30,resets=NOW+6*DAY))
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
 
     def test_behind_pace_note_names_the_window_and_the_banked_resets(self):
@@ -111,7 +111,7 @@ class TargetResolution(unittest.TestCase):
         self.credits=[MIDWEEK+1,NOW+WEEK//20]
         note=self.run_target('review-full')['note']
         self.assertIn(f'A banked reset expiring {target.moment(NOW+WEEK//20)} keeps fast mode',note)
-        self.assertIn(f'under the 50% even pace leaves; 2 banked resets, 1 expiring before then. Redeem it by {target.moment(NOW+WEEK//20)} if',note)
+        self.assertIn(f'under the 50% even pace leaves; 2 banked resets, 1 expiring before then. Redeem it before it expires',note)
 
     def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
@@ -134,6 +134,10 @@ class TargetResolution(unittest.TestCase):
             self.log('a.jsonl',event(used,resets=NOW+2*DAY))
             result=self.run_target('review-full')
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
+
+    def test_native_codex_roles_have_no_fallback_and_stay_fast_on_a_lapsing_reset(self):
+        self.credits=[NOW+DAY]
+        self.log('a.jsonl',event(96,resets=NOW+2*DAY))
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
     def test_unknown_banked_resets_leave_a_window_behind_pace_at_standard_speed(self):
@@ -169,7 +173,7 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('review-full')['serviceTier'],'default')
         self.assertEqual(self.fetches,2)
 
-    def test_every_window_behind_pace_must_be_covered(self):
+    def test_every_window_under_its_line_needs_a_lapsing_reset(self):
         # The reset lapses before the weekly reset but outlasts the 5-hour window, so it covers only the weekly one.
         self.credits=[NOW+WEEK//20]
         self.log('a.jsonl',event(70,resets=MIDWEEK,secondary={'used_percent':70,'window_minutes':300,'resets_at':NOW+9000}))
@@ -182,7 +186,7 @@ class TargetResolution(unittest.TestCase):
         result=self.run_target('review-full')
         self.assertEqual((result['serviceTier'],result['usage']['left']),('priority',80))
 
-    def test_any_window_behind_pace_decides(self):
+    def test_any_window_under_its_line_decides(self):
         self.log('a.jsonl',event(10,secondary={'used_percent':70,'window_minutes':300,'resets_at':NOW+9000}))
         result=self.run_target('review-full')
         self.assertEqual((result['usage']['left'],result['serviceTier']),(30,'default'))
