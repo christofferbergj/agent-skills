@@ -8,9 +8,10 @@ codexUsage.skipWhenLeft in PSTACK_CONFIG or ~/.config/pstack/config.json, or whe
 within --margin-hours; at most one per run. A shorter window running low never triggers
 a redeem. Resets that never expire or outlast the week, and resets of another type, are never
 redeemed. The first run that sees a
-lapsing reset prints a heads-up, remembered in --state. Prints one line per heads-up or redeem
-and nothing otherwise. Exits 1 when Codex's app-server can't be read or a redeem neither resets
-Codex nor finds the reset already redeemed.
+lapsing reset it doesn't redeem prints a heads-up, remembered in --state. Prints one line per heads-up or redeem
+and nothing otherwise. Exits 1 when Codex's app-server can't be read, when a redeem neither resets
+Codex nor finds the reset already redeemed, or when --state can't be written, which never holds
+up a redeem.
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ class Decision(NamedTuple):
     week: Window | None
     notices: tuple
     redeem: target.Credit | None
-    warned: frozenset
+    announced: frozenset
 
 
 def parse_windows(result):
@@ -52,7 +53,7 @@ def parse_windows(result):
     return windows
 
 
-def decide(windows, credits, now, warned, redeem_when_left=5, margin_hours=3):
+def decide(windows, credits, now, announced, redeem_when_left=5, margin_hours=3):
     """Return the week, which lapsing resets to announce, which one to redeem, and the announced ids to remember."""
     week = max((window for window in windows if window.resets is not None), key=lambda window: window.resets, default=None)
     lapsing = sorted(
@@ -62,13 +63,12 @@ def decide(windows, credits, now, warned, redeem_when_left=5, margin_hours=3):
     redeem = None
     if lapsing and (week.left <= redeem_when_left or lapsing[0].expires - now <= margin_hours * 3600):
         redeem = lapsing[0]
-    notices = tuple(credit for credit in lapsing if credit.id not in warned and credit != redeem)
+    notices = tuple(credit for credit in lapsing if credit.id not in announced and credit != redeem)
     available = {credit.id for credit in credits}
-    remembered = {*warned, *(credit.id for credit in notices), *([redeem.id] if redeem else [])}
-    return Decision(week, notices, redeem, frozenset(remembered & available))
+    return Decision(week, notices, redeem, frozenset({*announced, *(credit.id for credit in notices)} & available))
 
 
-def load_warned(path):
+def load_announced(path):
     try:
         ids = target.table(json.loads(path.read_text())).get('announced')
     except (OSError, ValueError):
@@ -76,10 +76,10 @@ def load_warned(path):
     return frozenset(entry for entry in ids if isinstance(entry, str)) if isinstance(ids, list) else frozenset()
 
 
-def save_warned(path, warned):
+def save_announced(path, announced):
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile('w', dir=path.parent, prefix=path.name, suffix='.tmp', delete=False) as stream:
-        json.dump({'announced': sorted(warned)}, stream)
+        json.dump({'announced': sorted(announced)}, stream)
     os.replace(stream.name, path)
 
 
@@ -92,6 +92,21 @@ def notice(credit, week, args):
 
 def redeem_summary(credit, week):
     return f'the banked Codex reset expiring {target.moment(credit.expires)}: {round(week.left)}% was left of the week ending {target.moment(week.resets)}'
+
+
+def redeem(credit, summary):
+    """Consume the banked reset, print the result, and return the exit code."""
+    reply = target.app_server_call('account/rateLimitResetCredit/consume', {'creditId': credit.id, 'idempotencyKey': f'reset-guard:{credit.id}'}, CALL_TIMEOUT, CLIENT)
+    outcome = target.table(reply).get('outcome')
+    if outcome == 'reset':
+        print(f'Redeemed {summary}.')
+    elif outcome == 'alreadyRedeemed':
+        print(f'Codex had already redeemed {summary}.')
+    else:
+        detail = 'codex app-server gave no result' if reply is None else f'Codex answered {json.dumps(outcome)}'
+        print(f'Could not redeem {summary}: {detail}.', file=sys.stderr)
+        return 1
+    return 0
 
 
 def main():
@@ -113,33 +128,28 @@ def main():
     count = target.number(result['rateLimitResetCredits'].get('availableCount'))
     if count is not None and len(credits) < count:
         print(f'Codex lists {len(credits)} of {count:g} banked resets; the others go unchecked.', file=sys.stderr)
-    warned = load_warned(args.state)
-    decision = decide(windows, credits, now, warned, args.redeem_when_left, args.margin_hours)
+    announced = load_announced(args.state)
+    decision = decide(windows, credits, now, announced, args.redeem_when_left, args.margin_hours)
     if credits and decision.week is None:
         print('Codex reports banked resets but no usage window with a reset time.', file=sys.stderr)
         return 1
     prefix = 'Dry run: ' if args.dry_run else ''
     for credit in decision.notices:
         print(prefix + notice(credit, decision.week, args))
-    if not args.dry_run and decision.warned != warned:
-        save_warned(args.state, decision.warned)
-    if decision.redeem is None:
-        return 0
-    summary = redeem_summary(decision.redeem, decision.week)
-    if args.dry_run:
-        print(f'Dry run: would redeem {summary}.')
-        return 0
-    reply = target.app_server_call('account/rateLimitResetCredit/consume', {'creditId': decision.redeem.id, 'idempotencyKey': f'reset-guard:{decision.redeem.id}'}, CALL_TIMEOUT, CLIENT)
-    outcome = target.table(reply).get('outcome')
-    if outcome == 'reset':
-        print(f'Redeemed {summary}.')
-    elif outcome == 'alreadyRedeemed':
-        print(f'Codex had already redeemed {summary}.')
-    else:
-        detail = 'codex app-server gave no result' if reply is None else f'Codex answered {json.dumps(outcome)}'
-        print(f'Could not redeem {summary}: {detail}.', file=sys.stderr)
-        return 1
-    return 0
+    code = 0
+    if decision.redeem is not None:
+        summary = redeem_summary(decision.redeem, decision.week)
+        if args.dry_run:
+            print(f'Dry run: would redeem {summary}.')
+        else:
+            code = redeem(decision.redeem, summary)
+    if not args.dry_run and decision.announced != announced:
+        try:
+            save_announced(args.state, decision.announced)
+        except OSError as error:
+            print(f'Could not save the announced resets to {args.state}: {error}.', file=sys.stderr)
+            return 1
+    return code
 
 
 if __name__ == '__main__':

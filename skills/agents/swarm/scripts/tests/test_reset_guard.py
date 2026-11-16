@@ -40,9 +40,9 @@ class Decide(unittest.TestCase):
     def test_a_lapsing_reset_with_plenty_left_gets_one_heads_up(self):
         lapsing=credit('a',NOW+DAY)
         decision=guard.decide(WEEK,[lapsing],NOW,frozenset())
-        self.assertEqual((decision.notices,decision.redeem,decision.warned),((lapsing,),None,{'a'}))
-        again=guard.decide(WEEK,[lapsing],NOW,decision.warned)
-        self.assertEqual((again.notices,again.redeem,again.warned),((),None,{'a'}))
+        self.assertEqual((decision.notices,decision.redeem,decision.announced),((lapsing,),None,{'a'}))
+        again=guard.decide(WEEK,[lapsing],NOW,decision.announced)
+        self.assertEqual((again.notices,again.redeem,again.announced),((),None,{'a'}))
 
     def test_a_lapsing_reset_is_redeemed_when_the_week_reaches_the_threshold(self):
         lapsing=credit('a',NOW+DAY)
@@ -60,14 +60,14 @@ class Decide(unittest.TestCase):
     def test_only_the_earliest_of_two_lapsing_resets_is_redeemed(self):
         early,late=credit('early',NOW+2*DAY),credit('late',NOW+DAY//2)
         decision=guard.decide([Window(3,WEEK_ENDS)],[early,late],NOW,frozenset())
-        self.assertEqual((decision.redeem,decision.notices,decision.warned),(late,(early,),{'early','late'}))
+        self.assertEqual((decision.redeem,decision.notices,decision.announced),(late,(early,),{'early'}))
 
     def test_another_reset_type_is_ignored(self):
         decision=guard.decide([Window(0,WEEK_ENDS)],[credit('a',NOW+HOUR,kind='otherLimits')],NOW,frozenset())
         self.assertEqual((decision.notices,decision.redeem),((),None))
 
     def test_announced_ids_no_longer_available_are_forgotten(self):
-        self.assertEqual(guard.decide(WEEK,[credit('kept',None)],NOW,frozenset({'gone','kept'})).warned,{'kept'})
+        self.assertEqual(guard.decide(WEEK,[credit('kept',None)],NOW,frozenset({'gone','kept'})).announced,{'kept'})
 
 
 FAKE_CODEX='''\
@@ -135,6 +135,25 @@ class Guard(unittest.TestCase):
             self.assertEqual((code,out),(1,''),consume)
             self.assertTrue(err.startswith('Could not redeem the banked Codex reset expiring'),err)
         self.assertEqual(len(self.consumed()),5)
+
+    def test_a_failed_redeem_is_retried_and_only_heads_ups_are_remembered(self):
+        reply=reading(96,None,[row(NOW+DAY),row(NOW+2*DAY,id='credit-2')])
+        code,out,_=self.run_guard(reply,consume={'outcome':'noCredit'})
+        self.assertEqual(code,1)
+        self.assertTrue(out.startswith('Heads-up:'),out)
+        code,out,_=self.run_guard(reply)
+        self.assertEqual((code,out.splitlines()[0][:8]),(0,'Redeemed'))
+        self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1','credit-1'])
+        self.assertEqual(json.loads(self.state.read_text()),{'announced':['credit-2']})
+
+    def test_an_unwritable_state_file_still_redeems_then_exits_1(self):
+        self.state.parent.mkdir()
+        self.state.parent.chmod(0o500)
+        code,out,err=self.run_guard(reading(96,None,[row(NOW+DAY),row(NOW+2*DAY,id='credit-2')]))
+        self.assertEqual(code,1)
+        self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1'])
+        self.assertIn('Redeemed the banked Codex reset',out)
+        self.assertIn('Could not save the announced resets',err)
 
     def test_a_reset_already_redeemed_exits_0(self):
         code,out,err=self.run_guard(reading(96,NOW+DAY),consume={'outcome':'alreadyRedeemed'})
