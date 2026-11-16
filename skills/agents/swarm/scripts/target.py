@@ -267,7 +267,7 @@ def read_rate_limits():
 
 class Credit(NamedTuple):
     id: str
-    kind: object
+    kind: 'str | None'
     expires: 'float | None'
 
 
@@ -296,7 +296,7 @@ def banked_credits(result):
         # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
         if text(row.get('id')) is None or 'expiresAt' not in row or (row['expiresAt'] is not None and number(row['expiresAt']) is None):
             return None
-        credits.append(Credit(row['id'], row.get('resetType'), row['expiresAt']))
+        credits.append(Credit(row['id'], text(row.get('resetType')), row['expiresAt']))
     return Banked(credits, count)
 
 
