@@ -17,7 +17,7 @@ Every Pstack spawn has a role: the label its skill names, such as `reflect tooli
 - **`long-running`**, a local role, keeps the session's model on both hosts. It covers a thread that runs for hours, such as a /coordinator thread or one of its workers; set its model in the configuration to keep those threads off a model with a tight weekly allowance, while the short delegates they start keep their own roles.
 - **Panels**, the runners of /arena and /architect and the reviewers of /interrogate, seat one runner on the session's model and one on the counterpart, resolved with `review-full` as below. A counterpart runner writes as [the T3 route](t3.md) describes, or through the CLI route returns its artifact as its final message for the coordinator to save. When the counterpart resolves to `fallback` or every counterpart route the calling skill allows fails, that seat takes route 3 below, and the report labels the panel same-vendor.
 
-Speed comes from the target. A Codex delegate, native or cross-vendor, runs at the target's `serviceTier`: fast mode while every Codex usage window stays above even pace, and every window of a day or longer above a floor kept for its last days, and standard speed below either line unless a banked reset would lapse before that window resets. `scripts/target.py --help` states the rule and its defaults. A Claude delegate runs at standard speed.
+Speed comes from the target. A Codex delegate, native or cross-vendor, runs at the target's `serviceTier`: fast mode while every Codex usage window stays above even pace, and every window of a day or longer above a floor kept for its last days, and standard speed below either line unless a banked reset would lapse before that window resets. `scripts/target.py --help` states the rule and its defaults. Never redeem a banked reset; `scripts/reset_guard.py` does that on a schedule. A Claude delegate runs at standard speed.
 
 A Claude Code native target's `effort` is the job's starting level. Any other target keeps an effort it has, and one without an effort starts from the session's level. From that start, raise it one step, up to the host's maximum, for the hardest or subtlest work, except on a `hardest-tasks` target that sets an effort, which already includes that step, and lower it one step for judgment and exploration, and two or more for routine work such as a check run. /pstack-mode's Subagents section applies this rule inside the mode, where routine work excludes exploration.
 
@@ -55,7 +55,7 @@ Resolve the counterpart before dispatch with `python3 scripts/target.py --parent
 
 - `run` names the counterpart's vendor. Pass the target's `model`, `effort`, and `serviceTier` on every route, because a model's default effort can be `low`. Without a `model`, a Claude counterpart takes the newest Opus model available, and the Codex CLI keeps its configured model.
 - `run: "fallback"` means Codex usage is nearly spent: take route 3 and disclose the target's `reason`.
-- `note` records a step down to standard speed, unknown usage, or a banked reset to redeem before it lapses; carry it into the report.
+- `note` records a step down to standard speed, unknown usage, or a banked reset the reset guard will redeem before it lapses; carry it into the report.
 
 For a critic, the target sets the counterpart only; same-model critics inherit the session's model and effort unless the user configured them.
 

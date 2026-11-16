@@ -61,6 +61,7 @@ import signal
 import subprocess
 import sys
 import time
+from typing import NamedTuple
 
 # role: (config entry, effort key, default effort)
 CROSS_VENDOR_ROLES = {
@@ -86,6 +87,7 @@ THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24, 'floorPercent': 25, 'rese
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
 # Banked resets change a few times a month, so one app-server read serves an hour.
 RESETS_TTL, RESETS_TIMEOUT = 3600, 5
+CODEX_RESET = 'codexRateLimits'
 
 
 def table(value):
@@ -103,6 +105,10 @@ def number(value):
         return value if math.isfinite(value) else None
     except OverflowError:
         return None
+
+
+def config_path():
+    return Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json')
 
 
 def load_config(path):
@@ -215,17 +221,17 @@ def read_usage(sessions, now, settings):
     return {'windows': windows, 'seen': seen} if windows else None
 
 
-def read_rate_limits():
-    """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
-    # Bounding the read needs process groups, as review.py's runs do.
+def app_server_call(method, params, timeout, client='pstack-target'):
+    """Send one request to `codex app-server` and return its result, or None on an error, a timeout, or no reply."""
+    # Bounding the call needs process groups, as review.py's runs do.
     if os.name != 'posix':
         return None
     requests = [
-        {'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': 'pstack-target', 'version': '1'}}},
+        {'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': client, 'version': '1'}}},
         {'method': 'initialized'},
-        {'id': 2, 'method': 'account/rateLimits/read', 'params': {}},
+        {'id': 2, 'method': method, 'params': params},
     ]
-    deadline = time.monotonic() + RESETS_TIMEOUT
+    deadline = time.monotonic() + timeout
     try:
         with subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True) as server:
             try:
@@ -247,25 +253,57 @@ def read_rate_limits():
                             return message.get('result')
                 return None
             finally:
-                # The whole group goes, so a launcher's child cannot outlive the read.
+                # The whole group goes, so a launcher's child cannot outlive the call.
                 with contextlib.suppress(OSError):
                     os.killpg(server.pid, signal.SIGKILL)
     except OSError:
         return None
 
 
-def banked_expiries(result):
-    """Return the expiry times of the available banked resets in an account/rateLimits/read result, or None."""
-    summary = table(table(result).get('rateLimitResetCredits'))
-    credits = summary.get('credits')
-    if not isinstance(credits, list):
-        # A count without detail rows says nothing about expiry, so only a zero count is a reading.
-        return [] if number(summary.get('availableCount')) == 0 else None
-    expiries = [credit.get('expiresAt', '') for credit in map(table, credits) if credit.get('status') == 'available']
-    # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
-    if any(expiry is not None and number(expiry) is None for expiry in expiries):
+def read_rate_limits():
+    """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
+    return app_server_call('account/rateLimits/read', {}, RESETS_TIMEOUT)
+
+
+class Credit(NamedTuple):
+    id: str
+    kind: 'str | None'
+    expires: 'float | None'
+
+
+class Banked(NamedTuple):
+    credits: 'list[Credit]'
+    count: 'float | None'
+
+    @property
+    def short(self):
+        return self.count is not None and len(self.credits) < self.count
+
+
+def banked_credits(result):
+    """Return the available banked resets in an account/rateLimits/read result with Codex's count of them, or None when the reply can't be read."""
+    summary = table(result).get('rateLimitResetCredits')
+    if not isinstance(summary, dict):
         return None
-    return expiries
+    rows, count = summary.get('credits'), number(summary.get('availableCount'))
+    if not isinstance(rows, list):
+        # A count without detail rows says nothing about expiry, so only a zero count is a reading.
+        return Banked([], count) if count == 0 else None
+    credits = []
+    for row in map(table, rows):
+        if row.get('status') != 'available':
+            continue
+        # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
+        if text(row.get('id')) is None or 'expiresAt' not in row or (row['expiresAt'] is not None and number(row['expiresAt']) is None):
+            return None
+        credits.append(Credit(row['id'], text(row.get('resetType')), row['expiresAt']))
+    return Banked(credits, count)
+
+
+def banked_expiries(result):
+    """Return the expiry times of the available Codex banked resets in an account/rateLimits/read result, or None."""
+    banked = banked_credits(result)
+    return None if banked is None else [credit.expires for credit in banked.credits if credit.kind == CODEX_RESET]
 
 
 def fetch_reset_credits():
@@ -367,7 +405,7 @@ def speed_note(fast, window, expiries):
     resets = f"{len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapse)} expiring before then"
     if not fast:
         return f'Standard speed: {under}; {resets}'
-    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. Redeem it once Codex usage runs out, and before it expires at the latest'
+    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}; the reset guard redeems it before it expires'
 
 
 def budgeted(effort, budget):
@@ -420,7 +458,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     if left < thresholds(config)['skipWhenLeft']:
         reason, expiries = describe(left, tightest['resets']), read_banked()
         if expiries and tightest['resets'] is not None and lapsing(expiries, tightest):
-            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first, so redeem it to refill Codex'
+            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first; the reset guard redeems it before it expires'
         return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:
@@ -440,7 +478,7 @@ def main():
     args = parser.parse_args()
     if args.parent == 'codex' and args.role.startswith('computer-use'):
         parser.error('Codex runs computer use itself')
-    config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
+    config = load_config(config_path())
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     cache = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'codex-reset-credits.json'
     if args.role.startswith('computer-use') and not (args.on_mac or has_mac_desktop()):

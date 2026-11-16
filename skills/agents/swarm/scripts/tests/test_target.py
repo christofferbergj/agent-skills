@@ -111,7 +111,7 @@ class TargetResolution(unittest.TestCase):
         self.credits=[MIDWEEK+1,NOW+WEEK//10,NOW+WEEK//20,NOW+WEEK//8]
         note=self.run_target('review-full')['note']
         self.assertIn('A banked reset expiring 2027-01-15T16:24Z keeps fast mode',note)
-        self.assertIn(f'under the 50% even pace leaves; 4 banked resets, 3 expiring before then. Redeem it once Codex usage runs out',note)
+        self.assertIn(f'under the 50% even pace leaves; 4 banked resets, 3 expiring before then; the reset guard redeems it before it expires',note)
 
     def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
@@ -134,7 +134,7 @@ class TargetResolution(unittest.TestCase):
             self.log('a.jsonl',event(used,resets=NOW+2*DAY))
             result=self.run_target('review-full')
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
-        self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first, so redeem it',result['reason'])
+        self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first; the reset guard redeems it before it expires',result['reason'])
         for credits,resets in [([NOW+3*DAY],NOW+2*DAY),([NOW+DAY],'soon')]:
             self.credits=credits
             self.log('a.jsonl',event(96,resets=resets))
@@ -359,9 +359,10 @@ class AppServerRead(unittest.TestCase):
         with patch.dict(os.environ,{'PATH':f"{self.directory.name}:{os.environ['PATH']}",'FAKE_CODEX':payload}),patch.object(target,'RESETS_TIMEOUT',self.TIMEOUT):
             return target.fetch_reset_credits()
 
-    def test_available_resets_return_their_expiry_times(self):
-        credits=[{'status':'available','expiresAt':NOW},{'status':'redeemed','expiresAt':NOW},{'status':'available','expiresAt':None}]
-        self.assertEqual(self.read({'availableCount':2,'credits':credits}),[NOW,None])
+    def test_available_codex_resets_return_their_expiry_times(self):
+        credits=[{'id':'a','resetType':'codexRateLimits','status':'available','expiresAt':NOW},{'status':'redeemed','expiresAt':'never'},
+                 {'id':'b','resetType':'codexRateLimits','status':'available','expiresAt':None},{'id':'c','resetType':'otherLimits','status':'available','expiresAt':NOW+1}]
+        self.assertEqual(self.read({'availableCount':3,'credits':credits}),[NOW,None])
 
     def test_expiry_the_reply_does_not_state_reads_as_unknown(self):
         self.assertIsNone(self.read({'availableCount':2,'credits':None}))
@@ -381,6 +382,26 @@ class AppServerRead(unittest.TestCase):
             self.assertIsNone(target.fetch_reset_credits())
         with patch.object(target.os,'name','nt'):
             self.assertIsNone(self.read({'availableCount':0,'credits':None}))
+
+
+class BankedCredits(unittest.TestCase):
+    ROW={'id':'a','resetType':'codexRateLimits','status':'available','expiresAt':NOW}
+
+    def test_available_rows_become_credits(self):
+        rows=[self.ROW,{**self.ROW,'id':'b','resetType':'otherLimits','expiresAt':None},{'status':'used'},{'id':'d','status':'expired','expiresAt':NOW-1}]
+        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':2,'credits':rows}}),([('a','codexRateLimits',NOW),('b','otherLimits',None)],2))
+        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':0}}),([],0))
+
+    def test_a_list_shorter_than_the_count_is_short(self):
+        for count,short in [(1,False),(2,True),(None,False)]:
+            self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':count,'credits':[self.ROW]}}).short,short,count)
+
+    def test_a_reply_that_hides_an_available_resets_id_or_expiry_is_unreadable(self):
+        expiry_missing={key:value for key,value in self.ROW.items() if key!='expiresAt'}
+        for summary in (None,[],{'availableCount':1},{'availableCount':False,'credits':None},{'credits':[expiry_missing]},
+                        {'credits':[{**self.ROW,'id':None}]},{'credits':[{**self.ROW,'id':7}]},{'credits':[{**self.ROW,'expiresAt':'2026-11-06T00:00:00Z'}]}):
+            self.assertIsNone(target.banked_credits({'rateLimitResetCredits':summary}),summary)
+        self.assertIsNone(target.banked_credits({}))
 
 
 if __name__=='__main__':
