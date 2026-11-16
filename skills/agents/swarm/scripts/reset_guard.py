@@ -23,7 +23,6 @@ from typing import NamedTuple
 
 import target
 
-CODEX_RESET = 'codexRateLimits'
 CALL_TIMEOUT = 30
 CLIENT = 'pstack-reset-guard'
 
@@ -33,20 +32,10 @@ class Window(NamedTuple):
     resets: float | None
 
 
-class Credit(NamedTuple):
-    id: str
-    kind: str | None
-    expires: float | None
-
-
 class Decision(NamedTuple):
     notices: tuple
-    redeem: Credit | None
+    redeem: target.Credit | None
     warned: frozenset
-
-
-class Unreadable(Exception):
-    pass
 
 
 def parse_windows(result, now):
@@ -59,30 +48,11 @@ def parse_windows(result, now):
     return windows
 
 
-def parse_credits(result):
-    """Return the available banked resets, or raise Unreadable when the reply hides one's id or expiry."""
-    summary = target.table(target.table(result).get('rateLimitResetCredits'))
-    rows = summary.get('credits')
-    if not isinstance(rows, list):
-        if target.number(summary.get('availableCount')) in (None, 0):
-            return []
-        raise Unreadable(f"Codex reports {summary['availableCount']} banked resets without their details")
-    credits = []
-    for row in map(target.table, rows):
-        if row.get('status') != 'available':
-            continue
-        expires = row.get('expiresAt')
-        if target.text(row.get('id')) is None or (expires is not None and target.number(expires) is None):
-            raise Unreadable('Codex lists an available banked reset without a usable id or expiry')
-        credits.append(Credit(row['id'], row.get('resetType'), expires))
-    return credits
-
-
 def decide(windows, credits, now, warned, redeem_when_left=5, margin_hours=3):
     """Return which lapsing resets to announce, which one to redeem, and the announced ids to remember."""
     week = max((window.resets for window in windows if window.resets is not None), default=None)
     lapsing = sorted(
-        (credit for credit in credits if credit.kind == CODEX_RESET and credit.expires is not None and week is not None and now < credit.expires < week),
+        (credit for credit in credits if credit.kind == target.CODEX_RESET and credit.expires is not None and week is not None and now < credit.expires < week),
         key=lambda credit: credit.expires,
     )
     redeem = None
@@ -137,11 +107,13 @@ def main():
     if not isinstance(result, dict):
         print('Could not read Codex rate limits from codex app-server.', file=sys.stderr)
         return 1
-    try:
-        windows, credits = parse_windows(result, now), parse_credits(result)
-    except Unreadable as error:
-        print(f'{error}.', file=sys.stderr)
+    windows, credits = parse_windows(result, now), target.banked_credits(result)
+    if credits is None:
+        print("Codex's rate limits don't state each banked reset's id and expiry.", file=sys.stderr)
         return 1
+    count = target.number(result['rateLimitResetCredits'].get('availableCount'))
+    if count is not None and len(credits) < count:
+        print(f'Codex lists {len(credits)} of {count:g} banked resets; the others go unchecked.', file=sys.stderr)
     if credits and not any(window.resets is not None for window in windows):
         print('Codex reports banked resets but no usage window with a reset time.', file=sys.stderr)
         return 1

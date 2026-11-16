@@ -15,7 +15,7 @@ sys.path.insert(0,str(SCRIPTS))
 spec=importlib.util.spec_from_file_location('reset_guard',SCRIPTS/'reset_guard.py')
 guard=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(guard)
-Window,Credit=guard.Window,guard.Credit
+Window,Credit=guard.Window,guard.target.Credit
 
 NOW=1_800_000_000
 HOUR=3600
@@ -84,9 +84,14 @@ for line in sys.stdin:
 '''
 
 
-def reading(used,expires):
+def row(expires,id='credit-1',**fields):
+    return {'id':id,'resetType':'codexRateLimits','status':'available','grantedAt':NOW-DAY,'expiresAt':expires,**fields}
+
+
+def reading(used,expires,rows=None,count=None):
+    rows=[row(expires)] if rows is None else rows
     return {'rateLimits':{'limitId':'codex','primary':{'usedPercent':used,'windowDurationMins':10080,'resetsAt':WEEK_ENDS},'secondary':None},
-            'rateLimitResetCredits':{'availableCount':1,'credits':[{'id':'credit-1','resetType':'codexRateLimits','status':'available','grantedAt':NOW-DAY,'expiresAt':expires}]}}
+            'rateLimitResetCredits':{'availableCount':len(rows) if count is None else count,'credits':rows}}
 
 
 class Guard(unittest.TestCase):
@@ -133,6 +138,34 @@ class Guard(unittest.TestCase):
             self.assertEqual((code,out),(1,''),reply)
             self.assertTrue(err)
         self.assertEqual(self.consumed(),[])
+
+    def test_a_reply_that_hides_a_resets_id_or_expiry_exits_1(self):
+        expiry_missing={key:value for key,value in row(NOW+DAY).items() if key!='expiresAt'}
+        missing_credits={'rateLimits':reading(96,NOW+DAY)['rateLimits']}
+        for reply in (missing_credits,reading(96,None,[expiry_missing]),reading(96,None,[row(NOW+DAY,id=None)]),reading(96,None,[row('2026-11-17')])):
+            code,out,err=self.run_guard(reply)
+            self.assertEqual((code,out),(1,''),reply)
+            self.assertIn("don't state each banked reset's id and expiry",err)
+        self.assertEqual(self.consumed(),[])
+
+    def test_used_expired_and_other_rows_are_ignored(self):
+        rows=[row(NOW+HOUR,id='used',status='used'),row(NOW+HOUR,id='expired',status='expired'),row(NOW+HOUR,id='other',resetType='otherLimits'),row(NOW+DAY)]
+        code,out,err=self.run_guard(reading(96,None,rows,count=2))
+        self.assertEqual((code,err),(0,''))
+        self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1'])
+
+    def test_a_credit_list_shorter_than_the_count_warns_and_carries_on(self):
+        code,out,err=self.run_guard(reading(96,NOW+DAY,count=3))
+        self.assertEqual(code,0)
+        self.assertIn('Codex lists 1 of 3 banked resets',err)
+        self.assertTrue(out.startswith('Redeemed'),out)
+
+    def test_banked_resets_without_a_window_reset_time_exit_1(self):
+        reply=reading(96,NOW+DAY)
+        reply['rateLimits']['primary']['resetsAt']=None
+        code,out,err=self.run_guard(reply)
+        self.assertEqual((code,out,self.consumed()),(1,'',[]))
+        self.assertIn('no usage window with a reset time',err)
 
     def test_the_heads_up_is_printed_once_across_runs(self):
         code,out,_=self.run_guard(reading(10,NOW+DAY))

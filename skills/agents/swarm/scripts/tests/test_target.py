@@ -359,9 +359,10 @@ class AppServerRead(unittest.TestCase):
         with patch.dict(os.environ,{'PATH':f"{self.directory.name}:{os.environ['PATH']}",'FAKE_CODEX':payload}),patch.object(target,'RESETS_TIMEOUT',self.TIMEOUT):
             return target.fetch_reset_credits()
 
-    def test_available_resets_return_their_expiry_times(self):
-        credits=[{'status':'available','expiresAt':NOW},{'status':'redeemed','expiresAt':NOW},{'status':'available','expiresAt':None}]
-        self.assertEqual(self.read({'availableCount':2,'credits':credits}),[NOW,None])
+    def test_available_codex_resets_return_their_expiry_times(self):
+        credits=[{'id':'a','resetType':'codexRateLimits','status':'available','expiresAt':NOW},{'status':'redeemed','expiresAt':'never'},
+                 {'id':'b','resetType':'codexRateLimits','status':'available','expiresAt':None},{'id':'c','resetType':'otherLimits','status':'available','expiresAt':NOW+1}]
+        self.assertEqual(self.read({'availableCount':3,'credits':credits}),[NOW,None])
 
     def test_expiry_the_reply_does_not_state_reads_as_unknown(self):
         self.assertIsNone(self.read({'availableCount':2,'credits':None}))
@@ -381,6 +382,22 @@ class AppServerRead(unittest.TestCase):
             self.assertIsNone(target.fetch_reset_credits())
         with patch.object(target.os,'name','nt'):
             self.assertIsNone(self.read({'availableCount':0,'credits':None}))
+
+
+class BankedCredits(unittest.TestCase):
+    ROW={'id':'a','resetType':'codexRateLimits','status':'available','expiresAt':NOW}
+
+    def test_available_rows_become_credits(self):
+        rows=[self.ROW,{**self.ROW,'id':'b','resetType':'otherLimits','expiresAt':None},{'status':'used'},{'id':'d','status':'expired','expiresAt':NOW-1}]
+        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':2,'credits':rows}}),[('a','codexRateLimits',NOW),('b','otherLimits',None)])
+        self.assertEqual(target.banked_credits({'rateLimitResetCredits':{'availableCount':0}}),[])
+
+    def test_a_reply_that_hides_an_available_resets_id_or_expiry_is_unreadable(self):
+        expiry_missing={key:value for key,value in self.ROW.items() if key!='expiresAt'}
+        for summary in (None,[],{'availableCount':1},{'availableCount':False,'credits':None},{'credits':[expiry_missing]},
+                        {'credits':[{**self.ROW,'id':None}]},{'credits':[{**self.ROW,'id':7}]},{'credits':[{**self.ROW,'expiresAt':'2026-11-06T00:00:00Z'}]}):
+            self.assertIsNone(target.banked_credits({'rateLimitResetCredits':summary}),summary)
+        self.assertIsNone(target.banked_credits({}))
 
 
 if __name__=='__main__':

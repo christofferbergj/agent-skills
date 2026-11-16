@@ -61,6 +61,7 @@ import signal
 import subprocess
 import sys
 import time
+from typing import NamedTuple
 
 # role: (config entry, effort key, default effort)
 CROSS_VENDOR_ROLES = {
@@ -86,6 +87,7 @@ THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24, 'floorPercent': 25, 'rese
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
 # Banked resets change a few times a month, so one app-server read serves an hour.
 RESETS_TTL, RESETS_TIMEOUT = 3600, 5
+CODEX_RESET = 'codexRateLimits'
 
 
 def table(value):
@@ -259,18 +261,36 @@ def read_rate_limits():
     return app_server_call('account/rateLimits/read', {}, RESETS_TIMEOUT)
 
 
-def banked_expiries(result):
-    """Return the expiry times of the available banked resets in an account/rateLimits/read result, or None."""
-    summary = table(table(result).get('rateLimitResetCredits'))
-    credits = summary.get('credits')
-    if not isinstance(credits, list):
+class Credit(NamedTuple):
+    id: str
+    kind: object
+    expires: 'float | None'
+
+
+def banked_credits(result):
+    """Return the available banked resets in an account/rateLimits/read result, or None when the reply can't be read."""
+    summary = table(result).get('rateLimitResetCredits')
+    if not isinstance(summary, dict):
+        return None
+    rows = summary.get('credits')
+    if not isinstance(rows, list):
         # A count without detail rows says nothing about expiry, so only a zero count is a reading.
         return [] if number(summary.get('availableCount')) == 0 else None
-    expiries = [credit.get('expiresAt', '') for credit in map(table, credits) if credit.get('status') == 'available']
-    # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
-    if any(expiry is not None and number(expiry) is None for expiry in expiries):
-        return None
-    return expiries
+    credits = []
+    for row in map(table, rows):
+        if row.get('status') != 'available':
+            continue
+        # Only an explicit null means never expiring; any other value that isn't a time makes the reading unknown.
+        if text(row.get('id')) is None or 'expiresAt' not in row or (row['expiresAt'] is not None and number(row['expiresAt']) is None):
+            return None
+        credits.append(Credit(row['id'], row.get('resetType'), row['expiresAt']))
+    return credits
+
+
+def banked_expiries(result):
+    """Return the expiry times of the available Codex banked resets in an account/rateLimits/read result, or None."""
+    credits = banked_credits(result)
+    return None if credits is None else [credit.expires for credit in credits if credit.kind == CODEX_RESET]
 
 
 def fetch_reset_credits():
