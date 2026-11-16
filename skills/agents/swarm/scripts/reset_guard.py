@@ -79,10 +79,10 @@ def save_announced(path, announced):
     os.replace(stream.name, path)
 
 
-def notice(credit, week, args):
+def notice(credit, week, redeem_when_left, margin_hours):
     return (
         f'Heads-up: a banked Codex reset expires {target.moment(credit.expires)}, before the week resets {target.moment(week.resets)}. '
-        f'It will be redeemed automatically at {args.redeem_when_left:g}% left or {args.margin_hours:g} h before it expires.'
+        f'It will be redeemed automatically at {redeem_when_left:g}% left or {margin_hours:g} h before it expires.'
     )
 
 
@@ -90,8 +90,8 @@ def redeem_summary(credit, week):
     return f'the banked Codex reset expiring {target.moment(credit.expires)}: {round(week.left)}% was left of the week ending {target.moment(week.resets)}'
 
 
-def redeem(credit, summary):
-    """Consume the banked reset, print the result, and return the exit code."""
+def consume(credit, summary):
+    """Consume the banked reset, print the result, and return whether Codex redeemed it."""
     reply = target.app_server_call('account/rateLimitResetCredit/consume', {'creditId': credit.id, 'idempotencyKey': f'reset-guard:{credit.id}'}, CALL_TIMEOUT, CLIENT)
     outcome = target.table(reply).get('outcome')
     if outcome == 'reset':
@@ -101,8 +101,8 @@ def redeem(credit, summary):
     else:
         detail = 'codex app-server gave no result' if reply is None else f'Codex answered {json.dumps(outcome)}'
         print(f'Could not redeem {summary}: {detail}.', file=sys.stderr)
-        return 1
-    return 0
+        return False
+    return True
 
 
 def main():
@@ -121,9 +121,10 @@ def main():
     if banked is None:
         print("Codex's rate limits don't state each banked reset's id and expiry.", file=sys.stderr)
         return 1
-    short = banked.short
-    if short:
+    failed = False
+    if banked.short:
         print(f'Codex lists {len(banked.credits)} of {banked.count:g} banked resets; the others go unchecked.', file=sys.stderr)
+        failed = True
     week = parse_week(result)
     expiring = [credit for credit in banked.credits if credit.kind == target.CODEX_RESET and credit.expires is not None and credit.expires > now]
     if expiring and week is None:
@@ -133,22 +134,21 @@ def main():
     decision = decide(week, expiring, now, announced, args.redeem_when_left, args.margin_hours) if expiring else Decision((), None)
     prefix = 'Dry run: ' if args.dry_run else ''
     for credit in decision.notices:
-        print(prefix + notice(credit, week, args))
-    code = 0
+        print(prefix + notice(credit, week, args.redeem_when_left, args.margin_hours))
     if decision.redeem is not None:
         summary = redeem_summary(decision.redeem, week)
         if args.dry_run:
             print(f'Dry run: would redeem {summary}.')
-        else:
-            code = redeem(decision.redeem, summary)
+        elif not consume(decision.redeem, summary):
+            failed = True
     remembered = frozenset({*announced, *(credit.id for credit in decision.notices)} & {credit.id for credit in banked.credits})
     if not args.dry_run and remembered != announced:
         try:
             save_announced(args.state, remembered)
         except OSError as error:
             print(f'Could not save the announced resets to {args.state}: {error}.', file=sys.stderr)
-            return 1
-    return 1 if short else code
+            failed = True
+    return 1 if failed else 0
 
 
 if __name__ == '__main__':
