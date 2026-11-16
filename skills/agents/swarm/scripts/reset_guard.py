@@ -3,8 +3,9 @@
 
 A banked reset lapses when it expires before the latest usage window, the week, resets: a redeem
 resets every window, so one that outlasts the week can still serve a later week. The earliest
-lapsing reset is redeemed when the week has --redeem-when-left percent or less left, or when it
-expires within --margin-hours; at most one per run. A shorter window running low never triggers
+lapsing reset is redeemed when the week has --redeem-when-left percent or less left, by default
+codexUsage.skipWhenLeft in PSTACK_CONFIG or ~/.config/pstack/config.json, or when it expires
+within --margin-hours; at most one per run. A shorter window running low never triggers
 a redeem. Resets that never expire or outlast the week, and resets of another type, are never
 redeemed. The first run that sees a
 lapsing reset prints a heads-up, remembered in --state. Prints one line per heads-up or redeem
@@ -94,7 +95,7 @@ def redeem_summary(credit, week):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--redeem-when-left', type=float, default=target.THRESHOLDS['skipWhenLeft'], help='Percent left in the week at which to redeem (default %(default)s)')
+    parser.add_argument('--redeem-when-left', type=float, default=target.thresholds(target.load_config(target.config_path()))['skipWhenLeft'], help="Percent left in the week at which to redeem (default: Pstack's codexUsage.skipWhenLeft, %(default)s)")
     parser.add_argument('--margin-hours', type=float, default=3, help='Redeem a lapsing reset this many hours before it expires (default %(default)s)')
     parser.add_argument('--state', type=Path, default=Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'reset-guard.json', help='JSON file of announced reset ids')
     parser.add_argument('--dry-run', action='store_true', help='Print what would happen without redeeming or writing state')

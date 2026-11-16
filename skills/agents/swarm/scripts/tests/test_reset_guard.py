@@ -105,6 +105,7 @@ class Guard(unittest.TestCase):
         codex.chmod(codex.stat().st_mode|stat.S_IEXEC)
         self.state=self.dir/'state'/'reset-guard.json'
         self.log=self.dir/'consumed.jsonl'
+        self.config=self.dir/'config.json'
 
     def tearDown(self):
         self.directory.cleanup()
@@ -112,7 +113,7 @@ class Guard(unittest.TestCase):
     def run_guard(self,reply,*extra):
         read=reply if isinstance(reply,str) else json.dumps({'id':'ID','result':reply})
         out,err=StringIO(),StringIO()
-        env={'PATH':f"{self.dir}:{os.environ['PATH']}",'FAKE_READ':read,'FAKE_LOG':str(self.log)}
+        env={'PATH':f"{self.dir}:{os.environ['PATH']}",'FAKE_READ':read,'FAKE_LOG':str(self.log),'PSTACK_CONFIG':str(self.config)}
         with patch.dict(os.environ,env),patch.object(sys,'argv',['reset_guard.py','--state',str(self.state),*extra]),patch.object(guard.time,'time',return_value=NOW),redirect_stdout(out),redirect_stderr(err):
             code=guard.main()
         return code,out.getvalue(),err.getvalue()
@@ -177,6 +178,12 @@ class Guard(unittest.TestCase):
         self.assertEqual(json.loads(self.state.read_text()),{'announced':['credit-1']})
         self.assertEqual(self.run_guard(reading(10,NOW+DAY)),(0,'',''))
         self.assertEqual(self.consumed(),[])
+
+    def test_the_threshold_defaults_to_the_configured_fallback_threshold(self):
+        self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':10}}))
+        code,out,_=self.run_guard(reading(92,NOW+DAY))
+        self.assertEqual((code,len(self.consumed())),(0,1))
+        self.assertTrue(out.startswith('Redeemed the banked Codex reset'),out)
 
     def test_a_short_window_running_low_does_not_redeem(self):
         reply=reading(40,NOW+DAY)

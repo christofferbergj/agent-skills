@@ -107,6 +107,10 @@ def number(value):
         return None
 
 
+def config_path():
+    return Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json')
+
+
 def load_config(path):
     try:
         return table(json.loads(path.read_text()))
@@ -465,7 +469,7 @@ def main():
     args = parser.parse_args()
     if args.parent == 'codex' and args.role.startswith('computer-use'):
         parser.error('Codex runs computer use itself')
-    config = load_config(Path(os.environ.get('PSTACK_CONFIG') or Path.home() / '.config' / 'pstack' / 'config.json'))
+    config = load_config(config_path())
     home = Path(os.environ.get('CODEX_HOME') or Path.home() / '.codex')
     cache = Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'codex-reset-credits.json'
     if args.role.startswith('computer-use') and not (args.on_mac or has_mac_desktop()):
