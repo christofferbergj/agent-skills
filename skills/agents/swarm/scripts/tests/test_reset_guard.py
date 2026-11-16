@@ -1,4 +1,3 @@
-import importlib.util
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 import json
@@ -12,9 +11,7 @@ from unittest.mock import patch
 
 SCRIPTS=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(SCRIPTS))
-spec=importlib.util.spec_from_file_location('reset_guard',SCRIPTS/'reset_guard.py')
-guard=importlib.util.module_from_spec(spec)
-spec.loader.exec_module(guard)
+import reset_guard as guard
 Window,Credit=guard.Window,guard.target.Credit
 
 NOW=1_800_000_000
@@ -143,7 +140,8 @@ class Guard(unittest.TestCase):
         self.assertEqual(code,1)
         self.assertTrue(out.startswith('Heads-up:'),out)
         code,out,_=self.run_guard(reply)
-        self.assertEqual((code,out.splitlines()[0][:8]),(0,'Redeemed'))
+        self.assertEqual(code,0)
+        self.assertTrue(out.startswith('Redeemed'),out)
         self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1','credit-1'])
         self.assertEqual(json.loads(self.state.read_text()),{'announced':['credit-2']})
 
