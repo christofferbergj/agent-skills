@@ -21,53 +21,54 @@ NOW=1_800_000_000
 HOUR=3600
 DAY=24*HOUR
 WEEK_ENDS=NOW+3*DAY
-WEEK=[Window(60,WEEK_ENDS)]
+WEEK=Window(60,WEEK_ENDS)
 
 
-def credit(id,expires,kind='codexRateLimits'):
-    return Credit(id,kind,expires)
+def credit(id,expires):
+    return Credit(id,'codexRateLimits',expires)
+
+
+def limits(*windows):
+    return {'rateLimits':{'primary':windows[0],'secondary':windows[1] if len(windows)>1 else None}}
+
+
+class ParseWeek(unittest.TestCase):
+    def test_the_week_is_the_day_long_window_that_resets_last(self):
+        day,week={'usedPercent':96,'windowDurationMins':1440,'resetsAt':NOW+HOUR},{'usedPercent':40,'windowDurationMins':10080,'resetsAt':WEEK_ENDS}
+        self.assertEqual(guard.parse_week(limits(day,week)),Window(60,WEEK_ENDS))
+        self.assertEqual(guard.parse_week(limits(week,day)),Window(60,WEEK_ENDS))
+
+    def test_a_short_window_or_one_without_a_reset_time_is_no_week(self):
+        self.assertIsNone(guard.parse_week(limits({'usedPercent':40,'windowDurationMins':300,'resetsAt':WEEK_ENDS})))
+        self.assertIsNone(guard.parse_week(limits({'usedPercent':40,'windowDurationMins':10080,'resetsAt':None})))
+        self.assertIsNone(guard.parse_week({}))
 
 
 class Decide(unittest.TestCase):
     def test_no_credits_does_nothing(self):
-        self.assertEqual(guard.decide(WEEK,[],NOW,frozenset()),guard.Decision(WEEK[0],(),None,frozenset()))
+        self.assertEqual(guard.decide(WEEK,[],NOW,frozenset()),guard.Decision((),None))
 
-    def test_a_reset_that_outlasts_the_week_or_never_expires_is_never_redeemed(self):
-        for expires in (WEEK_ENDS+HOUR,None):
-            decision=guard.decide([Window(0,WEEK_ENDS)],[credit('a',expires)],NOW,frozenset())
-            self.assertEqual((decision.notices,decision.redeem),((),None),expires)
+    def test_a_reset_that_outlasts_the_week_is_never_redeemed(self):
+        self.assertEqual(guard.decide(Window(0,WEEK_ENDS),[credit('a',WEEK_ENDS+HOUR)],NOW,frozenset()),guard.Decision((),None))
 
     def test_a_lapsing_reset_with_plenty_left_gets_one_heads_up(self):
         lapsing=credit('a',NOW+DAY)
-        decision=guard.decide(WEEK,[lapsing],NOW,frozenset())
-        self.assertEqual((decision.notices,decision.redeem,decision.announced),((lapsing,),None,{'a'}))
-        again=guard.decide(WEEK,[lapsing],NOW,decision.announced)
-        self.assertEqual((again.notices,again.redeem,again.announced),((),None,{'a'}))
+        self.assertEqual(guard.decide(WEEK,[lapsing],NOW,frozenset()),guard.Decision((lapsing,),None))
+        self.assertEqual(guard.decide(WEEK,[lapsing],NOW,frozenset({'a'})),guard.Decision((),None))
 
     def test_a_lapsing_reset_is_redeemed_when_the_week_reaches_the_threshold(self):
         lapsing=credit('a',NOW+DAY)
-        self.assertEqual(guard.decide([Window(5,WEEK_ENDS)],[lapsing],NOW,frozenset()).redeem,lapsing)
-        self.assertIsNone(guard.decide([Window(6,WEEK_ENDS)],[lapsing],NOW,frozenset()).redeem)
-        self.assertEqual(guard.decide([Window(60,NOW+HOUR),Window(5,WEEK_ENDS)],[lapsing],NOW,frozenset()).redeem,lapsing)
-        decision=guard.decide([Window(4,NOW+HOUR),Window(60,WEEK_ENDS)],[lapsing],NOW,frozenset())
-        self.assertEqual((decision.week,decision.redeem),(Window(60,WEEK_ENDS),None))
+        self.assertEqual(guard.decide(Window(5,WEEK_ENDS),[lapsing],NOW,frozenset()).redeem,lapsing)
+        self.assertIsNone(guard.decide(Window(6,WEEK_ENDS),[lapsing],NOW,frozenset()).redeem)
 
     def test_a_lapsing_reset_is_redeemed_within_the_margin_even_with_plenty_left(self):
-        for expires,redeemed in [(NOW+3*HOUR,True),(NOW+3*HOUR+60,False),(NOW-1,False)]:
-            decision=guard.decide([Window(90,WEEK_ENDS)],[credit('a',expires)],NOW,frozenset())
+        for expires,redeemed in [(NOW+3*HOUR,True),(NOW+3*HOUR+60,False)]:
+            decision=guard.decide(Window(90,WEEK_ENDS),[credit('a',expires)],NOW,frozenset())
             self.assertEqual(decision.redeem is not None,redeemed,expires)
 
     def test_only_the_earliest_of_two_lapsing_resets_is_redeemed(self):
         early,late=credit('early',NOW+2*DAY),credit('late',NOW+DAY//2)
-        decision=guard.decide([Window(3,WEEK_ENDS)],[early,late],NOW,frozenset())
-        self.assertEqual((decision.redeem,decision.notices,decision.announced),(late,(early,),{'early'}))
-
-    def test_another_reset_type_is_ignored(self):
-        decision=guard.decide([Window(0,WEEK_ENDS)],[credit('a',NOW+HOUR,kind='otherLimits')],NOW,frozenset())
-        self.assertEqual((decision.notices,decision.redeem),((),None))
-
-    def test_announced_ids_no_longer_available_are_forgotten(self):
-        self.assertEqual(guard.decide(WEEK,[credit('kept',None)],NOW,frozenset({'gone','kept'})).announced,{'kept'})
+        self.assertEqual(guard.decide(Window(3,WEEK_ENDS),[early,late],NOW,frozenset()),guard.Decision((early,),late))
 
 
 FAKE_CODEX='''\
@@ -236,6 +237,17 @@ class Guard(unittest.TestCase):
         code,out,_=self.run_guard(reply)
         self.assertEqual((code,self.consumed()),(0,[]))
         self.assertTrue(out.startswith('Heads-up:'),out)
+
+    def test_a_reset_that_never_expires_has_expired_or_is_another_type_is_never_redeemed(self):
+        rows=[row(None,id='never'),row(NOW-1,id='expired'),row(NOW+HOUR,id='other',resetType='otherLimits')]
+        self.assertEqual(self.run_guard(reading(100,None,rows)),(0,'',''))
+        self.assertEqual(self.consumed(),[])
+
+    def test_announced_ids_no_longer_listed_are_forgotten(self):
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({'announced':['gone','kept']}))
+        self.assertEqual(self.run_guard(reading(10,None,[row(None,id='kept')])),(0,'',''))
+        self.assertEqual(json.loads(self.state.read_text()),{'announced':['kept']})
 
     def test_nothing_to_do_prints_nothing(self):
         self.assertEqual(self.run_guard(reading(96,WEEK_ENDS+DAY)),(0,'',''))

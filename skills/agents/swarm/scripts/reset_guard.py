@@ -35,40 +35,32 @@ CLIENT = 'pstack-reset-guard'
 
 class Window(NamedTuple):
     left: float
-    resets: float | None
+    resets: float
 
 
 class Decision(NamedTuple):
-    week: Window | None
     notices: tuple
     redeem: target.Credit | None
-    announced: frozenset
 
 
-def parse_windows(result):
-    """Return the usage windows a day or longer, since a shorter window never decides a redeem."""
+def parse_week(result):
+    """Return the window a day or longer that resets last, or None, since a shorter window never decides a redeem."""
     limits = target.table(target.table(result).get('rateLimits'))
     windows = []
     for window in map(target.table, (limits.get('primary'), limits.get('secondary'))):
-        used, minutes = target.number(window.get('usedPercent')), target.number(window.get('windowDurationMins'))
-        if used is not None and minutes is not None and minutes >= 1440:
-            windows.append(Window(max(0, 100 - used), target.number(window.get('resetsAt'))))
-    return windows
+        used, minutes, resets = (target.number(window.get(key)) for key in ('usedPercent', 'windowDurationMins', 'resetsAt'))
+        if used is not None and minutes is not None and minutes >= 1440 and resets is not None:
+            windows.append(Window(max(0, 100 - used), resets))
+    return max(windows, key=lambda window: window.resets, default=None)
 
 
-def decide(windows, credits, now, announced, redeem_when_left=5, margin_hours=3):
-    """Return the week, which lapsing resets to announce, which one to redeem, and the announced ids to remember."""
-    week = max((window for window in windows if window.resets is not None), key=lambda window: window.resets, default=None)
-    lapsing = sorted(
-        (credit for credit in credits if credit.kind == target.CODEX_RESET and credit.expires is not None and week is not None and now < credit.expires < week.resets),
-        key=lambda credit: credit.expires,
-    )
+def decide(week, expiring, now, announced, redeem_when_left=5, margin_hours=3):
+    """Return which of the resets that could expire lapse before the week and need a heads-up, and which one to redeem."""
+    lapsing = sorted((credit for credit in expiring if credit.expires < week.resets), key=lambda credit: credit.expires)
     redeem = None
     if lapsing and (week.left <= redeem_when_left or lapsing[0].expires - now <= margin_hours * 3600):
         redeem = lapsing[0]
-    notices = tuple(credit for credit in lapsing if credit.id not in announced and credit != redeem)
-    available = {credit.id for credit in credits}
-    return Decision(week, notices, redeem, frozenset({*announced, *(credit.id for credit in notices)} & available))
+    return Decision(tuple(credit for credit in lapsing if credit.id not in announced and credit != redeem), redeem)
 
 
 def load_announced(path):
@@ -128,28 +120,30 @@ def main():
     if banked is None:
         print("Codex's rate limits don't state each banked reset's id and expiry.", file=sys.stderr)
         return 1
-    windows, credits = parse_windows(result), banked.credits
     short = banked.short
     if short:
-        print(f'Codex lists {len(credits)} of {banked.count:g} banked resets; the others go unchecked.', file=sys.stderr)
-    announced = load_announced(args.state)
-    decision = decide(windows, credits, now, announced, args.redeem_when_left, args.margin_hours)
-    if decision.week is None and any(credit.kind == target.CODEX_RESET and credit.expires is not None and credit.expires > now for credit in credits):
+        print(f'Codex lists {len(banked.credits)} of {banked.count:g} banked resets; the others go unchecked.', file=sys.stderr)
+    week = parse_week(result)
+    expiring = [credit for credit in banked.credits if credit.kind == target.CODEX_RESET and credit.expires is not None and credit.expires > now]
+    if expiring and week is None:
         print('Codex reports a banked reset that could expire but no usage window a day or longer with a reset time.', file=sys.stderr)
         return 1
+    announced = load_announced(args.state)
+    decision = decide(week, expiring, now, announced, args.redeem_when_left, args.margin_hours) if expiring else Decision((), None)
     prefix = 'Dry run: ' if args.dry_run else ''
     for credit in decision.notices:
-        print(prefix + notice(credit, decision.week, args))
+        print(prefix + notice(credit, week, args))
     code = 0
     if decision.redeem is not None:
-        summary = redeem_summary(decision.redeem, decision.week)
+        summary = redeem_summary(decision.redeem, week)
         if args.dry_run:
             print(f'Dry run: would redeem {summary}.')
         else:
             code = redeem(decision.redeem, summary)
-    if not args.dry_run and decision.announced != announced:
+    remembered = frozenset({*announced, *(credit.id for credit in decision.notices)} & {credit.id for credit in banked.credits})
+    if not args.dry_run and remembered != announced:
         try:
-            save_announced(args.state, decision.announced)
+            save_announced(args.state, remembered)
         except OSError as error:
             print(f'Could not save the announced resets to {args.state}: {error}.', file=sys.stderr)
             return 1
