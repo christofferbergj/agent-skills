@@ -11,8 +11,9 @@ redeemed. The first run that sees a lapsing reset it doesn't redeem prints a hea
 remembered in --state. Prints one line per heads-up or redeem and nothing otherwise.
 
 Exits 1, with the reason on stderr, when Codex's rate limits can't be read, hide a banked
-reset's id or expiry, or give no window a reset time while resets are banked, when a redeem neither resets Codex nor finds the reset already redeemed,
-or when --state can't be written, which never holds up a redeem.
+reset's id or expiry, or give no window a reset time while resets are banked; when a redeem
+neither resets Codex nor finds the reset already redeemed; or when --state can't be written,
+which never holds up a redeem.
 """
 
 from __future__ import annotations
