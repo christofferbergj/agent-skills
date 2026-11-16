@@ -108,10 +108,10 @@ class TargetResolution(unittest.TestCase):
         self.credits=[MIDWEEK+1]
         self.assertIn('Standard speed: Codex usage 40% left',self.run_target('review-full')['note'])
         (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
-        self.credits=[MIDWEEK+1,NOW+WEEK//10,NOW+WEEK//20]
+        self.credits=[MIDWEEK+1,NOW+WEEK//10,NOW+WEEK//20,NOW+WEEK//8]
         note=self.run_target('review-full')['note']
         self.assertIn('A banked reset expiring 2027-01-15T16:24Z keeps fast mode',note)
-        self.assertIn(f'under the 50% even pace leaves; 3 banked resets, 2 expiring before then. Redeem it once Codex usage runs out',note)
+        self.assertIn(f'under the 50% even pace leaves; 4 banked resets, 3 expiring before then. Redeem it once Codex usage runs out',note)
 
     def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))

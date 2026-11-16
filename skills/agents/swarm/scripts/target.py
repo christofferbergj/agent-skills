@@ -14,7 +14,7 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
-window keeps two lines. Even pace: its percent left is at least the share of the window still
+window keeps its lines. Even pace: its percent left is at least the share of the window still
 to run less paceSlackHours, so a day's lead, made up by the idle night, is allowed. The floor:
 at least reservePerDay percent for each day a window of a day or longer still runs, capped at floorPercent, so
 the window's last days keep enough for standard-speed work and a window that resets soon can
