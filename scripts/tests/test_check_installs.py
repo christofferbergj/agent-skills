@@ -137,6 +137,16 @@ class Refresh(unittest.TestCase):
         self.assertNotIn('stale    alpha', output)
         self.assertEqual(len(self.calls()), 2)
 
+    def test_refresh_installs_missing_and_unknown_skills(self):
+        current = {'beta': self.trees['beta']}
+        for case, hashes in (('missing', current), ('unknown', {**current, 'alpha': 'not-a-tree-hash'})):
+            with self.subTest(case):
+                self.install(hashes)
+                self.assertIn(f'{case}  alpha', self.run_check()[1])
+                code, output = self.run_check('--refresh')
+                self.assertEqual(code, 0, output)
+                self.assertEqual(self.calls(), [refresh('*')])
+
     def test_refresh_retries_the_skills_the_install_reported_failed(self):
         self.install({'alpha': OLD_TREE, 'beta': OLD_TREE}, lag={'beta': 1}, fail={'alpha': 1})
         code, output = self.run_check('--refresh')
