@@ -1,29 +1,28 @@
 #!/usr/bin/env python3
 """Redeem a banked Codex reset before it lapses unused.
 
-A banked reset lapses when it expires before the latest usage window, the week, resets: a redeem
-resets every window, so one that outlasts the week can still serve a later week. The earliest
-lapsing reset is redeemed when the week has --redeem-when-left percent or less left, by default
-codexUsage.skipWhenLeft in PSTACK_CONFIG or ~/.config/pstack/config.json, or when it expires
-within --margin-hours; at most one per run. A shorter window running low never triggers a
-redeem. Resets that never expire or outlast the week, and resets of another type, are never
-redeemed. The first run that sees a lapsing reset it doesn't redeem prints a heads-up,
-remembered in --state. Prints one line per heads-up or redeem and nothing otherwise.
+A redeem restarts every usage window, so a reset is redeemed only when it would otherwise expire.
 
-Exits 1, with the reason on stderr, when Codex's rate limits can't be read, hide a banked
-reset's id or expiry, list fewer resets than they count, or give no window a day or longer a
-reset time while a banked reset could expire; when a redeem neither resets Codex nor finds the
-reset already redeemed; or when --state can't be written, which never holds up a redeem.
+- The week is the usage window a day or longer that resets last; a shorter window never decides.
+- A reset that expires before the week resets is redeemed once the week has --redeem-when-left
+  percent or less left, or within --margin-hours of its expiry, whichever comes first.
+- The earliest such reset goes first, at most one per run. Resets that outlast the week, never
+  expire, or are of another type are left alone.
+
+It needs a signed-in `codex` CLI on PATH and target.py beside it. Run it from any scheduler, such
+as cron, a systemd timer, or launchd, every 30 minutes or so. It prints a line only when it redeems
+a reset, so its output can go straight to whatever channel you want notices in. A nonzero exit
+means a reset may lapse unseen, so treat it as an alert: it exits 1, with the reason on stderr,
+when Codex's rate limits can't be read, hide a reset's id or expiry, list fewer resets than they
+count, or give no day-long window a reset time while a reset could expire, and when a redeem
+neither resets Codex nor finds the reset already redeemed.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import os
-from pathlib import Path
 import sys
-import tempfile
 import time
 from typing import NamedTuple
 
@@ -39,11 +38,6 @@ class Window(NamedTuple):
     resets: float
 
 
-class Decision(NamedTuple):
-    notices: tuple
-    redeem: target.Credit | None
-
-
 def parse_week(result):
     """Return the window a day or longer that resets last, or None, since a shorter window never decides a redeem."""
     limits = target.table(target.table(result).get('rateLimits'))
@@ -55,35 +49,12 @@ def parse_week(result):
     return max(windows, key=lambda window: window.resets, default=None)
 
 
-def decide(week, expiring, now, announced, redeem_when_left, margin_hours):
-    """Return which of the resets that could expire lapse before the week and need a heads-up, and which one to redeem."""
-    lapsing = sorted((credit for credit in expiring if credit.expires < week.resets), key=lambda credit: credit.expires)
-    redeem = None
-    if lapsing and (week.left <= redeem_when_left or lapsing[0].expires - now <= margin_hours * 3600):
-        redeem = lapsing[0]
-    return Decision(tuple(credit for credit in lapsing if credit.id not in announced and credit != redeem), redeem)
-
-
-def load_announced(path):
-    try:
-        ids = target.table(json.loads(path.read_text())).get('announced')
-    except (OSError, ValueError):
-        return frozenset()
-    return frozenset(entry for entry in ids if isinstance(entry, str)) if isinstance(ids, list) else frozenset()
-
-
-def save_announced(path, announced):
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile('w', dir=path.parent, prefix=path.name, suffix='.tmp', delete=False) as stream:
-        json.dump({'announced': sorted(announced)}, stream)
-    os.replace(stream.name, path)
-
-
-def notice(credit, week, redeem_when_left, margin_hours):
-    return (
-        f'Heads-up: a banked Codex reset expires {target.moment(credit.expires)}, before the week resets {target.moment(week.resets)}. '
-        f'It will be redeemed automatically at {redeem_when_left:g}% left or {margin_hours:g} h before it expires.'
-    )
+def decide(week, expiring, now, redeem_when_left, margin_hours):
+    """Return the earliest reset that lapses before the week once it is due, or None."""
+    lapsing = min((credit for credit in expiring if credit.expires < week.resets), key=lambda credit: credit.expires, default=None)
+    if lapsing is not None and (week.left <= redeem_when_left or lapsing.expires - now <= margin_hours * 3600):
+        return lapsing
+    return None
 
 
 def redeem_summary(credit, week):
@@ -107,10 +78,9 @@ def consume(credit, summary):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('--redeem-when-left', type=float, default=target.thresholds(target.load_config(target.config_path()))['skipWhenLeft'], help="Percent left in the week at which to redeem (default: Pstack's codexUsage.skipWhenLeft, %(default)s)")
+    parser.add_argument('--redeem-when-left', type=float, default=target.thresholds(target.load_config(target.config_path()))['skipWhenLeft'], help='Percent left in the week at which to redeem (default: codexUsage.skipWhenLeft in PSTACK_CONFIG or ~/.config/pstack/config.json, now %(default)s)')
     parser.add_argument('--margin-hours', type=float, default=MARGIN_HOURS, help='Redeem a lapsing reset this many hours before it expires (default %(default)s)')
-    parser.add_argument('--state', type=Path, default=Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'reset-guard.json', help='JSON file of announced reset ids')
-    parser.add_argument('--dry-run', action='store_true', help='Print what would happen without redeeming or writing state')
+    parser.add_argument('--dry-run', action='store_true', help='Print the reset it would redeem without redeeming it')
     args = parser.parse_args()
     now = time.time()
     result = target.app_server_call('account/rateLimits/read', {}, CALL_TIMEOUT, CLIENT)
@@ -130,23 +100,12 @@ def main():
     if expiring and week is None:
         print('Codex reports a banked reset that could expire but no usage window a day or longer with a reset time.', file=sys.stderr)
         return 1
-    announced = load_announced(args.state)
-    decision = decide(week, expiring, now, announced, args.redeem_when_left, args.margin_hours) if expiring else Decision((), None)
-    prefix = 'Dry run: ' if args.dry_run else ''
-    for credit in decision.notices:
-        print(prefix + notice(credit, week, args.redeem_when_left, args.margin_hours))
-    if decision.redeem is not None:
-        summary = redeem_summary(decision.redeem, week)
+    redeem = decide(week, expiring, now, args.redeem_when_left, args.margin_hours)
+    if redeem is not None:
+        summary = redeem_summary(redeem, week)
         if args.dry_run:
             print(f'Dry run: would redeem {summary}.')
-        elif not consume(decision.redeem, summary):
-            failed = True
-    remembered = frozenset({*announced, *(credit.id for credit in decision.notices)} & {credit.id for credit in banked.credits})
-    if not args.dry_run and remembered != announced:
-        try:
-            save_announced(args.state, remembered)
-        except OSError as error:
-            print(f'Could not save the announced resets to {args.state}: {error}.', file=sys.stderr)
+        elif not consume(redeem, summary):
             failed = True
     return 1 if failed else 0
 

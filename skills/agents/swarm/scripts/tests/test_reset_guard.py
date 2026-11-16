@@ -40,33 +40,31 @@ class ParseWeek(unittest.TestCase):
         self.assertIsNone(guard.parse_week(limits({'usedPercent':40,'windowDurationMins':10080,'resetsAt':None})))
         self.assertIsNone(guard.parse_week({}))
 
+    def test_a_window_of_exactly_one_day_counts_as_the_week(self):
+        self.assertEqual(guard.parse_week(limits({'usedPercent':40,'windowDurationMins':1440,'resetsAt':WEEK_ENDS})),Window(60,WEEK_ENDS))
+
 
 class Decide(unittest.TestCase):
     def test_no_credits_does_nothing(self):
-        self.assertEqual(guard.decide(WEEK,[],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((),None))
+        self.assertIsNone(guard.decide(WEEK,[],NOW,5,guard.MARGIN_HOURS))
 
     def test_a_reset_that_outlasts_the_week_is_never_redeemed(self):
         for expires in (WEEK_ENDS,WEEK_ENDS+HOUR):
-            self.assertEqual(guard.decide(Window(0,WEEK_ENDS),[credit('a',expires)],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((),None),expires)
-
-    def test_a_lapsing_reset_with_plenty_left_gets_one_heads_up(self):
-        lapsing=credit('a',NOW+DAY)
-        self.assertEqual(guard.decide(WEEK,[lapsing],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((lapsing,),None))
-        self.assertEqual(guard.decide(WEEK,[lapsing],NOW,frozenset({'a'}),5,guard.MARGIN_HOURS),guard.Decision((),None))
+            self.assertIsNone(guard.decide(Window(0,WEEK_ENDS),[credit('a',expires)],NOW,5,guard.MARGIN_HOURS),expires)
 
     def test_a_lapsing_reset_is_redeemed_when_the_week_reaches_the_threshold(self):
         lapsing=credit('a',NOW+DAY)
-        self.assertEqual(guard.decide(Window(5,WEEK_ENDS),[lapsing],NOW,frozenset(),5,guard.MARGIN_HOURS).redeem,lapsing)
-        self.assertIsNone(guard.decide(Window(6,WEEK_ENDS),[lapsing],NOW,frozenset(),5,guard.MARGIN_HOURS).redeem)
+        self.assertEqual(guard.decide(Window(5,WEEK_ENDS),[lapsing],NOW,5,guard.MARGIN_HOURS),lapsing)
+        self.assertIsNone(guard.decide(Window(6,WEEK_ENDS),[lapsing],NOW,5,guard.MARGIN_HOURS))
 
     def test_a_lapsing_reset_is_redeemed_within_the_margin_even_with_plenty_left(self):
         for expires,redeemed in [(NOW+guard.MARGIN_HOURS*HOUR,True),(NOW+guard.MARGIN_HOURS*HOUR+60,False)]:
-            decision=guard.decide(Window(90,WEEK_ENDS),[credit('a',expires)],NOW,frozenset(),5,guard.MARGIN_HOURS)
-            self.assertEqual(decision.redeem is not None,redeemed,expires)
+            redeem=guard.decide(Window(90,WEEK_ENDS),[credit('a',expires)],NOW,5,guard.MARGIN_HOURS)
+            self.assertEqual(redeem is not None,redeemed,expires)
 
     def test_only_the_earliest_of_two_lapsing_resets_is_redeemed(self):
         early,late=credit('early',NOW+2*DAY),credit('late',NOW+DAY//2)
-        self.assertEqual(guard.decide(Window(3,WEEK_ENDS),[early,late],NOW,frozenset(),5,guard.MARGIN_HOURS),guard.Decision((early,),late))
+        self.assertEqual(guard.decide(Window(3,WEEK_ENDS),[early,late],NOW,5,guard.MARGIN_HOURS),late)
 
 
 FAKE_CODEX='''\
@@ -102,7 +100,6 @@ class Guard(unittest.TestCase):
         codex=self.dir/'codex'
         codex.write_text(FAKE_CODEX)
         codex.chmod(codex.stat().st_mode|stat.S_IEXEC)
-        self.state=self.dir/'state'/'reset-guard.json'
         self.log=self.dir/'consumed.jsonl'
         self.config=self.dir/'config.json'
 
@@ -115,9 +112,19 @@ class Guard(unittest.TestCase):
         env={'PATH':f"{self.dir}:{os.environ['PATH']}",'FAKE_READ':read,'FAKE_LOG':str(self.log),'PSTACK_CONFIG':str(self.config)}
         if consume is not None:
             env['FAKE_CONSUME']=consume if isinstance(consume,str) else json.dumps({'id':'ID','result':consume})
-        with patch.dict(os.environ,env),patch.object(sys,'argv',['reset_guard.py','--state',str(self.state),*extra]),patch.object(guard.time,'time',return_value=NOW),redirect_stdout(out),redirect_stderr(err):
+        with patch.dict(os.environ,env),patch.object(sys,'argv',['reset_guard.py',*extra]),patch.object(guard.time,'time',return_value=NOW),redirect_stdout(out),redirect_stderr(err):
             code=guard.main()
         return code,out.getvalue(),err.getvalue()
+
+    def test_a_lapsing_reset_is_redeemed_three_hours_before_it_expires_by_default(self):
+        self.assertEqual(self.run_guard(reading(10,NOW+3*HOUR+1))[:2],(0,''))
+        code,out,_=self.run_guard(reading(10,NOW+3*HOUR))
+        self.assertEqual(code,0)
+        self.assertTrue(out.startswith('Redeemed'),out)
+
+    def test_margin_hours_moves_when_a_lapsing_reset_is_redeemed(self):
+        self.assertEqual(self.run_guard(reading(10,NOW+DAY))[:2],(0,''))
+        self.assertTrue(self.run_guard(reading(10,NOW+DAY),'--margin-hours','30')[1].startswith('Redeemed'))
 
     def consumed(self):
         return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
@@ -135,38 +142,24 @@ class Guard(unittest.TestCase):
             self.assertTrue(err.startswith('Could not redeem the banked Codex reset expiring'),err)
         self.assertEqual(len(self.consumed()),5)
 
-    def test_a_failed_redeem_is_retried_and_only_heads_ups_are_remembered(self):
+    def test_a_failed_redeem_is_retried_on_the_next_run(self):
         reply=reading(96,None,[row(NOW+DAY),row(NOW+2*DAY,id='credit-2')])
         code,out,_=self.run_guard(reply,consume={'outcome':'noCredit'})
-        self.assertEqual(code,1)
-        self.assertTrue(out.startswith('Heads-up:'),out)
+        self.assertEqual((code,out),(1,''))
         code,out,_=self.run_guard(reply)
         self.assertEqual(code,0)
         self.assertTrue(out.startswith('Redeemed'),out)
         self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1','credit-1'])
-        self.assertEqual(json.loads(self.state.read_text()),{'announced':['credit-2']})
-
-    def test_an_unwritable_state_file_still_redeems_then_exits_1(self):
-        self.state.parent.mkdir()
-        self.state.parent.chmod(0o500)
-        code,out,err=self.run_guard(reading(96,None,[row(NOW+DAY),row(NOW+2*DAY,id='credit-2')]))
-        self.assertEqual(code,1)
-        self.assertEqual([entry['creditId'] for entry in self.consumed()],['credit-1'])
-        self.assertIn('Redeemed the banked Codex reset',out)
-        self.assertIn('Could not save the announced resets',err)
 
     def test_a_reset_already_redeemed_exits_0(self):
         code,out,err=self.run_guard(reading(96,NOW+DAY),consume={'outcome':'alreadyRedeemed'})
         self.assertEqual((code,err),(0,''))
         self.assertTrue(out.startswith('Codex had already redeemed the banked Codex reset expiring'),out)
 
-    def test_dry_run_neither_redeems_nor_writes_state(self):
+    def test_dry_run_never_redeems(self):
         code,out,_=self.run_guard(reading(96,NOW+DAY),'--dry-run')
-        self.assertEqual((code,self.consumed(),self.state.exists()),(0,[],False))
-        self.assertTrue(out.startswith('Dry run: would redeem the banked Codex reset expiring'),out)
-        code,out,_=self.run_guard(reading(10,NOW+DAY),'--dry-run')
-        self.assertTrue(out.startswith('Dry run: Heads-up:'),out)
-        self.assertFalse(self.state.exists())
+        self.assertEqual((code,self.consumed()),(0,[]))
+        self.assertEqual(out,f'Dry run: would redeem the banked Codex reset expiring {guard.target.moment(NOW+DAY)}: 4% was left of the week ending {guard.target.moment(WEEK_ENDS)}.\n')
 
     def test_a_failed_or_unusable_read_exits_1(self):
         for reply in (json.dumps({'id':'ID','error':{'message':'not signed in'}}),{'rateLimitResetCredits':{'availableCount':2,'credits':None}}):
@@ -215,12 +208,7 @@ class Guard(unittest.TestCase):
         self.assertEqual((code,out,self.consumed()),(1,'',[]))
         self.assertIn('no usage window a day or longer with a reset time',err)
 
-    def test_the_heads_up_is_printed_once_across_runs(self):
-        code,out,_=self.run_guard(reading(10,NOW+DAY))
-        self.assertEqual(code,0)
-        self.assertIn('Heads-up: a banked Codex reset expires',out)
-        self.assertIn(f'redeemed automatically at 5% left or {guard.MARGIN_HOURS} h before it expires',out)
-        self.assertEqual(json.loads(self.state.read_text()),{'announced':['credit-1']})
+    def test_a_lapsing_reset_that_is_not_due_yet_is_quiet(self):
         self.assertEqual(self.run_guard(reading(10,NOW+DAY)),(0,'',''))
         self.assertEqual(self.consumed(),[])
 
@@ -233,24 +221,17 @@ class Guard(unittest.TestCase):
     def test_a_short_window_running_low_does_not_redeem(self):
         reply=reading(40,NOW+DAY)
         reply['rateLimits']['secondary']={'usedPercent':97,'windowDurationMins':300,'resetsAt':NOW+HOUR}
-        code,out,_=self.run_guard(reply)
-        self.assertEqual((code,self.consumed()),(0,[]))
-        self.assertTrue(out.startswith('Heads-up:'),out)
+        self.assertEqual(self.run_guard(reply),(0,'',''))
+        self.assertEqual(self.consumed(),[])
 
     def test_a_reset_that_never_expires_has_expired_or_is_another_type_is_never_redeemed(self):
         rows=[row(None,id='never'),row(NOW-1,id='expired'),row(NOW+HOUR,id='other',resetType='otherLimits')]
         self.assertEqual(self.run_guard(reading(100,None,rows)),(0,'',''))
         self.assertEqual(self.consumed(),[])
 
-    def test_announced_ids_no_longer_listed_are_forgotten(self):
-        self.state.parent.mkdir()
-        self.state.write_text(json.dumps({'announced':['gone','kept']}))
-        self.assertEqual(self.run_guard(reading(10,None,[row(None,id='kept')])),(0,'',''))
-        self.assertEqual(json.loads(self.state.read_text()),{'announced':['kept']})
-
     def test_nothing_to_do_prints_nothing(self):
         self.assertEqual(self.run_guard(reading(96,WEEK_ENDS+DAY)),(0,'',''))
-        self.assertFalse(self.state.exists())
+        self.assertEqual(self.consumed(),[])
 
 
 if __name__=='__main__':
