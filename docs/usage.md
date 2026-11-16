@@ -30,9 +30,9 @@ Use the [complete-library install](../README.md#install). Skills CLI does not in
 
 Installations are snapshots. After changes merge, rerun the complete install to refresh your selected agents and discover new skills. Install from this repository rather than overwriting its adaptations with same-named upstream skills. A repository update does not refresh global installations automatically. To check them against `main`, run `git fetch origin main`, then `python3 scripts/check-installs.py` from this repository. It reports stale, missing, unknown, and retired installs, same-named skills from other sources, and entries in `~/.claude/skills` that load something other than the shared install. When a skill is stale, missing, or unknown, it also prints the complete install, which runs without prompts when the lock records the agents you last chose.
 
-For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). Upstream runs adopt upstream changes while keeping the library's local adaptations; audits also recheck skills against current tools and conventions. This is separate from refreshing installed copies.
+For source upkeep, use `/maintain-skills` and the [repository maintenance guide](../skills/agents/maintain-skills/MAINTENANCE.md). Upstream runs adopt upstream changes while keeping the library's local adaptations; audits also recheck skills against current tools and conventions. A daily T3 scheduled task runs it, as the guide's Scheduled runs section describes. This is separate from refreshing installed copies.
 
-To tune the workflow from how it is used, `/usage-review` measures the owner's T3 Code threads, follows up on its earlier changes by their metric contracts, and opens at most one draft PR. A weekly T3 scheduled task in this repository's project runs it from the default branch.
+To tune the workflow from how it is used, `/usage-review` measures the owner's T3 Code threads, follows up on its earlier changes by their metric contracts, and opens at most one draft PR. A weekly T3 scheduled task in this repository's project on the owner's Mac runs it from the default branch.
 
 ## Agent compatibility
 

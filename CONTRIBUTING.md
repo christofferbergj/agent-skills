@@ -22,7 +22,7 @@ Find a skill's consumers with `git grep -nE '(^|[^[:alnum:]_./-])/<skill-name>([
 
 Run `bash scripts/setup.sh` to install the pinned tools and dependencies; the script lists what it installs. In T3 Code, import the **Setup worktree** action from `t3.json` into the project's actions once, and each new worktree runs the script before its agent starts.
 
-Run every gate with:
+Run every gate with the tools `mise.toml` pins, through `mise exec --` when the shell's own versions differ:
 
 ```bash
 pnpm check
@@ -34,6 +34,6 @@ Commits format staged files with Oxfmt through a Husky pre-commit hook and lint-
 
 ## Upstream maintenance
 
-Use this repository's `/maintain-skills` with `/writing-for-agents` and `/swarm`. Follow the [adaptation contract](skills/agents/maintain-skills/references/ADAPTATION.md), [maintenance guide](skills/agents/maintain-skills/MAINTENANCE.md), and [provenance convention](skills/agents/maintain-skills/references/PROVENANCE.md). For integration changes, read [how the source families compose](docs/architecture.md). The scheduled prompt owns scheduled budgets and permissions; the scheduled tasks own cadence and model.
+Use this repository's `/maintain-skills` with `/writing-for-agents`, `/swarm`, and `/pr`. Follow the [adaptation contract](skills/agents/maintain-skills/references/ADAPTATION.md), [maintenance guide](skills/agents/maintain-skills/MAINTENANCE.md), and [provenance convention](skills/agents/maintain-skills/references/PROVENANCE.md). For integration changes, read [how the source families compose](docs/architecture.md). The scheduled prompt owns scheduled budgets and permissions; the scheduled tasks own cadence and model.
 
 Keep changes reviewable. Commit, publish, and merge only within the user's authorization; `AGENTS.md` says when to refresh installed copies.

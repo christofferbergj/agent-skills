@@ -15,6 +15,10 @@ Keep run evidence in `$STATE`, outside installed skills:
 
 A missing `questions.json` or `next-actions.json` means the list is empty.
 
+## Scheduled runs
+
+The T3 Code scheduled task "Maintain agent skills (daily, weekly audit)" lives in the `agent-skills` project on the Linux server `bergs-rise`. It fetches origin and follows [the scheduled prompt](references/scheduled-prompt.md) as it is on `origin/main`, so a merged change to that file reaches the next run without editing the task. It names no mode, so `begin` picks one, as its bullet below describes.
+
 ## Helper commands
 
 ### Begin and release
@@ -97,7 +101,11 @@ python3 "$HELPER" --root . checkpoint \
 - `--elapsed-minutes` is the decimal minutes since `begin`.
 - Add `--integration-validated` only after the affected checks pass. When no skill or governing input changed since a validated checkpoint, the resumed validation carries over on its own.
 
-Set every acknowledgement from collected evidence; the helper checks coverage and fingerprints but cannot confirm that a review happened. `validate` checks names, metadata, links, listings, and provenance across the library.
+Set every acknowledgement from collected evidence; the helper checks coverage and fingerprints but cannot confirm that a review happened. `validate` checks names, metadata, links, listings, and provenance across the library, and `pnpm check` runs it:
+
+```bash
+python3 "$HELPER" --root . validate
+```
 
 After saving the checkpoint, keep the 14 newest runs:
 
@@ -118,7 +126,7 @@ python3 "$HELPER" prune --state "$STATE" --keep 14
 
 ## Checks
 
-Run `pnpm check` from the worktree root; it runs every repository gate and test suite. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes.
+Run `pnpm check` from the worktree root; `scripts/check.sh` lists the gates and suites it runs. It skips Statechart's upstream suite, so when a change touches Statechart's scripts, run that suite as its `UPSTREAM.md` says. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes.
 
 ## Branches and pull requests
 
