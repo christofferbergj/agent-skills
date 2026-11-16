@@ -40,6 +40,9 @@ class ParseWeek(unittest.TestCase):
         self.assertIsNone(guard.parse_week(limits({'usedPercent':40,'windowDurationMins':10080,'resetsAt':None})))
         self.assertIsNone(guard.parse_week({}))
 
+    def test_a_window_of_exactly_one_day_counts_as_the_week(self):
+        self.assertEqual(guard.parse_week(limits({'usedPercent':40,'windowDurationMins':1440,'resetsAt':WEEK_ENDS})),Window(60,WEEK_ENDS))
+
 
 class Decide(unittest.TestCase):
     def test_no_credits_does_nothing(self):
@@ -112,6 +115,16 @@ class Guard(unittest.TestCase):
         with patch.dict(os.environ,env),patch.object(sys,'argv',['reset_guard.py',*extra]),patch.object(guard.time,'time',return_value=NOW),redirect_stdout(out),redirect_stderr(err):
             code=guard.main()
         return code,out.getvalue(),err.getvalue()
+
+    def test_a_lapsing_reset_is_redeemed_three_hours_before_it_expires_by_default(self):
+        self.assertEqual(self.run_guard(reading(10,NOW+3*HOUR+1))[:2],(0,''))
+        code,out,_=self.run_guard(reading(10,NOW+3*HOUR))
+        self.assertEqual(code,0)
+        self.assertTrue(out.startswith('Redeemed'),out)
+
+    def test_margin_hours_moves_when_a_lapsing_reset_is_redeemed(self):
+        self.assertEqual(self.run_guard(reading(10,NOW+DAY))[:2],(0,''))
+        self.assertTrue(self.run_guard(reading(10,NOW+DAY),'--margin-hours','30')[1].startswith('Redeemed'))
 
     def consumed(self):
         return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []

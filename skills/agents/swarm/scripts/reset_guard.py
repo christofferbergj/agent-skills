@@ -9,12 +9,13 @@ A redeem restarts every usage window, so a reset is redeemed only when it would 
 - The earliest such reset goes first, at most one per run. Resets that outlast the week, never
   expire, or are of another type are left alone.
 
-Run it from any scheduler, such as cron, a systemd timer, or launchd, every 30 minutes or so. It
-prints a line only when it redeems a reset, so its output can go straight to whatever channel you
-want notices in. A nonzero exit means a reset may lapse unseen, so treat it as an alert: it exits 1,
-with the reason on stderr, when Codex's rate limits can't be read, hide a reset's id or expiry, list
-fewer resets than they count, or give no day-long window a reset time while a reset could expire,
-and when a redeem neither resets Codex nor finds the reset already redeemed.
+It needs a signed-in `codex` CLI on PATH and target.py beside it. Run it from any scheduler, such
+as cron, a systemd timer, or launchd, every 30 minutes or so. It prints a line only when it redeems
+a reset, so its output can go straight to whatever channel you want notices in. A nonzero exit
+means a reset may lapse unseen, so treat it as an alert: it exits 1, with the reason on stderr,
+when Codex's rate limits can't be read, hide a reset's id or expiry, list fewer resets than they
+count, or give no day-long window a reset time while a reset could expire, and when a redeem
+neither resets Codex nor finds the reset already redeemed.
 """
 
 from __future__ import annotations
