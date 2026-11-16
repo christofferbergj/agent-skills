@@ -31,6 +31,7 @@ import target
 
 CALL_TIMEOUT = 30
 CLIENT = 'pstack-reset-guard'
+MARGIN_HOURS = 3
 
 
 class Window(NamedTuple):
@@ -54,7 +55,7 @@ def parse_week(result):
     return max(windows, key=lambda window: window.resets, default=None)
 
 
-def decide(week, expiring, now, announced, redeem_when_left=5, margin_hours=3):
+def decide(week, expiring, now, announced, redeem_when_left, margin_hours):
     """Return which of the resets that could expire lapse before the week and need a heads-up, and which one to redeem."""
     lapsing = sorted((credit for credit in expiring if credit.expires < week.resets), key=lambda credit: credit.expires)
     redeem = None
@@ -107,7 +108,7 @@ def redeem(credit, summary):
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('--redeem-when-left', type=float, default=target.thresholds(target.load_config(target.config_path()))['skipWhenLeft'], help="Percent left in the week at which to redeem (default: Pstack's codexUsage.skipWhenLeft, %(default)s)")
-    parser.add_argument('--margin-hours', type=float, default=3, help='Redeem a lapsing reset this many hours before it expires (default %(default)s)')
+    parser.add_argument('--margin-hours', type=float, default=MARGIN_HOURS, help='Redeem a lapsing reset this many hours before it expires (default %(default)s)')
     parser.add_argument('--state', type=Path, default=Path(os.environ.get('XDG_CACHE_HOME') or Path.home() / '.cache') / 'pstack' / 'reset-guard.json', help='JSON file of announced reset ids')
     parser.add_argument('--dry-run', action='store_true', help='Print what would happen without redeeming or writing state')
     args = parser.parse_args()
