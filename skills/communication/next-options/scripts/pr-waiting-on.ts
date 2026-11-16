@@ -159,15 +159,14 @@ function judgeRun(run: CheckRun, draftSkipPending: boolean, counts: boolean): Ju
     return { kind: "failed", detail: (run.conclusion ?? "").toLowerCase(), url };
   }
   const skipped = run.conclusion === "SKIPPED" || run.conclusion === "NEUTRAL";
-  // GitHub creates an Actions job's ready run a while after the PR leaves draft, so its draft skip
-  // waits even when nothing requires it. Another app's check, such as Blacksmith's Proof, may run
-  // only on request and never replace its draft skip; a ready run that does start replaces it in
-  // newestRuns, so it holds the watch from then on.
-  const actionsJob = Boolean(run.workflow || run.workflowId);
-  if (skipped && draftSkipPending && (counts || actionsJob)) {
-    return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
-  }
   if (skipped && draftSkipPending) {
+    // GitHub creates an Actions job's ready run a while after the PR leaves draft, so its draft skip
+    // waits even when nothing requires it. Another app's check, such as Blacksmith's Proof, may run
+    // only on request; a ready run that does start replaces the skip in newestRuns.
+    const actionsJob = Boolean(run.workflow || run.workflowId);
+    if (counts || actionsJob) {
+      return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
+    }
     return { kind: "info", detail: "skipped on the draft and not required; may never run", url };
   }
   return null;
