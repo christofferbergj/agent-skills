@@ -215,17 +215,17 @@ def read_usage(sessions, now, settings):
     return {'windows': windows, 'seen': seen} if windows else None
 
 
-def read_rate_limits():
-    """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
-    # Bounding the read needs process groups, as review.py's runs do.
+def app_server_call(method, params, timeout, client='pstack-target'):
+    """Send one request to `codex app-server` and return its result, or None on an error, a timeout, or no reply."""
+    # Bounding the call needs process groups, as review.py's runs do.
     if os.name != 'posix':
         return None
     requests = [
-        {'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': 'pstack-target', 'version': '1'}}},
+        {'id': 1, 'method': 'initialize', 'params': {'clientInfo': {'name': client, 'version': '1'}}},
         {'method': 'initialized'},
-        {'id': 2, 'method': 'account/rateLimits/read', 'params': {}},
+        {'id': 2, 'method': method, 'params': params},
     ]
-    deadline = time.monotonic() + RESETS_TIMEOUT
+    deadline = time.monotonic() + timeout
     try:
         with subprocess.Popen(['codex', 'app-server'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, start_new_session=True) as server:
             try:
@@ -247,11 +247,16 @@ def read_rate_limits():
                             return message.get('result')
                 return None
             finally:
-                # The whole group goes, so a launcher's child cannot outlive the read.
+                # The whole group goes, so a launcher's child cannot outlive the call.
                 with contextlib.suppress(OSError):
                     os.killpg(server.pid, signal.SIGKILL)
     except OSError:
         return None
+
+
+def read_rate_limits(timeout=None, client='pstack-target'):
+    """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
+    return app_server_call('account/rateLimits/read', {}, RESETS_TIMEOUT if timeout is None else timeout, client)
 
 
 def banked_expiries(result):
@@ -367,7 +372,7 @@ def speed_note(fast, window, expiries):
     resets = f"{len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}, {len(lapse)} expiring before then"
     if not fast:
         return f'Standard speed: {under}; {resets}'
-    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. Redeem it once Codex usage runs out, and before it expires at the latest'
+    return f'A banked reset expiring {first_lapse(expiries, window)} keeps fast mode: {under}; {resets}. The reset guard redeems it automatically at the fallback threshold or before it expires'
 
 
 def budgeted(effort, budget):
@@ -420,7 +425,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     if left < thresholds(config)['skipWhenLeft']:
         reason, expiries = describe(left, tightest['resets']), read_banked()
         if expiries and tightest['resets'] is not None and lapsing(expiries, tightest):
-            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first, so redeem it to refill Codex'
+            reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first; the reset guard redeems it to refill Codex'
         return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:
