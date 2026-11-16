@@ -30,7 +30,7 @@ Note `begin`'s `leftovers`, the edits of a run that ended before delivery, for t
 Run `fetch`, then `compare --fetch` with `--resume`. Save the inventory, fetch result, and compare reports in the run folder. Build the worklist in this order, which is also the order of work:
 
 1. Owner answers and comments not yet applied, and maintenance branches pushed without a PR.
-2. Changed upstream skills and shared inputs, and every source whose fetch failed.
+2. Changed upstream skills, which the compare summary lists under `toReview`, and shared inputs, and every source whose fetch failed.
 3. New, removed, or moved upstream skills in the catalog's suites.
 4. Skills in `changedSince`, including new skills, and the inputs in `contextChanged`.
 5. In audit mode only: carried items, overdue ones first; the inventory's `fidelityBacklog`; skills the checkpoint lists as pending; then the oldest `staleReviews`, up to a quarter of the library.

@@ -647,6 +647,29 @@ class RepositoryCoverage(unittest.TestCase):
         self.assertFalse(summary['sharedChanged'])
         report = json.loads((self.base / 'reports/github.com-example-library-branch-main-compare.json').read_text())
         self.assertEqual(report['candidate'], self.baseline)
+        self.assertEqual(summary['toReview'], [])
+
+    def test_compare_cli_summary_lists_each_skill_to_review(self):
+        self.add_skill('beta', source=True)
+        self.definition['skills'].append({'upstream': 'skills/engineering/beta', 'local': 'beta', 'directory': 'skills/engineering/beta'})
+        (self.upstream / 'skills/engineering/alpha/SKILL.md').write_text('changed behavior')
+        self.commit('Change alpha')
+        candidate = self.revision()
+        registry, fetched = self.base / 'catalog.json', self.base / 'fetch.json'
+        registry.write_text(json.dumps(self.registry))
+        fetched.write_text(json.dumps({'candidates': {GROUP: candidate}, 'checkouts': {GROUP: str(self.upstream)}, 'errors': {}}))
+        result = subprocess.run([sys.executable, str(SCRIPT), '--catalog', str(registry), '--root', str(self.root), 'compare', '--fetch', str(fetched), '--output-dir', str(self.base / 'reports')], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        summary = json.loads(result.stdout)[GROUP]
+        self.assertEqual((summary['candidate'], summary['checkout']), (candidate, str(self.upstream)))
+        self.assertEqual(summary['skills'], {'blocked': 1, 'changed': 1})
+        alpha, beta = summary['toReview']
+        self.assertEqual(alpha, {
+            'local': 'alpha', 'directory': 'skills/engineering/alpha', 'status': 'changed', 'since': self.baseline,
+            'upstream': ['LICENSE', 'skills/engineering/alpha'], 'files': ['M\tskills/engineering/alpha/SKILL.md'],
+        })
+        self.assertEqual((beta['local'], beta['directory'], beta['status']), ('beta', 'skills/engineering/beta', 'blocked'))
+        self.assertIn('absent at the reviewed baseline', beta['reason'])
 
     def test_checkpoint_cli_accepts_fetch_output_as_candidates(self):
         registry = self.base / 'catalog.json'

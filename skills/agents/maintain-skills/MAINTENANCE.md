@@ -66,6 +66,8 @@ python3 "$HELPER" --root . fetch --state "$STATE" --output "$RUN/fetch.json"
 python3 "$HELPER" --root . compare --fetch "$RUN/fetch.json" --resume <checkpoint> --output-dir "$RUN"
 ```
 
+The summary gives each group its `checkout`, `candidate`, per-status counts in `skills`, and `toReview`, which lists each skill whose status isn't `unchanged` with its `local` name, its `directory` in this repository, `status`, `since`, `upstream` paths, and `files` or a blocked `reason`. Read a skill's upstream change with `git -C <checkout> diff <since> <candidate> -- <upstream paths>`. The report file holds every skill, as a `skills` list.
+
 To compare one group again, pass `--source <group-key> --upstream <checkout> --candidate <sha> --output <file>`, taking the checkout and candidate from `fetch.json`.
 
 Each skill gets `unchanged`, `changed`, `removed`, or `blocked`, with the changed files and `since`, the revision it was compared from. With `--resume`, a skill whose files are unchanged since a checkpoint that reviewed it is compared from that checkpoint's candidate and marked `carriedForward`, so decided and held changes do not return. For each catalog source, `suites` lists added, removed, possibly moved, and excluded upstream skills, and `sharedInputs` lists changed shared files since `sharedReviewedThrough` or the resumed checkpoint. A source without a catalog entry, such as OpenClaw, compares only the paths its record lists; it has no added-skill detection, because its record tracks those files alone. A `blocked` skill keeps its position; missing history never resets one.

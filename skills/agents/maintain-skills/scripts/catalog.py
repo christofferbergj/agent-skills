@@ -546,6 +546,7 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
         prior = None
     verified = resume.get('skillFingerprints', {}) if prior else {}
     fingerprints = {item['name']: item['fingerprint'] for item in discovered['skills']}
+    directories = {item['name']: item['directory'] for item in discovered['skills']}
     paths = git(upstream, 'ls-tree', '-r', '-z', '--name-only', candidate)
     actual = {str(Path(os.fsdecode(path)).parent) for path in paths.split(b'\0') if path.endswith(b'/SKILL.md') or path == b'SKILL.md'}
     changes = []
@@ -562,9 +563,9 @@ def compare(root, catalog, source, upstream, candidate, resume=None):
                 since, carried = prior, True
             delta = name_status(upstream, since, candidate, record['paths'])
             status = 'removed' if not any(primary in actual for primary in record['primaryPaths']) else 'changed' if delta else 'unchanged'
-            changes.append({'local': record['local'], 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': status, 'files': delta})
+            changes.append({'local': record['local'], 'directory': directories.get(record['local']), 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': status, 'files': delta})
         except (OSError, ValueError) as error:
-            changes.append({'local': record['local'], 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': 'blocked', 'reason': str(error)})
+            changes.append({'local': record['local'], 'directory': directories.get(record['local']), 'upstream': record['paths'], 'baseline': record['baseline'], 'since': since, 'carriedForward': carried, 'status': 'blocked', 'reason': str(error)})
     suite_results, shared = {}, []
     covered = {entry['local'] for definition in policies.values() for entry in definition.get('skills', [])}
     for name, definition in policies.items():
@@ -1003,7 +1004,10 @@ def main():
                     statuses = {}
                     for change in report['skills']:
                         statuses[change['status']] = statuses.get(change['status'], 0) + 1
-                    result[key] = {'output': str(path), 'skills': statuses, 'suitesChanged': suites_changed(report), 'sharedChanged': shared_changed(report)}
+                    # Enough to diff each skill without reopening the report: git -C <checkout> diff <since> <candidate> -- <upstream>.
+                    fields = ('local', 'directory', 'status', 'since', 'upstream', 'files', 'reason')
+                    review = [{field: change[field] for field in fields if field in change} for change in report['skills'] if change['status'] != 'unchanged']
+                    result[key] = {'output': str(path), 'checkout': fetched['checkouts'][key], 'candidate': report['candidate'], 'skills': statuses, 'toReview': review, 'suitesChanged': suites_changed(report), 'sharedChanged': shared_changed(report)}
             elif arguments.source and arguments.upstream and arguments.candidate:
                 result = compare(root, catalog, arguments.source, arguments.upstream, arguments.candidate, resume)
             else:
