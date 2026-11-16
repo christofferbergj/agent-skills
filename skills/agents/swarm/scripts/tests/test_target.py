@@ -218,7 +218,7 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual((result['run'],result['effort']),('codex','medium'))
         self.assertEqual(result['usage']['left'],90)
 
-    def test_native_roles_run_on_the_parent_host_with_fast_code_on_its_fast_model(self):
+    def test_native_roles_run_on_the_parent_host_with_fast_code_and_hardest_tasks_on_their_models(self):
         self.config.write_text('{}')
         self.log('a.jsonl',event(99))
         self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet'})
@@ -226,11 +226,13 @@ class TargetResolution(unittest.TestCase):
             self.assertEqual(self.run_target(role),{'role':role,'run':'claude-code'},role)
         self.assertEqual(self.run_target('feature-refactoring'),{'role':'feature-refactoring','run':'claude-code'})
         self.assertEqual(self.run_target('long-running'),{'role':'long-running','run':'claude-code'})
+        self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','model':'fable'})
+        self.assertEqual(self.run_target('hardest-tasks',parent='codex'),{'role':'hardest-tasks','run':'codex','serviceTier':'priority'})
         self.log('a.jsonl',event(99,resets=MIDWEEK))
         self.assertEqual(self.run_target('reflect-tooling',parent='codex'),{'role':'reflect-tooling','run':'codex','serviceTier':'default'})
 
     def test_configured_native_role_wins_and_inherit_aliases_keep_the_parent_model(self):
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'reflect-tooling':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'effort':'max'},'long-running':{'model':'claude-opus-5-5','effort':'high'}}},'codex':{'roles':{'judgment-and-prose':{'model':'gpt-small','effort':'ultra'}}}}))
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'reflect-tooling':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'model':'auto','effort':'max'},'long-running':{'model':'claude-opus-5-5','effort':'high'}}},'codex':{'roles':{'judgment-and-prose':{'model':'gpt-small','effort':'ultra'}}}}))
         self.assertEqual(self.run_target('reflect-tooling'),{'role':'reflect-tooling','run':'claude-code','model':'haiku','effort':'low'})
         self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code'})
         self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','effort':'max'})
