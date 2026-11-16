@@ -271,15 +271,19 @@ class TargetResolution(unittest.TestCase):
     def test_claude_native_roles_take_upstream_models_and_efforts_and_codex_keeps_its_own(self):
         self.config.write_text('{}')
         self.log('a.jsonl',event(99))
-        for role in ('reflect-tooling','swarm-workers'):
-            self.assertEqual(self.run_target(role),{'role':role,'run':'claude-code','model':'opus','effort':'high'},role)
-        for role in ('feature-refactoring','bug-fix','perf-issue','hillclimb','judgment-and-prose','reflect-judgment'):
+        self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code','model':'opus','effort':'high'})
+        for role in ('feature-refactoring','bug-fix','perf-issue','hillclimb','judgment-and-prose'):
             self.assertEqual(self.run_target(role),{'role':role,'run':'claude-code','model':'opus','effort':'xhigh'},role)
-        self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','model':'fable','effort':'xhigh'})
         self.assertEqual(self.run_target('long-running'),{'role':'long-running','run':'claude-code'})
-        self.assertEqual(self.run_target('hardest-tasks',parent='codex'),{'role':'hardest-tasks','run':'codex','serviceTier':'priority'})
+        self.assertEqual(self.run_target('bug-fix',parent='codex'),{'role':'bug-fix','run':'codex','serviceTier':'priority'})
         self.log('a.jsonl',event(99,resets=MIDWEEK))
-        self.assertEqual(self.run_target('reflect-tooling',parent='codex'),{'role':'reflect-tooling','run':'codex','serviceTier':'default'})
+        self.assertEqual(self.run_target('swarm-workers',parent='codex'),{'role':'swarm-workers','run':'codex','serviceTier':'default'})
+
+    def test_roles_upstream_retired_are_not_accepted(self):
+        for role in ('hardest-tasks','reflect-tooling','reflect-judgment','architect-runners'):
+            with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
+                with patch.object(sys,'argv',['target.py','--parent','claude-code',role]):
+                    target.main()
 
     def test_fast_code_follows_swarm_workers_in_claude_code_and_keeps_its_own_entry_in_codex(self):
         self.config.write_text('{}')
@@ -290,20 +294,21 @@ class TargetResolution(unittest.TestCase):
         self.config.write_text(json.dumps({'claude-code':{'roles':{'swarm-workers':{'model':'haiku'},'fast-code':{'model':'sonnet'}}}}))
         self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet','effort':'high'})
 
-    def test_budget_moves_claude_default_efforts_within_the_ladder(self):
-        for budget,workers,hardest in [('unlimited','xhigh','max'),('large','high','xhigh'),('medium','medium','high'),('small','low','medium'),('huge','high','xhigh')]:
+    def test_budget_moves_claude_default_efforts_within_the_ladder_capped_at_xhigh(self):
+        for budget,workers,code in [('unlimited','high','xhigh'),('large','high','xhigh'),('medium','medium','high'),('small','low','medium'),('huge','high','xhigh')]:
             self.config.write_text(json.dumps({'claude-code':{'budget':budget,'roles':{'bug-fix':{'effort':'low'}}},'codex':{'budget':budget}}))
             self.assertEqual(self.run_target('swarm-workers')['effort'],workers,budget)
-            self.assertEqual(self.run_target('hardest-tasks')['effort'],hardest,budget)
+            self.assertEqual(self.run_target('judgment-and-prose')['effort'],code,budget)
             self.assertEqual(self.run_target('bug-fix')['effort'],'low',budget)
             self.assertNotIn('effort',self.run_target('bug-fix',parent='codex'),budget)
 
     def test_configured_native_role_wins_and_inherit_aliases_keep_the_parent_model(self):
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'reflect-tooling':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hardest-tasks':{'model':'auto','effort':'max'},'reflect-judgment':{'model':'sonnet'},'long-running':{'model':'claude-opus-5-5','effort':'high'}}},'codex':{'roles':{'judgment-and-prose':{'model':'gpt-small','effort':'ultra'}}}}))
-        self.assertEqual(self.run_target('reflect-tooling'),{'role':'reflect-tooling','run':'claude-code','model':'haiku','effort':'low'})
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'perf-issue':{'model':'haiku','effort':'low'},'swarm-workers':{'model':'inherit-parent'},'hillclimb':{'model':'auto','effort':'max'},'judgment-and-prose':{'model':'sonnet'},'bug-fix':{'model':'fable','effort':'ultra'},'long-running':{'model':'claude-opus-5-5','effort':'high'}}},'codex':{'roles':{'judgment-and-prose':{'model':'gpt-small','effort':'ultra'}}}}))
+        self.assertEqual(self.run_target('perf-issue'),{'role':'perf-issue','run':'claude-code','model':'haiku','effort':'low'})
         self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code'})
-        self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','effort':'max'})
-        self.assertEqual(self.run_target('reflect-judgment'),{'role':'reflect-judgment','run':'claude-code','model':'sonnet','effort':'xhigh'})
+        self.assertEqual(self.run_target('hillclimb'),{'role':'hillclimb','run':'claude-code','effort':'xhigh'})
+        self.assertEqual(self.run_target('judgment-and-prose'),{'role':'judgment-and-prose','run':'claude-code','model':'sonnet','effort':'xhigh'})
+        self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code','model':'fable','effort':'xhigh'})
         self.assertEqual(self.run_target('long-running'),{'role':'long-running','run':'claude-code','model':'claude-opus-5-5','effort':'high'})
         self.assertEqual(self.run_target('judgment-and-prose',parent='codex'),{'role':'judgment-and-prose','run':'codex','model':'gpt-small','serviceTier':'priority','effort':'xhigh'})
 
@@ -316,9 +321,9 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('bug-fix',parent='codex')['serviceTier'],'priority')
 
     def test_unusable_role_values_fall_back_to_the_role_default(self):
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'reflect-tooling':{'model':None,'effort':'auto'},'hardest-tasks':{'model':7,'effort':'ultra'},'bug-fix':{'effort':'inherit-parent'}}},'codex':{'roles':{'swarm-workers':{'serviceTier':'flex'}}}}))
-        self.assertEqual(self.run_target('reflect-tooling'),{'role':'reflect-tooling','run':'claude-code','model':'opus','effort':'high'})
-        self.assertEqual(self.run_target('hardest-tasks'),{'role':'hardest-tasks','run':'claude-code','model':'fable','effort':'xhigh'})
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'swarm-workers':{'model':None,'effort':'auto'},'feature-refactoring':{'model':7,'effort':'turbo'},'bug-fix':{'effort':'inherit-parent'}}},'codex':{'roles':{'swarm-workers':{'serviceTier':'flex'}}}}))
+        self.assertEqual(self.run_target('swarm-workers'),{'role':'swarm-workers','run':'claude-code','model':'opus','effort':'high'})
+        self.assertEqual(self.run_target('feature-refactoring'),{'role':'feature-refactoring','run':'claude-code','model':'opus','effort':'xhigh'})
         self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code','model':'opus','effort':'xhigh'})
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 

@@ -13,7 +13,7 @@ Every candidate gets the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks like on _this_ task. It is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners through /swarm: by default its panel of two, one on the session's model and one on the counterpart. When a seat cannot run, replace it so at least two runners remain, and say so: a counterpart seat takes /swarm's same-vendor fallback on the session's model, and another seat runs on a remaining runner's model. Spawn more runners when the arena covers multiple design directions. Use the same model N times when the work is generation-bound rather than judgment-sensitive. Pick each subagent's model and effort for the job through /swarm.
+3. Pick the runners through /swarm: by default its panel of two, one on the session's model and one on the counterpart. When a seat cannot run, replace it so at least two runners remain, and say so: a counterpart seat takes /swarm's same-vendor fallback on the session's model, and another seat runs on a remaining runner's model. Spawn more for multiple design directions, and repeat one model when the work is generation-bound, not judgment-sensitive. Pick each subagent's model and effort for the job through /swarm.
 4. Give each candidate its own output location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per /principle-separate-before-serializing-shared-state.
 
 Complete when the artifact, the rubric, the runners, and one output location per candidate are named.
@@ -28,7 +28,7 @@ Complete when every candidate has written its artifact and rationale or is noted
 
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, spawn one readonly judge subagent on the counterpart through /swarm's cross-vendor critic route. The judge is never from the parent's vendor, so take only the counterpart routes, T3 and then the CLI, never the same-vendor critic. If the counterpart resolves to `fallback` or neither route runs, skip the judge, pick the base alone in Phase D, and say so. It sees the rubric and the candidates by path label, scores each criterion, and recommends a base with rationale. It runs in parallel with your reading in Phase D. Don't spawn it while candidates are still writing.
+After all Phase B candidates complete, spawn one readonly judge subagent on the counterpart through /swarm's cross-vendor critic route. The judge is never from the parent's vendor, so take only the counterpart routes, T3 and then the CLI, never the same-vendor critic. If the counterpart resolves to `fallback` or neither route runs, skip the judge, pick the base alone in Phase D, and say so. While you read in Phase D, the judge scores each candidate, by path label, on each rubric criterion and recommends a base.
 
 Complete when the judge has returned per-criterion scores and a recommended base, or the skip and its reason are recorded.
 

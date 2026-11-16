@@ -7,9 +7,9 @@
 - Original skill: [`pstack/skills/figure-it-out/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/figure-it-out/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Fidelity checked through: `ae5650febf4320793844c12c4adaa937f417f8da`.
-- Last upstream review: 2026-10-21.
+- Reviewed through commit: `b4a4f6151b8e77f8d71045f09f553a733cf0ed37`.
+- Fidelity checked through: `b4a4f6151b8e77f8d71045f09f553a733cf0ed37`.
+- Last upstream review: 2026-11-17.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -30,3 +30,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | No upstream change since `e5136d8`. First fidelity check: restored the dropped rules (framing before a long run, riskiest-unknown-first units, harness and baseline before work, no second arena on a settled design, seam-only fan-out, judge-paired delegation, gate fixes in their own change, VERIFIED/NOT VERIFIED/INCONCLUSIVE verdicts, committed trail, encoding recurring corrections). Recorded the model-invoked mode, step restructuring, and local additions. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                                     |
 | 2026-11-03  | `ae5650febf4320793844c12c4adaa937f417f8da` | Audit fidelity repair, no upstream change since `190d287`: restored four upstream rules the local text had dropped without a record: "Don't hide a negative." in the verification step, the /principle-separate-before-serializing-shared-state and /principle-never-block-on-the-human pointers, and running /architect, which runs /arena, for one-way-door design decisions where the local text allowed /arena alone. Fidelity passes in both directions.              |
+| 2026-11-17  | `b4a4f6151b8e77f8d71045f09f553a733cf0ed37` | Upstream `2f87c85` (“shorter skill texts”) drops the fast-or-standard speed choice from the fan-out bullet. Adapted: no local text change, because the local step 2 already leaves subagent model choice to /swarm and never named speed. Fidelity holds in both directions; the recorded divergences are still present and needed.                                                                                                                                        |

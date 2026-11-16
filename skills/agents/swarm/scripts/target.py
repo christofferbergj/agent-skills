@@ -33,18 +33,17 @@ a linked macOS machine.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
 Pstack's native roles and runs on the parent host. In Claude Code each takes upstream's
-default model and effort: Opus at xhigh for code, judgment, and prose, Opus at high for
-swarm workers and reflect tooling, and Fable at xhigh, one step below upstream's max, for
-the hardest tasks. fast-code, for trivial edits, follows swarm workers there, as upstream's
-do. A budget moves those default efforts as upstream's does: unlimited one
-step up, large not at all, medium one step down, small two. Codex native roles keep the
+default model and effort: Opus at xhigh for code, judgment, and prose, and Opus at high for
+swarm workers. fast-code, for trivial edits, follows swarm workers there, as upstream's do.
+A budget moves those default efforts as upstream's does: large not at all, medium one step
+down, small two; any other budget, such as a retired unlimited, counts as large. No native role
+runs above xhigh, so a configured max or ultra effort runs at xhigh. Codex native roles keep the
 parent's model and effort. A native Codex role runs fast while Codex usage allows, and Claude
-never runs fast. Native roles take upstream's labels in kebab case; reflect-judgment shortens
-"reflect judgment, divergent, synthesizer". long-running, the one local role, is a thread that
-runs for hours, such as a coordinator or one of its workers; it keeps the parent's model, so
-a roles entry can move those threads off a model with a tight weekly allowance. A roles entry
-overrides the model or the effort; "inherit-parent" or "auto" as the model keeps the parent's
-model and drops the default effort.
+never runs fast. Native roles take upstream's labels in kebab case. long-running, the one local
+role, is a thread that runs for hours, such as a coordinator or one of its workers; it keeps
+the parent's model, so a roles entry can move those threads off a model with a tight weekly
+allowance. A roles entry overrides the model or the effort; "inherit-parent" or "auto" as the
+model keeps the parent's model and drops the default effort.
 """
 
 import argparse
@@ -70,18 +69,15 @@ CROSS_VENDOR_ROLES = {
     'computer-use': ('computerUse', 'routine', 'medium'),
     'computer-use-hard': ('computerUse', 'hard', 'high'),
 }
-# Upstream's Claude Code defaults, (model, effort) per native role. Fable at max timed out on
-# long tasks and scored below xhigh in Claude Code benchmarks at about three times the cost.
+# Upstream's Claude Code defaults, (model, effort) per native role.
 CODE, WORKERS = ('opus', 'xhigh'), ('opus', 'high')
 NATIVE_DEFAULTS = {'claude-code': {
     'feature-refactoring': CODE, 'bug-fix': CODE, 'perf-issue': CODE, 'hillclimb': CODE,
-    'judgment-and-prose': CODE, 'reflect-judgment': CODE,
-    'swarm-workers': WORKERS, 'reflect-tooling': WORKERS, 'fast-code': WORKERS,
-    'hardest-tasks': ('fable', 'xhigh'),
+    'judgment-and-prose': CODE, 'swarm-workers': WORKERS, 'fast-code': WORKERS,
 }}
 NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
-EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
-BUDGET_STEPS = {'unlimited': 1, 'large': 0, 'medium': -1, 'small': -2}
+EFFORTS = ('low', 'medium', 'high', 'xhigh')
+BUDGET_STEPS = {'large': 0, 'medium': -1, 'small': -2}
 THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24, 'floorPercent': 25, 'reservePerDay': 15}
 # Bounds that keep the usage scan to a few small reads.
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
@@ -387,7 +383,7 @@ def has_mac_desktop():
 
 
 def capped(effort):
-    # GPT models never run above xhigh.
+    # No native role or GPT model runs above xhigh.
     return 'xhigh' if effort in ('max', 'ultra') else effort
 
 
@@ -426,11 +422,11 @@ def resolve_native(parent, role, config, usage, read_banked):
         model, default_effort = None, None
     elif model is None:
         model = default_model
+    effort = capped(effort)
     if effort not in EFFORTS and default_effort is not None:
         effort = budgeted(default_effort, text(host.get('budget')))
     target = {'role': role, 'run': parent, 'model': model}
     if parent == 'codex':
-        effort = capped(effort)
         fast = usage is None or check_speed(usage, read_banked)[0]
         target['serviceTier'] = 'priority' if fast else 'default'
     target['effort'] = effort if effort in EFFORTS else None
