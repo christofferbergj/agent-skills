@@ -22,7 +22,7 @@ Find a skill's consumers with `git grep -nE '(^|[^[:alnum:]_./-])/<skill-name>([
 
 Run `bash scripts/setup.sh` to install the pinned tools and dependencies; the script lists what it installs. In T3 Code, import the **Setup worktree** action from `t3.json` into the project's actions once, and each new worktree runs the script before its agent starts.
 
-Run every gate with:
+Run every gate with the tools `mise.toml` pins, through `mise exec --` when the shell's own versions differ:
 
 ```bash
 pnpm check

@@ -17,7 +17,7 @@ A missing `questions.json` or `next-actions.json` means the list is empty.
 
 ## Scheduled runs
 
-A T3 Code scheduled task, "Maintain agent skills", runs this skill once a day in the `agent-skills` project on the Linux server `bergs-rise`. Its prompt only says to follow [the scheduled prompt](references/scheduled-prompt.md) as it is on `origin/main`, so a merged change to that file changes the next run without editing the task. The task names no mode, so `begin` picks one: an audit once the last complete audit is seven days old, and every day until an audit finishes with complete coverage. A server doesn't sleep, so the task needs no run gate. Edit the task only when the owner asks.
+The T3 Code scheduled task "Maintain agent skills (daily, weekly audit)" lives in the `agent-skills` project on the Linux server `bergs-rise`. It fetches origin and follows [the scheduled prompt](references/scheduled-prompt.md) as it is on `origin/main`, so a merged change to that file reaches the next run without editing the task. It names no mode, so `begin` picks one, as its bullet below describes.
 
 ## Helper commands
 
@@ -126,7 +126,7 @@ python3 "$HELPER" prune --state "$STATE" --keep 14
 
 ## Checks
 
-Run `pnpm check` from the worktree root, through `mise exec --` when the shell's tools differ from `mise.toml`'s pins; it runs every repository gate and test suite, the Python suites with `unittest`. Statechart's upstream suite is the exception: when a change touches its scripts, run it as its `UPSTREAM.md` says. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes.
+Run `pnpm check` from the worktree root; `scripts/check.sh` lists the gates and suites it runs. It skips Statechart's upstream suite, so when a change touches Statechart's scripts, run that suite as its `UPSTREAM.md` says. Use [Thermos's guide](../../reviews/thermos/MAINTENANCE.md) for Thermos behavior changes.
 
 ## Branches and pull requests
 
