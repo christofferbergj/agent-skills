@@ -45,23 +45,29 @@ def git(*args):
     return subprocess.run(['git', *args], stdout=subprocess.PIPE, text=True, check=True).stdout
 
 
-def install_command(slug, agents, skills=('*',)):
-    """The install that refreshes these skills without prompts, or None when it would ask for the agents."""
+def chosen_agents(lock):
+    """The agents the lock records as the last choice, or None when that is not a valid list of agents."""
+    agents = lock.get('lastSelectedAgents')
     if isinstance(agents, list) and agents and all(isinstance(a, str) and AGENT.fullmatch(a) for a in agents):
-        # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
-        return ['npx', '-y', 'skills@latest', 'add', slug, '--skill', *skills, '--global', '--yes', '--agent', *agents]
+        return agents
     return None
+
+
+def install_command(slug, agents, skills=('*',)):
+    """The install that refreshes these skills, without prompts when the agents are given."""
+    command = ['npx', '-y', 'skills@latest', 'add', slug, '--skill', *skills, '--global']
+    if agents:
+        # Without --agent, --yes installs into every agent the CLI knows, some of which reject global skills.
+        command += ['--yes', '--agent', *agents]
+    return command
 
 
 def refresh_hint(slug, agents):
     """The install that refreshes every skill, with a note when it will ask for the agents."""
-    command = install_command(slug, agents)
-    if command:
-        return f'Refresh with: {shlex.join(command)}'
-    return (
-        f"Refresh with: npx skills@latest add {slug} --skill '*' --global\n"
-        'It asks for your agents, since the lock records no valid earlier choice.'
-    )
+    hint = f'Refresh with: {shlex.join(install_command(slug, agents))}'
+    if agents:
+        return hint
+    return f'{hint}\nIt asks for your agents, since the lock records no valid earlier choice.'
 
 
 def outdated(problems):
@@ -136,15 +142,15 @@ def main():
             trees[folder.rsplit('/', 1)[1]] = (folder, git('rev-parse', f'{arguments.ref}:{folder}').strip())
 
     problems, lock = check(arguments, slug, trees)
-    agents = lock.get('lastSelectedAgents')
+    agents = chosen_agents(lock)
     failures = []
-    if arguments.refresh and install_command(slug, agents) and outdated(problems):
+    if arguments.refresh and agents and outdated(problems):
         problems, lock, failures = refresh(arguments, slug, trees, agents)
     problems += [Problem('failed', skill or UNNAMED, ' '.join(reason.split())) for skill, reason in failures]
 
     print('\n'.join(map(str, problems)) or f'All {len(trees)} skills match {arguments.ref}.')
     if outdated(problems):
-        print(f"\n{refresh_hint(slug, lock.get('lastSelectedAgents'))}")
+        print(f"\n{refresh_hint(slug, chosen_agents(lock))}")
     return 1 if problems else 0
 
 
