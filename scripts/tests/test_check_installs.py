@@ -12,9 +12,12 @@ SCRIPT = Path(__file__).resolve().parents[1] / 'check-installs.py'
 SLUG = 'example/library'
 OLD_TREE = '0' * 40
 
-# Stands in for the Skills CLI: it records each call and writes the requested
-# skills' current trees into the lock, except names listed under `lag`, which
-# stay stale for that many calls, as GitHub can serve the previous tree.
+# Stands in for the Skills CLI in --json mode: it records each call, writes the
+# requested skills' current trees into the lock, and prints a JSON report.
+# Names under `lag` stay stale for that many calls, as GitHub can serve the
+# previous tree. Names under `fail` are written to the lock but reported failed
+# for that many calls, as the CLI does when one agent's target fails. With
+# `text_exit`, it prints the failures as text and exits with that code instead.
 FAKE_NPX = textwrap.dedent('''\
     #!/usr/bin/env python3
     import json, os, sys
@@ -26,16 +29,37 @@ FAKE_NPX = textwrap.dedent('''\
     skills = args[args.index('--skill') + 1:args.index('--global')]
     lock_path = Path(state['lock'])
     lock = json.loads(lock_path.read_text())
+    report = []
     for name, tree in state['trees'].items():
         if skills != ['*'] and name not in skills:
             continue
         if state['lag'].get(name, 0) > 0:
             state['lag'][name] -= 1
-            continue
-        lock['skills'][name] = {'source': state['slug'], 'skillFolderHash': tree}
+        else:
+            lock['skills'][name] = {'source': state['slug'], 'skillFolderHash': tree}
+        if state['fail'].get(name, 0) > 0:
+            state['fail'][name] -= 1
+            report.append({'name': name, 'status': 'failed', 'error': f'EACCES: permission denied, symlink {name}'})
+        else:
+            report.append({'name': name, 'status': 'installed'})
     lock_path.write_text(json.dumps(lock))
     state_path.write_text(json.dumps(state))
+    failed = [entry for entry in report if entry['status'] == 'failed']
+    if state['text_exit'] is not None:
+        for entry in failed:
+            print(f"Failed to install {entry['name']} for cursor: {entry['error']}")
+        sys.exit(state['text_exit'])
+    print(json.dumps(report))
+    sys.exit(1 if failed else 0)
 ''')
+
+
+def refresh(*skills):
+    """The arguments of the install --refresh runs for these skills."""
+    return [
+        '-y', 'skills@latest', 'add', SLUG, '--skill', *skills,
+        '--global', '--yes', '--agent', 'claude-code', 'codex', '--json',
+    ]
 
 
 class Refresh(unittest.TestCase):
@@ -76,11 +100,12 @@ class Refresh(unittest.TestCase):
     def git(self, *args):
         return subprocess.run(['git', '-C', str(self.repo), *args], stdout=subprocess.PIPE, text=True, check=True).stdout
 
-    def install(self, hashes, lag=None, agents=('claude-code', 'codex')):
+    def install(self, hashes, lag=None, fail=None, text_exit=None, agents=('claude-code', 'codex')):
         skills = {name: {'source': SLUG, 'skillFolderHash': tree} for name, tree in hashes.items()}
         self.lock.write_text(json.dumps({'skills': skills, 'lastSelectedAgents': list(agents)}))
         self.state.write_text(json.dumps({
-            'calls': [], 'lock': str(self.lock), 'slug': SLUG, 'trees': self.trees, 'lag': lag or {},
+            'calls': [], 'lock': str(self.lock), 'slug': SLUG, 'trees': self.trees,
+            'lag': lag or {}, 'fail': fail or {}, 'text_exit': text_exit,
         }))
 
     def run_check(self, *extra):
@@ -102,11 +127,7 @@ class Refresh(unittest.TestCase):
         code, output = self.run_check('--refresh')
         self.assertEqual(code, 0, output)
         self.assertIn('All 2 skills match HEAD.', output)
-        agents = ['--global', '--yes', '--agent', 'claude-code', 'codex']
-        self.assertEqual(self.calls(), [
-            ['-y', 'skills@latest', 'add', SLUG, '--skill', '*', *agents],
-            ['-y', 'skills@latest', 'add', SLUG, '--skill', 'beta', *agents],
-        ])
+        self.assertEqual(self.calls(), [refresh('*'), refresh('beta')])
 
     def test_refresh_fails_when_a_skill_stays_stale_after_the_retry(self):
         self.install({'alpha': OLD_TREE, 'beta': OLD_TREE}, lag={'beta': 2})
@@ -115,6 +136,31 @@ class Refresh(unittest.TestCase):
         self.assertIn('stale    beta', output)
         self.assertNotIn('stale    alpha', output)
         self.assertEqual(len(self.calls()), 2)
+
+    def test_refresh_retries_the_skills_the_install_reported_failed(self):
+        self.install({'alpha': OLD_TREE, 'beta': OLD_TREE}, lag={'beta': 1}, fail={'alpha': 1})
+        code, output = self.run_check('--refresh')
+        self.assertEqual(code, 0, output)
+        self.assertIn('alpha: EACCES: permission denied, symlink alpha', output)
+        self.assertIn('All 2 skills match HEAD.', output)
+        self.assertEqual(self.calls(), [refresh('*'), refresh('alpha', 'beta')])
+
+    def test_refresh_fails_when_the_retry_reports_a_failure_too(self):
+        self.install({'alpha': OLD_TREE, 'beta': OLD_TREE}, fail={'alpha': 2})
+        code, output = self.run_check('--refresh')
+        self.assertEqual(code, 1, output)
+        self.assertIn('failed   alpha: EACCES: permission denied, symlink alpha', output)
+        self.assertNotIn('skills match', output)
+        self.assertEqual(self.calls(), [refresh('*'), refresh('alpha')])
+
+    def test_refresh_fails_when_the_install_prints_no_report(self):
+        for text_exit in (0, 1):
+            with self.subTest(text_exit=text_exit):
+                self.install({'alpha': OLD_TREE, 'beta': OLD_TREE}, fail={'alpha': 2}, text_exit=text_exit)
+                code, output = self.run_check('--refresh')
+                self.assertEqual(code, 1, output)
+                self.assertIn('Failed to install alpha for cursor: EACCES', output)
+                self.assertEqual(self.calls(), [refresh('*'), refresh('*')])
 
     def test_refresh_installs_nothing_when_every_skill_matches(self):
         self.install(self.trees)
@@ -132,7 +178,7 @@ class Refresh(unittest.TestCase):
         code, output = self.run_check()
         self.assertEqual((code, self.calls()), (1, []))
         self.assertIn(
-            f"Refresh with: npx -y skills@latest add {SLUG} --skill '*' --global --yes --agent claude-code codex",
+            f"Refresh with: npx -y skills@latest add {SLUG} --skill '*' --global --yes --agent claude-code codex\n",
             output,
         )
 

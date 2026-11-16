@@ -7,8 +7,9 @@ that hash equals the tree at the ref. Reports stale, missing, unknown, and
 retired installs, installs of the same name from another source, and entries
 in ~/.claude/skills that load something other than the shared install.
 Exits 1 when any is found. With --refresh, first runs the install it would
-print for stale, missing, and unknown skills, rechecks, and reinstalls the
-ones still outdated once more.
+print for stale, missing, and unknown skills, rechecks, and reinstalls once
+more the ones still outdated or reported failed; it also exits 1 when that
+last install reports a failure.
 """
 
 import argparse
@@ -54,10 +55,30 @@ def outdated(problems):
 
 
 def install(command):
+    """Run the install, print its failures, and return them as (skill or None, reason) pairs."""
+    # Skills CLI records a skill once any agent's target succeeds and, without --json,
+    # exits 0 when other targets fail; the --json report names each failed skill.
+    command = [*command, '--json']
     print(f'Running: {shlex.join(command)}', flush=True)
-    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-    if result.returncode:
-        print(result.stdout[-2000:], file=sys.stderr)
+    result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        report = json.loads(result.stdout)
+    except ValueError:
+        report = None
+    if isinstance(report, list) and all(isinstance(entry, dict) for entry in report):
+        failures = [
+            (entry.get('name'), str(entry.get('error') or entry.get('reason') or entry.get('status')))
+            for entry in report
+            if entry.get('status') != 'installed'
+        ]
+        if result.returncode and not failures:
+            failures.append((None, f'the installer exited {result.returncode}'))
+    else:
+        failures = [(None, f'the installer exited {result.returncode} without a JSON report')]
+        print((result.stdout + result.stderr)[-2000:].rstrip(), file=sys.stderr)
+    for skill, reason in failures:
+        print(f'Failed to install {skill or "skills"}: {reason}', file=sys.stderr)
+    return failures
 
 
 def main():
@@ -85,14 +106,17 @@ def main():
 
     problems, lock = check(arguments, slug, trees)
     agents = lock.get('lastSelectedAgents')
+    failures = []
     if arguments.refresh and install_command(slug, agents) and outdated(problems):
-        install(install_command(slug, agents))
+        failures = install(install_command(slug, agents))
         problems, lock = check(arguments, slug, trees)
-        if outdated(problems):
+        retry = sorted(set(outdated(problems)) | {skill for skill, _ in failures if skill})
+        if retry or failures:
             # GitHub can serve the previous tree for a short while after a merge.
             time.sleep(arguments.retry_delay)
-            install(install_command(slug, agents, outdated(problems)))
+            failures = install(install_command(slug, agents, retry or ('*',)))
             problems, lock = check(arguments, slug, trees)
+    problems += [f'failed   {skill or "install"}: {" ".join(reason.split())}' for skill, reason in failures]
 
     print('\n'.join(problems) or f'All {len(trees)} skills match {arguments.ref}.')
     if outdated(problems):
