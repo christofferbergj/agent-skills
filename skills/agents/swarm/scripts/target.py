@@ -254,9 +254,9 @@ def app_server_call(method, params, timeout, client='pstack-target'):
         return None
 
 
-def read_rate_limits(timeout=None, client='pstack-target'):
+def read_rate_limits():
     """Return the result of `codex app-server`'s account/rateLimits/read, or None."""
-    return app_server_call('account/rateLimits/read', {}, RESETS_TIMEOUT if timeout is None else timeout, client)
+    return app_server_call('account/rateLimits/read', {}, RESETS_TIMEOUT)
 
 
 def banked_expiries(result):

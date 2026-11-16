@@ -25,6 +25,7 @@ import target
 
 CODEX_RESET = 'codexRateLimits'
 CALL_TIMEOUT = 30
+CLIENT = 'pstack-reset-guard'
 
 
 class Window(NamedTuple):
@@ -132,7 +133,7 @@ def main():
     parser.add_argument('--dry-run', action='store_true', help='Print what would happen without redeeming or writing state')
     args = parser.parse_args()
     now = time.time()
-    result = target.read_rate_limits(CALL_TIMEOUT, 'pstack-reset-guard')
+    result = target.app_server_call('account/rateLimits/read', {}, CALL_TIMEOUT, CLIENT)
     if not isinstance(result, dict):
         print('Could not read Codex rate limits from codex app-server.', file=sys.stderr)
         return 1
@@ -157,7 +158,7 @@ def main():
     if args.dry_run:
         print(f'Dry run: would redeem {summary}.')
         return 0
-    reply = target.app_server_call('account/rateLimitResetCredit/consume', {'creditId': decision.redeem.id, 'idempotencyKey': f'reset-guard:{decision.redeem.id}'}, CALL_TIMEOUT, 'pstack-reset-guard')
+    reply = target.app_server_call('account/rateLimitResetCredit/consume', {'creditId': decision.redeem.id, 'idempotencyKey': f'reset-guard:{decision.redeem.id}'}, CALL_TIMEOUT, CLIENT)
     outcome = target.text(target.table(reply).get('outcome'))
     if outcome is None:
         print(f'Could not redeem {summary}.', file=sys.stderr)
