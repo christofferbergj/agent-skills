@@ -55,7 +55,7 @@ Resolve the counterpart before dispatch with `python3 scripts/target.py --parent
 
 - `run` names the counterpart's vendor. Pass the target's `model`, `effort`, and `serviceTier` on every route, because a model's default effort can be `low`. Without a `model`, a Claude counterpart takes the newest Opus model available, and the Codex CLI keeps its configured model.
 - `run: "fallback"` means Codex usage is nearly spent: take route 3 and disclose the target's `reason`.
-- `note` records a step down to standard speed, unknown usage, or a banked reset to redeem before it lapses; carry it into the report.
+- `note` records a step down to standard speed, unknown usage, or a banked reset the reset guard will redeem before it lapses; carry it into the report.
 
 For a critic, the target sets the counterpart only; same-model critics inherit the session's model and effort unless the user configured them.
 

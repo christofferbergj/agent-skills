@@ -5,13 +5,14 @@ A banked reset lapses when it expires before the latest usage window, the week, 
 resets every window, so one that outlasts the week can still serve a later week. The earliest
 lapsing reset is redeemed when the week has --redeem-when-left percent or less left, by default
 codexUsage.skipWhenLeft in PSTACK_CONFIG or ~/.config/pstack/config.json, or when it expires
-within --margin-hours; at most one per run. A shorter window running low never triggers
-a redeem. Resets that never expire or outlast the week, and resets of another type, are never
-redeemed. The first run that sees a
-lapsing reset it doesn't redeem prints a heads-up, remembered in --state. Prints one line per heads-up or redeem
-and nothing otherwise. Exits 1 when Codex's app-server can't be read, when a redeem neither resets
-Codex nor finds the reset already redeemed, or when --state can't be written, which never holds
-up a redeem.
+within --margin-hours; at most one per run. A shorter window running low never triggers a
+redeem. Resets that never expire or outlast the week, and resets of another type, are never
+redeemed. The first run that sees a lapsing reset it doesn't redeem prints a heads-up,
+remembered in --state. Prints one line per heads-up or redeem and nothing otherwise.
+
+Exits 1, with the reason on stderr, when Codex's rate limits can't be read, hide a banked
+reset's id or expiry, or give no window a reset time while resets are banked, when a redeem neither resets Codex nor finds the reset already redeemed,
+or when --state can't be written, which never holds up a redeem.
 """
 
 from __future__ import annotations
