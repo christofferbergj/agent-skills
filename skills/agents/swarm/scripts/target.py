@@ -31,7 +31,8 @@ The review and computer-use roles run on the other vendor. Every other role is o
 Pstack's native roles and runs on the parent host. In Claude Code each takes upstream's
 default model and effort: Opus at xhigh for code, judgment, and prose, Opus at high for
 swarm workers and reflect tooling, and Fable at xhigh, one step below upstream's max, for
-the hardest tasks. A budget moves those default efforts as upstream's does: unlimited one
+the hardest tasks. fast-code, for trivial edits, follows swarm workers there, as upstream's
+do. A budget moves those default efforts as upstream's does: unlimited one
 step up, large not at all, medium one step down, small two. Codex native roles keep the
 parent's model and effort. A native Codex role runs fast while Codex usage allows, and Claude
 never runs fast. Native roles take upstream's labels in kebab case; reflect-judgment shortens
@@ -39,7 +40,7 @@ never runs fast. Native roles take upstream's labels in kebab case; reflect-judg
 runs for hours, such as a coordinator or one of its workers; it keeps the parent's model, so
 a roles entry can move those threads off a model with a tight weekly allowance. A roles entry
 overrides the model or the effort; "inherit-parent" or "auto" as the model keeps the parent's
-model and effort.
+model and drops the default effort.
 """
 
 import argparse
@@ -70,7 +71,7 @@ CODE, WORKERS = ('opus', 'xhigh'), ('opus', 'high')
 NATIVE_DEFAULTS = {'claude-code': {
     'feature-refactoring': CODE, 'bug-fix': CODE, 'perf-issue': CODE, 'hillclimb': CODE,
     'judgment-and-prose': CODE, 'reflect-judgment': CODE,
-    'swarm-workers': WORKERS, 'reflect-tooling': WORKERS,
+    'swarm-workers': WORKERS, 'reflect-tooling': WORKERS, 'fast-code': WORKERS,
     'hardest-tasks': ('fable', 'xhigh'),
 }}
 NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
@@ -339,15 +340,17 @@ def pace_note(window, expiries):
 
 
 def budgeted(effort, budget):
-    if effort is None:
-        return None
     step = EFFORTS.index(effort) + BUDGET_STEPS.get(budget, 0)
     return EFFORTS[min(max(step, 0), len(EFFORTS) - 1)]
 
 
 def resolve_native(parent, role, config, usage, read_banked, now):
     host = table(config.get(parent))
-    entry = table(table(host.get('roles')).get(role))
+    roles = table(host.get('roles'))
+    entry = table(roles.get(role))
+    # Upstream sends trivial edits to its swarm workers model, so Claude Code's fast-code follows that entry.
+    if not entry and parent == 'claude-code' and role == 'fast-code':
+        entry = table(roles.get('swarm-workers'))
     model, effort = text(entry.get('model')), text(entry.get('effort'))
     default_model, default_effort = NATIVE_DEFAULTS.get(parent, {}).get(role, (None, None))
     if model in ('inherit-parent', 'auto'):

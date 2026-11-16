@@ -231,6 +231,15 @@ class TargetResolution(unittest.TestCase):
         self.log('a.jsonl',event(99,resets=MIDWEEK))
         self.assertEqual(self.run_target('reflect-tooling',parent='codex'),{'role':'reflect-tooling','run':'codex','serviceTier':'default'})
 
+    def test_fast_code_follows_swarm_workers_in_claude_code_and_keeps_its_own_entry_in_codex(self):
+        self.config.write_text('{}')
+        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'opus','effort':'high'})
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'swarm-workers':{'model':'haiku','effort':'low'}}},'codex':{'roles':{'fast-code':{'model':'gpt-fast','effort':'low'},'swarm-workers':{'model':'gpt-other'}}}}))
+        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'haiku','effort':'low'})
+        self.assertEqual(self.run_target('fast-code',parent='codex'),{'role':'fast-code','run':'codex','model':'gpt-fast','serviceTier':'priority','effort':'low'})
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'swarm-workers':{'model':'haiku'},'fast-code':{'model':'sonnet'}}}}))
+        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet','effort':'high'})
+
     def test_budget_moves_claude_default_efforts_within_the_ladder(self):
         for budget,workers,hardest in [('unlimited','xhigh','max'),('large','high','xhigh'),('medium','medium','high'),('small','low','medium'),('huge','high','xhigh')]:
             self.config.write_text(json.dumps({'claude-code':{'budget':budget,'roles':{'bug-fix':{'effort':'low'}}},'codex':{'budget':budget}}))
