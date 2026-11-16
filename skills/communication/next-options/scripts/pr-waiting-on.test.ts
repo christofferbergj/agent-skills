@@ -108,6 +108,30 @@ test("a draft run's skip or neutral result doesn't count as a pass before the re
   }
 });
 
+test("a draft skip on a check the repository doesn't require is only info, unless its ready run reports", () => {
+  // Blacksmith's Proof runs only on request, so its draft skip is never replaced.
+  const ready = { readyAt: READY_AT };
+  const proof = run("Proof", { conclusion: "SKIPPED", startedAt: BEFORE_READY, isRequired: false });
+  const { items, verdict } = judge(pr([run("E2E"), proof], ready));
+  assert.equal(verdict, "ready");
+  assert.deepEqual(
+    items.map((item) => [item.kind, item.name]),
+    [["info", "Proof"]],
+  );
+
+  const optional = { workflow: "CI", event: "pull_request", isRequired: false };
+  const skip = () => run("Unit", { ...optional, conclusion: "SKIPPED", startedAt: BEFORE_READY });
+  const queued = () =>
+    run("Unit", { ...optional, status: "QUEUED", conclusion: null, startedAt: null });
+  assert.equal(judge(pr([run("E2E"), skip(), queued()], ready)).verdict, "running");
+  const failed = () => run("Unit", { ...optional, conclusion: "FAILURE" });
+  assert.equal(judge(pr([run("E2E"), skip(), failed()], ready)).verdict, "failed");
+
+  const unknown = pr([skip()], ready);
+  assert.equal(requiredKnown(unknown), false);
+  assert.equal(judge(unknown).verdict, "running");
+});
+
 test("a check skipped on a PR that was never a draft passes", () => {
   const skipped = run("PDF", { conclusion: "SKIPPED", startedAt: BEFORE_READY });
   assert.equal(judge(pr([skipped])).verdict, "ready");
