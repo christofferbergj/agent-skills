@@ -108,28 +108,46 @@ test("a draft run's skip or neutral result doesn't count as a pass before the re
   }
 });
 
-test("a draft skip on a check the repository doesn't require is only info, unless its ready run reports", () => {
+test("a draft skip on an optional check outside Actions is only info, unless its ready run reports", () => {
   // Blacksmith's Proof runs only on request, so its draft skip is never replaced.
   const ready = { readyAt: READY_AT };
-  const proof = run("Proof", { conclusion: "SKIPPED", startedAt: BEFORE_READY, isRequired: false });
-  const { items, verdict } = judge(pr([run("E2E"), proof], ready));
+  const proof = () =>
+    run("Proof", { conclusion: "SKIPPED", startedAt: BEFORE_READY, isRequired: false });
+  const { items, verdict } = judge(pr([run("E2E"), proof()], ready));
   assert.equal(verdict, "ready");
   assert.deepEqual(
     items.map((item) => [item.kind, item.name]),
     [["info", "Proof"]],
   );
+  const proofRun = () =>
+    run("Proof", { conclusion: null, status: "IN_PROGRESS", isRequired: false });
+  assert.equal(judge(pr([run("E2E"), proof(), proofRun()], ready)).verdict, "running");
 
-  const optional = { workflow: "CI", event: "pull_request", isRequired: false };
-  const skip = () => run("Unit", { ...optional, conclusion: "SKIPPED", startedAt: BEFORE_READY });
-  const queued = () =>
-    run("Unit", { ...optional, status: "QUEUED", conclusion: null, startedAt: null });
-  assert.equal(judge(pr([run("E2E"), skip(), queued()], ready)).verdict, "running");
-  const failed = () => run("Unit", { ...optional, conclusion: "FAILURE" });
-  assert.equal(judge(pr([run("E2E"), skip(), failed()], ready)).verdict, "failed");
-
-  const unknown = pr([skip()], ready);
+  const unknown = pr([proof()], ready);
   assert.equal(requiredKnown(unknown), false);
   assert.equal(judge(unknown).verdict, "running");
+});
+
+test("a draft skip on an optional Actions job waits for its ready run", () => {
+  // GitHub creates the ready_for_review run a while after the PR leaves draft.
+  const ready = { readyAt: READY_AT };
+  const optional = { workflow: "React Doctor", event: "pull_request", isRequired: false };
+  const skip = () =>
+    run("React Doctor", { ...optional, conclusion: "SKIPPED", startedAt: BEFORE_READY });
+  const { items, verdict } = judge(pr([run("E2E"), skip()], ready));
+  assert.equal(verdict, "running");
+  assert.deepEqual(
+    items.map((item) => [item.kind, item.name, item.required]),
+    [["running", "React Doctor", false]],
+  );
+
+  const queued = () =>
+    run("React Doctor", { ...optional, status: "QUEUED", conclusion: null, startedAt: null });
+  assert.equal(judge(pr([run("E2E"), skip(), queued()], ready)).verdict, "running");
+  const failed = () => run("React Doctor", { ...optional, conclusion: "FAILURE" });
+  assert.equal(judge(pr([run("E2E"), skip(), failed()], ready)).verdict, "failed");
+  const passed = () => run("React Doctor", optional);
+  assert.equal(judge(pr([run("E2E"), skip(), passed()], ready)).verdict, "ready");
 });
 
 test("a check skipped on a PR that was never a draft passes", () => {

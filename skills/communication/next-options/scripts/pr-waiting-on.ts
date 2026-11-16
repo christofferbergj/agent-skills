@@ -4,9 +4,10 @@
  *
  * usage: node pr-waiting-on.ts <PR number or URL> [--repo owner/name]
  *
- * Every check run on the PR's head must pass, whether or not the repository requires it. A required
- * check skipped while the PR was a draft is still running until the ready PR runs it, and so is a
- * required check with no run yet. A merged PR reads `ready`.
+ * Every check run on the PR's head must pass, whether or not the repository requires it. A check
+ * skipped while the PR was a draft is still running until the ready PR runs it, when the repository
+ * requires it or GitHub Actions runs it, and so is a required check with no run yet. A merged PR
+ * reads `ready`.
  *
  * Prints one line per unfinished item, then a last `verdict:` line:
  *   person   something waits on a person; hand the PR back (exit 2)
@@ -15,7 +16,8 @@
  *   ready    CI is green on this head and nothing waits on a person; the PR can merge (exit 0)
  * `info` lines are items the repository doesn't require that may never finish: a pending commit
  * status from an outside service, such as a visual-test service stopped by its billing plan, or a
- * check skipped on the draft that runs only on request. They never change the verdict.
+ * check from outside GitHub Actions skipped on the draft, which may run only on request. They never
+ * change the verdict.
  * `required: unknown` means neither the base branch's rules nor the checks show a required check,
  * so every status and draft skip counts as required too.
  */
@@ -157,11 +159,14 @@ function judgeRun(run: CheckRun, draftSkipPending: boolean, counts: boolean): Ju
     return { kind: "failed", detail: (run.conclusion ?? "").toLowerCase(), url };
   }
   const skipped = run.conclusion === "SKIPPED" || run.conclusion === "NEUTRAL";
-  if (skipped && draftSkipPending && counts) {
+  // GitHub creates an Actions job's ready run a while after the PR leaves draft, so its draft skip
+  // waits even when nothing requires it. Another app's check, such as Blacksmith's Proof, may run
+  // only on request and never replace its draft skip; a ready run that does start replaces it in
+  // newestRuns, so it holds the watch from then on.
+  const actionsJob = Boolean(run.workflow || run.workflowId);
+  if (skipped && draftSkipPending && (counts || actionsJob)) {
     return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
   }
-  // A check that runs only on request, such as Blacksmith's Proof, never replaces its draft skip.
-  // A ready run that does start replaces it in newestRuns, so it holds the watch from then on.
   if (skipped && draftSkipPending) {
     return { kind: "info", detail: "skipped on the draft and not required; may never run", url };
   }
