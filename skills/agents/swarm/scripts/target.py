@@ -9,7 +9,8 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
      "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                      "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
-     "roles": {"swarm-workers": {"model": "haiku", "effort": "low"}}},
+     "budget": "large",
+     "roles": {"swarm-workers": {"model": "sonnet", "effort": "medium"}}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
@@ -27,15 +28,19 @@ a Linux server, is run "fallback" without reading usage, unless --on-mac says th
 a linked macOS machine.
 
 The review and computer-use roles run on the other vendor. Every other role is one of
-Pstack's native roles and runs on the parent host: fast-code on the host's fast model
-(Sonnet in Claude Code; Codex keeps its own model), hardest-tasks on Fable in Claude Code
-(Codex keeps its own model), the rest on the parent's model. A
-native Codex role runs fast while Codex usage allows, and Claude never runs fast. Native
-roles take upstream's labels in kebab case; reflect-judgment shortens "reflect judgment,
-divergent, synthesizer", and fast-code names its "fast code model". long-running, the one
-local role, is a thread that runs for hours, such as a coordinator or one of its workers, so a
-roles entry can move those threads off a model with a tight weekly allowance. A roles entry overrides
-the model or sets an effort; "inherit-parent" or "auto" as the model keeps the parent's.
+Pstack's native roles and runs on the parent host. In Claude Code each takes upstream's
+default model and effort: Opus at xhigh for code, judgment, and prose, Opus at high for
+swarm workers and reflect tooling, and Fable at xhigh, one step below upstream's max, for
+the hardest tasks. fast-code, for trivial edits, follows swarm workers there, as upstream's
+do. A budget moves those default efforts as upstream's does: unlimited one
+step up, large not at all, medium one step down, small two. Codex native roles keep the
+parent's model and effort. A native Codex role runs fast while Codex usage allows, and Claude
+never runs fast. Native roles take upstream's labels in kebab case; reflect-judgment shortens
+"reflect judgment, divergent, synthesizer". long-running, the one local role, is a thread that
+runs for hours, such as a coordinator or one of its workers; it keeps the parent's model, so
+a roles entry can move those threads off a model with a tight weekly allowance. A roles entry
+overrides the model or the effort; "inherit-parent" or "auto" as the model keeps the parent's
+model and drops the default effort.
 """
 
 import argparse
@@ -60,14 +65,18 @@ CROSS_VENDOR_ROLES = {
     'computer-use': ('computerUse', 'routine', 'medium'),
     'computer-use-hard': ('computerUse', 'hard', 'high'),
 }
-# Native roles: trivial edits run fast, the hardest changes run on Claude Code's strongest model, and
-# exploration, collection, tooling review, check runs, code, judgment, prose, and synthesis keep the
-# parent's model.
-FAST_ROLES = {'fast-code'}
-PARENT_ROLES = {'reflect-tooling', 'swarm-workers', 'feature-refactoring', 'bug-fix', 'perf-issue', 'hillclimb', 'hardest-tasks', 'judgment-and-prose', 'reflect-judgment', 'long-running'}
-FAST_MODEL = {'claude-code': 'sonnet'}
-HARDEST_MODEL = {'claude-code': 'fable'}
+# Upstream's Claude Code defaults, (model, effort) per native role. Fable at max timed out on
+# long tasks and scored below xhigh in Claude Code benchmarks at about three times the cost.
+CODE, WORKERS = ('opus', 'xhigh'), ('opus', 'high')
+NATIVE_DEFAULTS = {'claude-code': {
+    'feature-refactoring': CODE, 'bug-fix': CODE, 'perf-issue': CODE, 'hillclimb': CODE,
+    'judgment-and-prose': CODE, 'reflect-judgment': CODE,
+    'swarm-workers': WORKERS, 'reflect-tooling': WORKERS, 'fast-code': WORKERS,
+    'hardest-tasks': ('fable', 'xhigh'),
+}}
+NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
 EFFORTS = ('low', 'medium', 'high', 'xhigh', 'max')
+BUDGET_STEPS = {'unlimited': 1, 'large': 0, 'medium': -1, 'small': -2}
 THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24}
 # Bounds that keep the usage scan to a few small reads.
 DAY_DIRS, LOGS, TAIL_BYTES = 7, 8, 256 * 1024
@@ -330,14 +339,26 @@ def pace_note(window, expiries):
     return f"{behind}; {len(expiries)} banked reset{'' if len(expiries) == 1 else 's'}"
 
 
+def budgeted(effort, budget):
+    step = EFFORTS.index(effort) + BUDGET_STEPS.get(budget, 0)
+    return EFFORTS[min(max(step, 0), len(EFFORTS) - 1)]
+
+
 def resolve_native(parent, role, config, usage, read_banked, now):
-    entry = table(table(table(config.get(parent)).get('roles')).get(role))
-    model = text(entry.get('model'))
-    if model is None:
-        model = FAST_MODEL.get(parent) if role in FAST_ROLES else HARDEST_MODEL.get(parent) if role == 'hardest-tasks' else None
-    elif model in ('inherit-parent', 'auto'):
-        model = None
-    effort = text(entry.get('effort'))
+    host = table(config.get(parent))
+    roles = table(host.get('roles'))
+    entry = table(roles.get(role))
+    # Upstream sends trivial edits to its swarm workers model, so Claude Code's fast-code follows that entry.
+    if not entry and parent == 'claude-code' and role == 'fast-code':
+        entry = table(roles.get('swarm-workers'))
+    model, effort = text(entry.get('model')), text(entry.get('effort'))
+    default_model, default_effort = NATIVE_DEFAULTS.get(parent, {}).get(role, (None, None))
+    if model in ('inherit-parent', 'auto'):
+        model, default_effort = None, None
+    elif model is None:
+        model = default_model
+    if effort not in EFFORTS and default_effort is not None:
+        effort = budgeted(default_effort, text(host.get('budget')))
     target = {'role': role, 'run': parent, 'model': model}
     if parent == 'codex':
         effort = capped(effort)
@@ -379,7 +400,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked, now):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('role', choices=sorted({*CROSS_VENDOR_ROLES, *FAST_ROLES, *PARENT_ROLES}))
+    parser.add_argument('role', choices=sorted({*CROSS_VENDOR_ROLES, *NATIVE_ROLES}))
     parser.add_argument('--parent', choices=['codex', 'claude-code'], required=True, help='The host running this session')
     parser.add_argument('--on-mac', action='store_true', help='A computer-use child runs on a linked macOS machine, not this one')
     args = parser.parse_args()
