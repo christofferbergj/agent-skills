@@ -4,19 +4,22 @@
  *
  * usage: node pr-waiting-on.ts <PR number or URL> [--repo owner/name]
  *
- * Every check run on the PR's head must pass, whether or not the repository requires it. A run only
- * passes on the ready PR: a check skipped while the PR was a draft is still running, and so is a
- * required check with no run yet. A merged PR reads `ready`.
+ * Every check run on the PR's head must pass, whether or not the repository requires it. A check
+ * skipped while the PR was a draft is still running until the ready PR runs it, when the repository
+ * requires it or GitHub Actions runs it, and so is a required check with no run yet. A merged PR
+ * reads `ready`.
  *
  * Prints one line per unfinished item, then a last `verdict:` line:
  *   person   something waits on a person; hand the PR back (exit 2)
  *   failed   a check failed; fix it or report it (exit 1)
  *   running  a check is still running; keep the watch (exit 0)
  *   ready    CI is green on this head and nothing waits on a person; the PR can merge (exit 0)
- * `info` lines are pending commit statuses from outside services the repository doesn't require,
- * such as a visual-test service stopped by its billing plan. They never change the verdict.
+ * `info` lines are items the repository doesn't require that may never finish: a pending commit
+ * status from an outside service, such as a visual-test service stopped by its billing plan, or a
+ * check from outside GitHub Actions skipped on the draft, which may run only on request. They never
+ * change the verdict.
  * `required: unknown` means neither the base branch's rules nor the checks show a required check,
- * so every status counts as required too.
+ * so every status and draft skip counts as required too.
  */
 import { execFileSync } from "node:child_process";
 
@@ -144,9 +147,9 @@ function expandedSince(run: CheckRun, sinceReady: CheckRun[]): boolean {
 
 /**
  * What the run waits on, or `null` when it passed. `draftSkipPending` says a skip on the draft
- * still stands in for a run the ready PR hasn't started.
+ * still stands in for a run the ready PR hasn't started; `counts` says the merge waits for that run.
  */
-function judgeRun(run: CheckRun, draftSkipPending: boolean): Judgement | null {
+function judgeRun(run: CheckRun, draftSkipPending: boolean, counts: boolean): Judgement | null {
   const url = run.detailsUrl ?? undefined;
   if (run.status === "WAITING" || run.conclusion === "ACTION_REQUIRED") {
     return { kind: "person", detail: "waits for an approval", url };
@@ -157,7 +160,14 @@ function judgeRun(run: CheckRun, draftSkipPending: boolean): Judgement | null {
   }
   const skipped = run.conclusion === "SKIPPED" || run.conclusion === "NEUTRAL";
   if (skipped && draftSkipPending) {
-    return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
+    // GitHub creates an Actions job's ready run a while after the PR leaves draft, so its draft skip
+    // waits even when nothing requires it. Another app's check, such as Blacksmith's Proof, may run
+    // only on request; a ready run that does start replaces the skip in newestRuns.
+    const actionsJob = Boolean(run.workflow || run.workflowId);
+    if (counts || actionsJob) {
+      return { kind: "running", detail: "skipped on the draft; waiting for the ready run", url };
+    }
+    return { kind: "info", detail: "skipped on the draft and not required; may never run", url };
   }
   return null;
 }
@@ -225,7 +235,7 @@ export function waitingOn(pr: Pr): Item[] {
   for (const run of newestRuns(runs)) {
     const ranOnDraft = readyAt !== null && (run.startedAt ?? "") < readyAt;
     const draftSkipPending = ranOnDraft && !expandedSince(run, sinceReady);
-    const item = judgeRun(run, draftSkipPending);
+    const item = judgeRun(run, draftSkipPending, required(run) || !known);
     // GitHub counts a skipped required check as passed, so it won't wait for the ready run.
     const waitedFor = required(run) && !(draftSkipPending && run.status === "COMPLETED");
     if (item) items.push({ ...item, name: run.name, required: waitedFor });

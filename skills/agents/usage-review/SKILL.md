@@ -44,7 +44,7 @@ Pick at most three changes, each tied to one kept pattern. Skip a rule changed i
 
 ## 6. Deliver
 
-When a change was picked, branch `usage-review/<date>` from `origin/main` in its own worktree and make the edits through /writing-for-agents, following this repository's change rules: an `UPSTREAM.md` departure for a sourced skill, and an ADR revision where an ADR owns the area. Run `pnpm check`. Write the PR body through /pr. Before every push, and before creating or editing the PR, run `public-check.ts --pr-title <title> --pr-body <file>` from the worktree; a hit blocks publication and goes in the report by class and position. Then push and open one draft PR. Add its number to each frozen contract in `decisions.json` and append them to `shipped.json`.
+When a change was picked, branch `usage-review/<date>` from `origin/main` in its own worktree and make the edits through /writing-for-agents, following this repository's change rules: an `UPSTREAM.md` departure for a sourced skill, and an ADR revision where an ADR owns the area. Run `pnpm check`. Write the PR body through /pr, naming each contract's `rule` id, since /maintain-skills reads contracts from PRs on machines without `shipped.json`. Before every push, and before creating or editing the PR, run `public-check.ts --pr-title <title> --pr-body <file>` from the worktree; a hit blocks publication and goes in the report by class and position. Then push and open one draft PR. Add its number to each frozen contract in `decisions.json` and append them to `shipped.json`.
 
 **Complete when:** a draft PR exists that passed `public-check.ts` and its contracts are in `shipped.json` with baselines, or no change was picked, or the report names the check that blocked publication.
 

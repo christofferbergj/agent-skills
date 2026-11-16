@@ -30,6 +30,8 @@ pnpm check
 
 `scripts/check.sh` lists what it runs.
 
+To check that a skill installs and is discovered, run `npx -y skills@latest add . --list`, as `pnpm check` does. Never test a `--global` install with a substitute `HOME`: the Skills CLI finds agent folders through variables such as `CLAUDE_CONFIG_DIR` and `CODEX_HOME` before `HOME`, so such a test once wrote into the real `~/.claude/skills`.
+
 Commits format staged files with Oxfmt through a Husky pre-commit hook and lint-staged.
 
 ## Upstream maintenance
