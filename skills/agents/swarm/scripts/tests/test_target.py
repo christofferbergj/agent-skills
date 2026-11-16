@@ -108,10 +108,10 @@ class TargetResolution(unittest.TestCase):
         self.credits=[MIDWEEK+1]
         self.assertIn('Standard speed: Codex usage 40% left',self.run_target('review-full')['note'])
         (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
-        self.credits=[MIDWEEK+1,NOW+WEEK//20]
+        self.credits=[MIDWEEK+1,NOW+WEEK//10,NOW+WEEK//20]
         note=self.run_target('review-full')['note']
-        self.assertIn(f'A banked reset expiring {target.moment(NOW+WEEK//20)} keeps fast mode',note)
-        self.assertIn(f'under the 50% even pace leaves; 2 banked resets, 1 expiring before then. Redeem it once Codex usage runs out',note)
+        self.assertIn('A banked reset expiring 2027-01-15T16:24Z keeps fast mode',note)
+        self.assertIn(f'under the 50% even pace leaves; 3 banked resets, 2 expiring before then. Redeem it once Codex usage runs out',note)
 
     def test_floor_keeps_standard_work_for_the_last_days_and_shrinks_as_the_reset_nears(self):
         self.config.write_text(json.dumps({'codexUsage':{'skipWhenLeft':5}}))
@@ -135,9 +135,11 @@ class TargetResolution(unittest.TestCase):
             result=self.run_target('review-full')
             self.assertEqual((result['run'],result.get('serviceTier')),(run,tier),used)
         self.assertIn(f'a banked reset expiring {target.moment(NOW+DAY)} lapses first, so redeem it',result['reason'])
-        self.credits=[NOW+3*DAY]
-        (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
-        self.assertNotIn('banked reset',self.run_target('review-full')['reason'])
+        for credits,resets in [([NOW+3*DAY],NOW+2*DAY),([NOW+DAY],'soon')]:
+            self.credits=credits
+            self.log('a.jsonl',event(96,resets=resets))
+            (self.home/'cache'/'pstack'/'codex-reset-credits.json').unlink()
+            self.assertNotIn('banked reset',self.run_target('review-full')['reason'],resets)
 
     def test_a_window_shorter_than_a_day_keeps_no_floor(self):
         # With a day's slack, even pace asks nothing of a 5-hour window, so only a floor could slow it.

@@ -183,7 +183,7 @@ def binding_line(window, now, settings):
     resets, minutes = number(window.get('resets_at')), number(window.get('window_minutes'))
     if resets is None:
         return None, None
-    floor = min(100, settings['floorPercent'], max(0, settings['reservePerDay'] * (resets - now) / 86400)) if minutes and minutes >= 1440 else 0
+    floor = min(100, settings['floorPercent'], settings['reservePerDay'] * (resets - now) / 86400) if minutes and minutes >= 1440 else 0
     pace = even_pace(window, now, settings['paceSlackHours'])
     return (pace, 'even pace leaves') if pace is not None and pace >= floor else (floor, 'floor')
 
