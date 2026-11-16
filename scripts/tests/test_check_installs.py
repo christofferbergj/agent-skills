@@ -46,7 +46,7 @@ FAKE_NPX = textwrap.dedent('''\
     lock_path.write_text(json.dumps(lock))
     state_path.write_text(json.dumps(state))
     failed = [entry for entry in report if entry['status'] == 'failed']
-    if state['text_exit'] is not None and len(state['calls']) <= (state['text_calls'] or len(state['calls'])):
+    if state['text_exit'] is not None and (state['text_calls'] is None or len(state['calls']) <= state['text_calls']):
         for entry in failed:
             print(f"Failed to install {entry['name']} for cursor: {entry['error']}")
         sys.exit(state['text_exit'])
