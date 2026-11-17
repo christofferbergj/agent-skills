@@ -25,12 +25,12 @@ Four GPT-6.2 Sol reviewers ran at the same time as read-only T3 Code child tasks
 | X1 · `xhigh` | found              | found               | missed                | 0              | 5.9     | 2.1     |
 | X2 · `xhigh` | found              | found               | missed                | 0              | 6.9     | 3.0     |
 
-H2 showed that native roles still read efforts case-sensitively and called the new help line overbroad, but treated the native gap as pre-existing and asked for narrower wording instead of a wider fix. No run checked panel seats. Every finding came with a run that reproduced it.
+H2 showed that native roles still read efforts case-sensitively and called the new help line overbroad, but treated the native gap as pre-existing and asked for narrower wording instead of a wider fix. No run noticed that panel seats still read efforts case-sensitively. Every finding came with a run that reproduced it.
 
 ## Conclusion
 
-Both efforts found the same two defects in every run, and the defect that three runs missed was missed at both levels. `xhigh` averaged 6.4 credits a review against 5.35 at `high`, about 20% more, and took up to 3 minutes against 2.1. This agrees with the 2026-10-20 comparison on GPT-6.1 Sol, so delta reviews stay at `high`.
+Both efforts found the same two defects in every run, and the defect that three runs missed was missed at both levels. `xhigh` averaged 6.4 credits a review against 5.35 at `high`, about 20% more, and took up to 3 minutes against 2.1. This agrees with the 2026-10-20 comparison, so delta reviews stay at `high`.
 
 ## Limits
 
-Four runs on one fix commit can show that `xhigh` gave no clear gain, but not rule out a small one. The fixture is a 9-line change to one script; a larger fix commit could reward more depth. The runs measured detection only, not how clear or actionable each report was.
+Four runs on one fix commit can show that `xhigh` gave no clear gain, but not rule out a small one. The fixture changes 11 lines in one script and its test file; a larger fix commit could reward more depth. The runs measured detection only, not how clear or actionable each report was.
