@@ -1,6 +1,6 @@
 ---
 name: wizard
-description: Generate an interactive bash wizard that walks a human through steps only they can perform. Use when provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, or running a one-off migration or cutover. Don't invoke this for steps the agent can perform itself.
+description: Generate an interactive bash wizard that walks a human through steps only they can perform. Use when provisioning infrastructure, setting up credentials or CI secrets, walking an unfamiliar third-party dashboard, running a one-off migration or cutover, or when any script, scheduled or not, needs a human to sign in, approve, or otherwise act. Don't invoke this for steps the agent can perform itself.
 ---
 
 # Wizard
@@ -26,15 +26,17 @@ Then show the user the ordered list of stages and the values each produces, and 
 
 ### 2. Map each stage's journey
 
-For each stage, write the precise path a human follows: which URL to open, what to do there, where a value is shown, which variable it fills: e.g. "Dashboard → Developers → API keys → Reveal test key → copy". Where you don't actually know the current UI or the exact command, say so and ask the user or check the docs: never invent steps that may not exist.
+For each stage, write the precise path a human follows: which URL to open, what to do there, where a value is shown, which variable it fills: e.g. "Dashboard → Developers → API keys → Reveal test key → copy". When a stage runs as a particular account, name it by its email or ID rather than a display name, which several accounts can share, and say where the human sees it before they approve. Where you don't actually know the current UI or the exact command, say so and ask the user or check the docs: never invent steps that may not exist.
 
-**Done when:** every stage traces to concrete instructions a stranger could follow.
+For each stage, also note what the script can read back to prove it worked, such as the signed-in account or the written value.
+
+**Done when:** every stage traces to concrete instructions a stranger could follow, and every stage with a readable result names its check.
 
 ### 3. Author the wizard
 
 Copy `template.sh` to the target path and copy [envfile.py](envfile.py) beside it. Verify Python 3 is available. The helper serializes literal dotenv data, including safe quoted and multiline values, and preserves complete existing records and file modes. It rejects unsupported quoting without a partial write. Verify a fake-value round trip through the consuming application's actual dotenv parser; never shell-source the generated data. Replace the example stage with one `stage` per step, in dependency order. Use the library helpers: `stage`, `say`/`step`, `open_url`, `ask`/`ask_secret`, `write_env`, `set_secret`/`set_var`, `pause`/`confirm`. Set `TOTAL_STAGES` to the number of stages you wrote.
 
-Hold the bar the template sets: open the URL before asking for its value, use `ask_secret` for anything secret, `write_env` every persisted value, `set_secret` only the values CI actually needs, and `confirm` at an unresolved irreversible-action decision. Honor authorization already given for that concrete action. Each `stage` clears the screen so only the current step is visible: keep a stage to one focused task so nothing the human needs scrolls away. Don't touch the library above the marker.
+Hold the bar the template sets: open the URL before asking for its value, use `ask_secret` for anything secret, `write_env` every persisted value, `set_secret` only the values CI actually needs, and `confirm` at an unresolved irreversible-action decision. Honor authorization already given for that concrete action. Each `stage` clears the screen so only the current step is visible: keep a stage to one focused task so nothing the human needs scrolls away. Right after a stage with a readable result, check it: print `✅` and move on, or print `❌` with what it got, the likely cause, and repeat the stage. End with every checked result marked `✅` or `❌`. Don't touch the library above the marker.
 
 ### 4. Verify and hand off
 
