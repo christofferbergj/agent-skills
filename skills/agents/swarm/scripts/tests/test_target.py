@@ -72,6 +72,19 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual((result['providerInstanceId'],result['model'],result['effort'],result['serviceTier']),('codex','gpt-fixture','xhigh','priority'))
         self.assertEqual(result['usage']['left'],90)
 
+    def test_a_model_table_gives_each_kind_the_model_under_its_effort_key(self):
+        self.config.write_text(json.dumps({'claude-code':{'review':{'model':{'full':'gpt-fixture-full','delta':'gpt-fixture-delta'}},'computerUse':{'model':{'routine':'gpt-fixture-routine','hard':'gpt-fixture-hard'}}}}))
+        roles=('review-full','review-delta','computer-use','computer-use-hard')
+        self.assertEqual([self.run_target(role).get('model') for role in roles],['gpt-fixture-full','gpt-fixture-delta','gpt-fixture-routine','gpt-fixture-hard'])
+
+    def test_a_kind_the_model_table_leaves_out_runs_as_if_no_model_were_set(self):
+        (self.home/'config.toml').write_text('model = "gpt-configured"\n')
+        self.config.write_text(json.dumps({'claude-code':{'review':{'model':{'full':'gpt-fixture'}},'computerUse':{'model':{'routine':7}}},'codex':{'review':{'model':{'full':'claude-fixture'}}}}))
+        roles=('review-full','review-delta','computer-use')
+        self.assertEqual([self.run_target(role).get('model') for role in roles],['gpt-fixture','gpt-configured','gpt-configured'])
+        self.assertEqual(self.run_target('review-full',parent='codex').get('model'),'claude-fixture')
+        self.assertNotIn('model',self.run_target('review-delta',parent='codex'))
+
     def test_even_pace_steps_down_to_standard_speed_and_the_threshold_to_the_fallback(self):
         for used,resets,run,tier in [(49,MIDWEEK,'codex','priority'),(51,MIDWEEK,'codex','default'),(85,NOW+3600,'codex','priority'),(91,NOW+3600,'fallback',None)]:
             self.log('a.jsonl',event(used,resets=resets))
@@ -332,6 +345,10 @@ class TargetResolution(unittest.TestCase):
         seats=self.run_target('arena-runners')['seats']
         self.assertEqual([seat['run'] for seat in seats],['claude-code','claude-code','fallback'])
         self.assertIn('5% left',seats[2]['reason'])
+
+    def test_a_panel_counterpart_seat_takes_the_full_review_model(self):
+        self.config.write_text(json.dumps({'claude-code':{'review':{'model':{'full':'gpt-fixture-full','delta':'gpt-fixture-delta'}}}}))
+        self.assertEqual(self.run_target('arena-runners')['seats'][2].get('model'),'gpt-fixture-full')
 
     def test_codex_panel_seats_its_own_model_natively_and_fable_and_opus_on_the_claude_counterpart(self):
         self.config.write_text(json.dumps({'codex':{'review':{'providerInstanceId':'claude','model':'claude-fixture','effort':{'full':'xhigh'}},'budget':'small'}}))
