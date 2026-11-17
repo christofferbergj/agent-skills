@@ -23,6 +23,7 @@ Build and debug software, configure development tools, and verify behavior.
 | [maintain-verification-skill](maintain-verification-skill/SKILL.md)               | Keep a verification skill and feature map current.         |
 | [make-bot-ui](make-bot-ui/SKILL.md)                                               | Build controls for an existing agent receiver.             |
 | [mobile-native](mobile-native/SKILL.md)                                           | Make a web app feel native on a phone.                     |
+| [prune-tests](prune-tests/SKILL.md)                                               | Prune tests that guard no behavior.                        |
 | [pstack-tdd](pstack-tdd/SKILL.md)                                                 | Prove a bug fix with a regression test.                    |
 | [remove-animations](remove-animations/SKILL.md)                                   | Remove animations an interface doesn't need.               |
 | [setup-agent-sign-in](setup-agent-sign-in/SKILL.md)                               | Save test-user logins that agents sign in with.            |
