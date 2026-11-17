@@ -3,30 +3,42 @@ name: swarm
 description: "Use for Pstack delegation or independent review; organize coverage slices, races, or parallel exploration."
 ---
 
-# Swarm and host execution
+# Swarm
 
 For every Pstack delegate or cross-vendor review, read [the execution contract](references/execution.md). It owns native host APIs, model settings, isolation, review restrictions, and disclosed fallback. A caller can use that contract for one delegate without starting a coverage swarm.
 
 To hand a check that needs Computer Use to Codex, follow [the Computer Use route](references/computer-use.md).
 
-## 1. Frame
+## Start
 
-Open a task list with one entry per phase before dispatching anything. Name the done predicate, report or artifact, and required coverage. Choose slices, an identical-brief race, or a mix. Declare a race rule before dispatch: first passing result, rank all, or best-of. Workers take the `swarm workers` role from [the execution contract](references/execution.md#model-roles); for a model race, name each arm's model before dispatch instead. Choose the smallest useful worker count within the user's budget and host capacity; total jobs can exceed concurrent slots.
+Open a todolist with one entry per phase before launching anything.
 
-Give each writer its own worktree or output directory. A verification or measurement brief names the exact revisions, sample definition, method, and acceptance predicate. Complete when every required slice or arm has an independent brief and output location.
+1. Frame
+2. Fan out
+3. Aggregate
+4. Report
 
-## 2. Dispatch
+## Phase A: Frame
 
-Use the host's native delegation tools and actual schema. Start independent jobs before waiting, respecting the available concurrency window. In T3 Code, a job that needs another machine's tools, or would load this one for long, runs there through [the T3 route's On another machine](references/t3.md#on-another-machine). Each brief supplies the goal, boundary, repository guidance, resolved rubric or reference paths, evidence to return, and allowed writes. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first. Prefer cross-vendor critics through the execution contract when available.
+1. State the done predicate and the artifact or report the swarm must return.
+2. Choose the shape. Partition into slices, race N workers on identical briefs, or mix both. For a race or mixed shape, declare `first pass`, `rank all`, or `best-of` before spawning.
+3. Pick the worker model from the `swarm-workers` role, which [the execution contract](references/execution.md#model-roles) resolves: by default Opus at `high` in Claude Code and the session's model in Codex. For `auto` or `inherit-parent`, omit `model` so the workers run on the parent model. If the host rejects a model, follow the contract's rejected-model rule and say so. For a model race, name each arm's model up front. Pick each subagent's reasoning level for the job through the contract.
+4. Give each worker its own writable output when it writes. When workers verify or measure commits, each brief names the exact SHAs. A measurement brief also names the method (sample count, what one sample is, order). The worker records both in its result.
 
-Complete when each job has a handle or an explicit dispatch failure. A dropped worker is a gap, never an implicit success.
+## Phase B: Fan out
 
-## 3. Aggregate
+Spawn all N workers at once, in the background, as general-purpose agents with the step 3 model, left unset for `auto` or `inherit-parent`, each isolated in its own worktree as the execution contract describes. Run a worker in the session's checkout only when it needs access to something on the user's computer. In T3 Code, a job that needs another machine's tools, or would load this one for long, runs there through [the T3 route's On another machine](references/t3.md#on-another-machine).
 
-Collect terminal results. Accept `PASS`, `ISSUES`, or `BLOCKED` only with the brief's required revisions, method, and evidence. Retry a missing or malformed result once when recoverable; after another miss, record the gap. Inspect each finding rather than treating agreement as proof. Coverage requires every mandatory slice; a race uses the declared selection rule.
+When a worker must start from a non-default pushed branch, tell it to check out that branch first.
 
-Complete when every dispatched job is accounted for and every required slice has evidence or a named gap.
+Every brief stands alone. Include the goal, scope, exact slice or race arm, how to verify, and what to report. Reports use `PASS`, `ISSUES`, or `BLOCKED` with evidence. A worker that can prove a defect reports `ISSUES` and lists every issue it can prove, not only the first.
 
-## 4. Report
+If a worker drops out, proceed with N-1 and note it.
 
-Return one compact table of jobs, verdicts, revisions, and evidence, followed by actionable issues, dropouts, and the race result, without pasting raw worker output. Disclose sequential execution, same-vendor review, or unavailable delegation. Complete when the report distinguishes actual independent passes from local fallback work.
+## Phase C: Aggregate
+
+Read the terminal results. Drop a result that does not record the SHAs and method its brief names, and respawn that worker once. After a second miss, record a gap. A gap does not count as a pass. For coverage, every required slice needs a result. For a race, apply the selection rule declared up front. Use first pass, rank all, or best-of. Do not paste raw worker dumps.
+
+## Phase D: Report
+
+Return one consolidated in-chat report with a result table, issue one-liners, gaps or dropouts, and the race rule when used.

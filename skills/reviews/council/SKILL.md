@@ -25,8 +25,8 @@ the company a model's id names, such as `claude-` for Anthropic or `gpt-` for
 OpenAI. Instances of one driver count once, chosen as /swarm's T3 route
 chooses; when two providers' members share a maker, keep the maker's own
 harness, such as Codex for OpenAI. Start every member in parallel through
-/swarm's T3 route. Elsewhere, seat /swarm's panel: the session's model and the
-counterpart.
+/swarm's T3 route. Elsewhere, seat two members: the session's model and the
+counterpart through /swarm's cross-vendor route.
 
 On every route, pass each member's model and `high` effort. A Codex member
 takes only its `serviceTier` from /swarm's `review-full` target in Claude Code,

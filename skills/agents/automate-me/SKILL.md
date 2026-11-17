@@ -25,13 +25,11 @@ Update mode changes the rest of the flow:
 - Step 2 asks what's changed or missing, not what to capture from zero.
 - Step 4 edits the existing file in place. Preserve sections the user hasn't contradicted. Revise ones with new evidence. Add new sections only for genuinely new rules.
 
-Complete when the source path, the update-or-fresh choice, and the last-edit date are known.
-
 ### 1. Mine their history
 
 Locate the active repository's transcripts before fanning out. Invoke /recall for scoped session discovery only, not its brief: it lists this repository's Codex and Claude Code sessions over the window you request. Use only those sessions. Don't read history from other repositories. That crosses workspace boundaries and reads private chats from unrelated projects.
 
-Survey recent agent conversations within that scope for recurring patterns. Run multiple parallel subagents through /swarm across slices of history (e.g. last 2-4 weeks, split into 3 slices so each has enough material). Pick each subagent's model and effort for the job through /swarm's execution contract. Each slice mining subagent reads its sessions through /recall's repository-scoped reader, looks for the signals below, and returns a short structured list of patterns it saw with evidence pointers. Default signals worth hunting:
+Survey recent agent conversations within that scope for recurring patterns. Run multiple parallel subagents through /swarm across slices of history (e.g. last 2-4 weeks, split into 3 slices so each has enough material). Pick each subagent's reasoning level for the job through /swarm. Each slice mining subagent reads its sessions through /recall's repository-scoped reader, looks for the signals below, and returns a short structured list of patterns it saw with evidence pointers. Default signals worth hunting:
 
 - Response preferences (length, tone, format, "dumb it down" corrections)
 - Delegation habits (subagents, models, specialized workflows, parallelism)
@@ -42,8 +40,6 @@ Survey recent agent conversations within that scope for recurring patterns. Run 
 
 Cross-check across slices before elevating a signal. Patterns seen in 2+ slices are high-confidence. Lone signals are weak and usually get dropped.
 
-Complete when each slice has returned patterns with session pointers, or its gap is named.
-
 ### 2. Ask the user directly
 
 Mining misses intent that hasn't come up yet. Use the host's structured multiple-choice question tool rather than asking the user to type from scratch.
@@ -51,8 +47,6 @@ Mining misses intent that hasn't come up yet. Use the host's structured multiple
 Shape: one or two questions with 4-6 options each, allowing multiple selections for category questions. When the host's tool takes one choice per question or none exists, ask the same options as a numbered list and accept several numbers in one reply. Start broad ("Which areas matter most?"), then follow up on selected areas with specific options. After the structured rounds, one free-form chat question catches anything the options missed.
 
 Don't dump 20 questions.
-
-Complete when the user has answered the structured rounds and the free-form question.
 
 ### 3. Cluster findings
 
@@ -67,11 +61,7 @@ Group the combined signals into sections. Common ones (use only what applies):
 - **Process**: git worktrees, commits, PRs, review/merge tooling.
 - **Skills**: skill-authoring habits, fix-the-skill-first, proposing new skills.
 
-Upstream's [`poteto-mode` skill](https://github.com/cursor/plugins/blob/190d28736eff128ec94f502a22c7fe0c4b56cd37/pstack/skills/poteto-mode/SKILL.md) shows the shape. Read it for granularity. Don't copy its content. The user's rules are not the same as poteto-mode's.
-
-A recurring mistake the mining surfaces goes to /correct for structural prevention, not only to a mode rule.
-
-Complete when every kept signal sits in one section or is handed to /correct.
+The /pstack-mode skill shows the shape. Read it for granularity. Don't copy its content. The user's rules are not the same as pstack-mode's.
 
 ### 4. Draft the skill
 
@@ -82,9 +72,6 @@ Use /writing-for-agents to author the skill. Placement:
 - Frontmatter `description`: trigger on their name + `/<handle>-mode` + "work in their style", not on generic keywords like "write code" or "review PR".
 - Frontmatter formatting: follow /writing-for-agents' YAML rules. Keep `description` as one YAML scalar. Quote it or use `description: >-` with indented continuation lines when punctuation or wrapping requires it.
 - Frontmatter `disable-model-invocation: true` by default, mirrored in Codex's `agents/openai.yaml` as `policy.allow_implicit_invocation: false`. Opt out only if the user explicitly wants their mode to apply on every turn.
-- Keep raw transcript quotes, organization details, and credentials out of the skill.
-
-Complete when the draft exists at its path with valid frontmatter.
 
 ### 5. Iterate on prose
 
@@ -92,13 +79,9 @@ Apply /unslop and /writing-for-agents' writing guidelines to every line.
 
 Show the draft to the user and take feedback. Expect multiple iterations. Cut ruthlessly. A mode skill is not a manual.
 
-Complete when the user accepts the draft.
-
 ### 6. Land it
 
 Work in a worktree off main. Commit following the repository's conventions and open a draft PR. Don't push to main directly.
-
-Complete when the draft PR is open, or the user has the committed branch.
 
 ## Guardrails
 

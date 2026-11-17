@@ -41,7 +41,7 @@ When the configuration is missing and it matters, ask whether the user wants to 
 
 Installing changes nothing until a skill loads. Entrypoints, such as `/pstack-mode`, load only when the user invokes them. Helpers also load when a Pstack task matches their description, principles when any task does, and both when a workflow runs them. The [usage guide](https://github.com/christofferbergj/agent-skills/blob/main/docs/usage.md) and guide page 1, `01-setup.md`, have the details. Offer to word their first prompt with them, per [`references/prompting.md`](references/prompting.md).
 
-If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Rerun `/pstack-setup` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. Save `/pstack-mode` for work that needs rigor.
+If cost is the worry, say where the tokens go and how to spend fewer. pstack spends extra tokens on subagents and review panels. Rerun `/pstack-setup` and pick a smaller budget or cheaper models. A role set to `auto` or `inherit-parent` runs on the chat's model, which saves tokens when the chat runs on a cheaper model. A shorter panel list runs fewer subagents, one for each entry. Save `/pstack-mode` for work that needs rigor.
 
 pstack is built for Cursor. This library adapts it to Codex and Claude Code: type `$pstack-mode` in Codex or `/pstack-mode` in Claude Code, and the same for every other skill. Delegation, model roles, and cross-vendor review run through `/swarm` on each host's native tools, and a step that needs a Cursor-only feature, such as Bugbot or Automations, is translated or skipped with a one-line note.
 
@@ -49,7 +49,7 @@ Other tools can read the skills, because they use the Agent Skills format. But m
 
 ## Start a task with `/pstack-mode`
 
-`/pstack-mode` matches the task to a playbook, copies the playbook's steps into the todo list, and runs the other skills as the steps need them. A step it skips stays in the list as `skip: <reason>`. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. Guide page 2, `02-poteto-mode.md`, has examples.
+`/pstack-mode` matches the task to a playbook, copies the playbook's steps into the todo list, and runs the other skills as the steps need them. A good prompt states the goal and how to tell it's done. It doesn't list skills, because a hand-written sequence tends to drop or reorder steps the playbook would keep. Read [`references/prompting.md`](references/prompting.md) before you help word one. Guide page 2, `02-poteto-mode.md`, has examples.
 
 Invoking `/pstack-mode` activates it for the current conversation only. Installing it or invoking a helper directly doesn't activate it, and it doesn't carry into other chats, so start each new chat's task with `/pstack-mode`.
 
@@ -104,7 +104,6 @@ Close calls:
 
 - `/how` explains what the code does. `/why` explains the reasons. `/teach` runs one or both and explains the result plainly.
 - `/arena` gives every worker the same brief and merges the best parts. `/swarm` splits work into slices or a race and returns one report.
-- `/architect` implements right after it settles the design. Add "with checkpoint" to review the design before it writes code.
 - `/interrogate` reviews the diff. `/blast-radius` looks for breakage outside the diff and proves the one fact that makes the change safe.
 - `/recall` rebuilds context across recent chats. `/ketchup` covers only this chat since the user's last message. Resuming one specific chat or branch is the Session pickup playbook.
 - `/figure-it-out` designs one rigorous run. The Orchestrate playbook runs a program that spans days and many PRs. The Autonomous run playbook drives one task to a finish condition.
@@ -125,7 +124,7 @@ Playbooks are step lists inside `/pstack-mode`, not skills, so they have no slas
 - "full autopilot on this queue" runs Autopilot-full. "autopilot, don't merge" runs Autopilot-stack.
 - "run the eval playbook" runs Eval.
 
-Without `/pstack-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. `/pstack-mode` lists every playbook and when it applies. Guide page 6, `06-verify-and-ship.md`, covers opening, babysitting, and landing a PR.
+Without `/pstack-mode`, a phrase such as "babysit this pr" can start another installed skill for the same job instead. `/pstack-mode` lists every playbook. Guide page 6, `06-verify-and-ship.md`, covers opening, babysitting, and landing a PR.
 
 pstack has no planning skill. The host's plan mode works alongside it. For work that spans phases or stacked PRs, asking `/pstack-mode` for a plan runs its Multi-phase plan playbook, which writes the plan and doesn't implement it. For a design question, the Prototype playbook or `/architect` settles it in code first.
 
