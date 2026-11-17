@@ -13,5 +13,6 @@ Dated audit and validation evidence. Counts, commands, deployment states, and pe
 - [Audit, 2026-10-27](2026-10-27-audit.md)
 - [Audit, 2026-11-03](2026-11-03-audit.md)
 - [Explorer model bakeoff, 2026-10-31](2026-10-31-explorer-model-bakeoff.md)
+- [Delta review effort on GPT-6.2 Sol, 2026-11-17](2026-11-17-delta-effort-trial.md)
 - [Combined validation history, 2026-10-15](2026-10-15-combined-validation.md)
 - [Initial Pstack validation](../../skills/agents/pstack-mode/VALIDATION.md)
