@@ -5,13 +5,13 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
 
   {"codexUsage": {"skipWhenLeft": 5, "paceSlackHours": 24, "floorPercent": 25, "reservePerDay": 15},
    "claude-code": {
-     "review": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
+     "review": {"providerInstanceId": "codex", "model": "gpt-6.2-sol",
                 "effort": {"full": "xhigh", "delta": "high"}, "serviceTier": "priority"},
-     "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
+     "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.2-sol",
                      "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
      "budget": "large",
      "roles": {"swarm-workers": {"model": "sonnet", "effort": "medium"},
-               "arena-runners": ["fable", "opus", "gpt-6.1-sol"]}},
+               "arena-runners": ["fable", "opus", "gpt-6.2-sol"]}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
