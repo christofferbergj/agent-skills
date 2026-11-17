@@ -15,7 +15,7 @@
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- The skill is user-invoked, where upstream leaves it model-invoked. `test-audit` is model-invoked and takes requests to clean up or prune tests, keeping a test when the evidence is unclear and leaving production code alone; this skill deletes such a test, and production code kept only for it, in one pass, so it runs only when the user names it. Upstream's description is already the short summary a user-invoked skill carries, and no skill invokes this one.
+- The skill is user-invoked, where upstream leaves it model-invoked. `test-audit` is model-invoked and takes requests to clean up or prune tests, keeping a test when the evidence is unclear and leaving production code alone; this skill deletes or rewrites each test in one pass by what it depends on, and deletes production code that existed only for the tests it removed, so it runs only when the user names it. Upstream's description is already the short summary a user-invoked skill carries, and no skill invokes this one.
 - Step 1 invokes /principle-test-behavior-not-implementation, the owner of the test-quality criteria, before upstream's criteria, which stay as written because they state those criteria in this skill's own terms of what a test depends on, and add cases the owner doesn't hold: tests of removed code, duplicates, and what the type system or the browser already guarantees.
 
 `agents/openai.yaml`, this record, and the retained license are locally maintained packaging.
