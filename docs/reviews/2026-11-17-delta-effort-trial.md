@@ -25,7 +25,7 @@ Four GPT-6.2 Sol reviewers ran at the same time as read-only T3 Code child tasks
 | X1 · `xhigh` | found              | found               | missed                | 0              | 5.9     | 2.1     | 8          |
 | X2 · `xhigh` | found              | found               | missed                | 0              | 6.9     | 3.0     | 12         |
 
-H2 showed that native roles still read efforts case-sensitively and called the new help line overbroad, but treated the native gap as pre-existing and asked for narrower wording instead of a wider fix. No run noticed that panel seats still read efforts case-sensitively. Every finding came with a run that reproduced it.
+H2 showed that native roles still read efforts case-sensitively and called the new help line overbroad, but treated the native gap as pre-existing and asked for narrower wording instead of a wider fix. No reviewer reported that panel seats still read efforts case-sensitively. Every finding came with a run that reproduced it.
 
 ## Conclusion
 
@@ -33,4 +33,4 @@ Both efforts found the same two defects in every run. Neither caught the third r
 
 ## Limits
 
-Four runs on one fix commit can show that `xhigh` gave no clear gain, but not rule out a small one. The fixture changes 11 lines in one script and its test file; a larger fix commit could reward more depth. The brief's intent said to change nothing else, and its principles said a test must fail when the behavior it names breaks; those two lines point at the two defects every run found, so the fixture favoured them over the third. The runs measured detection only, not how clear or actionable each report was.
+Four runs on one fix commit can show that `xhigh` gave no clear gain, but not rule out a small one. The fixture changes 11 lines in one script and its test file; a larger fix commit could reward more depth. The brief's intent said to change nothing else, and its principles said a test must fail when the behavior it names breaks; those two lines may have made the two defects every run found easier to spot, though the brief's "match in any case" also pointed at the third. The runs measured detection only, not how clear or actionable each report was.
