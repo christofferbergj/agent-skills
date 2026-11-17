@@ -1,4 +1,4 @@
-# Babysit
+### Babysit
 
 **You own the merge frontier. Declare a mode, clear one PR at a time, stop where the human's call begins.**
 

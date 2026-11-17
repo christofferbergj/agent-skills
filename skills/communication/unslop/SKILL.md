@@ -1,6 +1,6 @@
 ---
 name: unslop
-description: "Use to remove AI writing patterns from Pstack output or prose explicitly submitted for editing."
+description: "Cut AI tells from Pstack output or from writing submitted for editing."
 ---
 
 # Unslop

@@ -5,8 +5,50 @@ description: "Use when configuring Pstack model roles, effort budgets, optional 
 
 # Set up Pstack
 
-1. Inspect installed skills, the current host's exposed model choices, optional other CLI availability, and existing configuration. Honor the host's schema and current defaults; `auto` and `inherit-parent` omit overrides. If no model choices can be detected, ask the user which models they can use. Complete when capabilities and unavailable integrations are explicit.
-2. Load `~/.config/pstack/config.json`, or the explicit `PSTACK_CONFIG` path, if present. Keep Codex and Claude Code role settings in separate sections of this one personal file. Read repository overrides only when explicitly configured. Drop every entry /swarm's `scripts/target.py --help` doesn't list, except the schema version and source location step 4 writes, such as a retired role like `hardest-tasks` or `reflect-tooling`, `codexUsage.fastWhileLeft`, or a review timeout, and list them in the summary. A saved `budget` of `unlimited` becomes `large`, because no role runs above `xhigh`; name that change in the summary too. Complete when current choices are known without altering global host settings.
-3. Ask only for missing preferences: task budget (`large`, `medium`, or `small`, which moves each Claude Code role's default effort; `large` keeps it), model roles the user wants to override, such as cheaper swarm workers or a stronger code delegate, optional cross-vendor reviews, the counterpart reviewer's provider instance, model, full and delta review effort, and Codex speed; the Computer Use delegate's model, routine and hard effort, and speed; the hours of lead on even pace Codex delegates may take before leaving fast mode, the floor below which they leave it (percent kept per day left and its cap), and the percent of Codex usage left below which they skip Codex; and the source repository for learning-driven changes. /swarm's `scripts/target.py --help` shows the keys that hold each. Offer the default `target.py` prints for each role. Map effort through actual supported options at `xhigh` or below rather than editing model-slug strings. Complete when every explicit override is available and within the user's choices.
-4. Write the agreed personal configuration atomically outside installed instructions. Include a schema version, host role sections, and source location. Keep credentials in the providers' existing stores, not this file. Complete when the file can be read back and matches the agreed choices.
-5. Summarize the location, overrides, dropped entries, prerequisite gaps, and how to return a role to /swarm's default. Offer /create-verification-skill once when the repository lacks a way to prove behavior. When consequential properties need checks beyond ordinary test coverage and no formal verification skill exists, offer the user the explicit /create-formal-verification-skill entrypoint once. On a no, continue without pressing. Complete when setup status is verifiable without claiming that installation activated the mode.
+Write `~/.config/pstack/config.json`, or the explicit `PSTACK_CONFIG` path, a personal file that sets Pstack's model per role for Codex and Claude Code. /swarm's `scripts/target.py` reads it on every spawn and holds the defaults it overrides.
+
+## Steps
+
+### 1. Detect available models
+
+Enumerate the models and efforts you can pass to a subagent in this session: in Claude Code, the `model` and `effort` values the `Agent` tool schema lists; in Codex, the models and reasoning efforts its spawn tool accepts. That is the dependable source. If you cannot detect any, ask the user to paste the models they have access to. Never write a real model you have not confirmed is available. The aliases `inherit-parent` and `auto` are always valid even though they are not detected models. Also note whether the counterpart can run, through T3 Code's `delegate_task` or the other vendor's CLI, and whether Codex Computer Use is available.
+
+### 2. Load current state
+
+The default role-to-model mapping is what /swarm's `scripts/target.py` prints for each role. If the file already exists, read it and treat each host section's `budget` and role values as the current choices. Otherwise start from those defaults. Read repository overrides only when explicitly configured. An entry that `target.py --help` doesn't list, other than the schema version and source location, is retired, such as the roles `hardest-tasks`, `reflect-tooling`, or `how-explorer`, or the keys `codexUsage.fastWhileLeft` or a review timeout. Drop it. A `budget` of `unlimited` becomes `large`, because no role runs above `xhigh`.
+
+Every other value is the user's choice and stays, including every `inherit-parent` or `auto` value. Tell the user which values you dropped or replaced.
+
+### 3. Budget, map, and confirm
+
+**(a) Ask for a budget.** Prefer the host's question tool over free text. Offer these three options with these exact labels, and name the current budget when the file records one. With no file, say that `large` matches the skill defaults.
+
+- `large — xhigh reasoning`
+- `medium — high reasoning`
+- `small — medium reasoning`
+
+**(b) Apply it.** Write the budget as the host section's `budget`; /swarm's `target.py` applies it to every role and panel seat that keeps its default effort. Each role has a target effort, which is its default's effort moved by the budget. `large` keeps it, `medium` lowers it one step, and `small` lowers it two steps, on the ladder `xhigh` > `high` > `medium` > `low`. No role runs above `xhigh`, and a target at the bottom of the ladder stays there. Most defaults are at `xhigh`, and each budget label names where those land. A role the user set by model or effort keeps that choice, and `inherit-parent` and `auto` do not change.
+
+**(c) Show the roles and confirm.** Show every role with the target `target.py` prints for it, marking any configured model not in the detected set as needing a choice. Also list each value step 2 dropped. Ask whether to accept as-is or change specific roles, offering the detected models at `xhigh` or below plus `inherit-parent` and `auto` (both mean: this role runs on the parent chat model) as the options. Prefer the host's question tool. For panel roles (`arena-runners`, `interrogate-reviewers`) the value is a list, and one subagent runs per entry, alias entries included, so the list length sets the count; /swarm runs an entry from the other vendor through the counterpart. Arena runs one judge, always on the counterpart, so it has no role here. `swarm-workers` is the default model for every worker unless a race or comparison assigns another model per arm.
+
+Then ask for the settings /swarm's routes read, offering the default `target.py --help` shows for each: the counterpart reviewer's provider instance, model, full and delta review effort, and Codex speed; the Computer Use delegate's model, routine and hard effort, and speed; the hours of lead on even pace Codex delegates may take before leaving fast mode, the floor below which they leave it (percent kept per day left and its cap), and the percent of Codex usage left below which they skip Codex; and the source repository for learning-driven changes.
+
+### 4. Validate
+
+Every real model written must be in the detected set, or, for a panel seat or setting on the other vendor, among the counterpart's models, and at `xhigh` or below. `inherit-parent` and `auto` always pass. If a chosen real model is not available, stop and ask again.
+
+### 5. Write the file
+
+Write the file atomically, outside installed instructions, with a schema version, one section per host (`claude-code`, `codex`) holding its `budget`, `roles`, `review`, and `computerUse` entries, the `codexUsage` thresholds, and the source location, in the keys `target.py --help` shows. Write only the user's choices, so a role without an entry takes /swarm's default and deleting an entry returns it there. Keep credentials in the providers' existing stores, not this file. Overwrite the whole file so re-runs stay idempotent, then read it back and check that it matches the agreed choices.
+
+### 6. Confirm
+
+Tell the user the file was written and that /swarm reads it on every spawn, so it applies at once. Name any integration step 1 found missing. Re-running this skill updates it.
+
+### 7. Offer a verification skill (optional)
+
+Check whether the project has a way to drive the real app for proof (a `verify-*` skill, or an existing harness). If not, offer once: "want a project-local verification skill, so agents can drive the app the way a user does and prove changes work? I can generate one with /create-verification-skill." On yes, invoke /create-verification-skill. On no, move on without pushing.
+
+### 8. Offer a formal verification skill (optional)
+
+Check whether the project already has a formal verification skill (a project skill that runs a model checker, a proof, or another verifier against the code). If not, offer once: "want a formal verification skill, so agents can prove a key property of your code holds in every case in scope, not only the cases tests reach? Type /create-formal-verification-skill to generate one." On no, move on without pushing.

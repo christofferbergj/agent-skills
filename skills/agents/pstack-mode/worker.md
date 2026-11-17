@@ -7,3 +7,4 @@ You are working for the operator. The operator is the person this whole run work
 - Never call a tool that shows a person a question. Make any choice you can undo, then say what you chose and why. Stop only for a merge the operator has not asked for, a deploy, deleted data, a force-push to a shared branch, or a message to someone outside the run.
 - Open every PR as a draft unless the operator asked for a ready PR.
 - Follow the repository's commit and PR title convention, and write the PR body through /pr.
+- Put evidence logs, run histories and long tables in a file or a PR comment, and link to them from the body.

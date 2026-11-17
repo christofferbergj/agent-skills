@@ -244,10 +244,11 @@ class TargetResolution(unittest.TestCase):
         self.assertIn('unknown',result['note'])
 
     def test_codex_parent_reviews_with_claude_without_a_speed_and_runs_computer_use_itself(self):
-        self.config.write_text(json.dumps({'codex':{'review':{'model':'claude-fixture','serviceTier':'priority'}}}))
+        self.config.write_text(json.dumps({'codex':{'review':{'model':'claude-fixture','effort':{'full':'max'},'serviceTier':'priority'}}}))
         self.log('a.jsonl',event(99))
         result=self.run_target('review-delta',parent='codex')
         self.assertEqual((result['run'],result['model'],result['effort']),('claude-code','claude-fixture','high'))
+        self.assertEqual(self.run_target('review-full',parent='codex')['effort'],'xhigh')
         self.assertNotIn('serviceTier',result)
         self.assertNotIn('usage',result)
         with redirect_stderr(StringIO()),self.assertRaises(SystemExit):
@@ -280,19 +281,10 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('swarm-workers',parent='codex'),{'role':'swarm-workers','run':'codex','serviceTier':'default'})
 
     def test_roles_upstream_retired_are_not_accepted(self):
-        for role in ('hardest-tasks','reflect-tooling','reflect-judgment','architect-runners'):
+        for role in ('hardest-tasks','reflect-tooling','reflect-judgment','architect-runners','fast-code'):
             with redirect_stderr(StringIO()), self.assertRaises(SystemExit):
                 with patch.object(sys,'argv',['target.py','--parent','claude-code',role]):
                     target.main()
-
-    def test_fast_code_follows_swarm_workers_in_claude_code_and_keeps_its_own_entry_in_codex(self):
-        self.config.write_text('{}')
-        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'opus','effort':'high'})
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'swarm-workers':{'model':'haiku','effort':'low'}}},'codex':{'roles':{'fast-code':{'model':'gpt-fast','effort':'low'},'swarm-workers':{'model':'gpt-other'}}}}))
-        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'haiku','effort':'low'})
-        self.assertEqual(self.run_target('fast-code',parent='codex'),{'role':'fast-code','run':'codex','model':'gpt-fast','serviceTier':'priority','effort':'low'})
-        self.config.write_text(json.dumps({'claude-code':{'roles':{'swarm-workers':{'model':'haiku'},'fast-code':{'model':'sonnet'}}}}))
-        self.assertEqual(self.run_target('fast-code'),{'role':'fast-code','run':'claude-code','model':'sonnet','effort':'high'})
 
     def test_budget_moves_claude_default_efforts_within_the_ladder_capped_at_xhigh(self):
         for budget,workers,code in [('unlimited','high','xhigh'),('large','high','xhigh'),('medium','medium','high'),('small','low','medium'),('huge','high','xhigh')]:
@@ -327,6 +319,38 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('bug-fix'),{'role':'bug-fix','run':'claude-code','model':'opus','effort':'xhigh'})
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
+
+    def test_claude_code_panel_seats_fable_and_opus_natively_and_codex_on_the_counterpart(self):
+        self.log('a.jsonl',event(10))
+        self.assertEqual(self.run_target('arena-runners'),{'role':'arena-runners','seats':[
+            {'run':'claude-code','model':'fable','effort':'high'},
+            {'run':'claude-code','model':'opus','effort':'high'},
+            {'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'high','serviceTier':'priority','usage':{'left':90,'seenAt':'2026-10-24T21:00:00Z'}}]})
+        self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'budget':'medium'}}))
+        self.assertEqual([seat['effort'] for seat in self.run_target('interrogate-reviewers')['seats']],['medium','medium','medium'])
+        self.log('a.jsonl',event(95))
+        seats=self.run_target('arena-runners')['seats']
+        self.assertEqual([seat['run'] for seat in seats],['claude-code','claude-code','fallback'])
+        self.assertIn('5% left',seats[2]['reason'])
+
+    def test_codex_panel_seats_its_own_model_natively_and_fable_and_opus_on_the_claude_counterpart(self):
+        self.config.write_text(json.dumps({'codex':{'review':{'providerInstanceId':'claude','model':'claude-fixture','effort':{'full':'xhigh'}},'budget':'small'}}))
+        self.log('a.jsonl',event(99,resets=MIDWEEK))
+        self.assertEqual(self.run_target('arena-runners',parent='codex'),{'role':'arena-runners','seats':[
+            {'run':'claude-code','providerInstanceId':'claude','model':'fable','effort':'low'},
+            {'run':'claude-code','providerInstanceId':'claude','model':'opus','effort':'low'},
+            {'run':'codex','effort':'low','serviceTier':'default'}]})
+
+    def test_a_configured_panel_list_replaces_the_seats_and_stays_at_or_below_xhigh(self):
+        self.log('a.jsonl',event(10))
+        self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'roles':{'arena-runners':['opus',{'model':'inherit-parent'},{'model':'gpt-other','effort':'max'},{'effort':'low'},7]}}}))
+        seats=self.run_target('arena-runners')['seats']
+        self.assertEqual(seats[:2],[{'run':'claude-code','model':'opus','effort':'high'},{'run':'claude-code'}])
+        self.assertEqual((seats[2]['run'],seats[2]['model'],seats[2]['effort']),('codex','gpt-other','xhigh'))
+        self.assertEqual(len(seats),3)
+        self.config.write_text(json.dumps({'claude-code':{'roles':{'arena-runners':[],'interrogate-reviewers':'fable'}}}))
+        for role in ('arena-runners','interrogate-reviewers'):
+            self.assertEqual([seat.get('model') for seat in self.run_target(role)['seats']][:2],['fable','opus'],role)
 
 FAKE_CODEX='''\
 #!/usr/bin/env python3

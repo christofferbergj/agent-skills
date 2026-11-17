@@ -10,7 +10,8 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
      "computerUse": {"providerInstanceId": "codex", "model": "gpt-6.1-sol",
                      "effort": {"routine": "medium", "hard": "high"}, "serviceTier": "priority"},
      "budget": "large",
-     "roles": {"swarm-workers": {"model": "sonnet", "effort": "medium"}}},
+     "roles": {"swarm-workers": {"model": "sonnet", "effort": "medium"},
+               "arena-runners": ["fable", "opus", "gpt-6.1-sol"]}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
@@ -31,19 +32,30 @@ Codex Computer Use drives a Mac desktop, so a computer-use role on any other mac
 a Linux server, is run "fallback" without reading usage, unless --on-mac says the child runs on
 a linked macOS machine.
 
-The review and computer-use roles run on the other vendor. Every other role is one of
+The review and computer-use roles run on the other vendor. The panel roles, arena-runners and
+interrogate-reviewers, print one target per seat under "seats". Every other role is one of
 Pstack's native roles and runs on the parent host. In Claude Code each takes upstream's
 default model and effort: Opus at xhigh for code, judgment, and prose, and Opus at high for
-swarm workers. fast-code, for trivial edits, follows swarm workers there, as upstream's do.
+swarm workers, which also take trivial edits, as upstream's do.
 A budget moves those default efforts as upstream's does: large not at all, medium one step
-down, small two; any other budget, such as a retired unlimited, counts as large. No native role
-runs above xhigh, so a configured max or ultra effort runs at xhigh. Codex native roles keep the
-parent's model and effort. A native Codex role runs fast while Codex usage allows, and Claude
-never runs fast. Native roles take upstream's labels in kebab case. long-running, the one local
-role, is a thread that runs for hours, such as a coordinator or one of its workers; it keeps
-the parent's model, so a roles entry can move those threads off a model with a tight weekly
-allowance. A roles entry overrides the model or the effort; "inherit-parent" or "auto" as the
-model keeps the parent's model and drops the default effort.
+down, small two; any other budget, such as a retired unlimited, counts as large. No role or
+counterpart runs above xhigh, so a configured max or ultra effort runs at xhigh. Codex native roles keep the parent's model and effort. A native Codex
+role runs fast while Codex usage allows, and Claude never runs fast. Native roles take
+upstream's labels in kebab case. long-running, the one local role, is a thread that runs for
+hours, such as a coordinator or one of its workers; it keeps the parent's model, so a roles
+entry can move those threads off a model with a tight weekly allowance. A roles entry
+overrides the model or the effort; "inherit-parent" or "auto" as the model keeps the parent's
+model and drops the default effort.
+
+A panel takes upstream's three seats: Fable, Opus, and Codex's model in the seat upstream gives
+Gemini, each at high moved by the parent's budget. A seat on the parent's vendor is a native
+subagent; a seat on the other vendor runs on the counterpart route with the review-full
+target's instance and speed, the seat's model, and the seat's effort, or is run "fallback"
+when that target is. So in Claude Code the Fable and Opus seats are native and the Codex seat is
+the counterpart, and in Codex the Codex seat runs on the session's model and the Fable and Opus
+seats run on the Claude counterpart. A roles entry for a panel is a list of seats, each a model
+name or {"model", "effort"}, such as ["fable", "opus", {"model": "inherit-parent"}]; Claude
+models are opus, sonnet, haiku, fable, or claude-*, and any other model is Codex's.
 """
 
 import argparse
@@ -73,9 +85,16 @@ CROSS_VENDOR_ROLES = {
 CODE, WORKERS = ('opus', 'xhigh'), ('opus', 'high')
 NATIVE_DEFAULTS = {'claude-code': {
     'feature-refactoring': CODE, 'bug-fix': CODE, 'perf-issue': CODE, 'hillclimb': CODE,
-    'judgment-and-prose': CODE, 'swarm-workers': WORKERS, 'fast-code': WORKERS,
+    'judgment-and-prose': CODE, 'swarm-workers': WORKERS,
 }}
 NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
+# Upstream's panel seats, (vendor, model), each at high moved by the budget: Fable, Opus, and the
+# seat upstream gives Gemini, which takes the other vendor's model, Codex's own.
+PANEL_ROLES = {'arena-runners', 'interrogate-reviewers'}
+PANEL_SEATS = (('claude-code', 'fable'), ('claude-code', 'opus'), ('codex', None))
+PANEL_EFFORT = 'high'
+CLAUDE_MODELS = ('opus', 'sonnet', 'haiku', 'fable')
+ALIASES = ('inherit-parent', 'auto')
 EFFORTS = ('low', 'medium', 'high', 'xhigh')
 BUDGET_STEPS = {'large': 0, 'medium': -1, 'small': -2}
 THRESHOLDS = {'skipWhenLeft': 5, 'paceSlackHours': 24, 'floorPercent': 25, 'reservePerDay': 15}
@@ -383,7 +402,7 @@ def has_mac_desktop():
 
 
 def capped(effort):
-    # No native role or GPT model runs above xhigh.
+    # No role or counterpart runs above xhigh.
     return 'xhigh' if effort in ('max', 'ultra') else effort
 
 
@@ -413,12 +432,9 @@ def resolve_native(parent, role, config, usage, read_banked):
     host = table(config.get(parent))
     roles = table(host.get('roles'))
     entry = table(roles.get(role))
-    # Upstream sends trivial edits to its swarm workers model, so Claude Code's fast-code follows that entry.
-    if not entry and parent == 'claude-code' and role == 'fast-code':
-        entry = table(roles.get('swarm-workers'))
     model, effort = text(entry.get('model')), text(entry.get('effort'))
     default_model, default_effort = NATIVE_DEFAULTS.get(parent, {}).get(role, (None, None))
-    if model in ('inherit-parent', 'auto'):
+    if model in ALIASES:
         model, default_effort = None, None
     elif model is None:
         model = default_model
@@ -439,12 +455,12 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
-    effort = text(table(entry.get('effort')).get(effort_key)) or default_effort
+    effort = capped(text(table(entry.get('effort')).get(effort_key)) or default_effort)
     target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': text(entry.get('model')), 'effort': effort}
     # Claude targets run at standard speed, so only a Codex target carries one.
     if vendor == 'claude-code':
         return target
-    target.update(model=target['model'] or codex_model, effort=capped(effort), serviceTier=text(entry.get('serviceTier')) or 'priority')
+    target.update(model=target['model'] or codex_model, serviceTier=text(entry.get('serviceTier')) or 'priority')
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
         return target
@@ -466,9 +482,45 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     return target
 
 
+def panel_seats(parent, role, config):
+    """Return the panel's seats as (vendor, model, configured effort, alias), from the roles entry's list or upstream's defaults."""
+    configured = table(table(config.get(parent)).get('roles')).get(role)
+    seats = []
+    for item in configured if isinstance(configured, list) else ():
+        entry = {'model': item} if isinstance(item, str) else table(item)
+        model, effort = text(entry.get('model')), text(entry.get('effort'))
+        if model in ALIASES:
+            seats.append((parent, None, effort, True))
+        elif model:
+            claude = model.split('[')[0] in CLAUDE_MODELS or model.startswith('claude')
+            seats.append(('claude-code' if claude else 'codex', model, effort, False))
+    return seats or [(vendor, model, None, False) for vendor, model in PANEL_SEATS]
+
+
+def resolve_panel(parent, role, config, codex_model, usage, read_banked):
+    """Return one target per panel seat: a native subagent for the parent's vendor, the counterpart route for the other."""
+    budget = text(table(config.get(parent)).get('budget'))
+    seats = []
+    for vendor, model, effort, alias in panel_seats(parent, role, config):
+        effort = capped(effort)
+        if effort not in EFFORTS:
+            effort = None if alias else budgeted(PANEL_EFFORT, budget)
+        if vendor == parent:
+            seat = {'run': parent, 'model': model, 'effort': effort}
+            if parent == 'codex':
+                seat['serviceTier'] = 'priority' if usage is None or check_speed(usage, read_banked)[0] else 'default'
+        else:
+            seat = resolve(parent, 'review-full', config, codex_model, usage, read_banked)
+            del seat['role']
+            if seat['run'] != 'fallback':
+                seat.update(model=model or seat['model'], effort=effort)
+        seats.append({key: value for key, value in seat.items() if value is not None})
+    return {'role': role, 'seats': seats}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('role', choices=sorted({*CROSS_VENDOR_ROLES, *NATIVE_ROLES}))
+    parser.add_argument('role', choices=sorted({*CROSS_VENDOR_ROLES, *NATIVE_ROLES, *PANEL_ROLES}))
     parser.add_argument('--parent', choices=['codex', 'claude-code'], required=True, help='The host running this session')
     parser.add_argument('--on-mac', action='store_true', help='A computer-use child runs on a linked macOS machine, not this one')
     args = parser.parse_args()
@@ -483,13 +535,23 @@ def main():
     now, codex_model, usage = time.time(), None, None
     other = 'codex' if args.parent == 'claude-code' else 'claude-code'
     runs_on = other if args.role in CROSS_VENDOR_ROLES else args.parent
-    if runs_on == 'codex':
+    if runs_on == 'codex' or args.role in PANEL_ROLES:
         codex_model = configured_codex_model(home)
         try:
             usage = read_usage(home / 'sessions', now, thresholds(config))
         except (OSError, ValueError):
             usage = None
-    target = resolve(args.parent, args.role, config, codex_model, usage, lambda: reset_credits(cache, codex_account(home), now))
+    banked = []
+
+    def read_banked():
+        if not banked:
+            banked.append(reset_credits(cache, codex_account(home), now))
+        return banked[0]
+
+    if args.role in PANEL_ROLES:
+        target = resolve_panel(args.parent, args.role, config, codex_model, usage, read_banked)
+    else:
+        target = resolve(args.parent, args.role, config, codex_model, usage, read_banked)
     print(json.dumps({key: value for key, value in target.items() if value is not None}, ensure_ascii=False))
     return 0
 

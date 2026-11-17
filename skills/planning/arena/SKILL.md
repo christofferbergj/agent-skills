@@ -13,10 +13,8 @@ Every candidate gets the same prompt, so the prompt is the contract.
 
 1. State the artifact each candidate is producing.
 2. Derive the rubric, 3-6 concrete gradeable criteria for what success looks like on _this_ task. It is the picker's tool in Phase D. Candidates only see the task.
-3. Pick the runners through /swarm: by default its panel of two, one on the session's model and one on the counterpart. When a seat cannot run, replace it so at least two runners remain, and say so: a counterpart seat takes /swarm's same-vendor fallback on the session's model, and another seat runs on a remaining runner's model. Spawn more for multiple design directions, and repeat one model when the work is generation-bound, not judgment-sensitive. Pick each subagent's model and effort for the job through /swarm.
+3. Pick the runners from /swarm's `arena-runners` panel, by default Fable at `high`, Opus at `high`, and the other vendor's model, seated as its execution contract says: Fable and Opus as native subagents in Claude Code and the third seat through the counterpart route, or the third seat on the session's model in Codex and Fable and Opus through the Claude counterpart. An `auto` or `inherit-parent` entry is the parent model. If a seat cannot run or the host rejects its model, follow /swarm's rejected-model rule or drop the seat, keep at least two runners, and say so. Spawn more for multiple design directions, and repeat one model when the work is generation-bound, not judgment-sensitive. Pick each subagent's reasoning level through /swarm.
 4. Give each candidate its own output location (a git worktree where possible, otherwise `/tmp/arena-<slug>/candidate-<n>/`), per /principle-separate-before-serializing-shared-state.
-
-Complete when the artifact, the rubric, the runners, and one output location per candidate are named.
 
 ## Phase B: Fan out
 
@@ -24,13 +22,9 @@ Spawn all N subagents at once, in the background, through /swarm, each with the 
 
 If a candidate produces no output, proceed with N-1 and note the dropout.
 
-Complete when every candidate has written its artifact and rationale or is noted as a dropout.
-
 ## Phase C: Cross-judge
 
-After all Phase B candidates complete, spawn one readonly judge subagent on the counterpart through /swarm's cross-vendor critic route. The judge is never from the parent's vendor, so take only the counterpart routes, T3 and then the CLI, never the same-vendor critic. If the counterpart resolves to `fallback` or neither route runs, skip the judge, pick the base alone in Phase D, and say so. While you read in Phase D, the judge scores each candidate, by path label, on each rubric criterion and recommends a base.
-
-Complete when the judge has returned per-criterion scores and a recommended base, or the skip and its reason are recorded.
+After all Phase B candidates complete, spawn one readonly judge subagent on the counterpart through /swarm's cross-vendor critic route. Upstream's judge pool is Opus, then the other vendor's model, and the judge is never from the parent's vendor, with Fable counting as Claude, so the judge is Claude Opus under Codex and Codex under Claude Code. Pass it `high` effort, the level of upstream's pool, moved by the budget. Take only the counterpart routes, T3 and then the CLI, never the same-vendor critic. If the counterpart resolves to `fallback` or neither route runs, skip the judge, pick the base alone in Phase D, and say so. While you read in Phase D, the judge scores each candidate, by path label, on each rubric criterion and recommends a base.
 
 ## Phase D: Pick a base
 
@@ -38,21 +32,15 @@ Read every candidate end to end before picking. Score each against the rubric cr
 
 Pick the base a future maintainer can extend most easily without breaking invariants. When two feel tied, prefer the cleaner boundary or smaller API, per /principle-laziness-protocol.
 
-Complete when one base is chosen, with your scores compared with the judge's when Phase C ran one.
-
 ## Phase E: Graft
 
 Walk each losing candidate once more for what is worth porting into the base, usually one or two things per candidate, not most of it. Fold each graft in by hand, per /principle-redesign-from-first-principles, so the result stays coherent under one mental model. Don't paste mechanically.
 
 If the candidates converge on one shape, that is strong agreement. Note it and ship the consensus shape. No graft is needed. If they wildly diverge, Phase A was under-specified. Reframe and re-run rather than averaging the divergence.
 
-Complete when every losing candidate has been walked and each graft or rejection has a reason.
-
 ## Phase F: Verify
 
 Verify the synthesized artifact like any other output, per /principle-prove-it-works. If verification finds a problem the arena missed, either Phase A was wrong (re-frame and re-run) or a candidate caught it and you missed the graft (go back to Phase E). Don't paper over it.
-
-Complete when the synthesized artifact passes verification.
 
 ## Outputs
 

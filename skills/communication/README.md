@@ -14,6 +14,6 @@ Explain work clearly, write technical documents, and edit prose.
 | [pr](pr/SKILL.md)                               | Write a concise, evidence-based PR description.  |
 | [reply-shape](reply-shape/SKILL.md)             | Shape replies for skimming and action.           |
 | [teach](teach/SKILL.md)                         | Explain how code works and why it has its shape. |
-| [technical-writing](technical-writing/SKILL.md) | Write technical documents for a clear purpose.   |
+| [technical-writing](technical-writing/SKILL.md) | Write and review technical documents.            |
 | [unslop](unslop/SKILL.md)                       | Remove formulaic AI writing.                     |
 | [write-like-me](write-like-me/SKILL.md)         | Write Slack and chat messages as Christoffer.    |
