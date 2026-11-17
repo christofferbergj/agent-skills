@@ -8,7 +8,7 @@ For a feature, bug fix, refactor, investigation, or performance task, start with
 
 To refactor a whole codebase in one pass, rather than one area of it, invoke `untangle-codebase` by name.
 
-To remove the tests that guard no behavior in one pass, invoke `prune-tests` by name: it deletes or rewrites each such test, along with production code that existed only for it. Use `test-audit` instead when you want a recommendation before any edit, or a recorded decision with its evidence for every test.
+To remove the tests that guard no behavior in one pass, invoke `prune-tests` by name; use `test-audit` instead when you want a recommendation before any edit, or a recorded decision with its evidence for every test.
 
 When an effort needs agreement first, start the Matt flow with `grill-with-docs`, then choose by how many sessions the build needs, as Matt Pocock does. A build that fits one session goes straight to `pstack-mode`. One that spans sessions, or that other people will pick up from a tracker, goes through `to-spec` and `to-tickets` to `implement-spec`, which runs each ticket through a `pstack-mode` playbook; a ticket graph needing a persistent T3 project thread can go to `coordinator` instead, with separate PRs or one combined PR as requested. A huge effort whose way is still unclear starts with `wayfinder`, which charts its open decisions on the tracker before any spec. Skip stages that are already settled; `implement` handles a smaller agreed piece of work in the current session, and `retro` reviews a finished session. Relevant Pstack principles apply automatically throughout the Matt flow, including implementation and review.
 

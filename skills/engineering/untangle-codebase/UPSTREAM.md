@@ -21,7 +21,7 @@
 
 ## Maintenance
 
-Compare future upstream changes against the reviewed-through revision for the listed directory and license. The source repository's other skill at this revision is adopted as [prune-tests](../prune-tests/UPSTREAM.md); a new one enters only by the adaptation contract's rule for adopting skills.
+Compare future upstream changes against the reviewed-through revision for the listed directory and license. Other skills from this source keep their own records; a new one enters only by the adaptation contract's rule for adopting skills.
 
 ## Review history
 
