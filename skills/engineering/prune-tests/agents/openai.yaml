@@ -2,3 +2,5 @@ interface:
   display_name: "Prune Tests"
   short_description: "Prune tests that guard no behavior"
   default_prompt: "Use $prune-tests to prune the tests that guard no behavior."
+policy:
+  allow_implicit_invocation: false

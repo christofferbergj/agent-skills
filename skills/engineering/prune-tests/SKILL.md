@@ -1,6 +1,7 @@
 ---
 name: prune-tests
 description: Prune tests that guard no behavior.
+disable-model-invocation: true
 argument-hint: "[optional path]"
 ---
 
