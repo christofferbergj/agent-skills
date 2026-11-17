@@ -14,6 +14,9 @@ Reads PSTACK_CONFIG or ~/.config/pstack/config.json. Every key is optional:
                "arena-runners": ["fable", "opus", "gpt-6.2-sol"]}},
    "codex": {"review": {"model": "claude-opus-5-5", "effort": {"full": "xhigh", "delta": "high"}}}}
 
+A review or computerUse "model" may instead be a table keyed like its "effort", one model per
+kind; a kind the table leaves out runs as if no model were set.
+
 A Codex target runs at serviceTier "priority" unless configured otherwise while every usage
 window keeps its lines. Even pace: its percent left is at least the share of the window still
 to run less paceSlackHours, so a day's lead, made up by the idle night, is allowed. The floor:
@@ -456,7 +459,9 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
     effort = capped(text(table(entry.get('effort')).get(effort_key)) or default_effort)
-    target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': text(entry.get('model')), 'effort': effort}
+    model = entry.get('model')
+    model = text(model) or text(table(model).get(effort_key))
+    target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': model, 'effort': effort}
     # Claude targets run at standard speed, so only a Codex target carries one.
     if vendor == 'claude-code':
         return target
