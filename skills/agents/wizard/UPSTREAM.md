@@ -18,6 +18,7 @@
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
 - Copy envfile.py beside the wizard and require Python 3. Serialize literal dotenv values without shell evaluation, preserve complete multiline records and file modes, and verify the actual consumer; reject unsupported quoting before writes.
 - Step 4 points at the helper's unit tests.
+- Triggers on any script, scheduled or not, that needs a human to act. Each stage names the account it runs as by email or ID, checks its readable result right away, repeats on `❌`, and the run ends with every check marked `✅` or `❌`. The owner found this walk-through far easier to follow than a list of steps.
 
 Local maintenance on 2026-10-20: Make the Readline end-marker expansion explicit before a literal bracket; display/control bytes remain identical, Bash syntax and error-level ShellCheck pass. This local repair leaves the upstream reviewed-through position unchanged.
 
