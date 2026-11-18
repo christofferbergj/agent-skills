@@ -8,7 +8,7 @@ Read at coordinator step 7, once the phase's proof holds. A project runs in **ph
    - Add to Goal's Follow-ups each follow-up whose detail sits only in Decisions or Learnings, and each later phase the plan or the user named, with its proof.
    - Set each worker whose delivery is still open to `waiting` on it, with Waits on as [project](project.md#workers) gives it, so its row and thread carry into the next phase. Its PR's watch follows step 4's PR watch.
    - For one-PR delivery, carry the integrator and tickets as [phase end and close](one-pr.md#phase-end-and-close) says.
-3. **One card**: bring the user one decision card, as step 5 lays it out, asking how the project goes on, with three options: start the next phase, park, or close. Pick the next phase when `project.md` or the user already named one, and give its goal and proof.
+3. **One call**: queue one call, as step 5 says, asking how the project goes on, with three options: start the next phase, park, or close. Pick the next phase when `project.md` or the user already named one, and give its goal and proof.
 
 Then follow the user's pick, with `<slug>` naming the phase that ended:
 
