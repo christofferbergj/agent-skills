@@ -222,7 +222,8 @@ Keep it honest:
 - After is this branch. Before is the base branch, production, or the last deploy, captured from its own checkout or deploy; never revert or stash this branch to make one.
 - Look at every capture before uploading it, and check it shows what changed. An upload can't be deleted, even after its reference leaves the body.
 - Embed the evidence; never only describe it, as in "screenshots are attached". Use only output you captured, never a placeholder to fill in later. A code or `diff` block holds real output only, so write a bare summary such as "31 passed" as a sentence.
-- Capture demo or sanitised data only: no real users, tokens, emails, or private messages.
+- Change one variable per proof. When an unrelated failure on the base hides the behavior, isolate it with a fixture, a narrower command, or a disposable worktree, and say so.
+- Capture demo or sanitised data only: no real users, tokens, emails, or private messages; when you redact a token or ID, say where.
 - End Evidence with `**Limits:**`: what failed, couldn't run, or got worse, and any part of the test plan nobody has done, or `none`. Never drop a limit to keep the body short.
 - For a security fix in a public repository, describe the impact at a high level and keep reproductions, payloads, and exploit steps out of the body until the fix is released, following the project's security policy.
 
