@@ -64,6 +64,7 @@ Rounds: 2
 | ----------- | ------- | ------- |
 | Claude Opus | 7/10    | 9/10    |
 | GPT Sol     | 8/10    | 10/10   |
+| Gemini Pro  | 7/10    | 9/10    |
 ```
 
 If a delegate gives no score, write `no score`. Do not invent one.
