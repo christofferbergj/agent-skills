@@ -9,6 +9,13 @@ Result. Every edit leaves the rest of the file byte for byte and replaces the fi
   project.py DIR worker SLUG [--proof P] [--thread T] [--pr B] [--state S] [--waits W] [--last L]
                                     set a Workers row's columns, adding the row if it's new
   project.py DIR listen KEY VALUE   set `- KEY: VALUE` under Listening
+  project.py DIR queue add KIND NAME [--from F]
+                                    queue an item that waits on the user (KIND: stuck,
+                                    call, or do), asked by F, then print the queue
+  project.py DIR queue done ID --answer A
+                                    take item ID off the queue, adding `F asked NAME → A`
+                                    under Decisions, then print the queue
+  project.py DIR queue show         print the strip a reply carries, then every item
   project.py DIR phase SLUG --result R (--goal G --proof P | --park REASON)
                                     end the running phase: save project.md to
                                     phases/<NN>-SLUG.md, add its line under Phases, reset
@@ -19,7 +26,7 @@ Result. Every edit leaves the rest of the file byte for byte and replaces the fi
                                     report; --send messages it to the coordinator's thread
                                     and saves DIR/tick.json, while Heartbeat is `tick`
 
-TEXT or VALUE `-` reads standard input. A row's Worker cell is SLUG, or SLUG followed by ` (`
+TEXT, VALUE, or A `-` reads standard input. A row's Worker cell is SLUG, or SLUG followed by ` (`
 and a label. State starts with one of STATES; detail may follow, as in
 `done: #12 MERGED`. Exits 2 on a usage error and 1 on a file it can't edit."""
 from __future__ import annotations
@@ -51,6 +58,13 @@ Coordinator: {coordinator} · Checkout: {checkout}
 {goal}
 Proof: {proof}
 Follow-ups: none
+
+## Queue
+
+Next id: 1
+
+| # | Kind | Name | From | Since |
+|---|---|---|---|---|
 
 ## Decisions
 
@@ -98,7 +112,9 @@ def _insert(lines: list[str], name: str, line: str) -> None:
 
 
 def _bullet(text: str) -> str:
-    return "- " + text.strip().replace("\n", "\n  ")
+    """text as one list item: every line ending, CRLF and a lone CR too, as an indented
+    line, so no line of it reads as a heading or a row of its own."""
+    return "- " + text.replace("\r\n", "\n").replace("\r", "\n").strip().replace("\n", "\n  ")
 
 
 def _cells(row: str) -> list[str]:
@@ -166,6 +182,93 @@ def listen(lines: list[str], key: str, value: str) -> None:
         lines[found[0]] = line
     else:
         _insert(lines, "Listening", line)
+
+
+# The queue: every stuck run, call, and Do that waits on the user, one row each, so a wake or
+# a compaction finds what the user still owes instead of rebuilding it from memory.
+QUEUE_HEADER = ["#", "Kind", "Name", "From", "Since"]
+QUEUE_RANK = {"stuck": 0, "call": 1, "do": 2}  # step 5's order; oldest first within a kind
+COUNTER = "Next id: "
+
+
+def _queue_cells(row: str) -> list[str]:
+    return [cell.replace("\\|", "|") for cell in _cells(row)]
+
+
+def _queue_bounds(lines: list[str]) -> tuple[int, int, list[int], int] | None:
+    """The Queue heading, its end, its item rows, and its `Next id:` line, or None when
+    project.md predates the queue."""
+    if "## Queue" not in lines:
+        return None
+    start, end = _section(lines, "Queue")
+    table = [i for i in range(start + 1, end) if lines[i].startswith("|")]
+    if len(table) < 2 or _queue_cells(lines[table[0]]) != QUEUE_HEADER:
+        raise ProjectError(f"the Queue table's header isn't {_row(QUEUE_HEADER)}: fix it by hand")
+    counter = next((i for i in range(start + 1, end) if lines[i].startswith(COUNTER)), None)
+    if counter is None:
+        raise ProjectError(f"the Queue has no `{COUNTER}<n>` line: fix it by hand")
+    return start, end, table, counter
+
+
+def _queue_item(row: str) -> list[str]:
+    cells = _queue_cells(row)
+    if len(cells) != len(QUEUE_HEADER) or not cells[0].isdigit() or cells[1] not in QUEUE_RANK:
+        raise ProjectError(f"a Queue row it can't read: {row.strip()!r}: fix it by hand")
+    return cells
+
+
+def queued(lines: list[str]) -> list[list[str]] | None:
+    """The open items as their cells, in the order the user gets them, or None without a Queue."""
+    bounds = _queue_bounds(lines)
+    if bounds is None:
+        return None
+    items = [_queue_item(lines[i]) for i in bounds[2][2:]]
+    return sorted(items, key=lambda item: (QUEUE_RANK[item[1]], int(item[0])))
+
+
+def queue_add(lines: list[str], kind: str, name: str, source: str, now: datetime | None = None) -> list[str]:
+    """Adds an item with the next id, never reused, and returns its cells. A project from
+    before the queue gets an empty Queue above Decisions first."""
+    if kind not in QUEUE_RANK:
+        raise ProjectError(f"kind {kind!r} isn't one of: {', '.join(QUEUE_RANK)}")
+    name, source = _line("name", name), _line("from", source)
+    if _queue_bounds(lines) is None:
+        at = lines.index("## Decisions") if "## Decisions" in lines else len(lines)
+        lines[at:at] = ["## Queue", "", f"{COUNTER}1", "", _row(QUEUE_HEADER), "|" + "---|" * len(QUEUE_HEADER), ""]
+    _, _, table, counter = _queue_bounds(lines)
+    stored = lines[counter][len(COUNTER):].strip()
+    ident = max([int(stored) if stored.isdigit() else 1, *(int(_queue_item(lines[i])[0]) + 1 for i in table[2:])])
+    cells = [str(ident), kind, name, source, (now or datetime.now()).strftime("%Y-%m-%d %H:%M")]
+    lines.insert(table[-1] + 1, _row([cell.replace("|", "\\|") for cell in cells]))
+    lines[counter] = f"{COUNTER}{ident + 1}"
+    return cells
+
+
+def queue_done(lines: list[str], ident: int, answer: str) -> list[str]:
+    """Removes item `ident`, records `<from> asked <name> → <answer>` under Decisions, and
+    returns its cells."""
+    if not answer.strip():
+        raise ProjectError("--answer takes the pick in words and the user's own")
+    bounds = _queue_bounds(lines)
+    if bounds is None:
+        raise ProjectError("project.md has no Queue")
+    for i in bounds[2][2:]:
+        cells = _queue_item(lines[i])
+        if int(cells[0]) == ident:
+            del lines[i]
+            decide(lines, f"{cells[3]} asked {cells[2]} → {answer.strip()}")
+            return cells
+    raise ProjectError(f"no open Queue item {ident}")
+
+
+def queue_show(items: list[list[str]] | None) -> str:
+    """The strip a reply carries, `1 of <total> need you · <name> · <from>`, then every item."""
+    if items is None:
+        return "No Queue yet: queue every call still open with `queue add`."
+    if not items:
+        return "Nothing waits on the user."
+    return "\n".join([f"1 of {len(items)} need you · {items[0][2]} · {items[0][3]}",
+                      *(f"  {item[0]} {item[1]} · {item[2]} · {item[3]} · since {item[4]}" for item in items)])
 
 
 FINAL = re.compile(r"(done|dropped)\b|(replaced by|absorbed into) \S")  # the end states in STATE
@@ -603,6 +706,15 @@ def main(argv: list[str]) -> int:
     starting.add_argument("--goal", required=True)
     starting.add_argument("--proof", required=True)
     commands.add_parser("tick", allow_abbrev=False).add_argument("--send", action="store_true")
+    queue = commands.add_parser("queue", allow_abbrev=False).add_subparsers(dest="action", required=True)
+    adding = queue.add_parser("add", allow_abbrev=False)
+    adding.add_argument("kind", choices=QUEUE_RANK)
+    adding.add_argument("name")
+    adding.add_argument("--from", dest="source", default="coordinator")
+    resolving = queue.add_parser("done", allow_abbrev=False)
+    resolving.add_argument("ident", type=int, metavar="id")
+    resolving.add_argument("--answer", required=True)
+    queue.add_parser("show", allow_abbrev=False)
     args = parser.parse_args(argv)
     if args.command == "phase" and (args.goal is None) != (args.proof is None):
         ending.error("--goal needs --proof, and --park takes neither")
@@ -635,6 +747,18 @@ def main(argv: list[str]) -> int:
         lines = path.read_text().split("\n")
         if args.command == "tick":
             return _tick(args.dir, lines, args.send)
+        if args.command == "queue":
+            head = []
+            if args.action == "add":
+                cells = queue_add(lines, args.kind, args.name, args.source)
+                head = [f"queued {cells[0]}: {cells[1]} · {cells[2]}"]
+            elif args.action == "done":
+                cells = queue_done(lines, args.ident, sys.stdin.read() if args.answer == "-" else args.answer)
+                head = [f"done {cells[0]}: {cells[1]} · {cells[2]}"]
+            if head:
+                _write(path, "\n".join(lines))
+            print("\n".join([*head, queue_show(queued(lines))]))
+            return 0
         if args.command in ("decide", "learn"):
             body = sys.stdin.read() if args.text == "-" else args.text
             (decide if args.command == "decide" else learn)(lines, body)

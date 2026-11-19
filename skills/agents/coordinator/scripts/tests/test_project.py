@@ -150,6 +150,68 @@ class Project(Fixture, unittest.TestCase):
         self.assertIn(f"## Decisions\n\n- {TODAY} · first\n\n## Workers", text)
         self.assertIn("|---|---|---|---|---|---|---|\n| a | — | — | — | running | — | — |\n\n## Learnings", text)
         self.assertIn(f"## Learnings\n\n- {TODAY} · first\n\n## Listening\n\n- Heartbeat: none\n", text)
+        self.assertIn("Follow-ups: none\n\n## Queue\n\nNext id: 1\n\n| # | Kind | Name | From | Since |\n"
+                      "|---|---|---|---|---|\n\n## Decisions", text)
+        self.assertEqual(self.project("queue", "show").stdout, "Nothing waits on the user.\n")
+
+
+EXPORT = "export-v2 <t3-thread://v2/e/8f>"
+
+
+class Queue(Fixture, unittest.TestCase):
+    def test_add_on_a_project_from_before_the_queue_starts_it_above_decisions(self):
+        self.assertEqual(self.project("queue", "show").stdout,
+                         "No Queue yet: queue every call still open with `queue add`.\n")
+        self.project("queue", "add", "call", "keep the v1 export", "--from", EXPORT)
+        self.assertIn("Follow-ups: none\n\n## Result (interim, 2026-10-30)\n\nShipped: #149.\n\n## Queue\n\n"
+                      "Next id: 2\n\n| # | Kind | Name | From | Since |\n|---|---|---|---|---|\n"
+                      f"| 1 | call | keep the v1 export | {EXPORT} | ", self.text())
+        self.assertTrue(self.text().endswith(PROJECT[PROJECT.index("## Decisions"):]))
+
+    def test_items_come_stuck_runs_then_calls_then_do_items_oldest_first(self):
+        for kind, name in [("do", "approve the deploy"), ("call", "keep the v1 export"),
+                           ("stuck", "review-quality stalled"), ("call", "drop the beta flag")]:
+            self.project("queue", "add", kind, name)
+        shown = self.project("queue", "show").stdout.split("\n")
+        self.assertEqual([line.split(" · since ")[0] for line in shown[:5]], [
+            "1 of 4 need you · review-quality stalled · coordinator",
+            "  3 stuck · review-quality stalled · coordinator",
+            "  2 call · keep the v1 export · coordinator",
+            "  4 call · drop the beta flag · coordinator",
+            "  1 do · approve the deploy · coordinator"])
+        self.assertTrue(shown[1].startswith(f"  3 stuck · review-quality stalled · coordinator · since {TODAY} "))
+
+    def test_done_records_the_answer_and_no_id_comes_back(self):
+        self.project("queue", "add", "call", "keep the v1 export", "--from", EXPORT)
+        out = self.project("queue", "done", "1", "--answer", "-", stdin="yes, one release · the user: 'a'\n").stdout
+        self.assertEqual(out, "done 1: call · keep the v1 export\nNothing waits on the user.\n")
+        self.assertIn(f"merged 31ddd00.\n- {TODAY} · {EXPORT} asked keep the v1 export → yes, one release · "
+                      "the user: 'a'\n", self.text())
+        self.assertIn("queued 2: do · pull the dotfiles", self.project("queue", "add", "do", "pull the dotfiles").stdout)
+        self.assertIn("Next id: 3", self.text())
+        self.project("queue", "done", "2", "--answer", "pulled · the user: 'done\r## Workers'")
+        self.assertIn("the user: 'done\n  ## Workers'", self.text())
+        self.assertEqual(self.text().count("\n## Workers"), 1)
+
+    def test_a_pipe_in_a_name_round_trips(self):
+        self.project("queue", "add", "call", "keep a | b", "--from", "x|y")
+        self.assertIn("| 1 | call | keep a \\| b | x\\|y |", self.text())
+        self.assertTrue(self.project("queue", "show").stdout.startswith("1 of 1 need you · keep a | b · x|y\n"))
+
+    def test_a_refused_queue_edit_leaves_the_file_untouched(self):
+        self.project("queue", "add", "call", "keep the v1 export")
+        before = self.text()
+        for args, code in [(["done", "7", "--answer", "a"], 1), (["done", "1", "--answer", "  "], 1),
+                           (["add", "call", "two\nlines"], 1), (["add", "blocked", "keep it"], 2)]:
+            with self.subTest(args=args):
+                self.project("queue", *args, code=code)
+                self.assertEqual(self.text(), before)
+
+    def test_a_phase_keeps_the_open_queue(self):
+        self.project("queue", "add", "call", "keep the v1 export")
+        queue = self.text()[self.text().index("## Queue"):self.text().index("## Decisions")]
+        self.project("phase", "audit", "--result", "five reports", *NEXT)
+        self.assertIn(queue, self.text())
 
 
 
