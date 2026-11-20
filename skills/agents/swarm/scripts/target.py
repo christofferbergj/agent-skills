@@ -52,14 +52,14 @@ model and drops the default effort.
 
 A panel takes upstream's three seats: Fable and Opus, each at high moved by the parent's budget,
 and Gemini 4 Neon at xhigh moved by the budget, through T3 Code's Antigravity provider. A seat on
-the parent's vendor is a native subagent; a Claude seat under Codex runs on the counterpart route
+the parent's vendor is a native subagent; a seat on the other vendor runs on the counterpart route
 with the review-full target's instance, the seat's model, and the seat's effort, or is run
 "fallback" when that target is. The Gemini seat prints run "antigravity" with a "fallback" target
 for when T3 Code or Antigravity cannot run it: Codex's model at the Gemini seat's effort, on the
 counterpart route in Claude Code and natively in Codex. A roles entry for a panel is a list of
 seats, each a model name or {"model", "effort"}, such as ["fable", "opus", {"model": "inherit-parent"}];
-Claude models are opus, sonnet, haiku, fable, or claude-*, Gemini models are gemini-*, and any
-other model is Codex's.
+Claude models are opus, sonnet, haiku, fable, or claude-*, Gemini models are gemini-*, matched
+in any case, and any other model is Codex's.
 """
 
 import argparse
@@ -498,7 +498,7 @@ def panel_seats(parent, role, config):
         if model in ALIASES:
             seats.append((parent, None, effort, 'high', True))
         elif model:
-            name = model.split('[')[0]
+            name = model.split('[')[0].lower()
             vendor = 'claude-code' if name in CLAUDE_MODELS or name.startswith('claude') else GEMINI if name.startswith('gemini') else 'codex'
             seats.append((vendor, model, effort, 'xhigh' if vendor == GEMINI else 'high', False))
     return seats or [(vendor, model, None, default, False) for vendor, model, default in PANEL_SEATS]
@@ -528,7 +528,7 @@ def resolve_panel(parent, role, config, codex_model, usage, read_banked):
             effort = None if alias else budgeted(default, budget)
         if vendor == GEMINI:
             fallback = resolve_seat(parent, 'codex', None, effort, config, codex_model, usage, read_banked)
-            seats.append({'run': GEMINI, 'providerInstanceId': GEMINI, 'model': model, 'effort': effort, 'fallback': fallback})
+            seats.append({'run': GEMINI, 'model': model, 'effort': effort, 'fallback': fallback})
         else:
             seats.append(resolve_seat(parent, vendor, model, effort, config, codex_model, usage, read_banked))
     return {'role': role, 'seats': seats}

@@ -338,7 +338,7 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('arena-runners'),{'role':'arena-runners','seats':[
             {'run':'claude-code','model':'fable','effort':'high'},
             {'run':'claude-code','model':'opus','effort':'high'},
-            {'run':'antigravity','providerInstanceId':'antigravity','model':'gemini-4-neon','effort':'xhigh','fallback':
+            {'run':'antigravity','model':'gemini-4-neon','effort':'xhigh','fallback':
                 {'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'xhigh','serviceTier':'priority','usage':{'left':90,'seenAt':'2026-10-24T21:00:00Z'}}}]})
         self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'budget':'medium'}}))
         seats=self.run_target('interrogate-reviewers')['seats']
@@ -360,7 +360,11 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('arena-runners',parent='codex'),{'role':'arena-runners','seats':[
             {'run':'claude-code','providerInstanceId':'claude','model':'fable','effort':'low'},
             {'run':'claude-code','providerInstanceId':'claude','model':'opus','effort':'low'},
-            {'run':'antigravity','providerInstanceId':'antigravity','model':'gemini-4-neon','effort':'medium','fallback':{'run':'codex','effort':'medium','serviceTier':'default'}}]})
+            {'run':'antigravity','model':'gemini-4-neon','effort':'medium','fallback':{'run':'codex','effort':'medium','serviceTier':'default'}}]})
+        self.config.write_text(json.dumps({'codex':{'roles':{'interrogate-reviewers':[{'model':'Gemini-4-Neon','effort':'max'},'opus']}}}))
+        seats=self.run_target('interrogate-reviewers',parent='codex')['seats']
+        self.assertEqual((seats[0]['run'],seats[0]['effort'],seats[0]['fallback']['run'],seats[0]['fallback']['effort']),('antigravity','xhigh','codex','xhigh'))
+        self.assertEqual(seats[1]['run'],'claude-code')
 
     def test_a_configured_panel_list_replaces_the_seats_and_stays_at_or_below_xhigh(self):
         self.log('a.jsonl',event(10))
