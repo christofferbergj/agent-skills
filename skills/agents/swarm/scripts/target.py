@@ -50,15 +50,16 @@ entry can move those threads off a model with a tight weekly allowance. A roles 
 overrides the model or the effort; "inherit-parent" or "auto" as the model keeps the parent's
 model and drops the default effort.
 
-A panel takes upstream's three seats: Fable, Opus, and Codex's model in the seat upstream gives
-Gemini, each at high moved by the parent's budget. A seat on the parent's vendor is a native
-subagent; a seat on the other vendor runs on the counterpart route with the review-full
-target's instance and speed, the seat's model, and the seat's effort, or is run "fallback"
-when that target is. So in Claude Code the Fable and Opus seats are native and the Codex seat is
-the counterpart, and in Codex the Codex seat runs on the session's model and the Fable and Opus
-seats run on the Claude counterpart. A roles entry for a panel is a list of seats, each a model
-name or {"model", "effort"}, such as ["fable", "opus", {"model": "inherit-parent"}]; Claude
-models are opus, sonnet, haiku, fable, or claude-*, and any other model is Codex's.
+A panel takes upstream's three seats: Fable and Opus, each at high moved by the parent's budget,
+and Gemini 4 Neon at xhigh moved by the budget, through T3 Code's Antigravity provider. A seat on
+the parent's vendor is a native subagent; a Claude seat under Codex runs on the counterpart route
+with the review-full target's instance, the seat's model, and the seat's effort, or is run
+"fallback" when that target is. The Gemini seat prints run "antigravity" with a "fallback" target
+for when T3 Code or Antigravity cannot run it: Codex's model at the Gemini seat's effort, on the
+counterpart route in Claude Code and natively in Codex. A roles entry for a panel is a list of
+seats, each a model name or {"model", "effort"}, such as ["fable", "opus", {"model": "inherit-parent"}];
+Claude models are opus, sonnet, haiku, fable, or claude-*, Gemini models are gemini-*, and any
+other model is Codex's.
 """
 
 import argparse
@@ -91,11 +92,11 @@ NATIVE_DEFAULTS = {'claude-code': {
     'judgment-and-prose': CODE, 'swarm-workers': WORKERS,
 }}
 NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
-# Upstream's panel seats, (vendor, model), each at high moved by the budget: Fable, Opus, and the
-# seat upstream gives Gemini, which takes the other vendor's model, Codex's own.
+# Upstream's panel seats, (vendor, model, default effort), each effort moved by the budget: Fable and
+# Opus at high, and Gemini 4 Neon at xhigh through T3 Code's Antigravity provider.
 PANEL_ROLES = {'arena-runners', 'interrogate-reviewers'}
-PANEL_SEATS = (('claude-code', 'fable'), ('claude-code', 'opus'), ('codex', None))
-PANEL_EFFORT = 'high'
+GEMINI = 'antigravity'
+PANEL_SEATS = (('claude-code', 'fable', 'high'), ('claude-code', 'opus', 'high'), (GEMINI, 'gemini-4-neon', 'xhigh'))
 CLAUDE_MODELS = ('opus', 'sonnet', 'haiku', 'fable')
 ALIASES = ('inherit-parent', 'auto')
 EFFORTS = ('low', 'medium', 'high', 'xhigh')
@@ -488,38 +489,48 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
 
 
 def panel_seats(parent, role, config):
-    """Return the panel's seats as (vendor, model, configured effort, alias), from the roles entry's list or upstream's defaults."""
+    """Return the panel's seats as (vendor, model, configured effort, default effort, alias), from the roles entry's list or upstream's defaults."""
     configured = table(table(config.get(parent)).get('roles')).get(role)
     seats = []
     for item in configured if isinstance(configured, list) else ():
         entry = {'model': item} if isinstance(item, str) else table(item)
         model, effort = text(entry.get('model')), text(entry.get('effort'))
         if model in ALIASES:
-            seats.append((parent, None, effort, True))
+            seats.append((parent, None, effort, 'high', True))
         elif model:
-            claude = model.split('[')[0] in CLAUDE_MODELS or model.startswith('claude')
-            seats.append(('claude-code' if claude else 'codex', model, effort, False))
-    return seats or [(vendor, model, None, False) for vendor, model in PANEL_SEATS]
+            name = model.split('[')[0]
+            vendor = 'claude-code' if name in CLAUDE_MODELS or name.startswith('claude') else GEMINI if name.startswith('gemini') else 'codex'
+            seats.append((vendor, model, effort, 'xhigh' if vendor == GEMINI else 'high', False))
+    return seats or [(vendor, model, None, default, False) for vendor, model, default in PANEL_SEATS]
+
+
+def resolve_seat(parent, vendor, model, effort, config, codex_model, usage, read_banked):
+    """Return a native subagent for the parent's vendor, or the counterpart route for the other."""
+    if vendor == parent:
+        seat = {'run': parent, 'model': model, 'effort': effort}
+        if parent == 'codex':
+            seat['serviceTier'] = 'priority' if usage is None or check_speed(usage, read_banked)[0] else 'default'
+    else:
+        seat = resolve(parent, 'review-full', config, codex_model, usage, read_banked)
+        del seat['role']
+        if seat['run'] != 'fallback':
+            seat.update(model=model or seat['model'], effort=effort)
+    return {key: value for key, value in seat.items() if value is not None}
 
 
 def resolve_panel(parent, role, config, codex_model, usage, read_banked):
-    """Return one target per panel seat: a native subagent for the parent's vendor, the counterpart route for the other."""
+    """Return one target per panel seat; a Gemini seat runs on T3 Code's Antigravity provider and carries a Codex fallback."""
     budget = text(table(config.get(parent)).get('budget'))
     seats = []
-    for vendor, model, effort, alias in panel_seats(parent, role, config):
+    for vendor, model, effort, default, alias in panel_seats(parent, role, config):
         effort = capped(effort)
         if effort not in EFFORTS:
-            effort = None if alias else budgeted(PANEL_EFFORT, budget)
-        if vendor == parent:
-            seat = {'run': parent, 'model': model, 'effort': effort}
-            if parent == 'codex':
-                seat['serviceTier'] = 'priority' if usage is None or check_speed(usage, read_banked)[0] else 'default'
+            effort = None if alias else budgeted(default, budget)
+        if vendor == GEMINI:
+            fallback = resolve_seat(parent, 'codex', None, effort, config, codex_model, usage, read_banked)
+            seats.append({'run': GEMINI, 'providerInstanceId': GEMINI, 'model': model, 'effort': effort, 'fallback': fallback})
         else:
-            seat = resolve(parent, 'review-full', config, codex_model, usage, read_banked)
-            del seat['role']
-            if seat['run'] != 'fallback':
-                seat.update(model=model or seat['model'], effort=effort)
-        seats.append({key: value for key, value in seat.items() if value is not None})
+            seats.append(resolve_seat(parent, vendor, model, effort, config, codex_model, usage, read_banked))
     return {'role': role, 'seats': seats}
 
 

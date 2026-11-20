@@ -50,7 +50,7 @@ The remaining triggers live only here:
 
 - Code, prose, and judgment: `opus xhigh`.
 - Trivial mechanical edits: `opus high`.
-- Diverse review and design panels: one runner each on `fable high`, `opus high`, and the other vendor's model at `high` in the seat upstream gives Gemini.
+- Diverse review and design panels: one runner each on `fable high`, `opus high`, and Gemini 4 Neon at `xhigh` through T3 Code's Antigravity provider.
 
 **Fable is an exception.** It runs outside a panel only when the user named it for this task or two Opus `xhigh` runs of the same brief failed its check. Say which. Difficulty alone never qualifies.
 

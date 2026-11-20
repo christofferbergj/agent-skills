@@ -333,41 +333,46 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
 
-    def test_claude_code_panel_seats_fable_and_opus_natively_and_codex_on_the_counterpart(self):
+    def test_claude_code_panel_seats_fable_and_opus_natively_and_gemini_on_antigravity_with_a_codex_fallback(self):
         self.log('a.jsonl',event(10))
         self.assertEqual(self.run_target('arena-runners'),{'role':'arena-runners','seats':[
             {'run':'claude-code','model':'fable','effort':'high'},
             {'run':'claude-code','model':'opus','effort':'high'},
-            {'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'high','serviceTier':'priority','usage':{'left':90,'seenAt':'2026-10-24T21:00:00Z'}}]})
+            {'run':'antigravity','providerInstanceId':'antigravity','model':'gemini-4-neon','effort':'xhigh','fallback':
+                {'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'xhigh','serviceTier':'priority','usage':{'left':90,'seenAt':'2026-10-24T21:00:00Z'}}}]})
         self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'budget':'medium'}}))
-        self.assertEqual([seat['effort'] for seat in self.run_target('interrogate-reviewers')['seats']],['medium','medium','medium'])
+        seats=self.run_target('interrogate-reviewers')['seats']
+        self.assertEqual([seat['effort'] for seat in seats],['medium','medium','high'])
+        self.assertEqual(seats[2]['fallback']['effort'],'high')
         self.log('a.jsonl',event(95))
         seats=self.run_target('arena-runners')['seats']
-        self.assertEqual([seat['run'] for seat in seats],['claude-code','claude-code','fallback'])
-        self.assertIn('5% left',seats[2]['reason'])
+        self.assertEqual([seat['run'] for seat in seats],['claude-code','claude-code','antigravity'])
+        self.assertEqual(seats[2]['fallback']['run'],'fallback')
+        self.assertIn('5% left',seats[2]['fallback']['reason'])
 
-    def test_a_panel_counterpart_seat_takes_the_full_review_model(self):
+    def test_the_gemini_seats_codex_fallback_takes_the_full_review_model(self):
         self.config.write_text(json.dumps({'claude-code':{'review':{'model':{'full':'gpt-fixture-full','delta':'gpt-fixture-delta'}}}}))
-        self.assertEqual(self.run_target('arena-runners')['seats'][2].get('model'),'gpt-fixture-full')
+        self.assertEqual(self.run_target('arena-runners')['seats'][2]['fallback'].get('model'),'gpt-fixture-full')
 
-    def test_codex_panel_seats_its_own_model_natively_and_fable_and_opus_on_the_claude_counterpart(self):
+    def test_codex_panel_seats_fable_and_opus_on_the_claude_counterpart_and_falls_back_to_its_own_model(self):
         self.config.write_text(json.dumps({'codex':{'review':{'providerInstanceId':'claude','model':'claude-fixture','effort':{'full':'xhigh'}},'budget':'small'}}))
         self.log('a.jsonl',event(99,resets=MIDWEEK))
         self.assertEqual(self.run_target('arena-runners',parent='codex'),{'role':'arena-runners','seats':[
             {'run':'claude-code','providerInstanceId':'claude','model':'fable','effort':'low'},
             {'run':'claude-code','providerInstanceId':'claude','model':'opus','effort':'low'},
-            {'run':'codex','effort':'low','serviceTier':'default'}]})
+            {'run':'antigravity','providerInstanceId':'antigravity','model':'gemini-4-neon','effort':'medium','fallback':{'run':'codex','effort':'medium','serviceTier':'default'}}]})
 
     def test_a_configured_panel_list_replaces_the_seats_and_stays_at_or_below_xhigh(self):
         self.log('a.jsonl',event(10))
-        self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'roles':{'arena-runners':['opus',{'model':'inherit-parent'},{'model':'gpt-other','effort':'max'},{'effort':'low'},7]}}}))
+        self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'roles':{'arena-runners':['opus',{'model':'inherit-parent'},{'model':'gpt-other','effort':'max'},'gemini-4-neon',{'effort':'low'},7]}}}))
         seats=self.run_target('arena-runners')['seats']
         self.assertEqual(seats[:2],[{'run':'claude-code','model':'opus','effort':'high'},{'run':'claude-code'}])
         self.assertEqual((seats[2]['run'],seats[2]['model'],seats[2]['effort']),('codex','gpt-other','xhigh'))
-        self.assertEqual(len(seats),3)
+        self.assertEqual((seats[3]['run'],seats[3]['model'],seats[3]['effort']),('antigravity','gemini-4-neon','xhigh'))
+        self.assertEqual(len(seats),4)
         self.config.write_text(json.dumps({'claude-code':{'roles':{'arena-runners':[],'interrogate-reviewers':'fable'}}}))
         for role in ('arena-runners','interrogate-reviewers'):
-            self.assertEqual([seat.get('model') for seat in self.run_target(role)['seats']][:2],['fable','opus'],role)
+            self.assertEqual([seat.get('model') for seat in self.run_target(role)['seats']],['fable','opus','gemini-4-neon'],role)
 
 FAKE_CODEX='''\
 #!/usr/bin/env python3

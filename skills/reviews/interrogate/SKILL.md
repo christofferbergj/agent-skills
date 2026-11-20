@@ -17,7 +17,7 @@ Complete when the scope and the intent are stated.
 
 ## Fan out
 
-Run Phase A steps 3 and 4 and Phase B of /arena, with four changes. Seat the adversaries from /swarm's `interrogate-reviewers` panel in place of `arena-runners`: by default Fable, Opus, and the other vendor's model, each at `high`. Copy the scope's uncommitted changes into each worktree. Spawn each adversary as a writer that runs commands in its own worktree; a counterpart seat whose route cannot run them is a seat that cannot run, as /arena's step 3 says. In place of the arena task and rationale, give each adversary the scope, the intent, and this brief:
+Run Phase A steps 3 and 4 and Phase B of /arena, with four changes. Seat the adversaries from /swarm's `interrogate-reviewers` panel in place of `arena-runners`: by default Fable and Opus at `high` and Gemini 4 Neon at `xhigh`. Copy the scope's uncommitted changes into each worktree. Spawn each adversary as a writer that runs commands in its own worktree; a counterpart seat whose route cannot run them is a seat that cannot run, as /arena's step 3 says. In place of the arena task and rationale, give each adversary the scope, the intent, and this brief:
 
 > Break this change. Prove each finding with a run against the real code, such as a failing test, a repro script, or command output that shows the wrong behavior. For a design or plan, run a prototype or probe the current tree. Keep repros in your own worktree. Report each finding with a title, the exact command, the output it printed, and the output the intent requires. Leave out anything you did not run. That covers style, naming, structure, and risks that need a future change to matter. No findings is a valid result.
 
