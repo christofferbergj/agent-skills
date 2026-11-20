@@ -333,37 +333,37 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
 
-    def test_claude_code_panel_seats_fable_and_opus_natively_and_gemini_on_antigravity_with_a_codex_fallback(self):
+    def test_claude_code_panel_seats_fable_and_opus_natively_and_gemini_on_antigravity_with_a_codex_alternate(self):
         self.log('a.jsonl',event(10))
         self.assertEqual(self.run_target('arena-runners'),{'role':'arena-runners','seats':[
             {'run':'claude-code','model':'fable','effort':'high'},
             {'run':'claude-code','model':'opus','effort':'high'},
-            {'run':'antigravity','model':'gemini-4-neon','effort':'xhigh','fallback':
+            {'run':'antigravity','model':'gemini-4-neon','effort':'xhigh','alternate':
                 {'run':'codex','providerInstanceId':'codex','model':'gpt-fixture','effort':'xhigh','serviceTier':'priority','usage':{'left':90,'seenAt':'2026-10-24T21:00:00Z'}}}]})
         self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'budget':'medium'}}))
         seats=self.run_target('interrogate-reviewers')['seats']
         self.assertEqual([seat['effort'] for seat in seats],['medium','medium','high'])
-        self.assertEqual(seats[2]['fallback']['effort'],'high')
+        self.assertEqual(seats[2]['alternate']['effort'],'high')
         self.log('a.jsonl',event(95))
         seats=self.run_target('arena-runners')['seats']
         self.assertEqual([seat['run'] for seat in seats],['claude-code','claude-code','antigravity'])
-        self.assertEqual(seats[2]['fallback']['run'],'fallback')
-        self.assertIn('5% left',seats[2]['fallback']['reason'])
+        self.assertEqual(seats[2]['alternate']['run'],'fallback')
+        self.assertIn('5% left',seats[2]['alternate']['reason'])
 
-    def test_the_gemini_seats_codex_fallback_takes_the_full_review_model(self):
+    def test_the_gemini_seats_codex_alternate_takes_the_full_review_model(self):
         self.config.write_text(json.dumps({'claude-code':{'review':{'model':{'full':'gpt-fixture-full','delta':'gpt-fixture-delta'}}}}))
-        self.assertEqual(self.run_target('arena-runners')['seats'][2]['fallback'].get('model'),'gpt-fixture-full')
+        self.assertEqual(self.run_target('arena-runners')['seats'][2]['alternate'].get('model'),'gpt-fixture-full')
 
-    def test_codex_panel_seats_fable_and_opus_on_the_claude_counterpart_and_falls_back_to_its_own_model(self):
+    def test_codex_panel_seats_fable_and_opus_on_the_claude_counterpart_and_takes_its_own_model_as_alternate(self):
         self.config.write_text(json.dumps({'codex':{'review':{'providerInstanceId':'claude','model':'claude-fixture','effort':{'full':'xhigh'}},'budget':'small'}}))
         self.log('a.jsonl',event(99,resets=MIDWEEK))
         self.assertEqual(self.run_target('arena-runners',parent='codex'),{'role':'arena-runners','seats':[
             {'run':'claude-code','providerInstanceId':'claude','model':'fable','effort':'low'},
             {'run':'claude-code','providerInstanceId':'claude','model':'opus','effort':'low'},
-            {'run':'antigravity','model':'gemini-4-neon','effort':'medium','fallback':{'run':'codex','effort':'medium','serviceTier':'default'}}]})
-        self.config.write_text(json.dumps({'codex':{'roles':{'interrogate-reviewers':[{'model':'Gemini-4-Neon','effort':'max'},'opus']}}}))
+            {'run':'antigravity','model':'gemini-4-neon','effort':'medium','alternate':{'run':'codex','effort':'medium','serviceTier':'default'}}]})
+        self.config.write_text(json.dumps({'codex':{'roles':{'interrogate-reviewers':[{'model':'gemini-4-neon','effort':'max'},'opus']}}}))
         seats=self.run_target('interrogate-reviewers',parent='codex')['seats']
-        self.assertEqual((seats[0]['run'],seats[0]['effort'],seats[0]['fallback']['run'],seats[0]['fallback']['effort']),('antigravity','xhigh','codex','xhigh'))
+        self.assertEqual((seats[0]['run'],seats[0]['effort'],seats[0]['alternate']['run'],seats[0]['alternate']['effort']),('antigravity','xhigh','codex','xhigh'))
         self.assertEqual(seats[1]['run'],'claude-code')
 
     def test_a_configured_panel_list_replaces_the_seats_and_stays_at_or_below_xhigh(self):
