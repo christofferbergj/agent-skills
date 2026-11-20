@@ -365,6 +365,8 @@ class TargetResolution(unittest.TestCase):
         seats=self.run_target('interrogate-reviewers',parent='codex')['seats']
         self.assertEqual((seats[0]['run'],seats[0]['effort'],seats[0]['alternate']['run'],seats[0]['alternate']['effort']),('antigravity','xhigh','codex','xhigh'))
         self.assertEqual(seats[1]['run'],'claude-code')
+        self.config.write_text(json.dumps({'codex':{'roles':{'arena-runners':['Gemini-4-Neon','Opus','CLAUDE-x','claudette','geminix','claude-x[1m]']}}}))
+        self.assertEqual([seat['run'] for seat in self.run_target('arena-runners',parent='codex')['seats']],['codex']*5+['claude-code'])
 
     def test_a_configured_panel_list_replaces_the_seats_and_stays_at_or_below_xhigh(self):
         self.log('a.jsonl',event(10))

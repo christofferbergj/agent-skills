@@ -491,9 +491,9 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
 
 def vendor_of(model):
     name = model.split('[')[0]
-    if name in CLAUDE_MODELS or name.startswith('claude'):
+    if name in CLAUDE_MODELS or name.startswith('claude-'):
         return 'claude-code'
-    return ANTIGRAVITY if name.startswith('gemini') else 'codex'
+    return ANTIGRAVITY if name.startswith('gemini-') else 'codex'
 
 
 def panel_seats(parent, role, config):

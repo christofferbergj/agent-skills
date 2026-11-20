@@ -25,7 +25,7 @@ No role or counterpart runs above `xhigh`, and `target.py` lowers a configured `
 
 A model counts as rejected once the host's error says it is not valid, or leaves it out of its list of valid models. Never pass a rejected model again, skip any step below whose model is already rejected, and report what was rejected, the fallback taken, and the model and settings that ran.
 
-- **An Antigravity seat or judge** retries once with the closest Gemini model [the T3 route](t3.md) lists, then takes its `alternate` target.
+- **An Antigravity seat or judge** retries once with the closest Gemini model [the T3 route](t3.md) lists; then a seat takes its `alternate` target, and a judge takes the Codex counterpart /arena's Phase C names.
 - **A counterpart seat**, whether a critic, a panel runner, or a judge, keeps the counterpart's vendor while a counterpart route remains. A route that lists valid models, such as [the T3 route](t3.md), retries once with the closest listed counterpart model; otherwise take the next route under Cross-vendor critics that the calling skill allows.
 - **Every other spawn** tries these steps in order, skipping a step that does not apply:
   1. A rejected effort or speed adjustment: run at the role's resolved target, and try no other adjusted setting.
