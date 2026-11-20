@@ -16,6 +16,8 @@ Use this template for writing the PR body:
 
 <the problem in one paragraph>
 
+<one plain sentence, then the fastest way to try the change>
+
 <diagram, diff-sketch, or tree>
 
 ## Evidence
@@ -57,18 +59,29 @@ Use this template for writing the PR body:
 
 <optional: potential ramifications of merge>
 
-## ELI5
+<details><summary>ELI5</summary>
 
 <two or three plain sentences someone outside the project would follow>
+
+</details>
 ```
 
 ## Sections
 
-Skip all preambles and keep prose brief. Most readers stop early, so the order puts what matters first. Resolve the project's domain vocabulary through /domain-modeling and use its established language.
+Skip all preambles and keep prose brief. Most readers stop early, so the order puts what matters first. Spend length only on what a reviewer needs and can't get from the diff, such as how a mechanism works or why this approach beats the obvious one, never on file lists, commit lists, a restatement of the diff, or sections that repeat each other. Snippets and captured output are evidence and don't count against it. Resolve the project's domain vocabulary through /domain-modeling and use its established language.
 
 ### Summary
 
-Open with the user's goal and the problem in one paragraph: what was wrong or missing, for whom, and how it showed up, with real numbers when there are any. Then pick the smallest view that makes the key point clear.
+Open with the user's goal and the problem in one paragraph: what was wrong or missing, for whom, how it showed up, the cause when it isn't obvious, and what changes, with real numbers when there are any.
+
+Right after it, give the fastest way to try the change, ready to paste or click and introduced by one plain sentence. Leave it out only when there is nothing a reviewer can run.
+
+- **Page or UI:** the preview deployment URL of the changed page itself, not the deployment root: take it from the deployment bot comment or the deployment status, then add the path.
+- **Package or CLI:** one command that runs the PR build, such as a pkg.pr.new install comment turned into `npx https://pkg.pr.new/<package>@<pr> <command>`; install-then-run only when the package has no command to run.
+- **API:** a snippet someone can paste.
+- **No preview or PR build yet:** the local command, and say the link will follow.
+
+Open each link once to check it serves the change. Then pick the smallest view that makes the key point clear.
 
 - Show logic or an algorithm as pseudocode:
 
@@ -191,25 +204,27 @@ Concrete evidence that the change works: what the author saw, so the reviewer do
 
 Open it with the review status: `**Reviewed:**` with the final review's verdict line, reviewer counts, and head SHA, such as /review-loop's Clean line, or `**Not reviewed:**` with the reason. When the diff changes UI source and Evidence has no screenshot, add `**Not attached:**` when GitHub refused captures you took, or `**Not verified on <surface>:**`, naming the view or route and why it went unchecked. A refactor of UI source counts, even when nobody should see a difference. Before publishing, run `node ~/.agents/skills/pr/scripts/check-evidence.ts --body <file>` from the PR branch's checkout after committing, or the same script beside this skill where it is installed elsewhere, adding `--base <ref>` for a stacked PR; it names what Evidence still lacks.
 
-Pick the evidence that fits the change, one item for each row it touches; a screenshot proves a layout and nothing about speed. Put output longer than about 20 lines in a `<details>` block under a one-line verdict:
+Pick the evidence that fits the change, one item for each row it touches and for each behaviour a reviewer would check separately, so two unrelated fixes get two pairs; a screenshot proves a layout and nothing about speed. Source code, configs, and styled diffs are not evidence, since the reviewer already has the diff. Don't restate checks CI runs and shows green, such as lint, typecheck, or tests; state the checks you ran because the repository has no CI for them, and manual checks on a real device, project, or browser. Put output longer than about 20 lines in a `<details>` block under a one-line verdict:
 
-| Change                     | Evidence                                                                                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| UI                         | Screenshots, by the rule below the honesty list. A short video for motion, hover, or a multi-step flow, and a phone width when layout is involved.                              |
-| CLI, script, or build      | The real output of the same command on the base and on this branch, exit code included, copied as it ran. Give both sides the same fixtures or fakes, not a live account.       |
-| Bug fix                    | The same input on both sides with each result, and the regression test, named in pseudocode, failing on the base. When it can't run there, such as code the base lacks, say so. |
-| Performance                | What was measured and how (machine, runs, inputs), the numbers on both sides, and their spread across runs.                                                                     |
-| AI or agent behaviour      | The same real prompts on both sides, how the answers were graded, time and cost per answer, and where the grading is unreliable.                                                |
-| Agent instructions or docs | A run that follows the new text and shows the behaviour it changes, or a line saying none ran.                                                                                  |
-| New API or feature         | The code a caller writes to use it.                                                                                                                                             |
-| Anything else              | A small table, a diagram, or a page comparing both versions.                                                                                                                    |
+| Change                     | Evidence                                                                                                                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| UI                         | Screenshots, by the rule below the honesty list. A short video for motion, hover, or a multi-step flow, and a phone width when layout is involved.                                    |
+| CLI, script, or build      | The real output of the same command on the base and on this branch, exit code included, copied as it ran. Give both sides the same fixtures or fakes, not a live account.             |
+| Bug fix                    | The same input on both sides with each result, and the regression test, named in pseudocode, failing on the base. When it can't run there, such as code the base lacks, say so.       |
+| Performance                | What was measured and how (machine, runs, inputs), the numbers on both sides, and their spread across runs.                                                                           |
+| AI or agent behaviour      | The same real prompts on both sides, how the answers were graded, time and cost per answer, and where the grading is unreliable. Show the tool calls or traces, not only the answers. |
+| Agent instructions or docs | A run that follows the new text and shows the behaviour it changes, or a line saying none ran.                                                                                        |
+| New API or feature         | The code a caller writes to use it.                                                                                                                                                   |
+| Anything else              | A small table, a diagram, or a page comparing both versions.                                                                                                                          |
 
 Keep it honest:
 
 - After is this branch. Before is the base branch, production, or the last deploy, captured from its own checkout or deploy; never revert or stash this branch to make one.
 - Look at every capture before uploading it, and check it shows what changed. An upload can't be deleted, even after its reference leaves the body.
-- Capture demo or sanitised data only: no real users, tokens, emails, or private messages.
-- End Evidence with `**Limits:**`: what failed, couldn't run, or got worse, and any part of the test plan nobody has done, or `none`.
+- Embed the evidence; never only describe it, as in "screenshots are attached". Use only output you captured, never a placeholder to fill in later. A code or `diff` block holds real output only, so write a bare summary such as "31 passed" as a sentence.
+- Change one variable per proof. When an unrelated failure on the base hides the behavior, isolate it with a fixture, a narrower command, or a disposable worktree, and say so.
+- Capture demo or sanitised data only: no real users, tokens, emails, or private messages; when you redact a token or ID, say where.
+- End Evidence with `**Limits:**`: what failed, couldn't run, or got worse, and any part of the test plan nobody has done, or `none`. Never drop a limit to keep the body short.
 - For a security fix in a public repository, describe the impact at a high level and keep reproductions, payloads, and exploit steps out of the body until the fix is released, following the project's security policy.
 
 When the change alters what a user sees on a view and capturing it is cheap, such as a running app, a dev server with mocks, or the project's verification skill, screenshot it. Take before-and-after screenshots when the base branch shows the same view in the same state, with the same viewport, data, and scroll position, so the pair lines up. When there is no real before, such as a new view or a state the base branch never reaches (a validation error, an empty result, a new step), screenshot each state the change adds instead. A placeholder or an unrelated base-branch screen is not a before. Lay out, name, publish, and check the captures by [the screenshots reference](references/screenshots.md).
@@ -222,12 +237,15 @@ The blast radius is the potential impact or scope of the changes introduced by t
 
 ### ELI5
 
-Close with two or three plain sentences someone outside the project would follow, such as a reader skimming the changelog. If you can't write them, the change probably isn't clear yet.
+Close with a folded `ELI5` of two or three plain sentences someone outside the project would follow, such as a reader skimming the changelog. If you can't write them, the change probably isn't clear yet.
 
 Complete when:
 
 - the description matches the final diff;
+- a reviewer can try the change from the line after the opening paragraph, or there is nothing to run;
 - every claim has evidence next to it or says why there is none;
+- no check CI already shows green is restated, and every unverified part is stated;
+- every paragraph explains something the diff doesn't;
 - nothing in it is invented: no number, result, or run you didn't see;
 - it passes `check-evidence.ts`;
 - it identifies merge risk; and
