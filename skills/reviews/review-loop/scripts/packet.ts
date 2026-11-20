@@ -367,7 +367,7 @@ function build(options: Options) {
   const reviewed = changed.filter((change) => !leftOut.has(change.path));
   if (reviewed.length === 0)
     throw new UsageError(
-      "only lockfiles, binaries, or generated or vendored files changed; pass --keep for one central to the change",
+      "only lockfiles, binaries, or generated or vendored files changed; pass --keep for one the change's intent names or that was edited by hand",
     );
 
   const directory = options.out
