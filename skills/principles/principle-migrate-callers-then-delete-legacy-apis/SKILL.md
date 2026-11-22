@@ -3,7 +3,7 @@ name: principle-migrate-callers-then-delete-legacy-apis
 description: "Choose migration strategy when an API or schema replaces an old contract: coordinated caller migration and deletion, or staged coexistence for real compatibility or release obligations."
 ---
 
-# Migrate callers then delete legacy APIs
+# Migrate Callers Then Delete Legacy APIs
 
 This owner chooses migration strategy and verification boundaries for both Matt's ticket flow and Pstack playbooks.
 
