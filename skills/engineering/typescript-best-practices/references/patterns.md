@@ -1,6 +1,6 @@
 # TypeScript patterns
 
-Code examples for each rule in `SKILL.md`. The underlying principles are language-agnostic. See the /principle-type-system-discipline and /principle-boundary-discipline.
+Code examples for each rule in `SKILL.md`. The underlying principles are language-agnostic. See /principle-type-system-discipline and /principle-boundary-discipline.
 
 ## Branded types
 
@@ -271,7 +271,7 @@ If `Config.theme` were `string`, `config.theme` would be `string` too.
 
 ## Boundary validation
 
-Validate once where data crosses in. Trust types inside. See the /principle-boundary-discipline.
+Validate once where data crosses in. Trust types inside. See /principle-boundary-discipline.
 
 - **Wire formats:** follow the protocol and schema's compatibility rules. For ProtoJSON, use the selected parser's supported unknown-field option when the compatibility contract calls for it. JSON-RPC has no protocol-wide `ignoreUnknownFields` setting.
 - **Persisted JSON:** versioned blob with a try/catch around the parse.

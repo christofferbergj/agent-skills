@@ -21,7 +21,7 @@ Design and coding principles applied automatically by the planning and implement
 | [principle-migrate-callers-then-delete-legacy-apis](principle-migrate-callers-then-delete-legacy-apis/SKILL.md)   | Plan caller migration, compatibility, and deletion gates.    |
 | [principle-minimize-reader-load](principle-minimize-reader-load/SKILL.md)                                         | Reduce indirection and hidden state.                         |
 | [principle-model-the-domain](principle-model-the-domain/SKILL.md)                                                 | Model valid states before adding branches.                   |
-| [principle-never-block-on-the-human](principle-never-block-on-the-human/SKILL.md)                                 | Complete authorized reversible work without waiting.         |
+| [principle-never-block-on-the-human](principle-never-block-on-the-human/SKILL.md)                                 | Proceed with reversible work without waiting.                |
 | [principle-outcome-oriented-execution](principle-outcome-oriented-execution/SKILL.md)                             | Drive each step toward the target architecture.              |
 | [principle-prove-it-works](principle-prove-it-works/SKILL.md)                                                     | Verify the real artifact before declaring completion.        |
 | [principle-redesign-from-first-principles](principle-redesign-from-first-principles/SKILL.md)                     | Rethink the design when requirements change.                 |
