@@ -20,14 +20,14 @@ In T3 Code, call `orchestrator_capabilities` without `search`, since a search
 filters every provider's list. A named member runs on the provider that lists
 it. Otherwise take every provider with `canRunChildTask: true`, and make its
 first listed model its member: the top of its model list in T3 Code, which the
-user can reorder there, decides over model names. A provider that lists no
-model has no member; report it. Seat one member per maker,
-the company a model's id names, such as `claude-` for Anthropic or `gpt-` for
-OpenAI. Instances of one driver count once: take the session's own instance when it
-lists a member, else the first listed instance that does, and run the member on
-that instance's `providerInstanceId`, since another instance may hide its
-model. When two providers' members share a maker, keep the maker's own
-harness, such as Codex for OpenAI. Start every member in parallel through
+user can reorder there, decides over model names. Instances of one driver
+count once: take the session's own instance when it lists a model, else the
+first listed instance that does, and run the member on that instance's
+`providerInstanceId`, since another instance may hide its model. A driver none
+of whose instances lists a model has no member; report it. Seat one member per
+maker, the company a model's id names, such as `claude-` for Anthropic or
+`gpt-` for OpenAI. When two providers' members share a maker, keep the maker's
+own harness, such as Codex for OpenAI. Start every member in parallel through
 /swarm's T3 route. Elsewhere, seat two members: the session's model and the
 counterpart through /swarm's cross-vendor route.
 
