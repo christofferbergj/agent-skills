@@ -20,7 +20,7 @@ Understand a codebase, research a problem, clarify requirements, and choose a de
 | [loop-me](loop-me/SKILL.md)                                             | Specify repeatable project workflows.                  |
 | [pick-ui-library](pick-ui-library/SKILL.md)                             | Pick a frontend library from a curated list.           |
 | [research](research/SKILL.md)                                           | Investigate a question using primary sources.          |
-| [sharpen](sharpen/SKILL.md)                                             | Clarify a task's outcome and approach.                 |
+| [sharpen](sharpen/SKILL.md)                                             | Rewrite a prompt deeper, not bigger.                   |
 | [software-factory](software-factory/SKILL.md)                           | Design an agent software factory's tasks and services. |
 | [to-questionnaire](to-questionnaire/SKILL.md)                           | Collect decisions through a questionnaire.             |
 | [to-spec](to-spec/SKILL.md)                                             | Turn an agreed design into a spec.                     |
