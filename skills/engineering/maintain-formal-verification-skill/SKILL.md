@@ -6,51 +6,53 @@ disable-model-invocation: true
 
 # Maintain a formal verification skill
 
-Maintain the verification artifacts and project-local instructions, preserving the property's intended promise. Edit only models, harnesses, property files, and verification instructions; change product code only within an existing grant. When a property fails on the current code, report the failure and keep the property and model as the code requires; weakening either to pass hides the finding. Use isolated scratch copies for deliberate faults.
+A formal check proves a property of what it describes. When the code changes and the verification does not, the check can keep passing while it describes code that no longer exists. That pass is the dangerous case, because it looks like a proof. This skill is the upkeep loop for a verify skill that `/create-formal-verification-skill` generated, or for any project-local skill that runs a model checker, prover, or code-level verifier against named code. The project-local skill handles a change that an agent makes while it uses that skill. This skill handles the changes that skipped it: merges, edits made without the skill, and drift that builds up across many commits.
 
-Give each check one outcome:
+## Outcomes
 
-- **in sync:** no change since the sync commit alters what the check describes, and it passes.
-- **updated:** the verification now describes the changed code, and it passes.
-- **bug:** the verification describes the current code, and the code breaks the property. This is a code finding, not drift.
-- **blocked:** the check could not be brought back in line or run; name the reason.
+Give each check one outcome, and say which:
 
-A check can be both updated and bug.
+- **in sync**: no change since the last sync alters what the check describes, and the check passes.
+- **updated**: the code changed, the verification now describes the new code, and the check passes.
+- **bug**: the verification describes the current code, and the code breaks the property. This is a finding about the code. It is not drift.
+- **blocked**: the check could not be brought back in line or could not run. Say exactly why.
 
-## 1. Resolve the checks and comparison
+A check can be both updated and bug: the update makes the verification describe the code again, and then the property fails on it.
 
-Find project-local skills that run a model checker, prover, or code-level verifier against named code, including drafts and generated-input fallbacks produced by /create-formal-verification-skill. Read the user's named target, or every matching skill. If none exists, tell the user to invoke /create-formal-verification-skill and stop this path. Preserve the distinction between generated-input testing and formal proof.
+## Edit scope
 
-For each check, record the property, covered files and functions, source correspondence, bounds, assumptions, tool version, command, and last confirmed sync commit. Resolve the target commit and included uncommitted or untracked changes. If a sync commit is absent, use the last commit changing the verification as a provisional baseline and disclose the uncertainty; unavailable history leaves the comparison blocked.
+Edit only the verification: models, harnesses, property files, and the verify skill itself. Never edit product code during a run, unless the user asks you to. When a property fails on the current code, do not weaken the property or the model to make it pass. Report the failure.
 
-Complete when every check has a reproducible target and comparison baseline, or a concrete prerequisite gap.
+## Pass
 
-## 2. Establish the old result and code changes
+1. **Find the checks.** A verify skill has no fixed name, so find it by what it does: a project skill that runs a model checker, a prover, or another verifier against named code. Read each one you find, or the one the user named. For each check, collect the property, the code it covers, the bounds and assumptions, the command that runs it, and the commit where it was last confirmed to describe the code. If no verify skill exists, stop and point at `/create-formal-verification-skill`. If the skill does not record a sync commit, use the last commit that changed the verification files, and say that you did.
 
-Run each check before editing and preserve the output. Read every covered-code change and commit since its sync point, including included working changes. Follow moved or split functions and new writers to the guarded state. Check claimed irrelevance against the model or harness.
+2. **Run it as it is.** Run each check once before you change anything, and record the result. A pass here does not tell you that the code is correct. It tells you that the old description still holds. A failure here can be drift or a bug. Do not decide which until step 5.
 
-Classify each relevant change: no semantic effect, stale source correspondence, an intentionally changed promise with cited evidence, or a possible defect. A passing old model alone proves no correspondence to today's code.
+3. **Read every change to covered code.** Diff the covered files from the sync commit to the current commit, and read each commit message. Also look for code that moved: a covered function that is renamed, split, or moved to another file is still covered code. Also look for new code that touches the state that a check guards, such as a new function that writes the same fields. For each change, decide which of these it is:
+   - **No effect.** The change does not alter anything the verification describes, such as formatting, comments, or code paths that the verification does not cover. Check this against the model or harness, not against the commit message.
+   - **The verification no longer describes the code.** A step that was one indivisible action is now two, a branch was added or removed, a check moved, a new path reaches the guarded state, or a value now has a different range. The model or harness must change.
+   - **The promise changed on purpose.** The change alters what the code promises, and evidence in the change says that this is intended: the doc comment, the tests, the changelog, or the commit message. The property must change, and you must cite that evidence.
+   - **The promise may be broken.** The code changed, and no evidence says that the promise changed. Treat a failure that follows as a bug candidate.
 
-Complete when every covered-code delta has a disposition and each check has a before result or an execution gap.
+4. **Update from the code, not from the result.** Change the model or harness so that each changed part again points to code that a reviewer can open, and keep one indivisible step in the code as one step in the verification. Write the update from the code before you rerun, and do not shape it by what makes the check pass. Change a property only for a promise that changed on purpose. Write down the old wording, the new wording, and the evidence. Keep the bounds unless the change makes them wrong. If you must reduce a bound, say so in the report.
 
-## 3. Update from the code
+5. **Rerun and judge each result.**
+   - **Pass:** the check can now pass on a description that has lost the ability to fail. Break the new code the way the property guards against, such as removing a new check or reordering a new step, and confirm that the check catches it. Then drop the break.
+   - **Fail:** replay the counterexample against the real code, step by step. If a step cannot happen in the code, the verification is wrong. Fix the verification, and say what was wrong. If every step can happen, it is a bug. Name the commit that introduced it, tell the counterexample as a sequence of steps in the code's own words, and state the harm in one sentence. If a cheap test or reproduction against the real code shows the bug, add it to the report as evidence. Do not commit it to the product code.
 
-Invoke /writing-for-agents for instruction changes. Update models, harnesses, properties, and verification instructions from source before rerunning. Keep each indivisible model step traceable to an indivisible code operation. Change a property only when evidence establishes an intended promise change; record its old wording, new wording, and that evidence. Preserve bounds unless they no longer fit, and explain any reduction.
+6. **Update the verify skill.** Invoke /writing-for-agents for instruction changes. Update the code that each check covers, the commands, the bounds, the assumptions, and the sync commit. Set the sync commit to the commit that you checked. Do not move the sync commit for a blocked check, and say so in the report. Then follow the verify skill once as the next agent would, so that you know its steps still run.
 
-Complete when each update has source correspondence and a reason independent of whether it passes.
+## Report
 
-## 4. Rerun and prove the updated check
+Tell the user, for each check:
 
-Record a pass within stated bounds, a counterexample, or an inconclusive result. Replay counterexamples against the real code. An impossible step indicates a modeling defect; fix the verification and record what was wrong. A feasible violation indicates a code defect: tell the counterexample as a sequence of steps in the code's names, state its harm in one sentence, and name the introducing commit when established. When a cheap reproduction against the real code shows the defect, add it to the report as evidence, outside product code. A timeout or incomplete exploration is inconclusive.
+- the outcome, and the commits that you read;
+- what changed in the verification and why, with a short reason for each change: the code changed shape, or the promise changed on purpose (with the evidence);
+- the rerun result, and the break that you used to show the updated check can still fail;
+- each bug, in plain words: the counterexample as steps in the code's words, the harm, and the commit that introduced it;
+- what the verification still does not cover, including new code that it should cover and does not.
 
-In an isolated scratch copy or worktree, make a realistic semantic fault in the covered code and run the documented check. Confirm that it detects the violation rather than only a changed hash or syntax error. If the original code already fails, the control must produce a distinguishable counterexample; another nonzero exit is insufficient. Restore the scratch code and rerun the updated check, reproducing this step's unmutated result: passing, or failing only on the counterexamples already recorded. An unrelated failure does not establish restoration. Clean owned scratch state while preserving evidence.
+Say outright which failures were drift in the verification and which were bugs in the code. For a check that passed before you updated it and fails after, say that the old pass was on a stale description.
 
-Complete when the check has a conclusive result, a semantic failing control, restored behavior, and cleanup evidence. Otherwise preserve useful model-only results and label readiness as draft with the missing proof.
-
-## 5. Record freshness and hand off
-
-For each check, update its covered code, commands, bounds, assumptions, and source-correspondence evidence. Advance its sync commit only after correspondence is established and step 4's conclusive rerun, semantic control, restoration, and cleanup are demonstrated for that exact committed snapshot. A preserved code counterexample is a conclusive finding; it does not claim the property passed. Blocked or inconclusive checks retain their prior sync commit. Record reviewed working changes and their fingerprints separately; a commit cannot stand for uncommitted content, whose committed freshness remains pending.
-
-Follow the updated skill once as the next agent would. Report for each check its outcome, readiness as ready or draft, compared revisions and working changes, each verification edit with its reason, the rerun result, control and restoration evidence, each code defect, and remaining coverage, including new code the check should cover. Say which failures were verification drift and which were code defects; for a check that passed before the update and fails after, say the old pass described stale code. Put verification changes in a change separate from any product fix.
-
-Complete when every check has an outcome with evidence or a named gap, retained or advanced freshness is justified, and the user can distinguish a code finding from verification drift and an executable skill from a draft.
+Put the verification updates in a change of their own, separate from any product fix.

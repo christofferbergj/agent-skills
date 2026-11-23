@@ -7,9 +7,9 @@
 - Original skill: [`pstack/skills/blast-radius/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/blast-radius/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7`.
-- Fidelity checked through: `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7`.
-- Last upstream review: 2026-11-16.
+- Reviewed through commit: `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9`.
+- Fidelity checked through: `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9`.
+- Last upstream review: 2026-11-23.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -29,3 +29,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                              |
 | 2026-10-25  | `99b609a72323b70204eab407c622f436e858e112` | No upstream change since `190d287` in `pstack/skills/blast-radius/`. Converged step 1 on upstream's `why` step 2 pointer as /pstack-why step 2 and dropped the anchor-step divergence: the local /pstack-why has kept upstream's numbering, with Step 2 as the code anchor, since its re-import in #19. Fidelity check in both directions; the remaining differences are library-wide adaptations.                                                                  |
 | 2026-11-16  | `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7` | Adopted upstream's removal of /why's parts: step 1 now says to pull the PR and its commits instead of pointing at /why step 2, and step 4 drops "Same rules as /why" while keeping the evidence rules. Fidelity check: restored upstream's "Companion to /how and /why" opening line and "Write it through /unslop", which had been rewritten without a recorded divergence. Remaining differences are library-wide adaptations.                                    |
+| 2026-11-23  | `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9` | Closeness re-check against `7a58391` under the owner's rule on #113, no upstream change since `bf0c7cd`. Restored upstream's six steps without the completion criteria added to each, which no host needs. Kept as library-wide adaptations: the model-invoked description scoped to Pstack tasks, the /domain-modeling preamble, and slash invocations of /how, /why, /arena, and /unslop. Fidelity holds in both directions.                                      |

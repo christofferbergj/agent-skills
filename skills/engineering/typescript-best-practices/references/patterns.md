@@ -1,6 +1,6 @@
 # TypeScript patterns
 
-Code examples for each rule in `SKILL.md`. The underlying principles are language-agnostic. See the /principle-type-system-discipline and /principle-boundary-discipline.
+Code examples for each rule in `SKILL.md`. The underlying principles are language-agnostic. See /principle-type-system-discipline and /principle-boundary-discipline.
 
 ## Branded types
 
@@ -9,9 +9,13 @@ Brand primitives so they can't be mixed up. Validate once at the boundary. Downs
 ```ts
 type AgentId = string & { readonly __brand: "AgentId" };
 
+function isAgentId(input: string): input is AgentId {
+  return isUUID(input);
+}
+
 function parseAgentId(input: string): AgentId {
-  if (!isUUID(input)) throw new Error(`Invalid agent id: ${input}`);
-  return input as AgentId;
+  if (!isAgentId(input)) throw new Error(`Invalid agent id: ${input}`);
+  return input;
 }
 
 function focusAgent(id: AgentId): void {
@@ -142,9 +146,9 @@ function parseUser(input: unknown): User {
 
 Use `safeParse` when failure is an expected branch. Use the equivalent inference helper when the repository uses another schema library. Do not add a new schema dependency for one guard. This rule prefers the schema system the codebase already trusts.
 
-## Unchecked assertions
+## No `as` casts
 
-An unchecked assertion can hide an invalid value from the compiler. Validate external data before asserting a type. `as const` preserves literal types and readonly properties; a constructor may assert a brand after validating its invariant, as in `parseAgentId` above.
+Every `as` is a potential runtime crash. Cast only after the type system has verified the claim.
 
 ```ts
 import { z } from "zod";
@@ -263,11 +267,11 @@ const config = { theme: "dark", cols: 3 } satisfies Config;
 // config.theme is "dark"; config.cols is number, not 3.
 ```
 
-If `Config.theme` were `string`, `config.theme` would be `string` too. Use `as const satisfies Config` when the value also needs readonly properties and literal preservation.
+If `Config.theme` were `string`, `config.theme` would be `string` too.
 
 ## Boundary validation
 
-Validate once where data crosses in. Trust types inside. See the /principle-boundary-discipline.
+Validate once where data crosses in. Trust types inside. See /principle-boundary-discipline.
 
 - **Wire formats:** follow the protocol and schema's compatibility rules. For ProtoJSON, use the selected parser's supported unknown-field option when the compatibility contract calls for it. JSON-RPC has no protocol-wide `ignoreUnknownFields` setting.
 - **Persisted JSON:** versioned blob with a try/catch around the parse.

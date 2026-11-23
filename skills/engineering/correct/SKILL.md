@@ -26,8 +26,6 @@ Then fix the most frequent classes now, one commit each. Prove each new check fa
 
 ## Keep the rule table
 
-Last, keep a table in the agent instruction file that pairs each rule with what enforces it. When the operator corrects you, fix the mistake and prepare any instruction change for review. Learning does not silently change the current run's approved rules. If the rule was already there and nothing enforces it, that's a repeat, so fix it at the highest level in the same change. Drop a rule once its mistake can't happen.
-
-Complete when each addressed class has a demonstrated prevention mechanism or a justified judgment rule, relevant checks pass, and proposed instruction changes are reviewable.
+Last, keep a table in the agent instruction file that pairs each rule with what enforces it. When the operator corrects you, fix the mistake and add the rule. If the rule was already there and nothing enforces it, that's a repeat, so fix it at the highest level in the same change. Drop a rule once its mistake can't happen.
 
 **Reply:** each class with its evidence, the level you picked, and why a higher level didn't work.

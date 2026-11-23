@@ -7,9 +7,9 @@
 - Original skill: [`pstack/skills/principle-redesign-from-first-principles/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/principle-redesign-from-first-principles/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Fidelity checked through: `190d28736eff128ec94f502a22c7fe0c4b56cd37`.
-- Last upstream review: 2026-10-21.
+- Reviewed through commit: `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9`.
+- Fidelity checked through: `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9`.
+- Last upstream review: 2026-11-23.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
@@ -28,3 +28,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-15  | `e5136d82418d2db3165ea1050d17577cd618cc05` | Imported and adapted the complete pinned skill and required resources for the agreed portable suite. Retained original intent; replaced host-specific integration and policy where necessary.                                                                                                                                                                   |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Audit: no upstream change to the skill since `e5136d8`. Compared every upstream rule and recorded divergence in both directions. Recorded the invocation-mode change and the previously unrecorded /codebase-design and /domain-modeling delegation. No SKILL.md change. Invocations resolve, metadata matches model invocation, and catalog validation passes. |
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                          |
+| 2026-11-23  | `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9` | Audit: closeness re-check against the owner's rule on #113. No upstream change since the last review. Kept the /codebase-design delegation (Matt Pocock's owner of architectural vocabulary) and the /domain-modeling line (project-artifacts adaptation); both fidelity directions pass.                                                                       |

@@ -7,16 +7,14 @@
 - Original skill: [`pstack/skills/how/SKILL.md`](https://github.com/cursor/plugins/blob/e5136d82418d2db3165ea1050d17577cd618cc05/pstack/skills/how/SKILL.md), including its skill-local resources.
 - Tracking policy: upstream `main`, scoped to `pstack/`.
 - Imported from commit: `e5136d82418d2db3165ea1050d17577cd618cc05`.
-- Reviewed through commit: `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7`.
-- Fidelity checked through: `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7`.
-- Last upstream review: 2026-11-16.
+- Reviewed through commit: `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9`.
+- Fidelity checked through: `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9`.
+- Last upstream review: 2026-11-23.
 - License: [MIT, copyright 2026 Lauren Tan](LICENSE). Retain this notice with derived material.
 
 ## Local adaptations to preserve
 
 - The [library-wide adaptations](../../agents/maintain-skills/references/ADAPTATION.md#library-wide-adaptations) apply; this list holds only this skill's own divergences.
-- Without delegation, explore and write the explanation from the same brief and disclose it; upstream assumes Cursor's Task tool.
-- Step 2 names /why as the owner of rationale, which upstream's description carried.
 
 ## Maintenance
 
@@ -31,3 +29,4 @@ Keep the original import fixed. Advance the reviewed-through baseline only after
 | 2026-10-21  | `190d28736eff128ec94f502a22c7fe0c4b56cd37` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 2026-10-25  | `99b609a72323b70204eab407c622f436e858e112` | No upstream change since `190d287` in `pstack/skills/how/`. Current-tools review: replaced the explainer prompt's `Read, Grep, and Glob` with the host's read-only tools, because Claude Code's tools reference marks Glob and Grep absent by default on macOS, Linux, and WSL and Codex has no such tools. Fidelity check passes in both directions.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | 2026-11-16  | `bf0c7cd80abdbf7fe47b634978a7d1b4071f71a7` | Pstack 0.15.41 (#1236) cuts how to one file. Adopted: one read-only subagent that explores and explains in one pass with upstream's brief quoted verbatim, the Explain and Present steps, and the deleted model routing, complexity gate, explorers, output format, and both prompt templates, so `references/explainer-prompt.md` and `references/explorer-prompt.md` are deleted. Adapted: the subagent starts through /swarm with no named role, which resolves it as upstream's Task call with no model does; the retired `how explorer` and `how explainer` roles are no longer named. Kept the sequential fallback, now one pass by the agent itself, the /why rationale pointer, the /domain-modeling preamble, and the completion criteria. Dropped the explainer prompt's read-only tools divergence with the file. Fidelity check passes in both directions. |
+| 2026-11-23  | `7a583913eb1b8d1a0ee76753d1a2cf072e7b54f9` | Closeness re-check against `7a58391` under the owner's rule on #113, no upstream change since `bf0c7cd`. Restored upstream's `## 1. Explain` and `## 2. Present` sections in place of a numbered list, and dropped the two recorded divergences: the no-delegation fallback, which /swarm's disclosed fallback already owns, and step 2's completion criterion naming /why, which no host needs. Kept as library-wide adaptations: the model-invoked description scoped to Pstack tasks, the /domain-modeling preamble, and the Task subagent translated to one read-only subagent through /swarm. Fidelity holds in both directions.                                                                                                                                                                                                                                  |

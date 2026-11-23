@@ -1,3 +1,5 @@
 interface:
   display_name: "Sharpen"
-  short_description: "Clarify a task's outcome and approach"
+  short_description: "Rewrite a prompt deeper, not bigger"
+policy:
+  allow_implicit_invocation: false
