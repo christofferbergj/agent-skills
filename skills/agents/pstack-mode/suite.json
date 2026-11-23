@@ -123,6 +123,11 @@
       "directory": "skills/agents/reflect"
     },
     {
+      "upstream": "reframe",
+      "local": "reframe",
+      "directory": "skills/planning/reframe"
+    },
+    {
       "upstream": "setup-pstack",
       "local": "pstack-setup",
       "directory": "skills/agents/pstack-setup",

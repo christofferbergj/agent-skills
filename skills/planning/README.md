@@ -19,6 +19,7 @@ Understand a codebase, research a problem, clarify requirements, and choose a de
 | [improve-codebase-architecture](improve-codebase-architecture/SKILL.md) | Find and discuss architectural improvements.           |
 | [loop-me](loop-me/SKILL.md)                                             | Specify repeatable project workflows.                  |
 | [pick-ui-library](pick-ui-library/SKILL.md)                             | Pick a frontend library from a curated list.           |
+| [reframe](reframe/SKILL.md)                                             | Learn the expert words for what you're building.       |
 | [research](research/SKILL.md)                                           | Investigate a question using primary sources.          |
 | [sharpen](sharpen/SKILL.md)                                             | Rewrite a prompt deeper, not bigger.                   |
 | [software-factory](software-factory/SKILL.md)                           | Design an agent software factory's tasks and services. |
