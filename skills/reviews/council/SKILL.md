@@ -20,7 +20,9 @@ In T3 Code, call `orchestrator_capabilities` without `search`, since a search
 filters every provider's list. A named member runs on the provider that lists
 it. Otherwise take every provider with `canRunChildTask: true`, and make its
 first listed model its member: the top of its model list in T3 Code, which the
-user can reorder there, decides over model names. Seat one member per maker,
+user can reorder there, decides over model names. A provider that lists no
+model, because the user hid them all, has no member; never dispatch it without
+a model, which would run a model the user hid. Seat one member per maker,
 the company a model's id names, such as `claude-` for Anthropic or `gpt-` for
 OpenAI. Instances of one driver count once, chosen as /swarm's T3 route
 chooses; when two providers' members share a maker, keep the maker's own
