@@ -89,6 +89,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [improve-codebase-architecture](skills/planning/improve-codebase-architecture/SKILL.md)
 - [loop-me](skills/planning/loop-me/SKILL.md)
 - [pick-ui-library](skills/planning/pick-ui-library/SKILL.md)
+- [reframe](skills/planning/reframe/SKILL.md)
 - [research](skills/planning/research/SKILL.md)
 - [sharpen](skills/planning/sharpen/SKILL.md)
 - [software-factory](skills/planning/software-factory/SKILL.md)
