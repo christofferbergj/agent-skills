@@ -61,7 +61,7 @@ imitate (token names, file placement, prop patterns):
   - <observable check, e.g. "the dropdown scales from its trigger, not from center">
   - <e.g. "spamming the toggle never restarts the animation from zero">
   - In DevTools, set playback to 10% (Animations panel) and confirm <detail>.
-  - Toggle `prefers-reduced-motion` (Rendering panel) and confirm movement is dropped but opacity feedback remains.
+  - Toggle `prefers-reduced-motion` (Rendering panel, or media emulation through the project's verification skill or an available browser control tool) and confirm movement is dropped but opacity feedback remains.
 - **Done when**: <machine- or eye-checkable completion criteria>.
 ```
 
