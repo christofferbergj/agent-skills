@@ -18,7 +18,7 @@
 - Phase 2's fan-out and `execute` dispatch their subagents through /swarm, the owner of delegation and isolated writers.
 - `PLAN-TEMPLATE.md`'s reduced-motion feel check also offers media emulation through the project's verification skill or a browser control tool, beside upstream's Rendering panel. A plan's executor is an agent on these hosts and cannot open DevTools, so upstream's wording leaves the check to a person. Drop this once upstream's check is one an agent can run.
 
-`agents/openai.yaml`, this record, and the retained license are locally maintained packaging. The repository's `.prettierignore` keeps the formatter off `PLAN-TEMPLATE.md`, which matches upstream byte for byte outside that check, because the formatter rewrites the code fences its zero-width spaces escape.
+`agents/openai.yaml`, this record, and the retained license are locally maintained packaging. The repository's `.prettierignore` keeps the formatter off `PLAN-TEMPLATE.md`, because the formatter rewrites the code fences its zero-width spaces escape.
 
 ## Maintenance
 
