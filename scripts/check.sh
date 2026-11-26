@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
 # Runs every repository gate: formatting, skill discovery, catalog and
-# provenance validation, every Python, Node, and Bun test suite, whitespace,
-# and secrets. mise.toml pins the tools it needs.
-# Test suites are discovered from tracked files, so a new suite runs without
-# editing this script.
+# provenance validation, every Python, Node, and Bun test suite, TypeScript
+# type checks, whitespace, and secrets. mise.toml pins the tools it needs.
+# Test suites and type-checked folders are discovered from tracked files, so a
+# new one runs without editing this script.
 
 set -euo pipefail
 cd "$(git rev-parse --show-toplevel)"
@@ -37,6 +37,14 @@ node_tests=$(git ls-files 'skills/*.test.ts' ':!:skills/agents/pstack-mode/**' \
   ':!:skills/engineering/statechart/scripts/**')
 step "node: $(echo "$node_tests" | wc -l | tr -d ' ') test files"
 node --test $node_tests
+
+# Each zero-dependency TypeScript scripts folder carries its own tsconfig.json.
+# Pstack's runtime and statechart have dependencies and check themselves.
+for config in $(git ls-files 'skills/*/scripts/tsconfig.json' \
+  ':!:skills/agents/pstack-mode/**' ':!:skills/engineering/statechart/**'); do
+  step "typecheck: $(dirname "$config")"
+  pnpm -s exec tsc -p "$config"
+done
 
 step "pstack-mode: bun test and typecheck"
 runtime=$(bun skills/agents/pstack-mode/scripts/bootstrap.ts --print-runtime | tail -1)
