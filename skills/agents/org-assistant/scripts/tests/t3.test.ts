@@ -231,6 +231,65 @@ test("a thread answered before the wake went out leaves the gathered list", (t) 
   assert.deepEqual(org.pending().gathered, []);
 });
 
+/** Makes the T3 source's next reads fail, with a thread whose snooze isn't a time. */
+function breakList(org: Org): void {
+  org.world.t3.threads.push(thread("t-broken", { snoozedUntil: "soon" }));
+  org.save();
+}
+
+test("a gathered wait answered while T3 can't be read wakes nothing", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.threadIs("running");
+  turn(org, "waiting");
+  org.scan("10:05");
+  assert.deepEqual(
+    org.pending().gathered.map((item) => item.kind),
+    ["thread.waiting"],
+  );
+  turn(org, "running", 14);
+  breakList(org);
+  org.threadIs("completed");
+  const report = org.report("11:05");
+  assert.match(report.health, /t3 failing ×1/);
+  assert.equal(report.wake, null);
+  assert.deepEqual(org.pending().gathered, []);
+});
+
+test("a gathered wait or stall a failed T3 read dropped wakes once T3 reads it holding again", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.t3.threads.push(thread("t-busy", { status: "running" }));
+  org.threadIs("running");
+  turn(org, "waiting");
+  org.scan("10:05");
+  assert.deepEqual(org.found("11:05"), { "thread.stalled": 1 });
+  breakList(org);
+  org.threadIs("completed");
+  org.scan("12:05");
+  assert.equal(org.sent().length, 1);
+  org.world.t3.threads = org.world.t3.threads.filter((entry) => entry.threadId !== "t-broken");
+  org.save();
+  org.scan("13:05");
+  assert.deepEqual(org.kinds(org.lastSent()), [
+    "1 thread.started",
+    "thread.stalled t3:t-busy",
+    "thread.waiting t3:t-other",
+  ]);
+});
+
+test("a wait reported again while it holds stops before its delivered id is forgotten", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  turn(org, "waiting");
+  org.scan("10:05");
+  org.deliver();
+  org.scan("11:05"); // settles the batch, so the pending state keeps its ids for a week
+  for (const day of ["2026-11-30", "2026-12-04"]) {
+    assert.equal(org.found("10:05", { day })["thread.waiting"], undefined, day);
+  }
+});
+
 test("a thread's turn read again after a crash joins once", (t) => {
   const org = new Org(t);
   org.startDay();

@@ -2,11 +2,13 @@
  * T3 Code, through the `t3` CLI: every thread in the organisation's projects, since the user does
  * their work through T3 agents, and the assistant thread itself, which the scan reads before it
  * wakes it and sends its wake to. A thread wakes the assistant on its status and its run: it waits on
- * the user, failed, finished, or stalled; one that is new since the last scan is pulse. Keeps thread
- * ids, links, statuses, run ids, and counts, never titles or messages.
+ * the user, failed, finished, or stalled; one that is new since the last scan is pulse. A turn or a
+ * stall is reported again at every scan while it holds, under the same id, so a gathered one leaves
+ * once it stops holding, and one a failed read dropped comes back. Keeps thread ids, links,
+ * statuses, run ids, and counts, never titles or messages.
  */
 import { SourceError, run, runJson } from "../calls.ts";
-import { type Change, type ChangeKind, changeId } from "../changes.ts";
+import type { Change, ChangeKind } from "../changes.ts";
 import {
   type Infer,
   array,
@@ -19,6 +21,7 @@ import {
   string,
   withDefault,
 } from "../parse.ts";
+import { SEEN_FOR } from "../pending.ts";
 import type { Thread } from "../policy.ts";
 import type { T3Source } from "../profile.ts";
 import { HOUR, iso, time } from "../time.ts";
@@ -60,8 +63,8 @@ const seenThread = object({
   run: nullable(string),
   /** When the scan first saw the thread at this status, run, and item count. */
   since: string,
-  /** Whether this stall was reported; a new item or status ends it. */
-  stalled: boolean,
+  /** The turn the scan reported for this status and run, by its key and when it reported it first. */
+  turn: nullable(object({ key: string, at: string })),
 });
 const section = object({ threads: record(seenThread) });
 type Section = Infer<typeof section>;
@@ -87,17 +90,14 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
       const id = thread.threadId;
       if (id === ctx.thread || thread.archived) continue;
       const prev = seen[id];
-      const same =
-        prev !== undefined &&
-        prev.status === thread.status &&
-        prev.run === thread.latestRunId &&
-        prev.items === thread.itemCount;
+      const moved = prev?.status !== thread.status || prev.run !== thread.latestRunId;
+      const same = prev !== undefined && !moved && prev.items === thread.itemCount;
       const record: Seen = {
         status: thread.status,
         items: thread.itemCount,
         run: thread.latestRunId,
         since: same ? prev.since : now,
-        stalled: same ? prev.stalled : false,
+        turn: moved ? null : prev.turn,
       };
       threads[id] = record;
       if (!watched(thread, ctx.now)) continue;
@@ -121,22 +121,23 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
       const ref = `t3:${id}`;
       if (isNew) changes.push(ctx.change("thread.started", { ref, at: now, key: "new", detail }));
       const turned = TURNS[thread.status];
-      const moved = prev?.status !== thread.status || prev.run !== thread.latestRunId;
-      if (turned !== undefined && (isNew || moved)) {
-        // Keyed by the run and its item count, so a replay after a crash adds it once, and the next
-        // time the thread turns the same way gets a new key.
-        const key = `${thread.status}:${thread.latestRunId}:${thread.itemCount}`;
-        changes.push(ctx.change(turned, { ref, at: now, key, detail }));
+      // Keyed by the run and its item count, so a replay after a crash adds it once, and the next
+      // time the thread turns the same way gets a new key.
+      if (turned !== undefined && moved) {
+        record.turn = {
+          key: `${thread.status}:${thread.latestRunId}:${thread.itemCount}`,
+          at: now,
+        };
       }
-      if (
-        thread.status === "running" &&
-        same &&
-        !prev.stalled &&
-        ctx.now.getTime() - Date.parse(prev.since) >= STALL
-      ) {
-        record.stalled = true;
+      // Reported again while it holds, until the pending state would forget it was delivered.
+      const held = (since: string) => ctx.now.getTime() - Date.parse(since) < SEEN_FOR;
+      if (turned !== undefined && record.turn !== null && held(record.turn.at)) {
+        changes.push(ctx.change(turned, { ref, at: now, key: record.turn.key, detail }));
+      }
+      const idle = same ? ctx.now.getTime() - Date.parse(prev.since) : 0;
+      if (thread.status === "running" && idle >= STALL && held(record.since)) {
         changes.push(
-          ctx.change("thread.stalled", { ref, at: now, key: stallKey(prev.since), detail }),
+          ctx.change("thread.stalled", { ref, at: now, key: stallKey(record.since), detail }),
         );
       }
     }
@@ -144,22 +145,8 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
   return {
     section: { threads },
     changes,
-    // A gathered change stays only while its thread is still watched, a wait or failure only while
-    // the thread is still in that state, and a stall only while no new status, run, or item ended it.
-    still: (item: Change) => {
-      const id = item.ref.slice("t3:".length);
-      const current = threads[id];
-      if (current === undefined || !watching.has(id)) return false;
-      switch (item.kind) {
-        case "thread.waiting":
-        case "thread.failed":
-          return current.status === item.detail.status;
-        case "thread.stalled":
-          return item.id === changeId(item.kind, item.ref, stallKey(current.since));
-        default:
-          return true;
-      }
-    },
+    // A new thread's change stays gathered only while the thread is still watched.
+    still: (item: Change) => watching.has(item.ref.slice("t3:".length)),
   };
 }
 

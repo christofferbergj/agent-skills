@@ -112,6 +112,23 @@ export const KINDS = {
 } satisfies Record<string, { tier: Tier; urgent: boolean; detail: Parser<unknown> }>;
 
 export type ChangeKind = keyof typeof KINDS;
+
+/**
+ * The kinds a source vouches for at every scan: it reports the change again, under the same id, at
+ * each read that finds it still true. A gathered change of these kinds leaves at a read of its
+ * source that doesn't report it, or that fails, and the next read that finds it true gathers it
+ * again.
+ */
+const STANDING: ReadonlySet<ChangeKind> = new Set([
+  "slack.waiting",
+  "thread.waiting",
+  "thread.failed",
+  "thread.finished",
+  "thread.stalled",
+]);
+
+export const standing = (item: Change) => STANDING.has(item.kind);
+
 export type Detail<K extends ChangeKind> = Infer<(typeof KINDS)[K]["detail"]>;
 
 type Item<K extends ChangeKind> = {

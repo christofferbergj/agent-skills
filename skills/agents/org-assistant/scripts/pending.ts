@@ -85,7 +85,11 @@ export const EMPTY_PENDING: Pending = {
   serial: 0,
 };
 
-const SEEN_FOR = 7 * 24 * 3_600_000;
+/**
+ * How long a delivered id is kept. A source that reports a change again while it holds stops before
+ * this, so a change it reported once never joins a batch again.
+ */
+export const SEEN_FOR = 7 * 24 * 3_600_000;
 
 /** Forgets the ids delivered more than a week ago. */
 export function forgetOld(pending: Pending, now: Date): Pending {

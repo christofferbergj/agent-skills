@@ -17,6 +17,7 @@ import {
   change as makeChange,
   gather,
   muted,
+  standing,
   tier,
 } from "./changes.ts";
 import { EMPTY_LEDGER, type Ledger, ledgerParser } from "./ledger.ts";
@@ -163,10 +164,10 @@ function readAssistant(scan: Scan, state: State): { thread: Thread; state: State
 
 /**
  * Every source's changes, gathered, and those of them that are new: not muted, and neither gathered
- * already nor delivered or frozen, since a source may report a change again while it holds, such as
- * a DM still unanswered. A source with no section yet counts from the earliest start it was given, its first
- * attempt or the start `--since` named, kept until it succeeds: one whose sign-in failed from the
- * start still reports what happened meanwhile.
+ * already nor delivered or frozen, since a source reports a standing change again while it holds,
+ * such as a DM still unanswered. A source with no section yet counts from the earliest start it was
+ * given, its first attempt or the start `--since` named, kept until it succeeds: one whose sign-in
+ * failed from the start still reports what happened meanwhile.
  */
 function readSources(scan: Scan, state: State): { found: Change[]; state: State } {
   const { org, profile, now, ledger } = scan;
@@ -199,15 +200,18 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
       change: <K extends ChangeKind>(kind: K, fields: ChangeFields<K>) =>
         makeChange(name, kind, fields),
     };
+    // Whether a change the source gathered earlier is still true. A standing one is while the source
+    // reports it again, so a read that failed vouches for none, and the next good one gathers those
+    // still true again; the failed source's section and the frozen batches stay as they were.
+    let vouched = (item: Change) => !standing(item);
     try {
       const result = scanSource(source, { prev, fresh, ctx: context });
       sources[name] = result.section;
       delete starts[name];
       const { still, note } = result;
       health[name] = { ok: true, at: iso(now), ...(note === undefined ? {} : { note }) };
-      // A change no longer true, such as a DM since answered, leaves the gathered list.
-      if (still !== undefined)
-        gathered = gathered.filter((item) => item.source !== name || still(item));
+      const reported = new Set(result.changes.map(({ id }) => id));
+      vouched = (item) => (standing(item) ? reported.has(item.id) : (still?.(item) ?? true));
       found.push(...result.changes);
     } catch (error) {
       if (!(error instanceof SourceError)) throw error;
@@ -217,13 +221,14 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
         failed.push(`${name} failed ${failures} scans in a row`);
       }
     }
+    gathered = gathered.filter((item) => item.source !== name || vouched(item));
   }
   const kept = new Set([...profile.sources.map((source) => source.name), THREAD]);
   const live = (item: Change) => !muted(item, ledger.mutes, now);
-  const skip = new Set([...gathered.map(({ id }) => id), ...known(state.pending)]);
-  const news = gather([], found, skip).filter(live);
+  const remaining = gathered.filter(live);
+  const merged = gather(remaining, found.filter(live), known(state.pending));
   return {
-    found: news,
+    found: merged.slice(remaining.length),
     state: {
       snapshot: {
         sources,
@@ -231,10 +236,7 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
         starts,
         last_scan: iso(now),
       },
-      pending: {
-        ...state.pending,
-        gathered: [...gathered.filter(live), ...news],
-      },
+      pending: { ...state.pending, gathered: merged },
       failed,
     },
   };

@@ -619,3 +619,38 @@ test("a DM Slack indexed late that the user answered before the last scan wakes 
   assert.equal(wokeWaiting(org), false);
   assert.deepEqual(org.waiting(), []);
 });
+
+test("a gathered DM answered while Slack can't be read wakes nothing", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = messages(1, "D0ALEX", "U0ALEX", "09:20");
+  org.threadIs("running");
+  org.scan("10:05");
+  assert.deepEqual(
+    org.pending().gathered.map((item) => item.kind),
+    ["slack.waiting"],
+  );
+  org.world.slack.messages.push(...messages(1, "D0ALEX", "U0ME", "10:15"));
+  org.world.fail = { slack: "429: rate limit" };
+  org.threadIs("completed");
+  const report = org.report("11:05");
+  assert.match(report.health, /slack failing ×1/);
+  assert.equal(report.wake, null);
+  assert.deepEqual(org.pending().gathered, []);
+});
+
+test("a gathered DM a failed Slack read dropped wakes once Slack reads it unanswered again", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = messages(1, "D0ALEX", "U0ALEX", "09:20");
+  org.threadIs("running");
+  org.scan("10:05");
+  org.world.fail = { slack: "429: rate limit" };
+  org.threadIs("completed");
+  org.scan("11:05");
+  assert.equal(wokeWaiting(org), false);
+  delete org.world.fail;
+  org.save();
+  org.scan("12:05");
+  assert.deepEqual(org.kinds(org.lastSent()), [`slack.waiting slack:D0ALEX:${slackTs("09:20")}`]);
+});

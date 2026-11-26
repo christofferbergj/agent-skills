@@ -50,7 +50,10 @@ export type Context = {
 export type Result<S> = {
   section: S;
   changes: Change[];
-  /** Whether a change this source found earlier, still gathered, is still true. */
+  /**
+   * Whether a change this source found earlier, still gathered, is still true; a standing change
+   * (`standing` in changes.ts) stays only while the source reports it again instead.
+   */
   still?: (item: Change) => boolean;
   /** What this read left out, such as a list past its cap, for the health line. */
   note?: string;

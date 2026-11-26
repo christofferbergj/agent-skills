@@ -353,12 +353,9 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
       }),
     );
   }
-  const refs = new Set(unanswered.map(refOf));
   return {
     section: { cursors, waiting },
     changes,
-    // A gathered DM or mention stays only while this scan read it as still unanswered.
-    still: (item: Change) => item.kind !== "slack.waiting" || refs.has(item.ref),
     ...(stuck !== null
       ? {
           note: `watermark stuck at ${localIso(local(new Date(Math.floor(stuck) * 1000), ctx.zone))}: one second holds more messages than a scan reads`,
