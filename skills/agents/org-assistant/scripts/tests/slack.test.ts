@@ -406,22 +406,17 @@ const chatter = (clock: string, count: number): SlackMessage[] =>
 const wokeWaiting = (org: Org) =>
   org.sent().some(({ message }) => message.includes("slack.waiting"));
 
-test("a DM whose replies the budget left unread waits for a scan that reads them", (t) => {
+test("a busy channel doesn't keep a waiting DM from waking the thread", (t) => {
   const org = new Org(t);
   org.startDay();
-  // 750 channel messages take 38 calls, which with the DM and mention searches spend the budget.
+  // 800 channel messages take more than the budget, but the replies are read before the channels.
   org.world.slack.messages = [
     { channel: "D0ALEX", ts: slackTs("09:10"), from: "U0ALEX" },
-    ...chatter("09:20", 750),
+    ...chatter("09:20", 800),
   ];
   org.save();
-  org.scan("10:05");
-  assert.equal(wokeWaiting(org), false);
-  org.scan("11:05");
-  assert.deepEqual(org.kinds(org.lastSent()), [
-    "750 slack.channel",
-    `slack.waiting slack:D0ALEX:${slackTs("09:10")}`,
-  ]);
+  assert.equal(org.found("10:05")["slack.waiting"], 1);
+  assert.ok((org.found("11:05")["slack.channel"] ?? 0) > 0);
 });
 
 test("a reply search the budget cut off still takes off the list a message a reply it read answers", (t) => {
@@ -494,7 +489,7 @@ test("a DM whose replies take more than one scan's budget wakes once a scan read
   org.startDay();
   org.world.slack.messages = [
     ...messages(1, "D0ALEX", "U0ALEX", "09:10"),
-    ...messages(741, "C0OTHER", "U0ME", "09:20"),
+    ...messages(761, "C0OTHER", "U0ME", "09:20"),
   ];
   org.save();
   assert.deepEqual(org.found("10:05"), {});
@@ -551,7 +546,8 @@ test("a DM that woke, whose gathered change a budget-out scan drops, wakes at th
     org.pending().gathered.map((item) => item.kind),
     ["slack.waiting"],
   );
-  org.world.slack.messages.push(...chatter("10:20", 741));
+  // A bot's DMs spend the budget in the DM search, so the replies go unread.
+  org.world.slack.messages.push(...messages(800, "D0BOT", "USLACKBOT", "10:20"));
   org.save();
   org.scan("11:05");
   assert.deepEqual(

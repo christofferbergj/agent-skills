@@ -30,8 +30,11 @@ const LIMIT = 20;
  */
 export const SLACK_CALLS = 40;
 const FORGET = 3 * DAY; // a waiting message older than this leaves the list
-/** In this order: the user's replies come after the messages that may await them. */
-const SEARCHES = ["dm", "mention", "channels", "replies"] as const;
+/**
+ * In this order: the user's replies come after the messages that may await them, and the channels
+ * last, so a busy channel never keeps a waiting message from waking the thread.
+ */
+const SEARCHES = ["dm", "mention", "replies", "channels"] as const;
 type Search = (typeof SEARCHES)[number];
 const COMMON = { response_format: "detailed", include_context: false };
 /** Seconds a search read to its end reaches back the next time, for messages Slack indexed late. */
@@ -292,6 +295,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
   // Each search goes on oldest first from where it stopped; once the budget runs out, the rest wait.
   const found: Record<Search, Message[]> = { dm: [], mention: [], channels: [], replies: [] };
   let spent = false;
+  let repliesRead = false;
   let stuck: number | null = null;
   for (const name of SEARCHES) {
     if (spent || (name === "channels" && source.channels.length === 0)) continue;
@@ -299,6 +303,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     const got = search(ask, filters[name], start);
     found[name] = got.found;
     spent = !got.ended;
+    if (name === "replies") repliesRead = got.ended;
     // The next scan reaches back OVERLAP once this one read to its end, else goes on from the
     // latest message it read, skipping the messages from there on it read.
     const from = got.ended ? now - OVERLAP : Math.max(start.from, got.latest ?? start.from);
@@ -314,7 +319,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
   // A reply takes its message off the list whenever it is read. The rest are known unanswered only
   // when the replies were read to their end, so only then does one past the wait wake the thread.
   const waiting = list.filter((item) => !answered(item, found.replies));
-  const unanswered = spent ? [] : waiting;
+  const unanswered = repliesRead ? waiting : [];
   const changes: Change[] = [];
   for (const item of unanswered) {
     const age = now - Number(item.ts);
