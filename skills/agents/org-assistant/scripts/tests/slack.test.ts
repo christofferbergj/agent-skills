@@ -422,22 +422,18 @@ test("a busy channel doesn't keep a waiting DM from waking the thread", (t) => {
 test("a reply search the budget cut off still takes off the list a message a reply it read answers", (t) => {
   const org = new Org(t);
   org.startDay();
-  // 730 channel messages take 37 calls, so the replies get one page, oldest first: the answer and 19.
+  // 800 of the user's replies take more than the budget; the first, oldest first, is the answer.
   org.world.slack.messages = [
-    { channel: "D0ALEX", ts: slackTs("09:10"), from: "U0ALEX" },
-    { channel: "D0ALEX", ts: slackTs("09:15"), from: "U0ME" },
-    ...chatter("09:20", 730),
-    ...Array.from({ length: 20 }, (_, n) => ({
-      channel: "C0OTHER",
-      ts: (Number(slackTs("09:40")) + n).toFixed(6),
-      from: "U0ME",
-    })),
+    ...messages(1, "D0ALEX", "U0ALEX", "09:10"),
+    ...messages(1, "D0ALEX", "U0ME", "09:15"),
+    ...messages(800, "C0OTHER", "U0ME", "09:20"),
   ];
   org.save();
-  org.scan("10:05");
+  const report = org.report("10:05");
+  assert.match(report.health, /slack ok, read budget used/);
+  assert.deepEqual(org.waiting(), []);
   org.scan("11:05");
   assert.equal(wokeWaiting(org), false);
-  assert.deepEqual(org.waiting(), []);
 });
 
 test("a gathered DM whose replies the budget left unread doesn't wake, and its answer then clears it", (t) => {
@@ -450,12 +446,15 @@ test("a gathered DM whose replies the budget left unread doesn't wake, and its a
     org.pending().gathered.map((item) => item.kind),
     ["slack.waiting"],
   );
+  // A bot's DMs spend the budget in the DM search, so the answer goes unread at the next scan.
   org.world.slack.messages.push(
-    { channel: "D0ALEX", ts: slackTs("10:15"), from: "U0ME" },
-    ...chatter("10:20", 750),
+    ...messages(1, "D0ALEX", "U0ME", "10:15"),
+    ...messages(800, "D0BOT", "USLACKBOT", "10:20"),
   );
   org.threadIs("completed");
   org.scan("11:05");
+  assert.equal(org.waiting().length, 1);
+  assert.deepEqual(org.pending().gathered, []);
   org.scan("12:05");
   assert.equal(wokeWaiting(org), false);
   assert.deepEqual(org.waiting(), []);
@@ -474,11 +473,14 @@ test("a gathered DM a crash took from the pending list wakes once a scan reads i
     org.pending().gathered.map((item) => item.kind),
     ["slack.waiting"],
   );
-  // The budget runs out before the replies, so the gathered DM leaves; then the snapshot is lost.
-  org.world.slack.messages.push(...chatter("10:20", 741));
+  // A bot's DMs spend the budget before the replies, so the gathered DM leaves; then the snapshot
+  // is lost.
+  const bots = messages(761, "D0BOT", "USLACKBOT", "10:20");
+  org.world.slack.messages.push(...bots);
   org.save();
   org.crashAfterPending("11:05");
-  org.world.slack.messages.pop();
+  assert.deepEqual(org.pending().gathered, []);
+  org.world.slack.messages = org.world.slack.messages.filter((message) => !bots.includes(message));
   org.threadIs("completed");
   org.scan("12:05");
   assert.ok(wokeWaiting(org));
@@ -500,7 +502,8 @@ test("a DM whose replies take more than one scan's budget wakes once a scan read
 test("a budget that runs out before an ambiguous page is read again says so, not stuck", (t) => {
   const org = new Org(t);
   org.startDay();
-  org.world.slack.messages = messages(741, "D0BOT", "USLACKBOT", "09:10");
+  // 721 bot DMs take 37 calls, the mentions and the replies one each, so the channels get one.
+  org.world.slack.messages = messages(721, "D0BOT", "USLACKBOT", "09:10");
   org.world.slack.messages.push({
     channel: "C0DEV",
     ts: slackTs("09:30"),
@@ -523,9 +526,11 @@ test("a budget that runs out re-reading the overlap of messages already seen say
   }));
   org.save();
   org.scan("10:05");
+  // 730 DMs take 37 calls, the mentions and the replies one each, so the channels read one page of
+  // 20 messages they read before, and the budget runs out.
   const dm = Number(slackTs("10:10"));
   org.world.slack.messages.push(
-    ...Array.from({ length: 750 }, (_, n) => ({
+    ...Array.from({ length: 730 }, (_, n) => ({
       channel: "D0ALEX",
       ts: (dm + n * 4).toFixed(6),
       from: "U0ALEX",
@@ -534,6 +539,13 @@ test("a budget that runs out re-reading the overlap of messages already seen say
   org.save();
   org.scan("11:05");
   assert.match(org.status("11:10"), /slack ok, read budget used: resumes next scan ·/);
+  const before = org.probed().length;
+  org.scan("12:05");
+  const channels = org
+    .probed()
+    .slice(before)
+    .find((call) => String(call.input.filters).startsWith("in:<#"));
+  assert.equal(channels?.input.after, String(base + 19 * 20));
 });
 
 test("a DM that woke, whose gathered change a budget-out scan drops, wakes at the next scan that reads its replies", (t) => {
