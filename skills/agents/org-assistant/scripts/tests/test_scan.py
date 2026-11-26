@@ -10,6 +10,7 @@ import copy
 import json
 import os
 import pathlib
+import shlex
 import shutil
 import subprocess
 import sys
@@ -18,6 +19,11 @@ import unittest
 
 HERE = pathlib.Path(__file__).resolve().parent
 SCRIPT = HERE.parent / "assistant.py"
+# ORG_ASSISTANT_CLI runs another build of the CLI, such as `node scripts/assistant.ts`, which reads
+# its profile as JSON; the tests that import the Python modules skip for it.
+CLI = shlex.split(os.environ.get("ORG_ASSISTANT_CLI", "")) or [sys.executable, str(SCRIPT)]
+JSON_PROFILE = "ORG_ASSISTANT_CLI" in os.environ
+python_only = unittest.skipIf(JSON_PROFILE, "imports the Python modules")
 WORLD = json.loads((HERE / "fixtures" / "world.json").read_text())
 THU = "2026-11-26"  # a Thursday; Danish time is UTC+1 in November
 
@@ -87,11 +93,34 @@ class Scan(unittest.TestCase):
         self.save()
         self.write_profile()
 
-    def write_profile(self, tools: str = LINEAR_TOOLS, extra: str = ""):
+    def write_profile(self, tools: str = LINEAR_TOOLS, daily_deltas: int | None = None):
         folder = self.root / "config" / "acme"
         folder.mkdir(parents=True, exist_ok=True)
+        if JSON_PROFILE:
+            profile = {"org": "acme", "name": "Acme", "timezone": "Europe/Copenhagen", "thread": "t-assistant",
+                       "executor": {"command": [sys.executable, str(HERE / "fakes.py"), "probe"]},
+                       "schedule": {} if daily_deltas is None else {"daily_deltas": daily_deltas},
+                       "sources": [
+                           {"name": "linear", "kind": "linear", "account": "acc-linear", "teams": ["ENG", "OPS"],
+                            "tools": json.loads(f"[{tools}]")},
+                           {"name": "slack", "kind": "slack", "account": "acc-slack", "me": "U0ME",
+                            "tools": ["tools.slack.mcp.slack_search_public_and_private"],
+                            "channels": [{"id": "C0DEV", "name": "dev"}]},
+                           {"name": "github", "kind": "github", "me": "me-login", "repos": [
+                               {"repo": "example/web", "mine": True, "review_requests": True, "issues": True},
+                               {"repo": "example/api", "open_prs": True, "releases": True}]},
+                           {"name": "t3", "kind": "t3", "projects": [{"path": "/invented/project"}]}]}
+            (folder / "profile.json").write_text(json.dumps(profile))
+            return
+        extra = "" if daily_deltas is None else f"\n[schedule]\ndaily_deltas = {daily_deltas}\n"
         (folder / "profile.toml").write_text(PROFILE.format(python=sys.executable, fakes=HERE / "fakes.py",
                                                             linear_tools=tools) + extra)
+
+    def write_broken(self, org: str, toml_text: str, json_text: str):
+        folder = self.root / "config" / org
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / ("profile.json" if JSON_PROFILE else "profile.toml")).write_text(
+            json_text if JSON_PROFILE else toml_text)
 
     def save(self):
         (self.fake / "world.json").write_text(json.dumps(self.world))
@@ -106,7 +135,7 @@ class Scan(unittest.TestCase):
                "ORG_ASSISTANT_CONFIG": str(self.root / "config"), "ORG_ASSISTANT_STATE": str(self.root / "state"),
                "ORG_ASSISTANT_SLACK_SPACING": "0", "ORG_ASSISTANT_SLACK_PAUSE": "0"}
         extra = ["--now", now] if now else []
-        return subprocess.run([sys.executable, str(SCRIPT), *args, *extra], env=env, capture_output=True, text=True)
+        return subprocess.run([*CLI, *args, *extra], env=env, capture_output=True, text=True)
 
     def scan(self, local: str, day: str = THU, *flags, code: int = 0):
         done = self.run_cli("scan", "acme", *flags, now=utc(local, day))
@@ -318,7 +347,7 @@ class Scan(unittest.TestCase):
         self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention ENG-101"])
 
     def test_past_the_daily_cap_only_urgent_changes_wake(self):
-        self.write_profile(extra="\n[schedule]\ndaily_deltas = 1\n")
+        self.write_profile(daily_deltas=1)
         self.start_day()
         self.note("n1", "issueStatusChanged", "ENG-101", f"{THU}T08:30:00.000Z")
         self.save()
@@ -534,20 +563,20 @@ class Scan(unittest.TestCase):
         self.assertEqual([self.kinds(m) for m in self.sent()[1:]], [["issue.assigned example/web#5"]] * 2)
 
     def test_a_malformed_profile_fails_with_its_line(self):
-        (self.root / "config" / "acme" / "profile.toml").write_text('org = "acme"\nthread = \n')
+        self.write_broken("acme", 'org = "acme"\nthread = \n', '{"org": "acme",\n"thread": }')
         done = self.run_cli("scan", "acme", now=utc("10:05"))
         self.assertEqual(done.returncode, 1)
         self.assertIn("line 2", done.stderr)
 
     def test_one_broken_profile_leaves_the_other_organisations_scanned(self):
-        broken = self.root / "config" / "aaa"
-        broken.mkdir(parents=True)
-        (broken / "profile.toml").write_text('timezone = "Mars/Olympus"\n[[sources]]\nname = "x"\nkind = "t3"\n')
+        self.write_broken("aaa", 'timezone = "Mars/Olympus"\n[[sources]]\nname = "x"\nkind = "t3"\n',
+                          '{"name": "A", "timezone": "Mars/Olympus", "sources": [{"name": "x", "kind": "t3", "projects": []}]}')
         done = self.run_cli("scan", now=utc("08:30"))
         self.assertEqual(done.returncode, 1)
         self.assertIn("unknown timezone", done.stderr)
         self.assertTrue((self.root / "state" / "acme" / "snapshot.json").exists())
 
+    @python_only
     def test_the_executor_refuses_a_write_tool_even_when_it_is_listed(self):
         sys.path.insert(0, str(SCRIPT.parent))
         from orgscan.calls import Executor, SourceError
@@ -558,6 +587,7 @@ class Scan(unittest.TestCase):
             executor.call([(tool, {"id": "n1", "read": True})])
         self.assertFalse((self.fake / "probe.jsonl").exists())
 
+    @python_only
     def test_a_slack_message_body_can_not_forge_a_record_and_no_sender_is_kept(self):
         sys.path.insert(0, str(SCRIPT.parent))
         from orgscan.sources.slack import _messages
@@ -618,6 +648,7 @@ class Scan(unittest.TestCase):
                 self.deliver()
         self.assertEqual(len(self.state("snapshot.json")["sources"]["slack"]["waiting"]), 201)
 
+    @python_only
     def test_a_slack_message_that_copies_a_record_heading_stays_one_message(self):
         sys.path.insert(0, str(SCRIPT.parent))
         from orgscan.sources.slack import _messages
@@ -667,9 +698,8 @@ class Scan(unittest.TestCase):
         self.assertEqual(len(self.sent()), 3)
 
     def test_a_profile_with_a_list_for_a_name_fails_only_itself(self):
-        broken = self.root / "config" / "aaa"
-        broken.mkdir(parents=True)
-        (broken / "profile.toml").write_text('[[sources]]\nname = ["one"]\nkind = "t3"\n')
+        self.write_broken("aaa", '[[sources]]\nname = ["one"]\nkind = "t3"\n',
+                          '{"name": "A", "sources": [{"name": ["one"], "kind": "t3", "projects": []}]}')
         done = self.run_cli("scan", now=utc("08:30"))
         self.assertEqual(done.returncode, 1)
         self.assertTrue((self.root / "state" / "acme" / "snapshot.json").exists())
@@ -717,6 +747,7 @@ class Scan(unittest.TestCase):
             self.scan(clock)
         self.assertIn(late, [w["ts"] for w in self.state("snapshot.json")["sources"]["slack"]["waiting"]])
 
+    @python_only
     def test_a_slack_ordinal_past_its_page_count_is_not_a_record(self):
         sys.path.insert(0, str(SCRIPT.parent))
         from orgscan.sources.slack import _messages
