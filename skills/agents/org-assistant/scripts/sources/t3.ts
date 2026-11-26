@@ -6,7 +6,7 @@
  * ids, links, statuses, run ids, and counts, never titles or messages.
  */
 import { SourceError, run, runJson } from "../calls.ts";
-import type { Change, ChangeKind } from "../changes.ts";
+import { type Change, type ChangeKind, changeId } from "../changes.ts";
 import {
   type Infer,
   array,
@@ -35,6 +35,8 @@ const TURNS: Record<string, ChangeKind> = {
 /** How long a running thread may go without a new item before it counts as stalled. */
 const STALL = HOUR;
 const QUIET = ["--log-level", "error"];
+/** A stall's key: when the scan first saw the thread at its status, run, and item count. */
+const stallKey = (since: string) => `stalled@${since}`;
 
 const listed = object({
   threadId: string,
@@ -133,7 +135,7 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
       ) {
         record.stalled = true;
         changes.push(
-          ctx.change("thread.stalled", { ref, at: now, key: `stalled@${prev.since}`, detail }),
+          ctx.change("thread.stalled", { ref, at: now, key: stallKey(prev.since), detail }),
         );
       }
     }
@@ -141,8 +143,8 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
   return {
     section: { threads },
     changes,
-    // A gathered change stays only while its thread is still watched, and a wait, failure, or stall
-    // only while the thread is still in that state.
+    // A gathered change stays only while its thread is still watched, a wait or failure only while
+    // the thread is still in that state, and a stall only while no new status, run, or item ended it.
     still: (item: Change) => {
       const id = item.ref.slice("t3:".length);
       const current = threads[id];
@@ -152,7 +154,7 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
         case "thread.failed":
           return current.status === item.detail.status;
         case "thread.stalled":
-          return current.status === "running" && current.items === item.detail.items;
+          return item.id === changeId(item.kind, item.ref, stallKey(current.since));
         default:
           return true;
       }

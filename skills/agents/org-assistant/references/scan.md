@@ -25,7 +25,7 @@ Linear and Slack go through Executor's `probe.ts`, from the repository the sourc
 
 - A status change on the user's ticket counts as someone else's (`ticket.changed`) when the inbox holds a status notification for it, and as the user's own (`ticket.moved`, pulse) when it doesn't. A ticket closed or reassigned since the last scan still counts as theirs.
 - Linear's tools don't say who changed a priority or due date, so those always count as `ticket.changed`, marked `by: unknown`.
-- A T3 thread waits, fails, or finishes when its status or its latest run changed since the last scan, so a second run that ends the same way counts again. It is `thread.stalled` once it has run for an hour with the same item count; a new item or status ends the stall, and the next one counts again.
+- A T3 thread waits, fails, or finishes when its status or its latest run changed since the last scan, so a second run that ends the same way counts again. It is `thread.stalled` once it has run for an hour with the same item count; a new item, status, or run ends the stall, a gathered one included, and the next one counts again.
 
 A release is `release.awaited` when the ledger's `waits` names its repository, and the change names the waiting PRs, whose waits the run clears once it posts it. A PR of the user's first seen after the baseline counts its state as new, so one opened already red still wakes, and a new T3 thread that already waits wakes as waiting as well as counting as new.
 

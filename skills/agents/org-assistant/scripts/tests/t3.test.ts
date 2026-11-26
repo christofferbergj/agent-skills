@@ -104,6 +104,21 @@ test("a thread running an hour with no new item is stalled, once per stall", (t)
   });
 });
 
+test("a gathered stall is dropped once the thread starts another run", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  turn(org, "running", 13);
+  org.scan("10:05");
+  assert.deepEqual(org.found("11:05"), { "thread.stalled": 1 }); // gathered for the batch slot
+  Object.assign(other(org), { latestRunId: "r-other-2" }); // running again, at the same count
+  org.save();
+  org.scan("12:05");
+  assert.deepEqual(
+    org.pending().gathered.map((item) => item.kind),
+    [],
+  );
+});
+
 test("a thread that ends a second run the same way between scans counts again", (t) => {
   const org = new Org(t);
   org.startDay();

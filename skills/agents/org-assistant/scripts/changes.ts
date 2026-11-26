@@ -145,6 +145,9 @@ export type ChangeFields<K extends ChangeKind> = {
   detail: Detail<K>;
 };
 
+/** A change's id, from its kind, ref, and key, which its time stands in for when it has none. */
+export const changeId = (kind: ChangeKind, ref: string, key: string) => `${kind}:${ref}:${key}`;
+
 export function change<K extends ChangeKind>(
   source: string,
   kind: K,
@@ -152,7 +155,7 @@ export function change<K extends ChangeKind>(
 ): ChangeOf<K> {
   const { ref, at, key, scope, detail } = fields;
   const item: Item<K> = {
-    id: `${kind}:${ref}:${key || at}`,
+    id: changeId(kind, ref, key || at),
     kind,
     ref,
     at,
