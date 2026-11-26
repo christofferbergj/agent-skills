@@ -104,6 +104,28 @@ test("a thread running an hour with no new item is stalled, once per stall", (t)
   });
 });
 
+test("a finished run stays news for the batch slot after the thread starts its next run", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  finishRun(org);
+  assert.deepEqual(org.found("10:05"), { "thread.finished": 1 });
+  Object.assign(other(org), { status: "running", latestRunId: "r-other-3", itemCount: 21 });
+  org.save();
+  org.scan("12:55");
+  org.scan("13:05");
+  assert.deepEqual(org.kinds(org.lastSent()), ["thread.finished t3:t-other"]);
+});
+
+test("a stall first seen after days without a scan is reported, counted from that report", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  turn(org, "running", 20);
+  org.scan("10:05");
+  const back = org.report("10:05", { day: "2026-12-04" }); // eight days on, the same run and count
+  assert.deepEqual(back.found, { "thread.stalled": 1 });
+  assert.deepEqual(back.kinds, { "thread.stalled": 1 });
+});
+
 test("a gathered stall is dropped once the thread starts another run", (t) => {
   const org = new Org(t);
   org.startDay();

@@ -122,12 +122,10 @@ export type ChangeKind = keyof typeof KINDS;
 const STANDING: ReadonlySet<ChangeKind> = new Set([
   "slack.waiting",
   "thread.waiting",
-  "thread.failed",
-  "thread.finished",
   "thread.stalled",
 ]);
 
-export const standing = (item: Change) => STANDING.has(item.kind);
+export const standing = (item: { kind: ChangeKind }) => STANDING.has(item.kind);
 
 export type Detail<K extends ChangeKind> = Infer<(typeof KINDS)[K]["detail"]>;
 
