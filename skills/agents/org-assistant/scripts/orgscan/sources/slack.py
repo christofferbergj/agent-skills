@@ -18,6 +18,7 @@ TOOLS = (TOOL,)
 PAGES = 10  # 20 messages a page
 FORGET = timedelta(days=3)  # a waiting message older than this leaves the list
 OVERLAP = 600  # seconds each search reaches back before the cursor, for messages Slack indexed late
+RESULT = re.compile(r"^### Result \d+ of \d+\s*$", re.M)
 CHANNEL = re.compile(r"^Channel: (.*?)\s*\(ID: ([A-Z0-9]+)\)", re.M)
 FROM = re.compile(r"^From: .*\(ID: ([A-Z0-9]+)\)", re.M)
 TS = re.compile(r"^Message_ts: ([0-9]+\.[0-9]+)", re.M)
@@ -36,7 +37,8 @@ def _messages(result) -> tuple[list[dict], int, str | None]:
     text = result["results"]
     total = COUNT.search(text)
     found = []
-    for block in re.split(r"^### ", text, flags=re.M)[1:]:
+    for block in RESULT.split(text)[1:]:
+        block = block.split("\nText:", 1)[0]  # the record's fields come before its text, which can hold anything
         channel, sender, ts = CHANNEL.search(block), FROM.search(block), TS.search(block)
         if not (channel and ts):
             continue
@@ -125,7 +127,8 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
         if message["from"] in (me, *BOTS) or (message["channel"], message["ts"]) in known:
             continue
         known.add((message["channel"], message["ts"]))
-        waiting.append({**message, "woke": False})
+        # The sender's id is needed only for the check above, so it stays out of the snapshot.
+        waiting.append({**{k: v for k, v in message.items() if k != "from"}, "woke": False})
     kept = []
     for item in waiting:
         if _answered(item, mine):
@@ -136,7 +139,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             changes.append(change("slack.waiting", f"slack:{item['channel']}:{item['ts']}", iso(from_ts(item["ts"])),
                                   key="waiting", scope=f"slack:{item['channel']}",
                                   via="dm" if item["dm"] else "mention", channel=item["channel"],
-                                  sender=item["from"], minutes=int(age // 60)))
+                                  minutes=int(age // 60)))
         kept.append(item)
     window = iso(from_ts(after))
     for entry in entries:

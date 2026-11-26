@@ -33,6 +33,15 @@ def _iso(moment: datetime) -> str:
     return iso(moment, ms=True)
 
 
+def _times(items: list[dict], *fields: str) -> list[dict]:
+    """items with each named timestamp rewritten in one format, so they compare as strings."""
+    for item in items:
+        for field in fields:
+            if item.get(field):
+                item[field] = _iso(parse(item[field]))
+    return items
+
+
 def _priority(value) -> int | None:
     return value.get("value") if isinstance(value, dict) else value
 
@@ -62,7 +71,8 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     # The inbox, newest first, back to the last item already seen.
     inbox_at = prev.get("inbox_at") or _iso(since)
     known = set(prev.get("inbox_ids", []))
-    notes = _pages(executor, TOOLS[0], {"limit": 50}, "notifications", stop=lambda n: n.get("createdAt", "") < inbox_at)
+    notes = _times(_pages(executor, TOOLS[0], {"limit": 50}, "notifications",
+                          stop=lambda n: _iso(parse(n.get("createdAt") or inbox_at)) < inbox_at), "createdAt")
     fresh = [n for n in notes if n.get("createdAt", "") >= inbox_at and n.get("id") not in known]
     status_noted = {m.group(1) for n in fresh if n.get("type") == "issueStatusChanged"
                      for m in [ISSUE.search(n.get("url") or "")] if m}
@@ -70,7 +80,8 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     inbox_ids = sorted({n["id"] for n in notes if n.get("createdAt") == newest} | (known if newest == inbox_at else set()))
 
     # The user's open tickets.
-    listed = _pages(executor, TOOLS[1], {"assignee": "me", "limit": 250, "fields": MINE_FIELDS}, "issues")
+    listed = _times(_pages(executor, TOOLS[1], {"assignee": "me", "limit": 250, "fields": MINE_FIELDS}, "issues"),
+                    "updatedAt")
     open_mine = [i for i in listed if i.get("statusType") not in CLOSED]
     me = next((i.get("assigneeId") for i in listed if i.get("assigneeId")), prev.get("me"))
     before = prev.get("mine", {})
@@ -90,7 +101,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
                      "updatedAt": issue.get("updatedAt")}
         if baseline:
             continue
-        for entry in (detail.get(ref) or {}).get("stateHistory") or []:
+        for entry in _times((detail.get(ref) or {}).get("stateHistory") or [], "startedAt"):
             started = entry.get("startedAt") or ""
             if started > _iso(since):
                 name = (entry.get("state") or {}).get("name")
@@ -169,6 +180,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             break
         updated = _pages(executor, TOOLS[1], {"team": name, "updatedAt": _iso(since), "limit": 250,
                                               "fields": TEAM_FIELDS}, "issues")
+        _times(updated, "createdAt", "updatedAt", "completedAt")
         people: dict = {}
         new = 0
         for issue in updated:

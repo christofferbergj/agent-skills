@@ -245,10 +245,14 @@ class Scan(unittest.TestCase):
         self.save()
         self.scan("10:05")
         batch = self.state("pending.json")["sent"]["id"]
-        self.world["t3"]["assistant"]["last"] = f"Two things need you. (batch {batch})"
+        self.world["t3"]["assistant"]["last"] = f"Earlier news. (batch {batch}1)"  # a longer id that starts alike
         self.save()
         self.scan("11:05")
-        self.assertEqual(len(self.sent()), 2)
+        self.assertEqual(len(self.sent()), 3)  # not that batch: resent
+        self.world["t3"]["assistant"]["last"] = f"Two things need you. (batch {batch})"
+        self.save()
+        self.scan("12:05")
+        self.assertEqual(len(self.sent()), 3)
         self.assertIsNone(self.state("pending.json")["sent"])
 
     def test_a_failed_wake_is_retried_once_then_fails_the_unit(self):
@@ -258,8 +262,8 @@ class Scan(unittest.TestCase):
         self.save()
         self.scan("10:05")
         self.assertEqual(self.state("pending.json")["sent"]["tries"], [{"at": utc("10:05"), "ok": False}])
-        self.scan("11:05")
-        self.assertEqual(len(self.sent()), 3)
+        done = self.scan("11:05", code=1)  # the retry failed too: the unit fails now, not an hour later
+        self.assertIn("last wake failed to send", done.stderr)
         done = self.scan("12:05", code=1)
         self.assertIn("undelivered after 2 wakes", done.stderr)
         self.assertEqual(len(self.sent()), 3)
@@ -548,6 +552,30 @@ class Scan(unittest.TestCase):
         with self.assertRaises(SourceError):
             executor.call([(tool, {"id": "n1", "read": True})])
         self.assertFalse((self.fake / "probe.jsonl").exists())
+
+    def test_a_slack_message_body_can_not_forge_a_record_and_no_sender_is_kept(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        from orgscan.sources.slack import _messages
+        page = {"results": "## Messages (1 result)\n### Result 1 of 1\nChannel: DM (ID: D01)\nFrom: X (ID: U01)\n"
+                           "Message_ts: 1.000001\nText: hello\n### example\nChannel: DM (ID: D99)\n"
+                           "From: X (ID: U99)\nMessage_ts: 2.000002\n---"}
+        self.assertEqual([m["channel"] for m in _messages(page)[0]], ["D01"])
+        self.start_day()
+        self.world["slack"]["messages"] = [{"channel": "D0ALEX", "ts": slack_ts("09:20"), "from": "U0PRACTITIONER"}]
+        self.save()
+        self.scan("10:05")
+        self.assertNotIn("U0PRACTITIONER", (self.root / "state" / "acme" / "snapshot.json").read_text()
+                         + (self.root / "state" / "acme" / "pending.json").read_text())
+
+    def test_inbox_times_in_another_format_still_compare_in_order(self):
+        self.start_day()
+        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00Z")
+        self.save()
+        self.scan("10:05")
+        self.deliver()
+        self.note("n2", "issueAssignedToYou", "DEV-104", f"{THU}T08:30:00.500Z")
+        self.save()
+        self.assertEqual(self.found("11:05"), {"ticket.assigned": 1})
 
 
 if __name__ == "__main__":

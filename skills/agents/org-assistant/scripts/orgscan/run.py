@@ -9,6 +9,7 @@ twice."""
 from __future__ import annotations
 
 import json
+import re
 import sys
 from collections import Counter
 from datetime import datetime, timedelta
@@ -213,7 +214,7 @@ class Scan:
             pending["inline"] = _freeze(self.org, pending, self.local, "inline", list(pending["gathered"]),
                                         "scan now")
             reason = "inline batch for this run to post"
-        elif sent and not busy and sent["id"] in shown.get("lastText", ""):
+        elif sent and not busy and re.search(rf"\bbatch {re.escape(sent['id'])}(?![\w-])", shown.get("lastText", "")):
             _settle(pending, "sent", now)
             reason = "the thread's last reply already named the sent batch"
         elif sent and busy:
@@ -256,11 +257,16 @@ class Scan:
         store.write_json(self.folder / "snapshot.json", self.snapshot)
         (self.folder / "scan.stamp").write_text(iso(now) + "\n")
         if send:
+            # The try is written before the send, so a crash mid-send still counts it.
+            send["tries"].append({"at": iso(now), "ok": None})
+            store.write_json(self.folder / "pending.json", pending)
             code, _, _ = run(["t3", "thread", "send", thread, "-"], stdin=message)
-            send["tries"].append({"at": iso(now), "ok": code == 0})
+            send["tries"][-1]["ok"] = code == 0
+            store.write_json(self.folder / "pending.json", pending)
             if code != 0:
                 print(f"org-assistant: {self.org}: t3 thread send exited {code}", file=sys.stderr)
-            store.write_json(self.folder / "pending.json", pending)
+                if len(send["tries"]) >= 1 + schedule["retries"]:
+                    self.failed.append(f"batch {send['id']}'s last wake failed to send")
         print(json.dumps(report, ensure_ascii=False), file=out)
         for line in self.failed:
             print(f"org-assistant: {self.org}: {line}", file=sys.stderr)
