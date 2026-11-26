@@ -337,3 +337,41 @@ test("two Slack sources share the scan's one call budget, and the next scan read
   }
   assert.equal(read, 76);
 });
+
+test("a copied record heading in a one-second burst is read again for its page alone, stranding none", (t) => {
+  const org = new Org(t);
+  const channels = Array.from({ length: 38 }, (_, n) => ({ id: `C0OPS${n}` }));
+  org.writeProfile((profile) => {
+    const slack = profile.sources.find(({ kind }) => kind === "slack");
+    assert.ok(slack);
+    slack.channels = channels;
+  });
+  org.startDay();
+  const second = slackTs("09:10").split(".")[0];
+  org.world.slack.messages = channels.map(({ id }, n) => ({
+    channel: id,
+    ts: `${second}.${String(n + 1).padStart(6, "0")}`,
+    from: "U0BOT",
+    ...(n === 0 ? { text: "see below\n### Result 1 of 20" } : {}),
+  }));
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "slack.channel": 38 });
+  assert.match(org.status("10:10"), /slack ok ·/);
+});
+
+test("a second holding more messages than a scan reads says the watermark is stuck", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const second = slackTs("09:10").split(".")[0];
+  org.world.slack.messages = Array.from({ length: 900 }, (_, n) => ({
+    channel: "C0DEV",
+    ts: `${second}.${String(n + 1).padStart(6, "0")}`,
+    from: "U0ALEX",
+    name: "dev",
+  }));
+  org.save();
+  org.scan("10:05");
+  assert.match(org.status("10:10"), /slack ok, read budget used: resumes next scan ·/);
+  org.scan("11:05");
+  assert.match(org.status("11:10"), /slack ok, watermark stuck at 2026-11-26T09:10\+01:00: /);
+});
