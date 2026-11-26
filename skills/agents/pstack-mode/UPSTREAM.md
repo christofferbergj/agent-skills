@@ -70,4 +70,4 @@ Local maintenance on 2026-10-28, by the owner's choice: the rejected-model chain
 
 Local maintenance on 2026-11-16, by the owner's choice: trivial mechanical edits go to the `swarm workers` model, as upstream's do, through the `fast-code` role, which now follows the `swarm-workers` entry and defaults in Claude Code, and Match the model to the job no longer raises the `hardest tasks` role a step, since its default already holds that step. /swarm's `scripts/target.py` now passes upstream's Claude Code model and effort for each role, with Fable at `xhigh` rather than `max` for hardest tasks; ADR 0001's upstream-defaults revision records why. The upstream reviewed-through position is unchanged.
 
-Local maintenance on 2026-11-26, by the owner's choice: SKILL.md's triggers gained the council consult that Local adaptations records. No upstream text changed, and the upstream reviewed-through position is unchanged.
+Local maintenance on 2026-11-26, by the owner's choice: the council consult that Local adaptations records. No upstream revision was reviewed, so the reviewed-through position is unchanged.
