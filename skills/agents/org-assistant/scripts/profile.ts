@@ -19,6 +19,7 @@ import {
   optional,
   refine,
   string,
+  unknown,
   withDefault,
 } from "./parse.ts";
 import { FileError, configRoot, expandHome, readJson } from "./store.ts";
@@ -198,33 +199,37 @@ export type Profile = Omit<Infer<typeof profile>, "org" | "thread" | "executor" 
 };
 
 /**
- * The organisations an assistant thread could serve: those whose profile names `thread` as its
- * assistant thread or, when none does, those whose `name` is `name`; and those whose profile can't
- * be read, since one of them could be it. Only the profile's top-level `name` counts, never a name
- * further in, such as a source's.
+ * The organisations an assistant thread could serve, by each profile's top-level `thread` and `name`
+ * alone, so a profile broken elsewhere still matches: those whose profile names `thread` as its
+ * assistant thread or, when none does, those whose `name` is `name`; and those whose profile isn't
+ * a JSON object, since one of them could be it. A name further in, such as a source's, never counts.
  */
-export function matchOrgs(by: { thread: string | null; name: string | null }): {
+export function matchOrgs(wanted: { thread: string | null; name: string | null }): {
   matches: string[];
+  /** The field the matches share. */
+  by: "thread" | "name";
   unreadable: string[];
 } {
-  const loaded: Profile[] = [];
+  const heads: { org: string; thread: unknown; name: unknown }[] = [];
   const unreadable: string[] = [];
   for (const org of orgs()) {
+    let value: unknown;
     try {
-      loaded.push(loadProfile(org));
+      value = readJson(profilePath(org), unknown);
     } catch (error) {
       if (!(error instanceof FileError)) throw error;
-      unreadable.push(org);
     }
+    if (isRecord(value)) heads.push({ org, thread: value.thread, name: value.name });
+    else unreadable.push(org);
   }
-  const named = (keep: (profile: Profile) => boolean) =>
-    loaded.filter(keep).map((profile) => profile.org);
-  const byThread = by.thread === null ? [] : named((profile) => profile.thread === by.thread);
-  const matches =
-    byThread.length > 0 || by.name === null
-      ? byThread
-      : named((profile) => profile.name === by.name);
-  return { matches, unreadable };
+  const named = (by: "thread" | "name") =>
+    wanted[by] === null
+      ? []
+      : heads.filter((head) => head[by] === wanted[by]).map((head) => head.org);
+  const byThread = named("thread");
+  return byThread.length > 0
+    ? { matches: byThread, by: "thread", unreadable }
+    : { matches: named("name"), by: "name", unreadable };
 }
 
 export function profilePath(org: string): string {

@@ -113,21 +113,24 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
   return done;
 }
 
-/** The one organisation this assistant thread serves, by its id or else by the title's `name`. */
+/**
+ * The one organisation this assistant thread serves, by its id or else by the title's `name`; one
+ * whose profile then fails to load fails, naming its file.
+ */
 function findOrg(name: string | null): string {
   const thread = process.env.T3CODE_THREAD_ID || null;
-  const { matches, unreadable } = matchOrgs({ thread, name });
+  const { matches, by, unreadable } = matchOrgs({ thread, name });
   const [org, ...more] = matches;
-  if (org !== undefined && more.length === 0) return org;
-  const by = [thread && "this thread's id", name && `the name ${name}`]
-    .filter(Boolean)
-    .join(" or ");
+  if (org !== undefined && more.length === 0) return loadProfile(org).org;
+  if (org !== undefined) {
+    const field = by === "thread" ? "this thread's id" : `the name ${name}`;
+    throw new LookupError(`${matches.length} profiles match ${field}: ${matches.join(", ")}`);
+  }
+  const tried = [thread && "this thread's id", name && `the name ${name}`].filter(Boolean);
   const broken =
     unreadable.length > 0 ? `; can't read the profiles of ${unreadable.join(", ")}` : "";
   throw new LookupError(
-    org === undefined
-      ? `no profile matches ${by || "anything: give --name"}${broken}`
-      : `${matches.length} profiles match ${by}: ${matches.join(", ")}`,
+    `no profile matches ${tried.join(" or ") || "anything: give --name"}${broken}`,
   );
 }
 

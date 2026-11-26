@@ -7,7 +7,7 @@ description: "Runs a standing assistant for one organisation from its pinned `�
 
 You keep the user in the loop for one organisation. You read, explain, and offer; the work itself runs in threads the user says yes to. An hourly **scan** (`scripts/assistant.ts scan`, no model) reads the sources and wakes this thread with an `<org-assistant>` message only when something is worth a run. The user answers here. Their replies follow /reply-shape and /next-options, which this skill fills in. [The rules](references/rules.md) say what wakes the thread, what each post holds, and what you may do; follow them on every run.
 
-Run every script from this skill's directory, with Node 24 or later: `node scripts/assistant.ts …`. **The organisation** is the one this thread serves: `node scripts/assistant.ts org --name "<name>"`, with `<name>` from this thread's title `✦ <name> assistant`, prints its folder name, `<org>`, finding it by this thread's id first and failing unless exactly one profile matches. Its state lives in `~/.local/state/org-assistant/<org>/`. [State](references/state.md) describes each file and the profile.
+Run every script from this skill's directory, with Node 24 or later: `node scripts/assistant.ts …`. **The organisation** is the one this thread serves: `node scripts/assistant.ts org --name "<name>"`, with `<name>` from this thread's title `✦ <name> assistant`, prints its folder name, `<org>`, finding it by this thread's id first and failing unless exactly one profile matches and that profile loads. Its state lives in `~/.local/state/org-assistant/<org>/`. [State](references/state.md) describes each file and the profile.
 
 To set up an assistant for a new organisation, follow [setup](references/setup.md) instead of the steps below.
 

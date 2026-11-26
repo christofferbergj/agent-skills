@@ -143,3 +143,22 @@ test("org finds the organisation by this thread's id, or else by the profile's o
   org.writeRaw("ccc", "{");
   assert.match(find(["--name", "Nobody"]).stderr, /can't read the profiles of ccc/);
 });
+
+test("org fails, naming it, when the profile this thread matches can't load, and picks no other", (t) => {
+  const org = new Org(t);
+  org.writeProfile((profile) => (profile.timezone = "Mars/Olympus"));
+  org.writeRaw(
+    "aaa",
+    JSON.stringify({ ...org.profile(), org: "aaa", thread: "t-other-assistant" }),
+  );
+  const find = (thread: string) =>
+    org.cli(["org", "--name", "Acme"], undefined, { T3CODE_THREAD_ID: thread });
+  const mine = find("t-assistant");
+  assert.equal(mine.code, 1);
+  assert.match(mine.stderr, /acme\/profile\.json: timezone: unknown timezone/);
+  assert.equal(mine.stdout, "");
+  // By name, the broken profile still counts, so the name matches two.
+  assert.match(find("t-unknown").stderr, /2 profiles match the name Acme: aaa, acme/);
+  org.writeRaw("bbb", JSON.stringify({ ...org.profile(), org: "bbb", name: "B" }));
+  assert.match(find("t-assistant").stderr, /2 profiles match this thread's id: acme, bbb/);
+});
