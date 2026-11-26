@@ -10,6 +10,7 @@ import {
   nullable,
   object,
   oneOf,
+  optional,
   record,
   string,
   unknown,
@@ -21,7 +22,12 @@ import { shortTime } from "./time.ts";
 export const THREAD = "assistant thread";
 
 const health = oneOf(
-  object({ ok: literal(true), at: string }),
+  object({
+    ok: literal(true),
+    at: string,
+    /** What a read that succeeded still left out, such as `inbox capped at 1,000: older items unread`. */
+    note: optional(string),
+  }),
   object({
     ok: literal(false),
     /** When it last succeeded. */
@@ -46,13 +52,13 @@ export type Snapshot = Infer<typeof snapshotParser>;
 
 export const EMPTY_SNAPSHOT: Snapshot = { sources: {}, health: {}, starts: {}, last_scan: null };
 
-/** `linear ok · slack sign-in expired ×2 · scanned Thu 26 Nov 10:05`. */
+/** `linear ok, inbox capped at 1,000: older items unread · slack sign-in expired ×2 · scanned …`. */
 export function healthLine(snapshot: Snapshot, zone: string): string {
   const parts = Object.entries(snapshot.health)
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([name, state]) =>
       state.ok
-        ? `${name} ok`
+        ? `${name} ok${state.note === undefined ? "" : `, ${state.note}`}`
         : `${name} ${state.error === "auth" ? "sign-in expired" : "failing"} ×${state.failures}`,
     );
   const scanned =

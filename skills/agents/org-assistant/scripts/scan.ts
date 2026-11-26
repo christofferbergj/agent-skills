@@ -199,8 +199,8 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
       const result = scanSource(source, { prev, fresh, ctx: context });
       sources[name] = result.section;
       delete starts[name];
-      health[name] = { ok: true, at: iso(now) };
-      const { still } = result;
+      const { still, note } = result;
+      health[name] = { ok: true, at: iso(now), ...(note === undefined ? {} : { note }) };
       // A change no longer true, such as a DM since answered, leaves the gathered list.
       if (still !== undefined)
         gathered = gathered.filter((item) => item.source !== name || still(item));

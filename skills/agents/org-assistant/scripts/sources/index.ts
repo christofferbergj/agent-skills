@@ -42,6 +42,8 @@ export type Result<S> = {
   changes: Change[];
   /** Whether a change this source found earlier, still gathered, is still true. */
   still?: (item: Change) => boolean;
+  /** What this read left out, such as a list past its cap, for the health line. */
+  note?: string;
 };
 
 export type Adapter<Src, S> = {

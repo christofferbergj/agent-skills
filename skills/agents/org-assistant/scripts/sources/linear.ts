@@ -32,7 +32,10 @@ const TOOLS = {
 } as const;
 const ISSUE = /\/issue\/([A-Z][A-Z0-9]*-\d+)/;
 const CLOSED = new Set(["completed", "canceled", "duplicate"]);
-const PAGES = 20; // at most 1,000 inbox items or 5,000 team updates a scan
+/** Pages one read takes at most: 1,000 inbox items, or 5,000 tickets of a list. */
+const PAGES = 20;
+const INBOX_PAGE = 50;
+const LIST_PAGE = 250;
 const TEAM_MEMORY = 30 * DAY;
 type InboxKind =
   | "ticket.assigned"
@@ -160,11 +163,6 @@ const section = object({
    */
   inbox_at: stamped,
   inbox_ids: array(string),
-  /**
-   * A read of the inbox cut off at the page cap: the cursor it goes on from, down to the watermark,
-   * and the newest item it reached, which becomes the watermark once the read is done.
-   */
-  inbox_more: nullable(object({ cursor: string, top: stamped, top_ids: array(string) })),
   /** The user's Linear id, from their own tickets. */
   me: nullable(string),
   mine: record(
@@ -174,45 +172,41 @@ const section = object({
   /** The due date each deadline change was raised for, so each due date wakes once. */
   deadlines: record(string),
   team: record(object({ status: nullable(string), seen: stamped })),
-  /**
-   * Each team's read cut off at the page cap: the cursor it goes on from, the `updatedAt` it asked
-   * from, and when it began, where the next read starts once it is done.
-   */
-  team_more: withDefault(record(object({ cursor: string, since: stamped, until: stamped })), {}),
 });
 type Section = Infer<typeof section>;
-type TeamMore = Section["team_more"][string];
-type TeamIssue = Infer<typeof teamIssue>;
 
 /** A point in the inbox: a time, and the ids of the items read at that time. */
 type Mark = { at: Stamp; ids: string[] };
 
 /**
- * The items on up to PAGES pages of `tool`, from `cursor` or the first page; `stop(item)` ends the
- * walk early. `more` is the cursor to go on from when the walk reached the cap with pages left, so a
- * capped read never passes for a whole one; otherwise it is null.
+ * The items on up to PAGES pages of `tool`; `stop(item)` ends the walk early. `capped` says the walk
+ * reached the cap with pages left; the next scan doesn't go on from there, so the health line says
+ * what this one left unread.
  */
 function walk<T>(
   executor: Executor,
   tool: string,
   input: Record<string, unknown>,
   page: Parser<Page<T>>,
-  from: { cursor?: string; stop?: (item: T) => boolean } = {},
-): { items: T[]; more: string | null } {
+  stop: (item: T) => boolean = () => false,
+): { items: T[]; capped: boolean } {
   const items: T[] = [];
-  let cursor = from.cursor ?? null;
+  let cursor: string | null = null;
   for (let count = 0; count < PAGES; count++) {
     const [value] = executor.call([
       { path: tool, input: cursor === null ? input : { ...input, cursor } },
     ]);
     const got = read(page, value, tool);
     items.push(...got.items);
-    const stopped = from.stop !== undefined && got.items.some(from.stop);
-    if (!got.more || got.cursor === null || stopped) return { items, more: null };
+    if (!got.more || got.cursor === null || got.items.some(stop)) return { items, capped: false };
     cursor = got.cursor;
   }
-  return { items, more: cursor };
+  return { items, capped: true };
 }
+
+/** What a read past the cap of `size`-item pages left out, for the health line. */
+const capNote = (what: string, size: number, rest: string) =>
+  `${what} capped at ${(PAGES * size).toLocaleString("en")}: ${rest}`;
 
 /** The newest of `items` and `mark`, with the ids of the items at that time. */
 function newest(items: Note[], mark: Mark): Mark {
@@ -222,73 +216,18 @@ function newest(items: Note[], mark: Mark): Mark {
 }
 
 /**
- * The inbox items above the watermark, newest first. A read cut off at the page cap keeps the
- * watermark and goes on from its cursor at the next scan; only once it is done does the watermark
- * rise to the newest item it reached, and the items above that are read, so none between is skipped.
+ * The inbox items above the watermark, newest first, read down to the first item it covers: one
+ * older than it, or one at its time already read. The watermark rises to the newest item read, so
+ * items a read past the cap didn't reach stay unread.
  */
 function readInbox(executor: Executor, prev: Section | null, since: Stamp) {
-  const above = (mark: Mark) => (item: Note) =>
-    item.createdAt >= mark.at && !mark.ids.includes(item.id);
-  const below = (mark: Mark) => (item: Note) => item.createdAt < mark.at;
-  const input = { limit: 50 };
-  let mark: Mark = { at: prev?.inbox_at ?? since, ids: prev?.inbox_ids ?? [] };
-  const fresh: Note[] = [];
-  const going = prev?.inbox_more ?? null;
-  if (going !== null) {
-    const rest = walk(executor, TOOLS.inbox, input, notes, {
-      cursor: going.cursor,
-      stop: below(mark),
-    });
-    fresh.push(...rest.items.filter(above(mark)));
-    if (rest.more !== null) {
-      const inbox_more = { ...going, cursor: rest.more };
-      return { fresh, inbox: { inbox_at: mark.at, inbox_ids: mark.ids, inbox_more } };
-    }
-    mark = { at: going.top, ids: going.top_ids };
-  }
-  const read = walk(executor, TOOLS.inbox, input, notes, { stop: below(mark) });
-  const found = read.items.filter(above(mark));
-  fresh.push(...found);
-  const top = newest(found, mark);
-  if (read.more === null) {
-    return { fresh, inbox: { inbox_at: top.at, inbox_ids: top.ids, inbox_more: null } };
-  }
-  const inbox_more = { cursor: read.more, top: top.at, top_ids: top.ids };
-  return { fresh, inbox: { inbox_at: mark.at, inbox_ids: mark.ids, inbox_more } };
-}
-
-/**
- * One team's tickets updated since `since`, each read with the `updatedAt` it asked from. A read cut
- * off at the page cap goes on from its cursor, for the same `updatedAt`, at the next scan; once it is
- * done, the tickets updated since it began are read, so none between is skipped.
- */
-function readTeam(
-  executor: Executor,
-  name: string,
-  window: { going: TeamMore | undefined; since: Stamp; now: Stamp },
-) {
-  const input = (since: Stamp) => ({
-    team: name,
-    updatedAt: since,
-    limit: 250,
-    fields: TEAM_FIELDS,
-  });
-  const reads: { since: Stamp; items: TeamIssue[] }[] = [];
-  const { going } = window;
-  if (going !== undefined) {
-    const rest = walk(executor, TOOLS.list, input(going.since), issues(teamIssue), {
-      cursor: going.cursor,
-    });
-    reads.push({ since: going.since, items: rest.items });
-    if (rest.more !== null) return { reads, more: { ...going, cursor: rest.more } };
-  }
-  const since = going?.until ?? window.since;
-  const read = walk(executor, TOOLS.list, input(since), issues(teamIssue));
-  reads.push({ since, items: read.items });
-  return {
-    reads,
-    more: read.more === null ? null : { cursor: read.more, since, until: window.now },
-  };
+  const mark: Mark = { at: prev?.inbox_at ?? since, ids: prev?.inbox_ids ?? [] };
+  const covered = (item: Note) =>
+    item.createdAt < mark.at || (item.createdAt === mark.at && mark.ids.includes(item.id));
+  const read = walk(executor, TOOLS.inbox, { limit: INBOX_PAGE }, notes, covered);
+  const fresh = read.items.filter((item) => !covered(item));
+  const top = newest(fresh, mark);
+  return { fresh, capped: read.capped, mark: { inbox_at: top.at, inbox_ids: top.ids } };
 }
 
 function scan(source: LinearSource, window: Window<Section>, ctx: Context) {
@@ -298,8 +237,11 @@ function scan(source: LinearSource, window: Window<Section>, ctx: Context) {
   const prev = window.kind === "resume" ? window.prev : null;
   const since = prev?.at ?? (window.kind === "since" ? stamp(window.since) : now);
   const changes: Change[] = [];
+  const notes: string[] = [];
 
-  const { fresh, inbox } = readInbox(executor, prev, since);
+  const inbox = readInbox(executor, prev, since);
+  if (inbox.capped) notes.push(capNote("inbox", INBOX_PAGE, "older items unread"));
+  const { fresh } = inbox;
   const ticketOf = (item: Note) => ISSUE.exec(item.url ?? "")?.[1] ?? null;
   const statusNoted = new Set(
     fresh
@@ -311,7 +253,7 @@ function scan(source: LinearSource, window: Window<Section>, ctx: Context) {
   const listed = walk(
     executor,
     TOOLS.list,
-    { assignee: "me", limit: 250, fields: MINE_FIELDS },
+    { assignee: "me", limit: LIST_PAGE, fields: MINE_FIELDS },
     issues(mineIssue),
   );
   const open = listed.items.filter((issue) => !CLOSED.has(issue.statusType ?? ""));
@@ -373,8 +315,9 @@ function scan(source: LinearSource, window: Window<Section>, ctx: Context) {
       );
     }
   }
-  // A list cut off at the page cap keeps each ticket it didn't reach as the last scan saw it.
-  if (listed.more !== null) {
+  // A list past the cap keeps each ticket it didn't reach as the last scan saw it.
+  if (listed.capped) {
+    notes.push(capNote("assigned tickets", LIST_PAGE, "the rest kept as last read"));
     const reached = new Set(listed.items.map((issue) => issue.id));
     for (const [ref, entry] of Object.entries(before)) if (!reached.has(ref)) mine[ref] = entry;
   }
@@ -471,58 +414,57 @@ function scan(source: LinearSource, window: Window<Section>, ctx: Context) {
   const team = Object.fromEntries(
     Object.entries(prev?.team ?? {}).filter(([, entry]) => entry.seen >= forget),
   );
-  const teamMore: Section["team_more"] = {};
   for (const name of baseline ? [] : source.teams) {
-    const going = prev?.team_more[name];
-    const { reads, more } = readTeam(executor, name, { going, since, now });
-    if (more !== null) teamMore[name] = more;
-    for (const { since: from, items } of reads)
-      for (const issue of items) {
-        const ref = issue.id;
-        const old = team[ref];
-        team[ref] = { status: issue.status, seen: now };
-        if ((me !== null && issue.assigneeId === me) || ref in mine) continue;
-        const who = issue.assignee ?? "unassigned";
-        // A move needs the status this scan saw before; a finish needs only its completion time.
-        const movedOn = old !== undefined && old.status !== issue.status;
-        const finished = issue.statusType === "completed" && (issue.completedAt ?? "") > from;
-        if (movedOn || finished) {
-          // A finish is keyed by its completion and a move by the window it was seen in, so a later
-          // edit to the ticket, or a replay after a crash, can't count either twice.
-          const key = finished
-            ? `finished@${issue.completedAt}`
-            : `${old?.status}>${issue.status}@${from}`;
-          changes.push(
-            ctx.change("team.pulse", {
-              ref,
-              at: issue.updatedAt ?? now,
-              key,
-              detail: { team: name, who, finished },
-            }),
-          );
-        }
-        const created = issue.createdAt;
-        if (created === null || created <= from) continue;
+    const input = { team: name, updatedAt: since, limit: LIST_PAGE, fields: TEAM_FIELDS };
+    const read = walk(executor, TOOLS.list, input, issues(teamIssue));
+    if (read.capped) notes.push(capNote(`team ${name}`, LIST_PAGE, "the rest unread"));
+    for (const issue of read.items) {
+      const ref = issue.id;
+      const old = team[ref];
+      team[ref] = { status: issue.status, seen: now };
+      if ((me !== null && issue.assigneeId === me) || ref in mine) continue;
+      const who = issue.assignee ?? "unassigned";
+      // A move needs the status this scan saw before; a finish needs only its completion time.
+      const movedOn = old !== undefined && old.status !== issue.status;
+      const finished = issue.statusType === "completed" && (issue.completedAt ?? "") > since;
+      if (movedOn || finished) {
+        // A finish is keyed by its completion and a move by the window it was seen in, so a later
+        // edit to the ticket, or a replay after a crash, can't count either twice.
+        const key = finished
+          ? `finished@${issue.completedAt}`
+          : `${old?.status}>${issue.status}@${since}`;
         changes.push(
-          issue.project !== null && projects.has(issue.project)
-            ? ctx.change("ticket.new_in_project", {
-                ref,
-                at: created,
-                detail: { project: issue.project },
-              })
-            : ctx.change("team.pulse", {
-                ref,
-                at: created,
-                key: "new",
-                detail: { team: name, who, new: true },
-              }),
+          ctx.change("team.pulse", {
+            ref,
+            at: issue.updatedAt ?? now,
+            key,
+            detail: { team: name, who, finished },
+          }),
         );
       }
+      const created = issue.createdAt;
+      if (created === null || created <= since) continue;
+      changes.push(
+        issue.project !== null && projects.has(issue.project)
+          ? ctx.change("ticket.new_in_project", {
+              ref,
+              at: created,
+              detail: { project: issue.project },
+            })
+          : ctx.change("team.pulse", {
+              ref,
+              at: created,
+              key: "new",
+              detail: { team: name, who, new: true },
+            }),
+      );
+    }
   }
 
   return {
-    section: { at: now, ...inbox, me, mine, deps, deadlines, team, team_more: teamMore },
+    section: { at: now, ...inbox.mark, me, mine, deps, deadlines, team },
     changes,
+    ...(notes.length > 0 ? { note: notes.join("; ") } : {}),
   };
 }
 

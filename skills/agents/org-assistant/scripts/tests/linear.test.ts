@@ -1,4 +1,7 @@
-/** The Linear source, through the CLI: how each inbox item and ticket change is classified. */
+/**
+ * The Linear source, through the CLI: how each inbox item and ticket change is classified, and what
+ * a read past its cap leaves out and says in the health line.
+ */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
@@ -189,20 +192,62 @@ test("a finish edited before crash recovery counts once", (t) => {
 const later = (clock: string, seconds: number) =>
   new Date(Date.parse(linearTime(clock)) + seconds * 1000).toISOString();
 
-test("an inbox read cut off at the page cap goes on where it stopped, and skips nothing", (t) => {
+/** The health line's entry for Linear, from what `status` prints. */
+const health = (org: Org, clock: string) =>
+  /^Health: .*?\blinear ([^·]*)/m.exec(org.status(clock))?.[1]?.trim();
+
+test("an inbox read past the cap reads the newest items, says so, and next time reads only newer ones", (t) => {
   const org = new Org(t);
   org.startDay();
-  org.world.linear.page_size = 2; // twenty pages then hold 40 items
-  for (let n = 0; n < 45; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("09:10", n));
+  org.world.linear.page_size = 1; // twenty pages then hold 20 items
+  // 21 items at one time: the read past the cap takes 20, and the 21st stays unread.
+  for (let n = 0; n < 21; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", linearTime("09:10"));
   org.save();
-  assert.deepEqual(org.found("10:05"), { "linear.other": 40 });
+  assert.deepEqual(org.found("10:05"), { "linear.other": 20 });
+  assert.equal(health(org, "10:10"), "ok, inbox capped at 1,000: older items unread");
   org.note("n-new", "issueAssignedToYou", "ENG-103", linearTime("10:30"));
   org.save();
-  assert.deepEqual(org.found("11:05"), { "linear.other": 5, "ticket.assigned": 1 });
+  assert.deepEqual(org.found("11:05"), { "ticket.assigned": 1 });
+  assert.equal(health(org, "11:10"), "ok");
   assert.deepEqual(org.found("12:05"), {});
 });
 
-test("an assigned list cut off at the page cap keeps the tickets it didn't reach", (t) => {
+test("a scan after a read past the cap starts the inbox from its first page", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.linear.page_size = 1;
+  for (let n = 0; n < 25; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("09:10", n));
+  org.save();
+  org.scan("10:05");
+  const before = org.probed().length;
+  org.scan("11:05");
+  const [first] = org
+    .probed()
+    .slice(before)
+    .filter((call) => call.path.endsWith("notifications"));
+  assert.deepEqual(first?.input, { limit: 50 });
+});
+
+test("a status change whose inbox item is past the cap counts once, as the user's own", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.linear.page_size = 1;
+  const [ticket] = org.world.linear.mine;
+  assert.ok(ticket);
+  org.world.linear.issues[ticket.id]?.stateHistory?.push({
+    state: { name: "In Review" },
+    startedAt: linearTime("09:30"),
+    endedAt: null,
+  });
+  Object.assign(ticket, { status: "In Review", updatedAt: linearTime("09:30") });
+  org.note("n-status", "issueStatusChanged", ticket.id, linearTime("09:30"));
+  for (let n = 0; n < 20; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("09:40", n));
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "linear.other": 20, "ticket.moved": 1 });
+  assert.deepEqual(org.found("11:05"), {});
+});
+
+test("an assigned list past the cap says so, and keeps the tickets it didn't reach", (t) => {
   const org = new Org(t);
   org.startDay();
   const [template] = org.world.linear.mine;
@@ -212,12 +257,16 @@ test("an assigned list cut off at the page cap keeps the tickets it didn't reach
   org.world.linear.mine.unshift(...more);
   org.save();
   org.scan("10:05");
+  assert.equal(
+    health(org, "10:10"),
+    "ok, assigned tickets capped at 5,000: the rest kept as last read",
+  );
   org.note("n1", "issueNewComment", "ENG-101", linearTime("10:30"));
   org.save();
   assert.deepEqual(org.found("11:05"), { "ticket.comment": 1 });
 });
 
-test("a team read cut off at the page cap goes on where it stopped, and skips nothing", (t) => {
+test("a team read past the cap says so, and the next scan reads on from its time", (t) => {
   const org = new Org(t);
   org.startDay();
   const [sam] = org.world.linear.team.ENG ?? [];
@@ -232,6 +281,7 @@ test("a team read cut off at the page cap goes on where it stopped, and skips no
   org.world.linear.team.ENG?.push(...tickets);
   org.save();
   assert.deepEqual(org.found("10:05"), { "team.pulse": 40 });
-  assert.deepEqual(org.found("11:05"), { "team.pulse": 1 });
-  assert.deepEqual(org.found("12:05"), {});
+  assert.equal(health(org, "10:10"), "ok, team ENG capped at 5,000: the rest unread");
+  assert.deepEqual(org.found("11:05"), {});
+  assert.equal(health(org, "11:10"), "ok");
 });
