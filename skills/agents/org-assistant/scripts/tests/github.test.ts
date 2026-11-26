@@ -134,6 +134,16 @@ test("a release a PR waits on wakes as awaited and names the PR", (t) => {
   org.scan("10:05");
   assert.deepEqual(org.batch(), ["release.awaited example/api@v1.2.0"]);
   assert.deepEqual(org.pending().sent?.items[0]?.detail, { prs: ["example/web#11"] });
+  // The run clears the wait once it posts the release, so the next release is no longer awaited.
+  org.deliver();
+  org.ledger(["waits", "example/web#11", "off"]);
+  org.world.github["example/api"]?.releases?.unshift({
+    tagName: "v1.3.0",
+    isDraft: false,
+    publishedAt: utc("10:30"),
+  });
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "release.new": 1 });
 });
 
 test("gh failing on its credentials fails the source as an expired sign-in", (t) => {
