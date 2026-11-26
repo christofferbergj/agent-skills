@@ -70,9 +70,11 @@ function ledgerCommand(words: string[]): { name: string; command: Command; args:
     if (command !== undefined && words.length >= take)
       return { name, command, args: words.slice(take) };
   }
-  throw new UsageError(
-    `unknown ledger command ${words.join(" ") || "(none)"}; assistant.ts ledger ORG -h lists them`,
-  );
+  // The words after a command are its operands, such as an offer's text, so none is echoed; nor is
+  // a first word that doesn't read as a command's name.
+  const [first = ""] = words;
+  const named = /^[a-z]+$/.test(first) ? ` ${first}` : "";
+  throw new UsageError(`unknown ledger command${named}; assistant.ts ledger ORG -h lists them`);
 }
 
 function ledger(org: string, words: string[], options: Record<string, unknown>, now: Date): string {

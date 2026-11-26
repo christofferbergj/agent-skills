@@ -41,6 +41,45 @@ test("every ledger command run twice leaves the ledger as running it once did", 
   assert.deepEqual(ledger.mutes, [{ ref: "ENG-7", until: "2026-11-26T17:00:00Z" }]);
 });
 
+test("a command repeated later keeps the first run's time and the entry's place", (t) => {
+  const org = new Org(t);
+  const commands = [
+    ["started", "t-new", "--ticket", "ENG-1"],
+    ["lead", "ENG-1", "ENG-5", "unrelated"],
+    ["waits", "example/web#11", "example/api"],
+    ["depends", "ENG-1", "ENG-2"],
+  ];
+  for (const args of commands) org.ledger(args, utc("10:00"));
+  // An entry after each, so a repeat that moved its entry to the end would show.
+  for (const args of [
+    ["started", "t-other", "--ticket", "ENG-3"],
+    ["lead", "ENG-3", "ENG-6", "depends"],
+    ["waits", "example/web#13", "example/api"],
+    ["depends", "ENG-3", "ENG-4"],
+  ]) {
+    org.ledger(args, utc("10:00"));
+  }
+  const once = readFileSync(org.statePath("ledger.json"), "utf8");
+  for (const args of commands) org.ledger(args, utc("11:00"));
+  assert.equal(readFileSync(org.statePath("ledger.json"), "utf8"), once);
+  org.ledger(["started", "t-new", "--ticket", "ENG-9"], utc("12:00"));
+  assert.deepEqual(org.ledgerState().started, [
+    { thread: "t-other", ticket: "ENG-3", at: utc("10:00") },
+    { thread: "t-new", ticket: "ENG-9", at: utc("12:00") },
+  ]);
+});
+
+test("an unknown ledger command names itself on stderr, never the words after it", (t) => {
+  const org = new Org(t);
+  const named = org.cli(["ledger", "acme", "renamed", "PRIVATE-CANARY offer"]);
+  assert.equal(named.code, 2);
+  assert.match(named.stderr, /unknown ledger command renamed;/);
+  const unnamed = org.cli(["ledger", "acme", "PRIVATE-CANARY offer", "more"]);
+  assert.equal(unnamed.code, 2);
+  assert.match(unnamed.stderr, /unknown ledger command;/);
+  assert.doesNotMatch(named.stderr + unnamed.stderr, /PRIVATE-CANARY/);
+});
+
 test("the open call is settled by its id, and a repeat leaves the next call alone", (t) => {
   const org = new Org(t);
   org.ledger(["call", "set", "first offer"]);

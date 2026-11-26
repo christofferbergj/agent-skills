@@ -1,7 +1,7 @@
 /**
  * ledger.json: the model's record, which the scan reads but never writes. Each command in COMMANDS
  * reads the ledger, changes one thing, and the CLI replaces the file atomically; running a command
- * twice leaves the ledger as running it once did.
+ * again, at any later time, leaves the ledger as its first run did.
  */
 import {
   type Infer,
@@ -112,8 +112,19 @@ function command<A extends Shape, O extends Shape>(spec: {
   };
 }
 
-/** `list` with `entry` in place of any entry of the same key: "replace by key, then append". */
-function upsert<T>(list: T[], entry: T, key: (item: T) => string): T[] {
+/**
+ * `list` with `entry` in place of any entry with its key: "replace by key, then append". An entry
+ * that matches the one there in every field but its time leaves the list as it is, so a repeat keeps
+ * the first time and the entry's place.
+ */
+function upsert<T extends Record<string, string | null>>(
+  list: T[],
+  entry: T,
+  key: (item: T) => string,
+): T[] {
+  const old = list.find((item) => key(item) === key(entry));
+  const same = (field: string) => field === "at" || old?.[field] === entry[field];
+  if (old !== undefined && Object.keys(entry).every(same)) return list;
   return [...list.filter((item) => key(item) !== key(entry)), entry];
 }
 
@@ -298,23 +309,32 @@ export const COMMANDS: Record<string, Command> = {
     args: { pr: string, on: string },
     options: {},
     help: "a PR that waits on another repository's release (owner/repo), or off",
-    run: (ledger, { pr, on }) => {
-      const others = ledger.waits.filter((wait) => wait.pr !== pr);
-      return {
-        out: `${pr} waits on ${on}`,
-        ledger: { ...ledger, waits: on === "off" ? others : [...others, { pr, on }] },
-      };
-    },
+    run: (ledger, { pr, on }) => ({
+      out: `${pr} waits on ${on}`,
+      ledger: {
+        ...ledger,
+        waits:
+          on === "off"
+            ? ledger.waits.filter((wait) => wait.pr !== pr)
+            : upsert(ledger.waits, { pr, on }, (wait) => wait.pr),
+      },
+    }),
   }),
   depends: command({
     args: { ticket: string, on: string },
     options: { remove: flag },
     help: "a dependency the user confirmed, or --remove one",
     run: (ledger, { ticket, on, remove }) => {
-      const others = ledger.depends.filter((pair) => pair.ticket !== ticket || pair.on !== on);
+      const pair = { ticket, on };
+      const key = (entry: typeof pair) => `${entry.ticket} ${entry.on}`;
       return {
         out: `${ticket} ${remove ? "no longer depends" : "depends"} on ${on}`,
-        ledger: { ...ledger, depends: remove ? others : [...others, { ticket, on }] },
+        ledger: {
+          ...ledger,
+          depends: remove
+            ? ledger.depends.filter((entry) => key(entry) !== key(pair))
+            : upsert(ledger.depends, pair, key),
+        },
       };
     },
   }),
