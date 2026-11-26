@@ -106,7 +106,8 @@ test(
 
 test("a run that can't take the lock the folder records fails its organisation, naming the record", (t) => {
   const org = new Org(t);
-  org.scan("08:30");
+  mkdirSync(org.statePath(""), { recursive: true });
+  writeFileSync(org.statePath(".lock-backend"), "flock\n");
   const scan = org.cli(["scan", "acme"], utc("09:05"), NO_FLOCK);
   assert.equal(scan.code, 1);
   assert.match(
