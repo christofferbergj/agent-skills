@@ -49,7 +49,10 @@ const meta = object({
   /** The local date of today's overview, and its batch. */
   overview_on: nullable(string),
   overview_id: nullable(string),
-  /** The overview batch settled from the thread's own reply rather than the ledger. */
+  /**
+   * Today's overview batch once it is settled, whether the ledger or the thread's last reply marked
+   * it, so `status` counts it delivered either way.
+   */
   overview_delivered: nullable(string),
   deltas: withDefault(record(count), {}),
   /** The batch slots today's wakes already covered. */

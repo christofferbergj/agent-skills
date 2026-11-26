@@ -12,7 +12,7 @@ The scan sorts each change into a tier ([scan](scan.md#kinds) lists every kind):
 
 A T3 thread counts when it is in one of the organisation's projects and is not this thread, settled, snoozed, archived, or a child of another thread. A thread you started says so and names its ticket.
 
-Weekdays at 09:05 the overview goes out whatever happened. On weekends the scan still runs, and only a person waiting on the user, a new assignment, or a deadline within 24 hours wakes the thread; Monday's overview covers the rest. A day allows six deltas; after the sixth only those same urgent changes wake it, and the rest waits for the next overview. Mutes in the ledger drop matching changes before they count. The first scan of an organisation records a baseline and wakes nothing.
+Weekdays at 09:05 the overview goes out whatever happened. On weekends the scan still runs, and only a person waiting on the user, a new assignment, or a deadline within 24 hours wakes the thread; Monday's overview covers the rest. A day allows six deltas; after the sixth only those same urgent changes wake it, and the rest waits for the next overview. Mutes in the ledger drop matching changes before they count. Quiet holds every delta, a resent one included, and lets the overview through; pause holds every wake, the overview included. The first scan of an organisation records a baseline and wakes nothing.
 
 ## What a post holds
 

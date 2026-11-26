@@ -1,9 +1,9 @@
 /**
  * T3 Code, through the `t3` CLI: every thread in the organisation's projects, since the user does
  * their work through T3 agents, and the assistant thread itself, which the scan reads before it
- * wakes it and sends its wake to. A thread wakes the assistant on its status: it waits on the user,
- * failed, finished, or stalled; one that is new since the last scan is pulse. Keeps thread ids,
- * links, statuses, and counts, never titles or messages.
+ * wakes it and sends its wake to. A thread wakes the assistant on its status and its run: it waits on
+ * the user, failed, finished, or stalled; one that is new since the last scan is pulse. Keeps thread
+ * ids, links, statuses, run ids, and counts, never titles or messages.
  */
 import { SourceError, run, runJson } from "../calls.ts";
 import type { Change, ChangeKind } from "../changes.ts";
