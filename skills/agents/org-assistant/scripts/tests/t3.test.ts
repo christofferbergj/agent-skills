@@ -164,6 +164,33 @@ test("a new item read while the thread is snoozed ends its stall", (t) => {
   assert.deepEqual(org.found("12:20"), { "thread.stalled": 1 });
 });
 
+test("a stall after one already delivered counts again once a new item read while snoozed ends it", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  turn(org, "running", 20);
+  org.scan("10:05");
+  assert.deepEqual(org.found("11:05"), { "thread.stalled": 1 });
+  org.scan("13:05");
+  org.deliver();
+  Object.assign(other(org), { snoozedUntil: utc("14:30"), itemCount: 21 });
+  org.save();
+  org.scan("14:00");
+  assert.deepEqual(org.found("15:05"), { "thread.stalled": 1 });
+});
+
+test("a finished run a snooze took off the gathered list isn't news again once the snooze ends", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.threadIs("running");
+  finishRun(org);
+  assert.deepEqual(org.found("10:05"), { "thread.finished": 1 });
+  Object.assign(other(org), { snoozedUntil: utc("11:00") });
+  org.save();
+  assert.deepEqual(org.report("10:35").gathered, {});
+  assert.deepEqual(org.found("11:05"), {});
+  assert.deepEqual(org.report("11:05").gathered, {});
+});
+
 test("a gathered stall is dropped once the thread starts another run", (t) => {
   const org = new Org(t);
   org.startDay();
