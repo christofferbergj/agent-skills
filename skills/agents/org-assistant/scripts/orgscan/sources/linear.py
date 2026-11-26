@@ -181,8 +181,6 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
         updated = _pages(executor, TOOLS[1], {"team": name, "updatedAt": _iso(since), "limit": 250,
                                               "fields": TEAM_FIELDS}, "issues")
         _times(updated, "createdAt", "updatedAt", "completedAt")
-        people: dict = {}
-        new = 0
         for issue in updated:
             ref, status = issue.get("id"), issue.get("status")
             old = team.get(ref)
@@ -193,17 +191,17 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             # A move needs the status this scan saw before; a finish needs only its completion time.
             moved = bool(old and old[0] != status)
             finished = issue.get("statusType") == "completed" and (issue.get("completedAt") or "") > _iso(since)
+            # One pulse item per move, keyed by the ticket's own update, so a replay adds it once.
             if moved or finished:
-                tally = people.setdefault(who, {"moved": 0, "finished": 0})
-                tally["moved"] += moved or finished
-                tally["finished"] += finished
+                changes.append(change("team.pulse", ref, issue.get("updatedAt") or _iso(now),
+                                      key=f"{status}@{issue.get('updatedAt')}", team=name, who=who,
+                                      finished=finished))
             if issue.get("createdAt", "") > _iso(since):
                 if issue.get("project") and issue["project"] in projects:
                     changes.append(change("ticket.new_in_project", ref, issue["createdAt"], project=issue["project"]))
                 else:
-                    new += 1
-        if people or new:
-            changes.append(change("team.pulse", name, _iso(now), key=_iso(since), people=people, new=new))
+                    changes.append(change("team.pulse", ref, issue["createdAt"], key="new", team=name, who=who,
+                                          new=True))
     state = {"at": _iso(now), "inbox_at": newest, "inbox_ids": inbox_ids, "me": me, "mine": mine,
              "deps": deps, "deadlines": deadlines, "team": team}
     return state, changes

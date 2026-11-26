@@ -23,19 +23,21 @@ def _text(payload) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(payload)}]}
 
 
-def _slack_page(messages: list[dict], limit: int) -> dict:
-    """A search page in the Slack tool's Markdown, as recorded, with the text left out."""
-    shown = messages[:limit]
-    lines = ["# Search Results for: ", "", f"## Messages ({len(messages)} results)"]
+def _slack_page(messages: list[dict], limit: int, offset: int = 0) -> dict:
+    """A search page in the Slack tool's Markdown, as recorded: the header counts this page,
+    and a next cursor follows while more remain. The text is left out."""
+    shown = messages[offset:offset + limit]
+    lines = ["# Search Results for: ", "", f"## Messages ({len(shown)} results)"]
     for n, m in enumerate(shown, 1):
         label = "DM" if m["channel"].startswith("D") else f"#{m.get('name', 'channel')}"
         thread = f"?thread_ts={m['thread']}&cid={m['channel']}" if m.get("thread") else ""
-        lines += [f"### Result {n} of {len(messages)}", f"Channel: {label} (ID: {m['channel']})",
+        lines += [f"### Result {n} of {len(shown)}", f"Channel: {label} (ID: {m['channel']})",
                   f"From: Invented Person <invented@example.com> (ID: {m['from']}) ", "Time: 2026-11-26 10:00:00 CET",
                   f"Message_ts: {m['ts']}",
                   f"Permalink: [link](https://example.slack.com/archives/{m['channel']}/p{m['ts'].replace('.', '')}{thread})",
                   "Text: (left out of the fixture)", "---"]
-    return {"results": "\n".join(lines), "pagination_info": ""}
+    more = len(messages) > offset + limit
+    return {"results": "\n".join(lines), "pagination_info": f"Next page: `{offset + limit:08d}`" if more else ""}
 
 
 def _slack(args: dict, slack: dict) -> dict:
@@ -55,7 +57,7 @@ def _slack(args: dict, slack: dict) -> dict:
     else:
         picked = []
     picked.sort(key=lambda m: float(m["ts"]) * (1 if args.get("sort_dir") == "asc" else -1))
-    return _slack_page(picked, int(args.get("limit", 20)))
+    return _slack_page(picked, int(args.get("limit", 20)), int(args.get("cursor", "0")))
 
 
 def _linear(path: str, args: dict, linear: dict):

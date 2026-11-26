@@ -67,7 +67,7 @@ def status(org: str, now: datetime) -> str:
         lines.append(f"⚠️ The last scan ran {age}: the timer may be stopped.")
     meta = pending.get("meta", {})
     shipped = meta.get("overview_on") == local.date().isoformat() and (
-        meta.get("overview_id") in delivered(book) | {pending.get("last_delivered")})
+        meta.get("overview_id") in delivered(book) | {meta.get("overview_delivered")})
     if local.weekday() < 5 and clock >= OVERVIEW_DUE and not shipped and not held(local, book, "overview"):
         lines.append(f"⚠️ No overview delivered today by {OVERVIEW_DUE}: the scan or the thread may be broken.")
     for name, state in sorted(snapshot.get("health", {}).items()):
@@ -76,8 +76,9 @@ def status(org: str, now: datetime) -> str:
     for slot, label in (("sent", "In flight"), ("inline", "Inline, not yet delivered")):
         batch = pending.get(slot)
         if batch:
+            done = ", already marked delivered" if batch["id"] in delivered(book) else ""
             lines.append(f"{label}: batch {batch['id']} ({batch['kind']}, {len(batch['items'])} items, "
-                         f"{len(batch.get('tries', []))} wakes)")
+                         f"{len(batch.get('tries', []))} wakes{done})")
     lines.append(f"Gathered since: {len(pending.get('gathered', []))} changes")
     for key, label in (("quiet_until", "Quiet until"), ("paused_until", "Paused until")):
         until = parse(book[key]) if book.get(key) else None

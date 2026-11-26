@@ -16,8 +16,8 @@ from datetime import datetime, timedelta
 
 from . import store
 from .calls import Executor, SourceError, run
-from .changes import gather, muted
-from .decide import decide, held
+from .changes import PULSE, gather, muted, tier
+from .decide import decide, held, overview_due
 from .sources import ADAPTERS, PLANNED, STILL
 from .sources import t3 as t3_source
 from .times import iso, parse
@@ -60,8 +60,14 @@ def health_line(snapshot: dict, tz) -> str:
 
 
 def wake_message(org: str, batch: dict, snapshot: dict, tz) -> str:
-    refs = ", ".join(f"{item['kind']} {item['ref']}" for item in batch["items"][:12])
-    more = f", and {len(batch['items']) - 12} more" if len(batch["items"]) > 12 else ""
+    named = [item for item in batch["items"] if tier(item) != PULSE]
+    pulse = Counter(item["kind"] for item in batch["items"] if tier(item) == PULSE)
+    parts = [f"{item['kind']} {item['ref']}" for item in named[:12]]
+    if len(named) > 12:
+        parts.append(f"{len(named) - 12} more")
+    parts += [f"{count} {kind}" for kind, count in sorted(pulse.items())]
+    refs = ", ".join(parts)
+    more = ""
     return (f'<org-assistant org="{org}" batch="{batch["id"]}" kind="{batch["kind"]}" try="{len(batch["tries"]) + 1}">\n'
             f"Use /org-assistant: post batch {batch['id']} from pending.json, then mark it delivered.\n"
             f"Why now: {batch['reason']}. {len(batch['items'])} items{': ' + refs + more if refs else ''}.\n"
@@ -86,6 +92,8 @@ def _settle(pending: dict, slot: str, now: datetime) -> None:
     for item in pending[slot]["items"]:
         pending["seen"][item["id"]] = iso(now)
     pending["last_delivered"] = pending[slot]["id"]
+    if pending[slot]["id"] == pending["meta"].get("overview_id"):
+        pending["meta"]["overview_delivered"] = pending[slot]["id"]
     pending[slot] = None
 
 
@@ -193,14 +201,14 @@ class Scan:
 
     def run(self, dry_run: bool, inline: bool, out) -> int:
         pending, schedule, now = self.pending, self.profile["schedule"], self.now
-        found = self.read_sources()
         pending["seen"] = {k: at for k, at in pending["seen"].items() if at >= iso(now - SEEN_FOR)}
         done = delivered(self.ledger)
         for slot in ("sent", "inline"):
             if pending[slot] and pending[slot]["id"] in done:
                 _settle(pending, slot, now)
         if pending["inline"] and (inline or now - parse(pending["inline"]["frozen_at"]) >= INLINE_GRACE):
-            _unfreeze(pending, "inline")
+            _unfreeze(pending, "inline")  # before the sources, so what stopped being true leaves it too
+        found = self.read_sources()
         flight = [i["id"] for slot in ("sent", "inline") if pending[slot] for i in pending[slot]["items"]]
         pending["gathered"] = [i for i in gather(pending["gathered"], found, [*pending["seen"], *flight])
                                if not muted(i, self.ledger.get("mutes", []), iso(now))]
@@ -219,6 +227,10 @@ class Scan:
             reason = "the thread's last reply already named the sent batch"
         elif sent and busy:
             reason = "the sent batch waits for the busy or unreadable thread"
+        elif sent and held(self.local, self.ledger, sent["kind"]) and \
+                overview_due(self.local, schedule, pending["meta"], self.ledger):
+            _unfreeze(pending, "sent")  # a delta quiet holds goes out in the overview that is due
+            reason = "the held delta joins the overview"
         elif sent and held(self.local, self.ledger, sent["kind"]):
             reason = "the sent batch waits for the quiet or pause to end"
         elif sent and len(sent["tries"]) >= 1 + schedule["retries"]:

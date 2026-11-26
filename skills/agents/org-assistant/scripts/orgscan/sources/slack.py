@@ -17,27 +17,32 @@ TOOL = "tools.slack.mcp.slack_search_public_and_private"
 TOOLS = (TOOL,)
 PAGES = 10  # 20 messages a page
 FORGET = timedelta(days=3)  # a waiting message older than this leaves the list
+SEARCHES = ("dm", "mention", "channels")
+COMMON = {"response_format": "detailed", "include_context": False, "limit": 20}
 OVERLAP = 600  # seconds each search reaches back before the cursor, for messages Slack indexed late
-RESULT = re.compile(r"^### Result \d+ of \d+\s*$", re.M)
+RESULT = re.compile(r"^### Result (\d+) of (\d+)\s*$", re.M)
 CHANNEL = re.compile(r"^Channel: (.*?)\s*\(ID: ([A-Z0-9]+)\)", re.M)
 FROM = re.compile(r"^From: .*\(ID: ([A-Z0-9]+)\)", re.M)
 TS = re.compile(r"^Message_ts: ([0-9]+\.[0-9]+)", re.M)
 THREAD = re.compile(r"[?&]thread_ts=([0-9]+\.[0-9]+)")
-COUNT = re.compile(r"\((\d+) results?\)")
 CURSOR = re.compile(r"`([A-Za-z0-9+/=_-]{8,})`")
 BOTS = {"U00", "USLACKBOT"}
 PAUSE = float(os.environ.get("ORG_ASSISTANT_SLACK_PAUSE", "30"))  # seconds before the one retry
 SPACING = float(os.environ.get("ORG_ASSISTANT_SLACK_SPACING", "3.5"))  # seconds between searches: ≤ 17 a minute
 
 
-def _messages(result) -> tuple[list[dict], int, str | None]:
-    """A search page as (messages, total, next cursor). Only ids are kept from it."""
+def _messages(result) -> tuple[list[dict], str | None]:
+    """A search page as (messages, next cursor). Only ids are kept from it."""
     if not isinstance(result, dict) or not isinstance(result.get("results"), str):
         raise SourceError("Slack search returned no results text")
     text = result["results"]
-    total = COUNT.search(text)
+    numbers = [(int(n), int(of)) for n, of in RESULT.findall(text)]
+    # Real records number on without a gap under one "of"; a message body that copies the
+    # heading breaks that, and the page is refused rather than read wrong.
+    if any(b[0] != a[0] + 1 for a, b in zip(numbers, numbers[1:])) or len({of for _, of in numbers}) > 1:
+        raise SourceError("Slack search returned a page whose records can't be told apart")
     found = []
-    for block in RESULT.split(text)[1:]:
+    for block in RESULT.split(text)[3::3]:
         block = block.split("\nText:", 1)[0]  # the record's fields come before its text, which can hold anything
         channel, sender, ts = CHANNEL.search(block), FROM.search(block), TS.search(block)
         if not (channel and ts):
@@ -48,7 +53,7 @@ def _messages(result) -> tuple[list[dict], int, str | None]:
                       "thread": thread.group(1) if thread and thread.group(1) != ts.group(1) else None,
                       "dm": label.startswith("DM") or label.startswith("Group DM")})
     cursor = CURSOR.search(str(result.get("pagination_info") or ""))
-    return found, int(total.group(1)) if total else len(found), cursor.group(1) if cursor else None
+    return found, cursor.group(1) if cursor else None
 
 
 def _call(executor, args: dict):
@@ -66,17 +71,17 @@ def _call(executor, args: dict):
 
 def _search(executor, args: dict) -> tuple[list[dict], bool]:
     """Every message a search finds, oldest first, across up to PAGES pages, and whether it
-    read them all. Oldest first means a cut-off search misses only the newest messages, which
-    the next scan reads from where this one stopped."""
-    found, total, cursor = _messages(_call(executor, {**args, "sort": "timestamp", "sort_dir": "asc"}))
-    for _ in range(PAGES - 1):
-        if not cursor or len(found) >= total:
-            break
-        more, _, cursor = _messages(_call(executor, {**args, "sort": "timestamp", "sort_dir": "asc", "cursor": cursor}))
-        if not more:
-            break
-        found.extend(more)
-    return found, len(found) >= total
+    read them all: a page shorter than the limit, or one with no next cursor, is the last.
+    Oldest first means a cut-off search misses only the newest messages, which the next scan
+    reads from where this one stopped."""
+    args = {**args, "sort": "timestamp", "sort_dir": "asc"}
+    found, cursor = [], None
+    for _ in range(PAGES):
+        page, cursor = _messages(_call(executor, {**args, **({"cursor": cursor} if cursor else {})}))
+        found.extend(page)
+        if not cursor or len(page) < args.get("limit", 20):
+            return found, True
+    return found, False
 
 
 def still_waiting(section: dict, item: dict) -> bool:
@@ -105,25 +110,32 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     now = ctx.now.timestamp()
     baseline = prev is None and ctx.since is None
     prev = prev or {}
-    after = prev.get("at") or (ctx.since.timestamp() if ctx.since else now)
+    start = ctx.since.timestamp() if ctx.since else now
+    # One cursor per search. A cut-off search resumes exactly where it stopped; the others
+    # reach back OVERLAP for messages Slack indexed late, which their ids keep from counting twice.
+    cursors = {name: prev.get("cursors", {}).get(name) or {"at": start} for name in SEARCHES}
     wait = ctx.schedule["slack_wait_minutes"] * 60
-    common = {"response_format": "detailed", "include_context": False, "limit": 20}
     waiting = [w for w in prev.get("waiting", []) if now - float(w["ts"]) < FORGET.total_seconds()]
     if baseline:
-        return {"at": now, "waiting": waiting}, []
-    changes: list[dict] = []
+        return {"cursors": cursors, "waiting": waiting}, []
     entries = [e if isinstance(e, dict) else {"id": e} for e in source.get("channels", [])]
-    reach = int(after - OVERLAP)
-    oldest = int(min([float(w["ts"]) for w in waiting] + [reach]))
-    direct, whole_direct = _search(executor, {**common, "filters": "to:me", "channel_types": "im,mpim",
-                                              "after": str(reach)})
-    mentions, whole_mentions = _search(executor, {**common, "keywords": [f"<@{me}>"], "after": str(reach)})
-    mine, _ = _search(executor, {**common, "filters": f"from:<@{me}>", "after": str(oldest)})
-    # One search covers every confirmed channel: Slack ORs a repeated in: filter.
-    listened, _ = _search(executor, {**common, "after": str(int(after)),
-                                     "filters": " ".join(f"in:<#{e['id']}>" for e in entries)}) if entries else ([], True)
+    filters = {"dm": {"filters": "to:me", "channel_types": "im,mpim"}, "mention": {"keywords": [f"<@{me}>"]},
+               "channels": {"filters": " ".join(f"in:<#{e['id']}>" for e in entries)}}
+    found = {}
+    for name in SEARCHES:
+        if name == "channels" and not entries:
+            found[name] = []
+            continue
+        cursor = cursors[name]
+        after = cursor["at"] if cursor.get("resume") else cursor["at"] - OVERLAP
+        found[name], whole = _search(executor, {**COMMON, **filters[name], "after": str(int(after))})
+        last = found[name][-1]["ts"] if found[name] else None
+        cursors[name] = {"at": now} if whole or not last else {"at": float(last), "resume": True}
+    oldest = min([float(w["ts"]) for w in waiting] + [now - OVERLAP])
+    mine, _ = _search(executor, {**COMMON, "filters": f"from:<@{me}>", "after": str(int(oldest))})
+    changes: list[dict] = []
     known = {(w["channel"], w["ts"]) for w in waiting}
-    for message in direct + mentions:
+    for message in found["dm"] + found["mention"]:
         if message["from"] in (me, *BOTS) or (message["channel"], message["ts"]) in known:
             continue
         known.add((message["channel"], message["ts"]))
@@ -141,13 +153,9 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
                                   via="dm" if item["dm"] else "mention", channel=item["channel"],
                                   minutes=int(age // 60)))
         kept.append(item)
-    window = iso(from_ts(after))
-    for entry in entries:
-        count = sum(1 for m in listened if m["channel"] == entry["id"] and m["from"] != me)
-        if count:
-            changes.append(change("slack.channel", entry["id"], iso(from_ts(now)), key=window,
-                                  scope=f"slack:{entry['id']}", name=entry.get("name", entry["id"]), messages=count))
-    # A cut-off search resumes after the newest message it read; the rest start from now.
-    cut = [found[-1]["ts"] for found, whole in ((direct, whole_direct), (mentions, whole_mentions))
-           if not whole and found]
-    return {"at": min([now] + [float(ts) for ts in cut]), "waiting": kept}, changes
+    names = {e["id"]: e.get("name", e["id"]) for e in entries}
+    for message in found["channels"]:
+        if message["channel"] in names and message["from"] != me:
+            changes.append(change("slack.channel", message["channel"], iso(from_ts(message["ts"])), key=message["ts"],
+                                  scope=f"slack:{message['channel']}", name=names[message["channel"]]))
+    return {"cursors": cursors, "waiting": kept}, changes

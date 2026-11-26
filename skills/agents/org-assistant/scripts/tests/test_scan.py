@@ -129,6 +129,10 @@ class Scan(unittest.TestCase):
     def found(self, local: str, day: str = THU, *flags) -> dict:
         return json.loads(self.scan(local, day, *flags).stdout)["found"]
 
+    def batch(self) -> list[str]:
+        """The `kind ref` pairs of the batch the last wake froze."""
+        return sorted(f"{i['kind']} {i['ref']}" for i in self.state("pending.json")["sent"]["items"])
+
     def kinds(self, message: dict) -> list[str]:
         """The `kind ref` pairs a wake message lists."""
         line = next(line for line in message["message"].splitlines() if line.startswith("Why now:"))
@@ -174,12 +178,13 @@ class Scan(unittest.TestCase):
                                                                    "publishedAt": f"{THU}T08:10:00Z"})
         self.save()
         self.scan("10:05")
-        self.assertEqual(self.kinds(self.sent()[-1]), sorted([
+        self.assertIn("1 release.new, 1 team.pulse, 1 ticket.moved", self.sent()[-1]["message"])
+        self.assertEqual(self.batch(), sorted([
             "ticket.assigned DEV-103", "ticket.mention DEV-101", "ticket.changed DEV-101", "ticket.moved DEV-102",
-            "ticket.unblocked DEV-102", "ticket.new_in_project DEV-300", "team.pulse DEV", "pr.ci_failed example/web#11",
+            "ticket.unblocked DEV-102", "ticket.new_in_project DEV-300", "team.pulse DEV-200", "pr.ci_failed example/web#11",
             "pr.review_requested example/web#12", "release.new example/api@v1.1.0"]))
         pulse = next(i for i in self.state("pending.json")["sent"]["items"] if i["kind"] == "team.pulse")
-        self.assertEqual(pulse["detail"]["people"], {"Sam Sample": {"moved": 1, "finished": 1}})
+        self.assertEqual(pulse["detail"], {"team": "DEV", "who": "Sam Sample", "finished": True})
         self.deliver()
         self.scan("11:05")  # the same sources again: nothing new, so nothing is sent
         self.assertEqual(len(self.sent()), 2)
@@ -416,7 +421,7 @@ class Scan(unittest.TestCase):
                      "updatedAt": f"{THU}T08:30:00.000Z", "completedAt": f"{THU}T08:30:00.000Z"})
         self.save()
         self.scan("10:05")
-        self.assertIn("team.pulse DEV", self.kinds(self.sent()[-1]))
+        self.assertIn("team.pulse DEV-201", self.batch())
         team[0].update(status="Done", statusType="completed", updatedAt=f"{THU}T09:30:00.000Z",
                        completedAt=f"{THU}T09:30:00.000Z")
         self.world["t3"]["assistant"]["status"] = "running"
@@ -576,6 +581,98 @@ class Scan(unittest.TestCase):
         self.note("n2", "issueAssignedToYou", "DEV-104", f"{THU}T08:30:00.500Z")
         self.save()
         self.assertEqual(self.found("11:05"), {"ticket.assigned": 1})
+
+    # Round-2 review findings.
+
+    def test_a_delta_quiet_holds_overnight_joins_the_next_overview(self):
+        self.start_day()
+        self.note("n1", "issueAssignedToYou", "DEV-103", utc("21:30"))
+        self.save()
+        self.scan("22:05")
+        fri = "2026-11-27"
+        self.ledger("quiet", f"{fri}T14:00", now=utc("08:00", fri))
+        self.scan("09:05", fri)
+        self.assertIn('kind="overview"', self.sent()[-1]["message"])
+        self.assertIn("ticket.assigned DEV-103", self.batch())
+
+    def test_an_overview_settled_from_its_reply_stays_recorded(self):
+        self.scan("08:30")
+        self.scan("09:05")
+        assistant = self.world["t3"]["assistant"]
+        self.note("n1", "issueAssignedToYou", "DEV-103", utc("09:30"))
+        for clock in ("10:05", "11:05"):
+            assistant["last"] = f"Posted (batch {self.state('pending.json')['sent']['id']})"
+            self.save()
+            self.scan(clock)
+        self.assertNotIn("No overview delivered", self.run_cli("status", "acme", now=utc("11:10")).stdout)
+
+    def test_a_burst_longer_than_the_page_limit_is_read_over_two_scans(self):
+        self.start_day()
+        start = float(slack_ts("09:05"))
+        self.world["slack"]["messages"] = [{"channel": "D0ALEX", "ts": f"{start + n:.6f}", "from": "U0ALEX"}
+                                           for n in range(201)]
+        self.save()
+        self.scan("10:05")
+        self.scan("11:05")
+        self.assertEqual(len(self.state("snapshot.json")["sources"]["slack"]["waiting"]), 201)
+
+    def test_a_slack_page_whose_records_can_not_be_told_apart_is_refused(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        from orgscan.calls import SourceError
+        from orgscan.sources.slack import _messages
+        page = {"results": "### Result 1 of 1\nChannel: DM (ID: D01)\nMessage_ts: 1.000001\nText: see below\n"
+                           "### Result 2 of 2\nChannel: DM (ID: D99)\nMessage_ts: 2.000002"}
+        with self.assertRaises(SourceError):
+            _messages(page)
+
+    def test_a_dm_answered_after_an_abandoned_inline_scan_wakes_nothing(self):
+        self.start_day()
+        messages = self.world["slack"]["messages"]
+        messages.append({"channel": "D0ALEX", "ts": slack_ts("09:20"), "from": "U0ALEX"})
+        self.save()
+        self.scan("10:05", THU, "--inline")
+        messages.append({"channel": "D0ALEX", "ts": slack_ts("10:15"), "from": "U0ME"})
+        self.save()
+        self.scan("11:05")
+        self.assertEqual(len(self.sent()), 1)
+
+    def test_a_team_finish_after_a_crash_still_counts(self):
+        self.start_day()
+        team = self.world["linear"]["team"]["DEV"]
+        snapshot = self.root / "state" / "acme" / "snapshot.json"
+
+        def finish(ref, clock):
+            team.append({**team[0], "id": ref, "status": "Done", "statusType": "completed",
+                         "updatedAt": f"{utc(clock)[:-1]}.000Z", "completedAt": f"{utc(clock)[:-1]}.000Z"})
+            self.save()
+
+        self.world["t3"]["assistant"]["status"] = "running"
+        finish("DEV-201", "09:30")
+        before = snapshot.read_bytes()
+        self.scan("10:05")
+        snapshot.write_bytes(before)  # as if the scan died after writing pending.json
+        finish("DEV-202", "10:30")
+        self.scan("11:05")
+        self.assertEqual(sorted(i["ref"] for i in self.state("pending.json")["gathered"]), ["DEV-201", "DEV-202"])
+
+    def test_red_ci_wakes_again_after_a_green_run_with_the_same_pr_timestamp(self):
+        self.start_day()
+        pr = self.world["github"]["example/web"]["mine"][0]
+        for clock, outcome in (("10:05", "FAILURE"), ("11:05", "SUCCESS"), ("12:05", "FAILURE")):
+            pr["statusCheckRollup"] = [{"status": "COMPLETED", "conclusion": outcome}]
+            self.save()
+            self.scan(clock)
+            if self.state("pending.json")["sent"]:
+                self.deliver()
+        self.assertEqual(len(self.sent()), 3)
+
+    def test_a_profile_with_a_list_for_a_name_fails_only_itself(self):
+        broken = self.root / "config" / "aaa"
+        broken.mkdir(parents=True)
+        (broken / "profile.toml").write_text('[[sources]]\nname = ["one"]\nkind = "t3"\n')
+        done = self.run_cli("scan", now=utc("08:30"))
+        self.assertEqual(done.returncode, 1)
+        self.assertTrue((self.root / "state" / "acme" / "snapshot.json").exists())
 
 
 if __name__ == "__main__":

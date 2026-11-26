@@ -23,6 +23,14 @@ def held(now: datetime, ledger: dict, kind: str) -> bool:
     return _before(ledger.get("paused_until"), now) or (kind != "overview" and _before(ledger.get("quiet_until"), now))
 
 
+def overview_due(now: datetime, schedule: dict, meta: dict, ledger: dict) -> bool:
+    """A weekday in the window, past the overview's time, with no overview frozen today."""
+    clock = now.strftime("%H:%M")
+    first, last = schedule["window"]
+    return (now.weekday() < 5 and first <= clock <= last and clock >= schedule["overview"]
+            and meta.get("overview_on") != now.date().isoformat() and not held(now, ledger, "overview"))
+
+
 def decide(now: datetime, schedule: dict, meta: dict, ledger: dict, gathered: list[dict]):
     """(kind, items, reason): kind is "overview", "delta", or None for no wake; items are the
     changes the wake carries, which leave the gathered list once it is frozen."""
@@ -33,7 +41,7 @@ def decide(now: datetime, schedule: dict, meta: dict, ledger: dict, gathered: li
     if not first <= clock <= last:
         return None, [], "outside the scan window"
     weekday = now.weekday() < 5
-    if weekday and meta.get("overview_on") != today and clock >= schedule["overview"]:
+    if overview_due(now, schedule, meta, ledger):
         return "overview", list(gathered), "the weekday overview"
     if held(now, ledger, "delta"):
         return None, [], f"quiet until {ledger['quiet_until']}"

@@ -15,7 +15,7 @@ Weekdays at 09:05 the overview goes out whatever happened. On weekends the scan 
 ## What a post holds
 
 - **Overview**: what waits on the user, what they can start today, what is blocked and by whom, deadlines within 7 days, the team pulse, and the health line with each source's state and the time of the last scan. Read the user's open tickets, PRs, and blockers from the sources yourself for it; the batch carries only what changed. Drop the call the last overview left open (`call drop <id>`).
-- **Delta**: one glance of at most six items, most urgent first, ending with a one-line team pulse when the team moved, such as "Alex moved 14 tickets and finished 2". Sum the batch's `team.pulse` and `slack.channel` items for it: each covers one scan's window. More than six items: show the six that need the user and count the rest in the fold.
+- **Delta**: one glance of at most six items, most urgent first, ending with a one-line team pulse when the team moved, such as "Alex moved 14 tickets and finished 2". Sum the batch's `team.pulse` and `slack.channel` items for it: each is one move or one message. More than six items: show the six that need the user and count the rest in the fold.
 
 Name people by first name from the profile's people file. A Slack item links its message (`https://<workspace>.slack.com/archives/<channel>/p<ts without the dot>`) and says who wrote and how long ago, never what they wrote. Never quote a message body, and never name or quote a practitioner, their email, or their user id.
 

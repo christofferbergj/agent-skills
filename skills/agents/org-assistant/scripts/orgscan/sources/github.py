@@ -35,7 +35,9 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     prev = prev or {}
     now = iso(ctx.now)
     since = iso(ctx.since) if ctx.since else None
-    window = prev.get("at") or since or now  # the start of what this scan covers, keying events it can't date
+    # The start of what this scan covers. A transition this scan sees for the first time is
+    # keyed by it: a replay after a crash keeps the key, and the next transition gets a new one.
+    window = prev.get("at") or since or now
     me = source.get("me", "")
     waits = {}
     for wait in ctx.ledger.get("waits", []):
@@ -62,11 +64,11 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
                     continue
                 was = was or {"ci": "", "review": ""}
                 if seen["ci"] == "failing" and was["ci"] != "failing":
-                    changes.append(change("pr.ci_failed", ref, at, key=at))
+                    changes.append(change("pr.ci_failed", ref, at, key=window))
                 if seen["review"] != was["review"] and seen["review"] == "CHANGES_REQUESTED":
-                    changes.append(change("pr.changes_requested", ref, at, key=at))
+                    changes.append(change("pr.changes_requested", ref, at, key=window))
                 elif seen["review"] != was["review"] and seen["review"] == "APPROVED":
-                    changes.append(change("pr.approved", ref, at, key=at))
+                    changes.append(change("pr.approved", ref, at, key=window))
         if entry.get("review_requests"):
             asked = run_json(["gh", "pr", "list", "-R", repo, "--search", "review-requested:@me", "--state", "open", "--limit",
                          "100", "--json", "number,updatedAt"], f"{repo} review requests")
@@ -74,7 +76,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             for pr in asked:
                 if not baseline and str(pr["number"]) not in old.get("requested", []):
                     changes.append(change("pr.review_requested", f"{repo}#{pr['number']}", pr.get("updatedAt") or now,
-                                          key=pr.get("updatedAt") or now))
+                                          key=window))
         if entry.get("issues"):
             issues = run_json(["gh", "issue", "list", "-R", repo, "--state", "open", "--limit", "200", "--json",
                           "number,assignees,createdAt,updatedAt"], f"{repo} issues")

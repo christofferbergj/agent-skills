@@ -25,19 +25,19 @@ On every turn, and after any compaction:
 
 Take the branch that matches what started this run.
 
-- **An `<org-assistant>` wake.** Read `pending.json`. When its `sent` batch has the wake's `batch` id, that batch is the news; when `sent` is empty or holds another id, it was already delivered, so reply with one line saying nothing new arrived, and stop. Look closer where the batch needs it, then post it (step 3).
-- **"Scan now", or a question about the current status.** Run `scripts/assistant.py scan <org> --inline`. It wakes nothing and prints every change gathered since the last post as one batch, and under `in_flight` any batch a wake is still carrying. Post them as one delta, or answer the question from them, and mark each batch delivered.
+- **An `<org-assistant>` wake.** Read `pending.json`. When its `sent` batch has the wake's `batch` id and `status` doesn't call it already marked delivered, that batch is the news; otherwise it went out already, so reply with one line saying nothing new arrived, and stop. Look closer where the batch needs it, then post it (step 3).
+- **"Scan now", or a question about the current status.** Run `scripts/assistant.py scan <org> --inline`. It wakes nothing and prints every change gathered since the last post as one batch, and under `in_flight` any batch a wake is still carrying. Post them as one delta, or answer the question from them, and mark the inline batch delivered. Mark the `in_flight` batch delivered only when you posted it in full: an overview as the overview.
 - **"Quiet until …" or "pause until …".** Quiet holds deltas and lets the overview through; pause holds both. Write the time in the profile's timezone: `scripts/assistant.py ledger <org> quiet 2026-11-26T14:00` or `pause 2026-11-30T09:00`, or `off` to end it. Reply in one line with the time it ends.
-- **A letter answer, such as `a`.** It answers the open call, as [one open call](references/rules.md#one-open-call-at-a-time) describes; when `call show` warns that the call replaced another within 15 minutes, ask which one they meant. Otherwise name what you are about to do in your first line, then act as [authority](references/rules.md#authority) allows. An offer to start a thread follows [launch](references/launch.md).
+- **A letter answer, such as `a`.** It answers the open call only when your latest post showed that call's id, as [one open call](references/rules.md#one-open-call-at-a-time) describes. When the post showed another id, show the open call and ask again; when `call show` warns that the call replaced another within 15 minutes, ask which one they meant. Otherwise name what you are about to do in your first line, then act as [authority](references/rules.md#authority) allows. An offer to start a thread follows [launch](references/launch.md).
 - **Anything else.** Answer it. A request to look at a ticket's quality follows [the ticket standard](references/rules.md#ticket-standard).
 
 **Complete when** the branch's reply is written, or the run stopped on a batch already delivered.
 
 ## 3. Post
 
-Shape the post as /reply-shape's glance, with the content [the rules](references/rules.md#what-a-post-holds) give the overview and the delta. Every time is the profile's timezone, Danish time for FysioScout. Name tickets and PRs as links with their id. End with /next-options: the open call as `a`, repeated with the same letter while it stays open and adding no new option; a new offer becomes the call only when none is open (`ledger <org> call set "<offer>"`), and otherwise joins the queue (`call queue "<offer>"`). Put the batch id in the fold, as `batch <id>`, so the scan can tell the post went out.
+Shape the post as /reply-shape's glance, with the content [the rules](references/rules.md#what-a-post-holds) give the overview and the delta. Every time is the profile's timezone, Danish time for FysioScout. Name tickets and PRs as links with their id. End with /next-options: the open call as `a`, repeated with the same letter while it stays open and adding no new option; a new offer becomes the call only when none is open (`ledger <org> call set "<offer>"`), and otherwise joins the queue (`call queue "<offer>"`). Put the batch id and the open call's id in the fold, as `batch <id> · call <id>`, so the scan can tell the post went out and the next `a` can tell which call it answers.
 
-**Complete when** the post shows at most six items, ends on the one open call or on **Done**, and carries the batch id.
+**Complete when** the post shows at most six items, ends on the one open call or on **Done**, and carries the batch id and the call id.
 
 ## 4. Record
 

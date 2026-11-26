@@ -68,6 +68,8 @@ def load_profile(org: str) -> dict:
         missing = SOURCE_FIELDS - set(source)
         if missing:
             raise ProfileError(f"{path}: a source lacks {', '.join(sorted(missing))}")
+        if not all(isinstance(source[field], str) for field in SOURCE_FIELDS):
+            raise ProfileError(f"{path}: a source's name and kind must be strings")
         if source["name"] in names:
             raise ProfileError(f"{path}: two sources are named {source['name']}")
         names.add(source["name"])
