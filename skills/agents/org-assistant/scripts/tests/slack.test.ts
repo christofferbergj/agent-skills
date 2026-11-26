@@ -577,6 +577,36 @@ test("a DM Slack indexed late is judged by the replies a cut-off search read bef
   assert.deepEqual(org.waiting(), []);
 });
 
+test("a cut-off search goes on from the whole second it stopped in, so an answer indexed late there clears its DM", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const start = Number(slackTs("09:45"));
+  const cutoff = start + 759;
+  const dm = { channel: "D0ALEX", ts: slackTs("09:20"), from: "U0ALEX" };
+  // The budget reads 760 of the user's replies, the last half a second into its second.
+  org.world.slack.messages = [
+    dm,
+    ...Array.from({ length: 761 }, (_, n) => ({
+      channel: "C0OTHER",
+      from: "U0ME",
+      ts: (start + n + (n === 759 ? 0.5 : 0)).toFixed(6),
+    })),
+  ];
+  org.save();
+  org.report("10:05");
+  // The answer, indexed after that scan, falls in that second before the last reply it read.
+  org.world.slack.messages.push({
+    channel: dm.channel,
+    from: "U0ME",
+    ts: (cutoff + 0.25).toFixed(6),
+  });
+  org.save();
+  const report = org.report("11:05");
+  assert.deepEqual(report.found, {});
+  assert.equal(report.wake, null);
+  assert.deepEqual(org.waiting(), []);
+});
+
 test("a DM Slack indexed late that the user answered before the last scan wakes nothing", (t) => {
   const org = new Org(t);
   org.startDay();

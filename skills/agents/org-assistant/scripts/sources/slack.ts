@@ -12,8 +12,8 @@ import {
   type Infer,
   array,
   boolean,
+  count as whole,
   nullable,
-  number,
   object,
   optional,
   string,
@@ -55,11 +55,12 @@ const messageId = object({ channel: string, ts: slackTs });
 type MessageId = Infer<typeof messageId>;
 
 /**
- * Where a search goes on: from `from`, a Slack time, skipping the messages at or after it that it
- * has read, `seen`. A search read to its end goes on from OVERLAP before the scan began, for messages
- * Slack indexed late; one the budget cut off goes on from the latest message it read, seen or new.
+ * Where a search goes on: from `from`, a whole second, since Slack's `after` takes whole seconds,
+ * skipping the messages from that second on it has read, `seen`. A search read to its end goes on
+ * from OVERLAP before the scan began, for messages Slack indexed late; one the budget cut off goes on
+ * from the second of the latest message it read, seen or new.
  */
-const cursor = object({ from: number, seen: array(messageId) });
+const cursor = object({ from: whole, seen: array(messageId) });
 type Cursor = Infer<typeof cursor>;
 
 const waiting = object({
@@ -186,15 +187,14 @@ function asker(executor: Executor, allowance: Allowance): Ask {
  * budget ran out, and the time of the latest message it read, seen or new, if any. A page a body
  * may have forged a record in is read again one message per call from that page's own cursor, where
  * each page holds exactly one real record, and the search then pages on from the page's next
- * cursor. Slack's `after` takes whole seconds, so a search starts at the second `start.from` falls
- * in and skips what it has read; one can't pass more messages within one second than the budget
- * reads.
+ * cursor. A search starts at the whole second `start.from` and skips what it has read there; one
+ * can't pass more messages within one second than the budget reads.
  */
 function search(ask: Ask, input: Record<string, unknown>, start: Cursor) {
   const args = {
     ...COMMON,
     ...input,
-    after: String(Math.floor(start.from)),
+    after: String(start.from),
     sort: "timestamp",
     sort_dir: "asc",
   };
@@ -203,7 +203,7 @@ function search(ask: Ask, input: Record<string, unknown>, start: Cursor) {
   let latest: number | null = null;
   const take = (message: Message) => {
     latest = Math.max(latest ?? -Infinity, Number(message.ts));
-    if (Number(message.ts) < start.from || taken.has(refOf(message))) return;
+    if (taken.has(refOf(message))) return;
     taken.add(refOf(message));
     found.push(message);
   };
@@ -253,7 +253,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
   const now = ctx.now.getTime() / 1000;
   const prev = window.kind === "resume" ? window.prev : null;
   const begin = {
-    from: (window.kind === "since" ? window.since.getTime() / 1000 : now) - OVERLAP,
+    from: Math.floor((window.kind === "since" ? window.since.getTime() / 1000 : now) - OVERLAP),
     seen: [],
   };
   const cursors: Record<Search, Cursor> = {
@@ -281,7 +281,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     const ts = Number(message.ts);
     const replies = cursors.replies;
     cursors.replies = {
-      from: Math.min(replies.from, ts),
+      from: Math.min(replies.from, Math.floor(ts)),
       seen: replies.seen.filter((seen) => Number(seen.ts) <= ts),
     };
   };
@@ -305,12 +305,13 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     spent = !got.ended;
     if (name === "replies") repliesRead = got.ended;
     // The next scan reaches back OVERLAP once this one read to its end, else goes on from the
-    // latest message it read, skipping the messages from there on it read.
-    const from = got.ended ? now - OVERLAP : Math.max(start.from, got.latest ?? start.from);
+    // second of the latest message it read, skipping the messages from there on it read.
+    const latest = got.latest === null ? start.from : Math.floor(got.latest);
+    const from = got.ended ? Math.floor(now - OVERLAP) : Math.max(start.from, latest);
     const seen = [...start.seen, ...got.found.map(({ channel, ts }) => ({ channel, ts }))];
     cursors[name] = { from, seen: seen.filter(({ ts }) => Number(ts) >= from) };
     // A search the budget cut off with all it read in the second it started at starts there again.
-    if (spent && got.latest !== null && Math.floor(got.latest) === Math.floor(start.from)) {
+    if (spent && got.latest !== null && Math.floor(got.latest) === start.from) {
       stuck = got.latest;
     }
     if (name === "dm" || name === "mention") got.found.forEach(awaits);
