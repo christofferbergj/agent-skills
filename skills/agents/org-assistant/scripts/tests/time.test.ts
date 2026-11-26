@@ -2,7 +2,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { localIso, local, midnight, parseTime, shortTime } from "../time.ts";
+import { parse } from "../parse.ts";
+import { calendarDate, localIso, local, midnight, parseTime, shortTime } from "../time.ts";
 import { Org } from "./helpers.ts";
 
 const ZONE = "Europe/Copenhagen";
@@ -20,7 +21,10 @@ test("summer time starts on the last Sunday of March, when 02:00 becomes 03:00",
   // 02:30 never happens that day; it reads with the offset from before the change, as 03:30.
   assert.equal(utcOf("2026-03-29T02:30"), "2026-03-29T01:30:00.000Z");
   assert.equal(utcOf("2026-03-29T03:30"), "2026-03-29T01:30:00.000Z");
-  assert.equal(midnight("2026-03-29", ZONE, 1).toISOString(), "2026-03-29T22:00:00.000Z");
+  assert.equal(
+    midnight(parse(calendarDate, "2026-03-29"), ZONE, 1).toISOString(),
+    "2026-03-29T22:00:00.000Z",
+  );
 });
 
 test("summer time ends on the last Sunday of October, when 03:00 becomes 02:00", () => {
@@ -29,7 +33,10 @@ test("summer time ends on the last Sunday of October, when 03:00 becomes 02:00",
   // 02:30 happens twice that day; a time written without an offset is the first of the two.
   assert.equal(utcOf("2026-10-25T02:30"), "2026-10-25T00:30:00.000Z");
   assert.equal(utcOf("2026-10-25T03:30"), "2026-10-25T02:30:00.000Z");
-  assert.equal(midnight("2026-10-25", ZONE, 1).toISOString(), "2026-10-25T23:00:00.000Z");
+  assert.equal(
+    midnight(parse(calendarDate, "2026-10-25"), ZONE, 1).toISOString(),
+    "2026-10-25T23:00:00.000Z",
+  );
 });
 
 test("a time written with an offset keeps it, and one that isn't a time is null", () => {

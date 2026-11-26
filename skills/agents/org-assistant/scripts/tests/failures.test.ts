@@ -5,7 +5,13 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { Org, linearTime } from "./helpers.ts";
+import { SourceError } from "../calls.ts";
+import { change } from "../changes.ts";
+import { EMPTY_LEDGER } from "../ledger.ts";
+import { object, parse, string } from "../parse.ts";
+import { scheduleParser } from "../profile.ts";
+import { type Context, scanWith } from "../sources/index.ts";
+import { Org, THU, linearTime, slackTs } from "./helpers.ts";
 
 test("an expired sign-in fails the unit on the third scan and loses nothing", (t) => {
   const org = new Org(t);
@@ -60,4 +66,59 @@ test("an unreadable thread fails the unit on the third scan", (t) => {
   org.scan("11:05");
   const failed = org.scan("12:05", { code: 1 });
   assert.match(failed.stderr, /unreadable 3 scans in a row/);
+});
+
+test("a value no real source sends fails that source alone, and the scan goes on", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const [ticket] = org.world.linear.mine;
+  assert.ok(ticket);
+  ticket.dueDate = "TBD";
+  const [thread] = org.world.t3.threads;
+  assert.ok(thread);
+  thread.snoozedUntil = "soon";
+  org.world.slack.messages = [
+    { channel: "D0ALEX", ts: "99999999999999999999.1", from: "U0ALEX" },
+    { channel: "D0SAM", ts: slackTs("09:20"), from: "U0SAM" },
+  ];
+  org.save();
+  const report = org.report("10:05");
+  assert.match(report.health, /^github ok · linear failing ×1 · slack ok · t3 failing ×1 · /);
+  assert.match(
+    org.status("10:10"),
+    /⚠️ linear: tools\.linear\.list_issues: unexpected response at issues\[0\]\.dueDate$/m,
+  );
+  assert.match(
+    org.status("10:10"),
+    /⚠️ t3: T3 threads in \/invented\/project: unexpected response at \[0\]\.snoozedUntil$/m,
+  );
+  assert.deepEqual(
+    org.waiting().map((item) => item.channel),
+    ["D0SAM"],
+  );
+});
+
+test("an adapter's unexpected error fails its source by the error's type, never its text", () => {
+  const ctx: Context = {
+    now: new Date(`${THU}T09:05:00Z`),
+    zone: "Europe/Copenhagen",
+    schedule: parse(scheduleParser, {}),
+    ledger: EMPTY_LEDGER,
+    thread: null,
+    change: (kind, fields) => change("x", kind, fields),
+  };
+  const adapter = {
+    section: object({ at: string }),
+    scan: (): never => {
+      throw new RangeError("Invalid time value while reading PRIVATE-CANARY");
+    },
+  };
+  assert.throws(
+    () => scanWith({ adapter, source: {}, prev: undefined, fresh: { kind: "baseline" }, ctx }),
+    (error) => {
+      assert.ok(error instanceof SourceError);
+      assert.equal(error.message, "failed unexpectedly (RangeError)");
+      return true;
+    },
+  );
 });

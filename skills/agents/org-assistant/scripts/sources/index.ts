@@ -55,9 +55,14 @@ const PLANNED: Record<string, string> = {
 };
 
 /** Where a source's scan starts: its last section, `prev`, or `fresh` when it has none yet. */
-type Start = { prev: unknown; fresh: Fresh; ctx: Context };
+export type Start = { prev: unknown; fresh: Fresh; ctx: Context };
 
-function scanWith<Src, S>(
+/**
+ * Runs `adapter` from where `scan` says. Any error but a SourceError, such as a value no parser
+ * caught, fails the source too, named by the error's type alone, since its message can quote what
+ * the adapter read; the other sources still scan.
+ */
+export function scanWith<Src, S>(
   scan: Start & { adapter: Adapter<Src, S>; source: Src },
 ): Result<unknown> {
   const { adapter, source, prev, fresh, ctx } = scan;
@@ -65,7 +70,13 @@ function scanWith<Src, S>(
     prev === undefined
       ? fresh
       : { kind: "resume", prev: read(adapter.section, prev, "its snapshot section") };
-  return adapter.scan(source, window, ctx);
+  try {
+    return adapter.scan(source, window, ctx);
+  } catch (error) {
+    if (error instanceof SourceError) throw error;
+    const type = error instanceof Error ? error.name : typeof error;
+    throw new SourceError(`failed unexpectedly (${type})`, { cause: error });
+  }
 }
 
 /** Scans one source from where `start` says. */

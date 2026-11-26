@@ -200,8 +200,19 @@ export function iso(instant: Date): string {
   return instant.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-/** The local midnight that starts `date` (`YYYY-MM-DD`) plus `days`, in `zone`. */
-export function midnight(date: string, zone: string, days = 0): Date {
+/** A calendar date, `YYYY-MM-DD`, that exists. */
+export type CalendarDate = string & { readonly __brand: "CalendarDate" };
+
+export function isCalendarDate(text: string): text is CalendarDate {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+  const [year = 0, month = 0, day = 0] = text.split("-").map(Number);
+  return exists({ year, month, day, hour: 0, minute: 0, second: 0 });
+}
+
+export const calendarDate = refine(string, isCalendarDate, "expected a date such as 2026-11-26");
+
+/** The local midnight that starts `date` plus `days`, in `zone`. */
+export function midnight(date: CalendarDate, zone: string, days = 0): Date {
   const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
   const shifted = new Date(Date.UTC(year, month - 1, day + days));
   return fromWall(
@@ -243,8 +254,16 @@ export function shortTime(instant: Date, zone: string): string {
   return `${DAYS[weekday]} ${pad(wall.day)} ${MONTHS[wall.month - 1]} ${pad(wall.hour)}:${pad(wall.minute)}`;
 }
 
-/** A Slack message timestamp, such as `1795683600.000100`, as an instant. */
-export function fromSlackTs(ts: string): Date {
+/** A Slack message timestamp, such as `1795683600.000100`, that names a time a Date can hold. */
+export type SlackTs = string & { readonly __brand: "SlackTs" };
+
+export function isSlackTs(text: string): text is SlackTs {
+  return /^\d+\.\d+$/.test(text) && !Number.isNaN(new Date(Number(text) * 1000).getTime());
+}
+
+export const slackTs = refine(string, isSlackTs, "expected a Slack message timestamp");
+
+export function fromSlackTs(ts: SlackTs): Date {
   return new Date(Math.floor(Number(ts) * 1000));
 }
 

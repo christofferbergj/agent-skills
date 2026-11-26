@@ -22,7 +22,7 @@ import {
   withDefault,
 } from "../parse.ts";
 import type { LinearSource } from "../profile.ts";
-import { DAY, HOUR, midnight, time } from "../time.ts";
+import { DAY, HOUR, calendarDate, midnight, time } from "../time.ts";
 import type { Adapter, Context, Window } from "./index.ts";
 
 const TOOLS = {
@@ -86,7 +86,12 @@ function stamp(instant: Date): Stamp {
   return text;
 }
 
-const when: Parser<Stamp> = map(time, stamp);
+/** A time a response gives, in Linear's form; one past year 9999 has no such form. */
+const when: Parser<Stamp> = refine(
+  map(time, (instant) => instant.toISOString()),
+  isStamp,
+  "expected a time before the year 10000",
+);
 /** A list that may also be absent or null. */
 const list = <T>(item: Parser<T>) => map(nullable(array(item)), (value) => value ?? []);
 const more = withDefault(boolean, false);
@@ -108,7 +113,7 @@ const mineIssue = object({
   status: nullable(string),
   statusType: nullable(string),
   priority,
-  dueDate: nullable(string),
+  dueDate: nullable(calendarDate),
   assigneeId: nullable(string),
   updatedAt: nullable(when),
   project: nullable(string),
@@ -155,7 +160,7 @@ const section = object({
   /** The user's Linear id, from their own tickets. */
   me: nullable(string),
   mine: record(
-    object({ priority: nullable(number), due: nullable(string), blockedBy: array(string) }),
+    object({ priority: nullable(number), due: nullable(calendarDate), blockedBy: array(string) }),
   ),
   deps: record(object({ status: nullable(string) })),
   /** The due date each deadline change was raised for, so each due date wakes once. */

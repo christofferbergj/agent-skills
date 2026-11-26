@@ -21,7 +21,7 @@ import {
 } from "../parse.ts";
 import type { Thread } from "../policy.ts";
 import type { T3Source } from "../profile.ts";
-import { HOUR, iso } from "../time.ts";
+import { HOUR, iso, time } from "../time.ts";
 import type { Adapter, Context, Window } from "./index.ts";
 
 /** A run still under way: the thread can't take a wake until it ends. */
@@ -41,12 +41,12 @@ const listed = object({
   status: string,
   settled: boolean,
   archived: withDefault(boolean, false),
-  snoozedUntil: nullable(string),
+  snoozedUntil: nullable(time),
   /** Set on a thread another thread forked or delegated, which its parent's run covers. */
   parentThreadId: nullable(string),
   itemCount: count,
   latestRunId: nullable(string),
-  createdAt: nullable(string),
+  createdAt: nullable(time),
   link: optional(string),
 });
 type Listed = Infer<typeof listed>;
@@ -65,7 +65,7 @@ type Seen = Infer<typeof seenThread>;
 
 /** Whether a thread's changes reach the user: not settled, not snoozed, not a child of another. */
 function watched(thread: Listed, now: Date): boolean {
-  const snoozed = thread.snoozedUntil !== null && Date.parse(thread.snoozedUntil) > now.getTime();
+  const snoozed = thread.snoozedUntil !== null && thread.snoozedUntil > now;
   return !thread.settled && !snoozed && thread.parentThreadId === null;
 }
 
@@ -97,7 +97,7 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
       // With no section yet, only a thread created since the window's start is new.
       const isNew =
         window.kind === "since"
-          ? thread.createdAt !== null && Date.parse(thread.createdAt) >= window.since.getTime()
+          ? thread.createdAt !== null && thread.createdAt >= window.since
           : prev === undefined;
       if (window.kind === "since" && !isNew) continue;
       const ticket = started.get(id);

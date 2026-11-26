@@ -9,13 +9,17 @@ import { existsSync, statSync } from "node:fs";
 
 import { type Parser, ShapeError, isRecord, parse } from "./parse.ts";
 
-/** A source that could not be read this scan; `auth` when its sign-in looks expired. */
+/**
+ * A source that could not be read this scan, by what failed and its category; `auth` when its
+ * sign-in looks expired. `cause` holds an unexpected error it stands in for, whose message is never
+ * shown.
+ */
 export class SourceError extends Error {
   readonly auth: boolean;
 
-  constructor(message: string, auth = false) {
-    super(message);
-    this.auth = auth;
+  constructor(message: string, options: { auth?: boolean; cause?: unknown } = {}) {
+    super(message, { cause: options.cause });
+    this.auth = options.auth ?? false;
   }
 }
 
@@ -34,7 +38,7 @@ const TIMEOUT = 300_000;
  */
 export function failure(what: string, text: unknown): SourceError {
   const words = typeof text === "string" ? text : text === undefined ? "" : JSON.stringify(text);
-  if (AUTH.test(words)) return new SourceError(`${what}: sign-in expired`, true);
+  if (AUTH.test(words)) return new SourceError(`${what}: sign-in expired`, { auth: true });
   if (LIMITED.test(words)) return new SourceError(`${what}: rate limited`);
   const status = HTTP.exec(words);
   return new SourceError(`${what}: failed${status ? ` (HTTP ${status[1]})` : ""}`);

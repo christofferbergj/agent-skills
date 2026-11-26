@@ -18,7 +18,7 @@ import {
   string,
 } from "../parse.ts";
 import type { SlackSource } from "../profile.ts";
-import { DAY, fromSlackTs, iso, sleep } from "../time.ts";
+import { DAY, type SlackTs, fromSlackTs, isSlackTs, iso, sleep, slackTs } from "../time.ts";
 import type { Adapter, Context, Window } from "./index.ts";
 
 const TOOL = "tools.slack.mcp.slack_search_public_and_private";
@@ -50,7 +50,7 @@ type Cursor = Infer<typeof cursor>;
 
 const waiting = object({
   channel: string,
-  ts: string,
+  ts: slackTs,
   /** The thread it was posted in, when it wasn't the thread's first message. */
   thread: nullable(string),
   dm: boolean,
@@ -67,7 +67,7 @@ type Section = Infer<typeof section>;
 
 const page = object({ results: string, pagination_info: optional(nullable(string)) });
 
-type Message = { channel: string; ts: string; from: string; thread: string | null; dm: boolean };
+type Message = { channel: string; ts: SlackTs; from: string; thread: string | null; dm: boolean };
 
 /**
  * Each record's field lines: from its `### Result N of M` heading up to its `Text:` line. A heading
@@ -103,7 +103,7 @@ export function messages(
   for (const block of records(text)) {
     const channel = CHANNEL.exec(block);
     const ts = TS.exec(block)?.[1];
-    if (channel === null || ts === undefined) continue;
+    if (channel === null || ts === undefined || !isSlackTs(ts)) continue;
     const thread = THREAD.exec(block)?.[1] ?? null;
     const label = channel[1] ?? "";
     found.push({

@@ -89,6 +89,12 @@ function failHealth(health: Record<string, Health>, name: string, error: SourceE
   return failures;
 }
 
+/** Where an unexpected error was thrown, by its first stack frame: a file and line, never text. */
+function where(cause: unknown): string {
+  const frame = cause instanceof Error ? cause.stack?.match(/^\s+at .*:\d+:\d+\)?$/m) : null;
+  return frame ? `, ${frame[0].trim()}` : "";
+}
+
 function counts(items: Change[]): Record<string, number> {
   const out: Record<string, number> = {};
   for (const item of items) out[item.kind] = (out[item.kind] ?? 0) + 1;
@@ -201,7 +207,7 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
     } catch (error) {
       if (!(error instanceof SourceError)) throw error;
       const failures = failHealth(health, name, error);
-      say(`${org}: ${name}: ${error.message}`);
+      say(`${org}: ${name}: ${error.message}${where(error.cause)}`);
       if (failures >= profile.schedule.source_failures) {
         failed.push(`${name} failed ${failures} scans in a row`);
       }
