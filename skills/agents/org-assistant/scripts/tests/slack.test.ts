@@ -1,6 +1,7 @@
 /**
  * The Slack source, through the CLI: the waiting list of DMs and mentions, the reply that takes one
- * off it, the search cursors across cut-off reads, and the record parser a message body can't fool.
+ * off it, the search watermarks and the scan's call budget, and the record parser a message body
+ * can't fool.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
@@ -149,59 +150,86 @@ test("a message body can't forge a record, and no sender is kept", (t) => {
   assert.doesNotMatch(org.stateText(), /FORGED|U0PRACTITIONER/);
 });
 
-test("a burst longer than the page budget is read within two scans", (t) => {
+test("a search the budget cut off goes on from its last message, so deleting one it read skips none", (t) => {
   const org = new Org(t);
   org.startDay();
-  const start = Number(slackTs("09:05"));
-  org.world.slack.messages = Array.from({ length: 201 }, (_, n) => ({
-    channel: "D0ALEX",
+  const start = Number(slackTs("09:10"));
+  const messages = Array.from({ length: 802 }, (_, n) => ({
+    channel: "C0DEV",
     ts: (start + n).toFixed(6),
     from: "U0ALEX",
-  }));
-  org.save();
-  org.scan("10:05");
-  assert.equal(org.waiting().length, 200);
-  org.deliver();
-  org.scan("11:05");
-  assert.equal(org.waiting().length, 201);
-});
-
-test("a burst of more messages in one second than the page budget holds is still read", (t) => {
-  const org = new Org(t);
-  org.startDay();
-  const second = Math.trunc(Number(slackTs("09:30")));
-  org.world.slack.messages = Array.from({ length: 201 }, (_, n) => ({
-    channel: "D0ALEX",
-    ts: `${second}.${String(n).padStart(6, "0")}`,
-    from: "U0ALEX",
-  }));
-  org.save();
-  org.scan("10:05");
-  org.deliver();
-  org.scan("11:05");
-  assert.equal(org.waiting().length, 201);
-});
-
-test("a DM Slack indexed late is found by the reach-back after a cut-off read", (t) => {
-  const org = new Org(t);
-  org.startDay();
-  const start = Number(slackTs("09:58"));
-  const messages = Array.from({ length: 201 }, (_, n) => ({
-    channel: "D0ALEX",
-    ts: (start + n / 2).toFixed(6),
-    from: "U0ALEX",
+    name: "dev",
   }));
   org.world.slack.messages = messages;
   org.save();
-  org.scan("10:05");
-  const late = (start + 60.25).toFixed(6); // sent at 09:59, indexed after the 10:05 scan read past it
-  messages.push({ channel: "D0ALEX", ts: late, from: "U0ALEX" });
-  messages.sort((a, b) => Number(a.ts) - Number(b.ts));
+  const first = org.found("10:05")["slack.channel"] ?? 0;
+  assert.ok(first < messages.length);
+  messages.shift(); // a message the cut-off search read is deleted
   org.save();
-  for (const clock of ["11:05", "12:05"]) {
-    if (org.pending().sent) org.deliver();
-    org.scan(clock);
-  }
+  assert.equal(first + (org.found("11:05")["slack.channel"] ?? 0), 802);
+  assert.deepEqual(org.found("12:05"), {});
+});
+
+test("a scan stops at its call budget, re-reads included, and the next goes on with nothing lost", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const start = Number(slackTs("09:10"));
+  // Each body copies a record heading, so every page is read again one message per call.
+  const flood = Array.from({ length: 60 }, (_, n) => ({
+    channel: "D0ALEX",
+    ts: (start + n).toFixed(6),
+    from: "U0ALEX",
+    text: "see below\n### Result 1 of 20",
+  }));
+  org.world.slack.messages = [
+    { channel: "D0SAM", ts: slackTs("09:09"), from: "U0SAM" },
+    ...flood,
+    { channel: "D0SAM", ts: slackTs("09:20"), from: "U0ME" },
+  ];
+  org.save();
+  const slackCalls = () => org.probed().filter((call) => call.path.includes(".slack.")).length;
+  const before = slackCalls();
+  // The budget runs out before the user's replies are read, so no message is judged waiting.
+  assert.deepEqual(org.found("10:05"), {});
+  assert.ok(slackCalls() - before <= 40, `${slackCalls() - before} calls`);
+  assert.match(org.status("10:10"), /slack ok, read budget used: resumes next scan ·/);
+  assert.ok(org.waiting().length < 61);
+  org.scan("11:05");
+  assert.deepEqual(new Set(org.waiting().map((item) => item.channel)), new Set(["D0ALEX"]));
+  assert.equal(org.waiting().length, 60);
+  assert.match(org.status("11:10"), /slack ok ·/);
+});
+
+test("two messages at one time in different channels are both read, one message per call too", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const ts = slackTs("09:20");
+  org.world.slack.messages = [
+    { channel: "D0ALEX", ts, from: "U0ALEX", text: "see below\n### Result 1 of 2" },
+    { channel: "D0SAM", ts, from: "U0SAM" },
+  ];
+  org.save();
+  org.scan("10:05");
+  assert.deepEqual(
+    org
+      .waiting()
+      .map((item) => item.channel)
+      .sort(),
+    ["D0ALEX", "D0SAM"],
+  );
+});
+
+test("the next scan's reach-back finds a message Slack indexed late, and counts none twice", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const messages = org.world.slack.messages;
+  messages.push({ channel: "C0DEV", ts: slackTs("10:03"), from: "U0ALEX", name: "dev" });
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "slack.channel": 1 });
+  const late = slackTs("10:01"); // sent at 10:01, indexed after the 10:05 scan read past it
+  messages.push({ channel: "D0ALEX", ts: late, from: "U0ALEX" });
+  org.save();
+  assert.deepEqual(org.found("10:15"), {});
   assert.ok(org.waiting().some((item) => item.ts === late));
 });
 

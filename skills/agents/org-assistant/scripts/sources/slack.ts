@@ -17,19 +17,24 @@ import {
   string,
 } from "../parse.ts";
 import type { SlackSource } from "../profile.ts";
-import { DAY, type SlackTs, fromSlackTs, isSlackTs, iso, sleep, slackTs } from "../time.ts";
+import { DAY, fromSlackTs, isSlackTs, iso, sleep, slackTs } from "../time.ts";
 import type { Adapter, Context, Window } from "./index.ts";
 
 const TOOL = "tools.slack.mcp.slack_search_public_and_private";
-const PAGES = 10; // 20 messages a page
 const LIMIT = 20;
+/**
+ * The calls one scan makes at most, retries and one-message re-reads included: four minutes at one
+ * call each six seconds.
+ */
+const BUDGET = 40;
 const FORGET = 3 * DAY; // a waiting message older than this leaves the list
 const SEARCHES = ["dm", "mention", "channels"] as const;
 type Search = (typeof SEARCHES)[number];
-const COMMON = { response_format: "detailed", include_context: false, limit: LIMIT };
-/** Seconds each search reaches back before its cursor, for messages Slack indexed late. */
+const COMMON = { response_format: "detailed", include_context: false };
+/** Seconds a search read to its end reaches back the next time, for messages Slack indexed late. */
 const OVERLAP = 600;
 const RESULT = /^### Result (\d+) of (\d+)\s*$/gm;
+const HEADER = /^## Messages \((\d+) results?\)/m;
 const CHANNEL = /^Channel: (.*?)\s*\(ID: ([A-Z0-9]+)\)/m;
 const FROM = /^From: .*\(ID: ([A-Z0-9]+)\)/m;
 const TS = /^Message_ts: ([0-9]+\.[0-9]+)/m;
@@ -37,22 +42,18 @@ const THREAD = /[?&]thread_ts=([0-9]+\.[0-9]+)/;
 const CURSOR = /`([A-Za-z0-9+/=_-]{8,})`/;
 const BOTS = new Set(["U00", "USLACKBOT"]);
 
-const HEADER = /^## Messages \((\d+) results?\)/m;
-/** One message for each call when a page has to be read again; one page's re-read stops here. */
-const REREAD = 2 * LIMIT;
-
 const seconds = (name: string, fallback: number) => Number(process.env[name] ?? fallback) * 1000;
 
+/** A message by its identity: its channel and its timestamp, which another channel can share. */
+const messageId = object({ channel: string, ts: slackTs });
+type MessageId = Infer<typeof messageId>;
+
 /**
- * Where a search's next run starts: OVERLAP before `at`, the time its last finished read began. A
- * read cut off at the page budget saves the `after` it asked from, the next page's cursor, and the
- * last message it reached, and goes on from there at the next scan; once that read is done, `at`
- * moves to `until`, when it began, so nothing it hadn't reached is skipped.
+ * Where a search goes on: from `from`, a Slack time, skipping the messages at or after it that it
+ * has read, `seen`. A search read to its end goes on from OVERLAP before the scan began, for messages
+ * Slack indexed late; one the budget cut off goes on from its last message.
  */
-const cursor = object({
-  at: number,
-  more: nullable(object({ after: string, page: string, last: nullable(slackTs), until: number })),
-});
+const cursor = object({ from: number, seen: array(messageId) });
 type Cursor = Infer<typeof cursor>;
 
 const waiting = object({
@@ -74,7 +75,9 @@ type Section = Infer<typeof section>;
 
 const page = object({ results: string, pagination_info: optional(nullable(string)) });
 
-type Message = { channel: string; ts: SlackTs; from: string; thread: string | null; dm: boolean };
+type Message = MessageId & { from: string; thread: string | null; dm: boolean };
+
+const refOf = (item: MessageId) => `slack:${item.channel}:${item.ts}`;
 
 /** A failed read of a page the tool sent, named by what failed only. */
 const unreadable = (why: string) => new SourceError(`${TOOL}: unexpected response (${why})`);
@@ -100,12 +103,12 @@ const fieldsOf = (text: string, from: number, to: number) =>
   text.slice(from, to).split("\nText:")[0] ?? "";
 
 /**
- * A search page: its messages, the number of records it says it holds, and the next page's cursor.
- * `messages` is null when a message body may have forged a record, since a body can hold anything,
- * headings included: the headings don't number 1 to that count in order, or a record lacks its
- * fields. A page with records none of which can be read is a format change, and fails the source.
+ * A search page: its messages, and the number of records it says it holds. `messages` is null when
+ * a message body may have forged a record, since a body can hold anything, headings included: the
+ * headings don't number 1 to that count in order, or a record lacks its fields. A page with records
+ * none of which can be read is a format change, and fails the source.
  */
-export function readPage(text: string, pagination: string) {
+function readPage(text: string) {
   const headings = [...text.matchAll(RESULT)];
   const header = HEADER.exec(text);
   const count = header === null ? headings.length : Number(header[1]);
@@ -121,18 +124,14 @@ export function readPage(text: string, pagination: string) {
       (heading, index) => heading[1] === String(index + 1) && heading[2] === String(count),
     );
   const messages = records.filter((record) => record !== null);
-  return {
-    messages: numbered && messages.length === count ? messages : null,
-    count,
-    next: CURSOR.exec(pagination)?.[1] ?? null,
-  };
+  return { messages: numbered && messages.length === count ? messages : null, count };
 }
 
 /**
  * The message a one-message page holds, or null when the search has none left. Its first record is
  * the only real one, and everything after that record's `Text:` line is the message's own.
  */
-export function onlyMessage(text: string): Message | null {
+function onlyMessage(text: string): Message | null {
   const [first] = text.matchAll(RESULT);
   const header = HEADER.exec(text);
   if (first === undefined) {
@@ -147,90 +146,73 @@ export function onlyMessage(text: string): Message | null {
   return message;
 }
 
+/** One search call: a page's text and its pagination line, or null once the budget is spent. */
+type Ask = (input: Record<string, unknown>) => { results: string; pagination: string } | null;
+
 /**
- * One search call. Slack limits search bursts, so searches go one at a time, and a rate-limited
- * call waits and tries once more before it fails the source.
+ * The scan's search calls, out of one budget of BUDGET. Slack limits search bursts, so the calls go
+ * one at a time, and a rate-limited call waits a minute and tries once more, which costs a call too,
+ * before it fails the source.
  */
-function call(executor: Executor, input: Record<string, unknown>) {
-  sleep(seconds("ORG_ASSISTANT_SLACK_SPACING", 6)); // at most 10 searches a minute
-  let value: unknown;
-  try {
-    [value] = executor.call([{ path: TOOL, input }]);
-  } catch (error) {
-    if (!(error instanceof SourceError) || !LIMITED.test(error.message)) throw error;
-    sleep(seconds("ORG_ASSISTANT_SLACK_PAUSE", 60));
-    [value] = executor.call([{ path: TOOL, input }]);
-  }
-  const got = read(page, value, TOOL);
-  return { results: got.results, pagination: got.pagination_info ?? "" };
+function asker(executor: Executor): Ask {
+  let left = BUDGET;
+  return (input) => {
+    for (let tries = 0; left > 0; tries++) {
+      left -= 1;
+      const pause = tries === 0 ? 0 : seconds("ORG_ASSISTANT_SLACK_PAUSE", 60);
+      sleep(seconds("ORG_ASSISTANT_SLACK_SPACING", 6) + pause); // at most 10 searches a minute
+      try {
+        const got = read(page, executor.call([{ path: TOOL, input }])[0], TOOL);
+        return { results: got.results, pagination: got.pagination_info ?? "" };
+      } catch (error) {
+        const limited = error instanceof SourceError && LIMITED.test(error.message);
+        if (tries > 0 || !limited) throw error;
+      }
+    }
+    return null;
+  };
 }
 
-/** Where a search goes on: the next page's cursor, and the last message it read. */
-type Place = { page: string | null; last: SlackTs | null };
 type Order = "asc" | "desc";
 
-/** Whether `ts` comes after `last` in the search's order. */
-const past = (ts: SlackTs, last: SlackTs | null, order: Order) =>
-  last === null || (order === "asc" ? Number(ts) > Number(last) : Number(ts) < Number(last));
-
 /**
- * The `count` messages of a page a body may have forged a record in, read again one per call from
- * the page's own cursor. Only messages past the last one read before the page count, so a cursor
- * that addresses pages rather than messages only costs more calls. A page that can't be read even
- * so fails the source, and the search's saved place stays where it was.
+ * The messages a search finds from `start` on, and whether it read to its end before the budget ran
+ * out. A page a body may have forged a record in is read again from its own cursor one message per
+ * call, where each page holds exactly one real record, and so is the rest of the search. Slack's
+ * `after` takes whole seconds, so a search starts at the second `start.from` falls in and skips what
+ * it has read; one can't pass more messages within one second than the budget reads.
  */
-function reread(
-  executor: Executor,
-  args: Record<string, unknown>,
-  at: Place,
-  count: number,
-  order: Order,
-): Message[] {
+function search(ask: Ask, input: Record<string, unknown>, order: Order, start: Cursor) {
+  const args = { ...COMMON, ...input, after: String(Math.floor(start.from)), sort: "timestamp" };
+  const taken = new Set(start.seen.map(refOf));
   const found: Message[] = [];
-  let { page, last } = at;
-  for (let calls = 0; found.length < count && calls < REREAD; calls++) {
-    const got = call(executor, { ...args, limit: 1, ...(page === null ? {} : { cursor: page }) });
-    const message = onlyMessage(got.results);
-    if (message === null) break;
-    if (past(message.ts, last, order)) {
-      found.push(message);
-      last = message.ts;
+  const take = (message: Message) => {
+    if (Number(message.ts) < start.from || taken.has(refOf(message))) return;
+    taken.add(refOf(message));
+    found.push(message);
+  };
+  let limit = LIMIT;
+  let cursor: string | null = null;
+  for (;;) {
+    const got = ask({ ...args, sort_dir: order, limit, ...(cursor === null ? {} : { cursor }) });
+    if (got === null) return { found, ended: false };
+    const next = CURSOR.exec(got.pagination)?.[1] ?? null;
+    if (limit === 1) {
+      const message = onlyMessage(got.results);
+      if (message !== null) take(message);
+      if (message === null || next === null) return { found, ended: true };
+    } else {
+      const { messages, count } = readPage(got.results);
+      if (messages === null) {
+        limit = 1;
+        continue;
+      }
+      messages.forEach(take);
+      if (next === null || count < LIMIT) return { found, ended: true };
     }
-    page = CURSOR.exec(got.pagination)?.[1] ?? null;
-    if (page === null) break;
+    cursor = next;
   }
-  if (found.length < count) throw unreadable("a page it couldn't read one message at a time");
-  return found;
 }
-
-/**
- * The messages a search finds on up to PAGES pages from `from`, and where it stopped: `next` is
- * null once a page shorter than the limit, or one with no next cursor, ended it. Oldest first means
- * a cut-off search misses only the newest messages, which the next scan reads from where this one
- * stopped.
- */
-function search(
-  executor: Executor,
-  input: Record<string, unknown>,
-  order: Order,
-  from: Place,
-): { found: Message[]; next: { page: string; last: SlackTs | null } | null } {
-  const args = { ...input, sort: "timestamp", sort_dir: order };
-  const found: Message[] = [];
-  let at = from;
-  for (let pages = 0; pages < PAGES; pages++) {
-    const got = call(executor, at.page === null ? args : { ...args, cursor: at.page });
-    const read = readPage(got.results, got.pagination);
-    const messages = read.messages ?? reread(executor, args, at, read.count, order);
-    found.push(...messages);
-    const last = messages.at(-1)?.ts ?? at.last;
-    if (read.next === null || read.count < LIMIT) return { found, next: null };
-    at = { page: read.next, last };
-  }
-  return { found, next: at.page === null ? null : { page: at.page, last: at.last } };
-}
-
-const refOf = (item: { channel: string; ts: string }) => `slack:${item.channel}:${item.ts}`;
 
 /** The user wrote after it in the same DM, or in the same channel thread. */
 function answered(item: Waiting, mine: Message[]): boolean {
@@ -245,15 +227,18 @@ function answered(item: Waiting, mine: Message[]): boolean {
 }
 
 function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
-  const executor = new Executor(source, [TOOL]);
+  const ask = asker(new Executor(source, [TOOL]));
   const me = source.me;
   const now = ctx.now.getTime() / 1000;
   const prev = window.kind === "resume" ? window.prev : null;
-  const start = window.kind === "since" ? window.since.getTime() / 1000 : now;
+  const begin = {
+    from: (window.kind === "since" ? window.since.getTime() / 1000 : now) - OVERLAP,
+    seen: [],
+  };
   const cursors: Record<Search, Cursor> = {
-    dm: prev?.cursors.dm ?? { at: start, more: null },
-    mention: prev?.cursors.mention ?? { at: start, more: null },
-    channels: prev?.cursors.channels ?? { at: start, more: null },
+    dm: prev?.cursors.dm ?? begin,
+    mention: prev?.cursors.mention ?? begin,
+    channels: prev?.cursors.channels ?? begin,
   };
   const wait = ctx.schedule.slack_wait_minutes * 60;
   const list = (prev?.waiting ?? []).filter((item) => now - Number(item.ts) < FORGET / 1000);
@@ -264,20 +249,22 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     mention: { keywords: [`<@${me}>`] },
     channels: { filters: source.channels.map((entry) => `in:<#${entry.id}>`).join(" ") },
   };
+  // Each search goes on oldest first from where it stopped; once the budget runs out, the rest wait.
   const found: Record<Search, Message[]> = { dm: [], mention: [], channels: [] };
+  let spent = false;
   for (const name of SEARCHES) {
-    if (name === "channels" && source.channels.length === 0) continue;
-    const { at, more } = cursors[name];
-    const after = more?.after ?? String(Math.trunc(at - OVERLAP));
-    const input = { ...COMMON, ...filters[name], after };
-    const got = search(executor, input, "asc", {
-      page: more?.page ?? null,
-      last: more?.last ?? null,
-    });
+    if (spent || (name === "channels" && source.channels.length === 0)) continue;
+    const start = cursors[name];
+    const got = search(ask, filters[name], "asc", start);
     found[name] = got.found;
-    const until = more?.until ?? now;
-    cursors[name] =
-      got.next === null ? { at: until, more: null } : { at, more: { after, ...got.next, until } };
+    spent = !got.ended;
+    // The next scan reaches back OVERLAP once this one read to its end, else goes on from its last
+    // message, skipping the messages from there on it read.
+    const from = spent
+      ? Math.max(start.from, ...got.found.map(({ ts }) => Number(ts)))
+      : now - OVERLAP;
+    const seen = [...start.seen, ...got.found.map(({ channel, ts }) => ({ channel, ts }))];
+    cursors[name] = { from, seen: seen.filter(({ ts }) => Number(ts) >= from) };
   }
 
   const known = new Set(list.map(refOf));
@@ -294,20 +281,19 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     });
   }
   // The user's own messages since the oldest one still waiting, newest first: a cut-off read then
-  // misses only the oldest replies, never the reply to a message that just arrived.
+  // misses only the oldest replies, never the reply to a message that just arrived. With no budget
+  // left to read them, no message is judged answered or waiting this scan.
   const oldest = Math.min(...list.map((item) => Number(item.ts)), now - OVERLAP);
-  const mine = search(
-    executor,
-    { ...COMMON, filters: `from:<@${me}>`, after: String(Math.trunc(oldest)) },
-    "desc",
-    { page: null, last: null },
-  );
+  const mine = spent
+    ? null
+    : search(ask, { filters: `from:<@${me}>` }, "desc", { from: oldest, seen: [] });
+  spent ||= mine?.ended === false;
   const changes: Change[] = [];
   const kept: Waiting[] = [];
   for (const item of list) {
-    if (answered(item, mine.found)) continue;
+    if (mine !== null && answered(item, mine.found)) continue;
     const age = now - Number(item.ts);
-    if (age >= wait && !item.woke) {
+    if (mine !== null && age >= wait && !item.woke) {
       changes.push(
         ctx.change("slack.waiting", {
           ref: refOf(item),
@@ -346,6 +332,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     changes,
     // A gathered DM or mention stays only while it is still unanswered.
     still: (item: Change) => item.kind !== "slack.waiting" || refs.has(item.ref),
+    ...(spent ? { note: "read budget used: resumes next scan" } : {}),
   };
 }
 
