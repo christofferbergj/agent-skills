@@ -35,6 +35,12 @@ function thread(id: string, fields: Partial<T3Thread> = {}): T3Thread {
   };
 }
 
+/** The fixture's other thread, completed at the start, ends a second run. */
+function finishRun(org: Org): void {
+  Object.assign(other(org), { status: "completed", itemCount: 20, latestRunId: "r-other-2" });
+  org.save();
+}
+
 function turn(org: Org, status: string, itemCount?: number): void {
   Object.assign(other(org), { status, ...(itemCount === undefined ? {} : { itemCount }) });
   org.save();
@@ -96,6 +102,51 @@ test("a thread running an hour with no new item is stalled, once per stall", (t)
     items: 14,
     started: false,
   });
+});
+
+test("a thread that ends a second run the same way between scans counts again", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  finishRun(org);
+  assert.deepEqual(org.found("10:05"), { "thread.finished": 1 });
+  Object.assign(other(org), { latestRunId: "r-other-3", itemCount: 30 });
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "thread.finished": 1 });
+  turn(org, "waiting", 34);
+  org.scan("12:05");
+  org.deliver();
+  Object.assign(other(org), { latestRunId: "r-other-4", itemCount: 40 });
+  org.save();
+  assert.deepEqual(org.found("13:05"), { "thread.waiting": 1 });
+});
+
+test("a gathered change for a thread that has left the watch since is dropped before the wake", (t) => {
+  const leave: [string, (thread: T3Thread) => void][] = [
+    ["settled", (thread) => (thread.settled = true)],
+    ["snoozed", (thread) => (thread.snoozedUntil = utc("18:00"))],
+    ["archived", (thread) => (thread.archived = true)],
+    ["made a child", (thread) => (thread.parentThreadId = "t-parent")],
+  ];
+  for (const [how, edit] of leave) {
+    const org = new Org(t);
+    org.startDay();
+    org.world.t3.threads.push(thread("t-new"));
+    finishRun(org);
+    assert.deepEqual(org.found("10:05"), { "thread.finished": 1, "thread.started": 1 }, how);
+    for (const entry of org.world.t3.threads) edit(entry);
+    org.save();
+    org.scan("11:05");
+    assert.deepEqual(org.pending().gathered, [], how);
+  }
+  const org = new Org(t);
+  org.startDay();
+  finishRun(org);
+  org.scan("10:05");
+  org.world.t3.threads = org.world.t3.threads.filter((entry) => entry.threadId !== "t-other");
+  org.save();
+  org.scan("13:05");
+  assert.deepEqual(org.pending().gathered, [], "gone");
+  assert.equal(org.sent().length, 1);
 });
 
 test("a thread new since the last scan is pulse, and one that already waits wakes as waiting too", (t) => {

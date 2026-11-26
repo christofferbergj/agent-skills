@@ -54,7 +54,9 @@ type Listed = Infer<typeof listed>;
 const seenThread = object({
   status: string,
   items: count,
-  /** When the scan first saw the thread at this status and item count. */
+  /** The thread's latest run, so a second run that ends the same way still counts. */
+  run: nullable(string),
+  /** When the scan first saw the thread at this status, run, and item count. */
   since: string,
   /** Whether this stall was reported; a new item or status ends it. */
   stalled: boolean,
@@ -83,10 +85,14 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
       if (id === ctx.thread || thread.archived) continue;
       const prev = seen[id];
       const same =
-        prev !== undefined && prev.status === thread.status && prev.items === thread.itemCount;
+        prev !== undefined &&
+        prev.status === thread.status &&
+        prev.run === thread.latestRunId &&
+        prev.items === thread.itemCount;
       const record: Seen = {
         status: thread.status,
         items: thread.itemCount,
+        run: thread.latestRunId,
         since: same ? prev.since : now,
         stalled: same ? prev.stalled : false,
       };
@@ -112,7 +118,8 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
       const ref = `t3:${id}`;
       if (isNew) changes.push(ctx.change("thread.started", { ref, at: now, key: "new", detail }));
       const turned = TURNS[thread.status];
-      if (turned !== undefined && (isNew || prev?.status !== thread.status)) {
+      const moved = prev?.status !== thread.status || prev.run !== thread.latestRunId;
+      if (turned !== undefined && (isNew || moved)) {
         // Keyed by the run and its item count, so a replay after a crash adds it once, and the next
         // time the thread turns the same way gets a new key.
         const key = `${thread.status}:${thread.latestRunId}:${thread.itemCount}`;
@@ -134,18 +141,18 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
   return {
     section: { threads },
     changes,
-    // A gathered wait, failure, or stall stays only while its thread is watched and unchanged.
+    // A gathered change stays only while its thread is still watched, and a wait, failure, or stall
+    // only while the thread is still in that state.
     still: (item: Change) => {
       const id = item.ref.slice("t3:".length);
       const current = threads[id];
+      if (current === undefined || !watching.has(id)) return false;
       switch (item.kind) {
         case "thread.waiting":
         case "thread.failed":
-          return watching.has(id) && current?.status === item.detail.status;
+          return current.status === item.detail.status;
         case "thread.stalled":
-          return (
-            watching.has(id) && current?.status === "running" && current.items === item.detail.items
-          );
+          return current.status === "running" && current.items === item.detail.items;
         default:
           return true;
       }
