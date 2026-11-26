@@ -606,14 +606,16 @@ class Scan(unittest.TestCase):
             self.scan(clock)
         self.assertNotIn("No overview delivered", self.run_cli("status", "acme", now=utc("11:10")).stdout)
 
-    def test_a_burst_longer_than_the_page_limit_is_read_over_two_scans(self):
+    def test_a_burst_longer_than_the_page_limit_is_read_within_three_scans(self):
         self.start_day()
         start = float(slack_ts("09:05"))
         self.world["slack"]["messages"] = [{"channel": "D0ALEX", "ts": f"{start + n:.6f}", "from": "U0ALEX"}
                                            for n in range(201)]
         self.save()
-        self.scan("10:05")
-        self.scan("11:05")
+        for clock in ("10:05", "11:05", "12:05"):  # cut off, then no progress past the overlap, then exact
+            self.scan(clock)
+            if self.state("pending.json")["sent"]:
+                self.deliver()
         self.assertEqual(len(self.state("snapshot.json")["sources"]["slack"]["waiting"]), 201)
 
     def test_a_slack_page_whose_records_can_not_be_told_apart_is_refused(self):
@@ -673,6 +675,75 @@ class Scan(unittest.TestCase):
         done = self.run_cli("scan", now=utc("08:30"))
         self.assertEqual(done.returncode, 1)
         self.assertTrue((self.root / "state" / "acme" / "snapshot.json").exists())
+
+    # Round-3 review findings.
+
+    def test_a_reply_found_in_the_same_scan_as_the_dm_wakes_nothing(self):
+        self.start_day()
+        self.world["slack"]["messages"] = [{"channel": "D0ALEX", "ts": slack_ts("09:20"), "from": "U0ALEX"},
+                                           {"channel": "D0ALEX", "ts": slack_ts("09:25"), "from": "U0ME"}]
+        self.save()
+        self.scan("10:05")
+        self.assertEqual(len(self.sent()), 1)
+
+    def test_a_held_delta_rejoins_before_mutes_and_answered_messages_are_applied(self):
+        self.start_day()
+        self.note("n1", "issueAssignedToYou", "DEV-103", utc("09:30"))
+        messages = self.world["slack"]["messages"]
+        messages.append({"channel": "D0ALEX", "ts": slack_ts("09:20"), "from": "U0ALEX"})
+        self.save()
+        self.scan("10:05")
+        fri = "2026-11-27"
+        self.ledger("quiet", f"{fri}T14:00", now=utc("10:10"))
+        self.ledger("mute", "DEV-103", now=utc("10:10"))
+        messages.append({"channel": "D0ALEX", "ts": slack_ts("10:15"), "from": "U0ME"})
+        self.save()
+        self.scan("11:05")
+        self.scan("09:05", fri)
+        self.assertEqual(self.state("pending.json")["sent"]["kind"], "overview")
+        self.assertEqual(self.batch(), [])
+
+    def test_a_dm_indexed_late_behind_a_cut_off_page_is_still_found(self):
+        self.start_day()
+        start = float(slack_ts("09:05"))
+        messages = [{"channel": "D0ALEX", "ts": f"{start + n:.6f}", "from": "U0ALEX"} for n in range(201)]
+        self.world["slack"]["messages"] = messages
+        self.save()
+        self.scan("10:05")
+        late = f"{start + 198.5:.6f}"
+        messages.append({"channel": "D0ALEX", "ts": late, "from": "U0ALEX"})
+        self.save()
+        for clock in ("11:05", "12:05", "13:05"):
+            if self.state("pending.json")["sent"]:
+                self.deliver()
+            self.scan(clock)
+        self.assertIn(late, [w["ts"] for w in self.state("snapshot.json")["sources"]["slack"]["waiting"]])
+
+    def test_a_slack_ordinal_past_its_page_count_is_refused(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        from orgscan.calls import SourceError
+        from orgscan.sources.slack import _messages
+        page = {"results": "## Messages (1 result)\n### Result 1 of 1\nChannel: DM (ID: D01)\nMessage_ts: 1.000001\n"
+                           "Text: copied\n### Result 2 of 1\nChannel: DM (ID: D99)\nMessage_ts: 2.000002"}
+        with self.assertRaises(SourceError):
+            _messages(page)
+
+    def test_a_finish_edited_before_crash_recovery_counts_once(self):
+        self.start_day()
+        self.world["t3"]["assistant"]["status"] = "running"
+        team = self.world["linear"]["team"]["DEV"]
+        ticket = {**team[0], "id": "DEV-201", "status": "Done", "statusType": "completed",
+                  "updatedAt": f"{utc('09:30')[:-1]}.000Z", "completedAt": f"{utc('09:30')[:-1]}.000Z"}
+        team.append(ticket)
+        self.save()
+        snapshot = self.root / "state" / "acme" / "snapshot.json"
+        before = snapshot.read_bytes()
+        self.scan("10:05")
+        snapshot.write_bytes(before)
+        ticket["updatedAt"] = f"{utc('10:30')[:-1]}.000Z"
+        self.save()
+        self.scan("11:05")
+        self.assertEqual([i["ref"] for i in self.state("pending.json")["gathered"]], ["DEV-201"])
 
 
 if __name__ == "__main__":

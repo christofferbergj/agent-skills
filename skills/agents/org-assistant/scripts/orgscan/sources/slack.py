@@ -20,6 +20,7 @@ FORGET = timedelta(days=3)  # a waiting message older than this leaves the list
 SEARCHES = ("dm", "mention", "channels")
 COMMON = {"response_format": "detailed", "include_context": False, "limit": 20}
 OVERLAP = 600  # seconds each search reaches back before the cursor, for messages Slack indexed late
+COUNT = re.compile(r"^## Messages \((\d+) results?\)", re.M)  # the page's own record count
 RESULT = re.compile(r"^### Result (\d+) of (\d+)\s*$", re.M)
 CHANNEL = re.compile(r"^Channel: (.*?)\s*\(ID: ([A-Z0-9]+)\)", re.M)
 FROM = re.compile(r"^From: .*\(ID: ([A-Z0-9]+)\)", re.M)
@@ -27,8 +28,8 @@ TS = re.compile(r"^Message_ts: ([0-9]+\.[0-9]+)", re.M)
 THREAD = re.compile(r"[?&]thread_ts=([0-9]+\.[0-9]+)")
 CURSOR = re.compile(r"`([A-Za-z0-9+/=_-]{8,})`")
 BOTS = {"U00", "USLACKBOT"}
-PAUSE = float(os.environ.get("ORG_ASSISTANT_SLACK_PAUSE", "30"))  # seconds before the one retry
-SPACING = float(os.environ.get("ORG_ASSISTANT_SLACK_SPACING", "3.5"))  # seconds between searches: ≤ 17 a minute
+PAUSE = float(os.environ.get("ORG_ASSISTANT_SLACK_PAUSE", "60"))  # seconds before the one retry
+SPACING = float(os.environ.get("ORG_ASSISTANT_SLACK_SPACING", "6"))  # seconds between searches: ≤ 10 a minute
 
 
 def _messages(result) -> tuple[list[dict], str | None]:
@@ -39,7 +40,9 @@ def _messages(result) -> tuple[list[dict], str | None]:
     numbers = [(int(n), int(of)) for n, of in RESULT.findall(text)]
     # Real records number on without a gap under one "of"; a message body that copies the
     # heading breaks that, and the page is refused rather than read wrong.
-    if any(b[0] != a[0] + 1 for a, b in zip(numbers, numbers[1:])) or len({of for _, of in numbers}) > 1:
+    count = COUNT.search(text)
+    if numbers and (any(b[0] != a[0] + 1 for a, b in zip(numbers, numbers[1:])) or len({of for _, of in numbers}) > 1
+                    or numbers[-1][0] != numbers[-1][1] or (count and int(count.group(1)) != len(numbers))):
         raise SourceError("Slack search returned a page whose records can't be told apart")
     found = []
     for block in RESULT.split(text)[3::3]:
@@ -127,12 +130,16 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             found[name] = []
             continue
         cursor = cursors[name]
-        after = cursor["at"] if cursor.get("resume") else cursor["at"] - OVERLAP
+        # Each search reaches back OVERLAP for messages Slack indexed late. Only a cut-off search
+        # that made no progress past its cursor resumes exactly there, so a burst can't replay forever.
+        after = cursor["at"] if cursor.get("exact") else cursor["at"] - OVERLAP
         found[name], whole = _search(executor, {**COMMON, **filters[name], "after": str(int(after))})
-        last = found[name][-1]["ts"] if found[name] else None
-        cursors[name] = {"at": now} if whole or not last else {"at": float(last), "resume": True}
-    oldest = min([float(w["ts"]) for w in waiting] + [now - OVERLAP])
-    mine, _ = _search(executor, {**COMMON, "filters": f"from:<@{me}>", "after": str(int(oldest))})
+        last = float(found[name][-1]["ts"]) if found[name] else None
+        if whole or last is None:
+            cursors[name] = {"at": now}
+        else:
+            stuck = cursor.get("resume", False) and last <= cursor["at"]
+            cursors[name] = {"at": max(last, cursor["at"]), "resume": True, "exact": stuck}
     changes: list[dict] = []
     known = {(w["channel"], w["ts"]) for w in waiting}
     for message in found["dm"] + found["mention"]:
@@ -141,6 +148,9 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
         known.add((message["channel"], message["ts"]))
         # The sender's id is needed only for the check above, so it stays out of the snapshot.
         waiting.append({**{k: v for k, v in message.items() if k != "from"}, "woke": False})
+    # The user's own messages since the oldest one still waiting, the ones just found included.
+    oldest = min([float(w["ts"]) for w in waiting] + [now - OVERLAP])
+    mine, _ = _search(executor, {**COMMON, "filters": f"from:<@{me}>", "after": str(int(oldest))})
     kept = []
     for item in waiting:
         if _answered(item, mine):

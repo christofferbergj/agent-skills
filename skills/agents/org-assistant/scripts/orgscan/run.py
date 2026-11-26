@@ -208,29 +208,32 @@ class Scan:
                 _settle(pending, slot, now)
         if pending["inline"] and (inline or now - parse(pending["inline"]["frozen_at"]) >= INLINE_GRACE):
             _unfreeze(pending, "inline")  # before the sources, so what stopped being true leaves it too
+        thread = self.profile.get("thread", "")
+        shown = None if inline else self.read_thread()
+        # A dry run with no thread yet decides as if an idle thread were there.
+        busy = (shown is None or shown.get("status") in t3_source.ACTIVE) if thread else not dry_run
+        reason = ""
+        sent = pending["sent"]
+        if sent and not inline and not busy and \
+                re.search(rf"\bbatch {re.escape(sent['id'])}(?![\w-])", shown.get("lastText", "")):
+            _settle(pending, "sent", now)
+            reason = "the thread's last reply already named the sent batch"
+        elif sent and not inline and not busy and held(self.local, self.ledger, sent["kind"]) and \
+                overview_due(self.local, schedule, pending["meta"], self.ledger):
+            _unfreeze(pending, "sent")  # a delta quiet holds goes out in the overview that is due
+            reason = "the held delta joins the overview"
         found = self.read_sources()
         flight = [i["id"] for slot in ("sent", "inline") if pending[slot] for i in pending[slot]["items"]]
         pending["gathered"] = [i for i in gather(pending["gathered"], found, [*pending["seen"], *flight])
                                if not muted(i, self.ledger.get("mutes", []), iso(now))]
 
-        thread = self.profile.get("thread", "")
-        shown = None if inline else self.read_thread()
-        # A dry run with no thread yet decides as if an idle thread were there.
-        busy = (shown is None or shown.get("status") in t3_source.ACTIVE) if thread else not dry_run
-        sent, send, reason = pending["sent"], None, ""
+        sent, send = pending["sent"], None
         if inline:
             pending["inline"] = _freeze(self.org, pending, self.local, "inline", list(pending["gathered"]),
                                         "scan now")
             reason = "inline batch for this run to post"
-        elif sent and not busy and re.search(rf"\bbatch {re.escape(sent['id'])}(?![\w-])", shown.get("lastText", "")):
-            _settle(pending, "sent", now)
-            reason = "the thread's last reply already named the sent batch"
         elif sent and busy:
             reason = "the sent batch waits for the busy or unreadable thread"
-        elif sent and held(self.local, self.ledger, sent["kind"]) and \
-                overview_due(self.local, schedule, pending["meta"], self.ledger):
-            _unfreeze(pending, "sent")  # a delta quiet holds goes out in the overview that is due
-            reason = "the held delta joins the overview"
         elif sent and held(self.local, self.ledger, sent["kind"]):
             reason = "the sent batch waits for the quiet or pause to end"
         elif sent and len(sent["tries"]) >= 1 + schedule["retries"]:
