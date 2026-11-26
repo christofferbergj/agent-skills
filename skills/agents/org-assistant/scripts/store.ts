@@ -1,9 +1,10 @@
 /**
  * Where an organisation's profile and state live, and how the files are read and written. Each
  * state file has one writer: the scan writes snapshot.json, pending.json, and scan.stamp; the model
- * writes ledger.json through `assistant.ts ledger`. Every write replaces its file atomically; a scan
- * holds `.lock` and a ledger command that writes `.ledger.lock`, so two of either never run at once,
- * and `.lock-backend` records how the folder's locks are taken.
+ * writes ledger.json through `assistant.ts ledger`; and the first run that locks the folder, a scan
+ * or a ledger command, writes `.lock-backend` once, recording how the folder's locks are taken.
+ * Every write replaces its file atomically; a scan holds `.lock` and a ledger command that writes
+ * `.ledger.lock`, so two of either never run at once.
  */
 import { spawnSync } from "node:child_process";
 import {
@@ -94,6 +95,9 @@ function errorLine(text: string, error: SyntaxError): number | null {
   return position === null ? null : text.slice(0, position).split("\n").length;
 }
 
+/** A new file's name beside `file`, for text that replaces it, or is linked to it, in one step. */
+const temporaryBeside = (file: string) => join(dirname(file), `.${process.pid}.${Date.now()}.tmp`);
+
 /** Sorts each object's keys, so a file reads the same whatever order the scan built it in. */
 const sorted = (_key: string, value: unknown) =>
   value !== null && typeof value === "object" && !Array.isArray(value)
@@ -106,7 +110,7 @@ const sorted = (_key: string, value: unknown) =>
 export function writeText(file: string, text: string): void {
   try {
     mkdirSync(dirname(file), { recursive: true });
-    const temporary = join(dirname(file), `.${process.pid}.${Date.now()}.tmp`);
+    const temporary = temporaryBeside(file);
     writeFileSync(temporary, text, { flag: "wx" });
     renameSync(temporary, file);
   } catch (error) {
@@ -133,8 +137,8 @@ function findFlock(): string | null {
   return flockFound;
 }
 
-/** How a state folder's locks are taken: by flock(1), or as plain files. */
-type Backend = "flock" | "file";
+/** How a state folder's locks are taken: by flock(1), found at `path`, or as plain files. */
+type Backend = { kind: "flock"; path: string } | { kind: "file" };
 
 /**
  * The backend `folder`'s locks use, recorded in its `.lock-backend` by the first run that locks it,
@@ -143,10 +147,11 @@ type Backend = "flock" | "file";
  */
 function backendOf(folder: string): Backend {
   const record = join(folder, ".lock-backend");
+  const path = findFlock();
   if (readText(record) === null) {
     // Linked into place, so of two first runs one records its backend and the other reads it.
-    const temporary = join(folder, `.${process.pid}.${Date.now()}.tmp`);
-    writeFileSync(temporary, `${findFlock() === null ? "file" : "flock"}\n`, { flag: "wx" });
+    const temporary = temporaryBeside(record);
+    writeFileSync(temporary, `${path === null ? "file" : "flock"}\n`, { flag: "wx" });
     try {
       linkSync(temporary, record);
     } catch (error) {
@@ -156,7 +161,8 @@ function backendOf(folder: string): Backend {
     }
   }
   const recorded = readText(record)?.trim();
-  if (recorded === "file" || (recorded === "flock" && findFlock() !== null)) return recorded;
+  if (recorded === "file") return { kind: "file" };
+  if (recorded === "flock" && path !== null) return { kind: "flock", path };
   throw new FileError(
     record,
     recorded === "flock"
@@ -171,11 +177,14 @@ type Held = { release(): void };
 /** flock(1)'s exit when another process holds the file: EX_TEMPFAIL. */
 const BUSY = 75;
 
-/** Takes `file` with flock(1) on a descriptor this process keeps open, so the kernel holds it. */
-function flock(file: string, waitSeconds: number): Held | null {
+/**
+ * Takes `file` with the flock(1) at `path` on a descriptor this process keeps open, so the kernel
+ * holds it.
+ */
+function flock(file: string, path: string, waitSeconds: number): Held | null {
   const handle = openSync(file, "a");
   const args = ["--wait", String(waitSeconds), "--conflict-exit-code", String(BUSY), "3"];
-  const taken = spawnSync(findFlock() ?? "flock", args, {
+  const taken = spawnSync(path, args, {
     stdio: ["ignore", "ignore", "inherit", handle],
   });
   if (taken.status === 0) return { release: () => closeSync(handle) };
@@ -219,8 +228,9 @@ export function withLock<T>(file: string, body: () => T): T | "busy" {
   let held: Held | null;
   try {
     mkdirSync(dirname(file), { recursive: true });
+    const backend = backendOf(dirname(file));
     held =
-      backendOf(dirname(file)) === "flock" ? flock(file, waitSeconds) : create(file, waitSeconds);
+      backend.kind === "flock" ? flock(file, backend.path, waitSeconds) : create(file, waitSeconds);
   } catch (error) {
     if (error instanceof FileError) throw error;
     throw new FileError(file, `can't be locked (${code(error) || "error"})`);
