@@ -1,7 +1,7 @@
 /**
  * ledger.json: the model's record, which the scan reads but never writes. Each command in COMMANDS
- * reads the ledger, changes one thing, and the CLI replaces the file atomically; running a command
- * again, at any later time, leaves the ledger as its first run did.
+ * reads the ledger and, unless it only shows it, changes one thing, and the CLI replaces the file
+ * atomically; running a command again, at any later time, leaves the ledger as its first run did.
  */
 import {
   type Infer,
@@ -80,6 +80,8 @@ export type Command = {
   args: string[];
   options: string[];
   help: string;
+  /** Whether it can change the ledger, so the CLI runs it holding the ledger's lock. */
+  writes: boolean;
   /** Throws a ShapeError when an argument or option doesn't fit, which the CLI reports as usage. */
   execute(
     ledger: Ledger,
@@ -105,11 +107,18 @@ function command<A extends Shape, O extends Shape>(spec: {
     args: names,
     options: Object.keys(spec.options),
     help: spec.help,
+    writes: true,
     execute: (ledger, positionals, given, context) => {
       const named = Object.fromEntries(names.map((name, index) => [name, positionals[index]]));
       return spec.run(ledger, parse(input, { ...named, ...given }), context);
     },
   };
+}
+
+/** A command that takes no arguments and only shows the ledger, as `show` prints it. */
+function view(help: string, show: (ledger: Ledger, now: Date) => string): Command {
+  const run = (ledger: Ledger, _input: object, { now }: Context) => ({ out: show(ledger, now) });
+  return { ...command({ args: {}, options: {}, help, run }), writes: false };
 }
 
 /**
@@ -198,12 +207,7 @@ const time = optional(written);
 const flag = withDefault(boolean, false);
 
 export const COMMANDS: Record<string, Command> = {
-  show: command({
-    args: {},
-    options: {},
-    help: "print the whole ledger",
-    run: (ledger) => ({ out: JSON.stringify(ledger, null, 1) }),
-  }),
+  show: view("print the whole ledger", (ledger) => JSON.stringify(ledger, null, 1)),
   delivered: command({
     args: { batch: string },
     options: {},
@@ -242,12 +246,7 @@ export const COMMANDS: Record<string, Command> = {
       ledger: { ...ledger, mutes: ledger.mutes.filter((mute) => mute.ref !== ref) },
     }),
   }),
-  "call show": command({
-    args: {},
-    options: {},
-    help: "the open call, its id and age, and the queue's length",
-    run: (ledger, _input, { now }) => ({ out: showCall(ledger, now) }),
-  }),
+  "call show": view("the open call, its id and age, and the queue's length", showCall),
   "call set": command({
     args: { text: string },
     options: {},

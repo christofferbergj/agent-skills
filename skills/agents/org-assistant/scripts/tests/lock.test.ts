@@ -126,6 +126,16 @@ test("a ledger command waits for the one before it, not for a scan", (t) => {
   assert.match(done.stderr, /another ledger command holds it; run this again/);
 });
 
+test("a ledger command that only reads takes no lock, and creates no file", (t) => {
+  const org = new Org(t);
+  assert.match(org.ledger(["show"]), /"delivered": \[\]/);
+  assert.match(org.ledger(["call", "show"]), /^no open call/);
+  assert.equal(existsSync(org.statePath("")), false);
+  org.ledger(["log", "told", "first"]);
+  org.hold(t, ".ledger.lock");
+  assert.match(org.ledger(["show"]), /"text": "first"/);
+});
+
 test("a scan of every organisation runs each apart, so one whose state can't be written fails alone", (t) => {
   const org = new Org(t);
   org.writeRaw("aaa", JSON.stringify({ ...org.profile(), org: "aaa" }));

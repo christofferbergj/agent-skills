@@ -96,8 +96,7 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
   const zone = loadProfile(org).timezone;
   const folder = stateDir(org);
   const file = join(folder, "ledger.json");
-  // Each command reads the ledger and writes it back, so two at once would lose one's change.
-  const done = withLock(join(folder, ".ledger.lock"), () => {
+  const execute = () => {
     const book = readJson(file, ledgerParser) ?? EMPTY_LEDGER;
     let outcome: ReturnType<Command["execute"]>;
     try {
@@ -108,7 +107,11 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
     }
     if (outcome.ledger !== undefined) writeJson(file, outcome.ledger);
     return outcome.out;
-  });
+  };
+  // Every write replaces the file whole, so a command that only reads needs no lock; one that writes
+  // reads the ledger and writes it back, so two at once would lose one's change.
+  if (!command.writes) return execute();
+  const done = withLock(join(folder, ".ledger.lock"), execute);
   if (done === "busy") throw new FileError(file, "another ledger command holds it; run this again");
   return done;
 }

@@ -2,7 +2,7 @@
  * Where an organisation's profile and state live, and how the files are read and written. Each
  * state file has one writer: the scan writes snapshot.json, pending.json, and scan.stamp; the model
  * writes ledger.json through `assistant.ts ledger`. Every write replaces its file atomically; a scan
- * holds `.lock` and a ledger command `.ledger.lock`, so two of either never run at once.
+ * holds `.lock` and a ledger command that writes `.ledger.lock`, so two of either never run at once.
  */
 import { spawnSync } from "node:child_process";
 import {
