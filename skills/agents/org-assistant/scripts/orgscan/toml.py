@@ -194,6 +194,8 @@ def _table(root: dict, path: list[str], parser: _Parser) -> dict:
     for part in path:
         node = node.setdefault(part, {})
         if isinstance(node, list):
+            if not node or not isinstance(node[-1], dict):
+                parser.fail(f"{'.'.join(path)} is not a table")
             node = node[-1]
         if not isinstance(node, dict):
             parser.fail(f"{'.'.join(path)} is not a table")

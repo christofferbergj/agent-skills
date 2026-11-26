@@ -12,6 +12,8 @@ import tempfile
 import time
 from pathlib import Path
 
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from . import toml
 
 SOURCE_FIELDS = {"name", "kind"}
@@ -53,12 +55,14 @@ def load_profile(org: str) -> dict:
         raise ProfileError(f"{path}: {error.strerror}")
     except toml.TomlError as error:
         raise ProfileError(f"{path}: {error}")
+    if not isinstance(profile, dict):
+        raise ProfileError(f"{path}: not a table")
     profile.setdefault("org", org)
     if profile["org"] != org:
         raise ProfileError(f"{path}: org is {profile['org']!r}, but its folder is {org!r}")
     sources = profile.get("sources")
-    if not isinstance(sources, list) or not sources:
-        raise ProfileError(f"{path}: no [[sources]]")
+    if not isinstance(sources, list) or not sources or not all(isinstance(s, dict) for s in sources):
+        raise ProfileError(f"{path}: no [[sources]] tables")
     names = set()
     for source in sources:
         missing = SOURCE_FIELDS - set(source)
@@ -68,8 +72,14 @@ def load_profile(org: str) -> dict:
             raise ProfileError(f"{path}: two sources are named {source['name']}")
         names.add(source["name"])
     profile.setdefault("timezone", "Europe/Copenhagen")
+    try:
+        ZoneInfo(str(profile["timezone"]))
+    except (ValueError, ZoneInfoNotFoundError):
+        raise ProfileError(f"{path}: unknown timezone {profile['timezone']!r}")
     profile.setdefault("thread", "")
     schedule = profile.setdefault("schedule", {})
+    if not isinstance(schedule, dict) or not isinstance(profile["thread"], str):
+        raise ProfileError(f"{path}: [schedule] must be a table and thread a string")
     schedule.setdefault("window", ["09:00", "23:59"])
     schedule.setdefault("overview", "09:00")
     schedule.setdefault("batch_slots", ["13:00", "17:00"])

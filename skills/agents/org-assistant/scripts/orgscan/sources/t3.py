@@ -2,11 +2,11 @@
 assistant started, through `t3 thread list`. Keeps thread ids and statuses, never titles."""
 from __future__ import annotations
 
-from datetime import timezone
-
 from ..calls import SourceError, run_json
 from ..changes import change
+from ..times import iso
 
+ACTIVE = {"preparing", "queued", "starting", "running", "waiting"}  # a run still under way
 DONE = {"completed", "failed", "cancelled", "interrupted", "stopped"}
 WAITS = "waiting"
 
@@ -14,7 +14,7 @@ WAITS = "waiting"
 def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     baseline = prev is None and ctx.since is None
     prev = prev or {}
-    now = ctx.now.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    now = iso(ctx.now)
     started = {entry.get("thread"): entry for entry in ctx.ledger.get("started", [])}
     seen = prev.get("threads", {})
     threads: dict = {}

@@ -29,9 +29,12 @@ from zoneinfo import ZoneInfo
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from orgscan import ledger, store  # noqa: E402
-from orgscan.run import health_line, scan_org  # noqa: E402
+from orgscan.decide import held  # noqa: E402
+from orgscan.run import delivered, health_line, scan_org  # noqa: E402
+from orgscan.times import parse  # noqa: E402
 
 STALE = timedelta(minutes=90)
+OVERVIEW_DUE = "09:30"
 
 
 def _duration(text: str) -> timedelta:
@@ -42,10 +45,7 @@ def _duration(text: str) -> timedelta:
 
 
 def _now(text: str | None) -> datetime:
-    if not text:
-        return datetime.now(timezone.utc)
-    moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+    return parse(text) if text else datetime.now(timezone.utc)
 
 
 def status(org: str, now: datetime) -> str:
@@ -57,26 +57,30 @@ def status(org: str, now: datetime) -> str:
     book = store.read_json(folder / "ledger.json", {})
     lines = [f"Health: {health_line(snapshot, tz)}" if snapshot else "Health: no scan has run yet"]
     try:
-        stamp = datetime.fromisoformat((folder / "scan.stamp").read_text().strip().replace("Z", "+00:00"))
+        stamp = parse((folder / "scan.stamp").read_text().strip())
     except (OSError, ValueError):
         stamp = None
     local = now.astimezone(tz)
-    first, last = profile["schedule"]["window"]
-    inside = "09:15" <= local.strftime("%H:%M") <= last and local.strftime("%H:%M") >= first
-    if stamp is None or (inside and now - stamp > STALE):
+    clock = local.strftime("%H:%M")
+    if stamp is None or ("09:15" <= clock <= profile["schedule"]["window"][1] and now - stamp > STALE):
         age = "never" if stamp is None else f"{int((now - stamp).total_seconds() // 60)} min ago"
         lines.append(f"⚠️ The last scan ran {age}: the timer may be stopped.")
+    meta = pending.get("meta", {})
+    shipped = meta.get("overview_on") == local.date().isoformat() and (
+        meta.get("overview_id") in delivered(book) | {pending.get("last_delivered")})
+    if local.weekday() < 5 and clock >= OVERVIEW_DUE and not shipped and not held(local, book, "overview"):
+        lines.append(f"⚠️ No overview delivered today by {OVERVIEW_DUE}: the scan or the thread may be broken.")
     for name, state in sorted(snapshot.get("health", {}).items()):
         if not state.get("ok"):
             lines.append(f"⚠️ {name}: {state.get('message', 'failing')}")
-    sent = pending.get("sent")
-    if sent:
-        tries = len(sent.get("tries", []))
-        lines.append(f"In flight: batch {sent['id']} ({sent['kind']}, {len(sent['items'])} items, {tries} wakes)")
-    gathered = pending.get("gathered", [])
-    lines.append(f"Gathered since: {len(gathered)} changes")
+    for slot, label in (("sent", "In flight"), ("inline", "Inline, not yet delivered")):
+        batch = pending.get(slot)
+        if batch:
+            lines.append(f"{label}: batch {batch['id']} ({batch['kind']}, {len(batch['items'])} items, "
+                         f"{len(batch.get('tries', []))} wakes)")
+    lines.append(f"Gathered since: {len(pending.get('gathered', []))} changes")
     for key, label in (("quiet_until", "Quiet until"), ("paused_until", "Paused until")):
-        until = datetime.fromisoformat(book[key].replace("Z", "+00:00")) if book.get(key) else None
+        until = parse(book[key]) if book.get(key) else None
         if until and until > now:
             lines.append(f"{label} {until.astimezone(tz):%a %d %b %H:%M}")
     return "\n".join(lines)
@@ -96,6 +100,7 @@ def main(argv: list[str]) -> int:
     show.add_argument("--now", help=argparse.SUPPRESS)
     book = sub.add_parser("ledger")
     book.add_argument("org")
+    book.add_argument("--now", help=argparse.SUPPRESS)
     what = book.add_subparsers(dest="what", required=True)
     what.add_parser("show")
     what.add_parser("delivered").add_argument("batch")
@@ -106,7 +111,8 @@ def main(argv: list[str]) -> int:
     mute.add_argument("--until")
     what.add_parser("unmute").add_argument("ref")
     call = what.add_parser("call", help="the one open call, and the queue behind it")
-    call.add_argument("action", choices=["show", "set", "clear", "queue", "drop"])
+    call.add_argument("action", choices=["show", "set", "clear", "queue", "drop"],
+                      help="set and queue take the call's text; clear and drop take the open call's id")
     call.add_argument("text", nargs="?", default="")
     started = what.add_parser("started")
     started.add_argument("thread")
@@ -138,9 +144,10 @@ def main(argv: list[str]) -> int:
         if args.command == "status":
             print(status(args.org, _now(args.now)))
             return 0
-        if args.what == "call" and args.action in ("set", "queue") and not args.text:
-            parser.error(f"call {args.action} needs the call's text")
-        print(ledger.edit(args.org, args))
+        if args.what == "call" and args.action != "show" and not args.text:
+            parser.error(f"call {args.action} needs " + ("the call's text" if args.action in ("set", "queue")
+                                                           else "the open call's id, such as c3"))
+        print(ledger.edit(args.org, args, _now(args.now)))
         return 0
     except store.ProfileError as error:
         print(f"assistant.py: {error}", file=sys.stderr)

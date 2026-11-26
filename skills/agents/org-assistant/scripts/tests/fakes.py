@@ -54,7 +54,7 @@ def _slack(args: dict, slack: dict) -> dict:
         picked = [m for m in messages if m["channel"] in channels]
     else:
         picked = []
-    picked.sort(key=lambda m: -float(m["ts"]))
+    picked.sort(key=lambda m: float(m["ts"]) * (1 if args.get("sort_dir") == "asc" else -1))
     return _slack_page(picked, int(args.get("limit", 20)))
 
 

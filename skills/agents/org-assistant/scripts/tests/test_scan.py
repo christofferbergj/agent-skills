@@ -61,6 +61,12 @@ projects = [{{ path = "/invented/project" }}]
 LINEAR_TOOLS = '"tools.linear.get_notifications", "tools.linear.list_issues", "tools.linear.get_issue"'
 
 
+def slack_ts(local: str, day: str = THU) -> str:
+    """A Slack message timestamp at a Danish wall-clock time."""
+    from datetime import datetime
+    return f"{datetime.fromisoformat(utc(local, day).replace('Z', '+00:00')).timestamp():.6f}"
+
+
 def utc(local: str, day: str = THU) -> str:
     """A Danish wall-clock time on `day` as the UTC instant --now takes."""
     hour, minute = map(int, local.split(":"))
@@ -90,6 +96,11 @@ class Scan(unittest.TestCase):
     def save(self):
         (self.fake / "world.json").write_text(json.dumps(self.world))
 
+    def ledger(self, *args, now: str | None = None):
+        done = self.run_cli("ledger", "acme", *(["--now", now] if now else []), *args)
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout.strip()
+
     def run_cli(self, *args, now: str | None = None):
         env = {**os.environ, "FAKE": str(self.fake), "PATH": f"{self.fake / 'bin'}:{os.environ['PATH']}",
                "ORG_ASSISTANT_CONFIG": str(self.root / "config"), "ORG_ASSISTANT_STATE": str(self.root / "state"),
@@ -114,6 +125,9 @@ class Scan(unittest.TestCase):
         done = self.run_cli("ledger", "acme", "delivered", batch)
         self.assertEqual(done.returncode, 0, done.stderr)
         return batch
+
+    def found(self, local: str, day: str = THU, *flags) -> dict:
+        return json.loads(self.scan(local, day, *flags).stdout)["found"]
 
     def kinds(self, message: dict) -> list[str]:
         """The `kind ref` pairs a wake message lists."""
@@ -360,6 +374,181 @@ class Scan(unittest.TestCase):
         self.assertNotIn("tools.linear.get_issue", calls)
         self.assertIn("get_issue is not in this source's tools",
                       self.state("snapshot.json")["health"]["linear"]["message"])
+    # Round-1 review findings, each failing on the first head.
+
+    def test_a_crash_between_the_two_state_writes_sends_one_overview(self):
+        self.scan("08:30")
+        snapshot = self.root / "state" / "acme" / "snapshot.json"
+        before = snapshot.read_bytes()
+        self.scan("09:05")
+        snapshot.write_bytes(before)  # as if the scan died after writing pending.json
+        self.scan("10:05")
+        self.deliver()
+        self.scan("11:05")
+        overviews = {m["message"].split('batch="')[1].split('"')[0] for m in self.sent() if 'kind="overview"' in m["message"]}
+        self.assertEqual(len(overviews), 1)
+
+    def test_an_inline_scan_leaves_the_batch_in_flight_frozen(self):
+        self.start_day()
+        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        self.save()
+        self.scan("10:05")
+        frozen = self.state("pending.json")["sent"]
+        self.note("n2", "issueCommentMention", "DEV-101", f"{THU}T09:10:00.000Z")
+        self.save()
+        first = json.loads(self.scan("10:15", THU, "--inline").stdout)
+        second = json.loads(self.scan("10:16", THU, "--inline").stdout)
+        self.assertEqual(self.state("pending.json")["sent"], frozen)
+        self.assertEqual(first["in_flight"]["id"], frozen["id"])
+        self.assertEqual([i["ref"] for i in second["items"]], ["DEV-101"])
+        self.assertEqual(len({frozen["id"], first["batch"], second["batch"]}), 3)
+
+    def test_team_counts_made_while_a_batch_is_in_flight_wait_beside_it(self):
+        self.start_day()
+        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        team = self.world["linear"]["team"]["DEV"]
+        team.append({"id": "DEV-201", "status": "Done", "statusType": "completed", "assignee": "Alex Example",
+                     "assigneeId": "u-alex", "createdAt": "2026-11-20T08:00:00.000Z", "project": "Other Project",
+                     "updatedAt": f"{THU}T08:30:00.000Z", "completedAt": f"{THU}T08:30:00.000Z"})
+        self.save()
+        self.scan("10:05")
+        self.assertIn("team.pulse DEV", self.kinds(self.sent()[-1]))
+        team[0].update(status="Done", statusType="completed", updatedAt=f"{THU}T09:30:00.000Z",
+                       completedAt=f"{THU}T09:30:00.000Z")
+        self.world["t3"]["assistant"]["status"] = "running"
+        self.save()
+        self.scan("11:05")
+        self.assertEqual(self.state("pending.json")["gathered"][0]["kind"], "team.pulse")
+
+    def test_a_source_error_reaches_no_file_or_log_with_its_text(self):
+        self.scan("08:30")
+        self.world["fail"] = {"linear": "Could not load the ticket titled PRIVATE-CANARY"}
+        self.save()
+        done = self.scan("09:05")
+        status = self.run_cli("status", "acme", now=utc("09:10")).stdout
+        files = "".join(p.read_text() for p in (self.root / "state" / "acme").glob("*.json"))
+        self.assertNotIn("PRIVATE-CANARY", done.stderr + done.stdout + status + files)
+        self.assertIn("linear failing ×1", status)
+
+    def test_quiet_lets_the_overview_through_and_pause_holds_a_retry(self):
+        self.scan("08:30")
+        self.ledger("quiet", f"{THU}T14:00")
+        self.scan("09:05")
+        self.assertIn('kind="overview"', self.sent()[-1]["message"])
+        self.ledger("pause", "2026-11-30T09:00")
+        self.scan("10:05")
+        self.assertEqual(len(self.sent()), 1)
+
+    def test_a_ticket_someone_closed_and_a_new_red_pr_both_wake(self):
+        self.start_day()
+        self.note("n1", "issueStatusChanged", "DEV-101", f"{THU}T08:30:00.000Z")
+        self.world["linear"]["mine"][0].update(status="Canceled", statusType="canceled")
+        self.world["github"]["example/web"]["mine"].append(
+            {"number": 13, "isDraft": False, "reviewDecision": "CHANGES_REQUESTED", "updatedAt": f"{THU}T08:40:00Z",
+             "statusCheckRollup": [{"status": "COMPLETED", "conclusion": "FAILURE"}]})
+        self.save()
+        self.assertEqual(self.found("10:05"), {"ticket.changed": 1, "pr.ci_failed": 1, "pr.changes_requested": 1})
+
+    def test_a_dm_answered_while_the_thread_was_busy_wakes_nothing(self):
+        self.start_day()
+        self.world["slack"]["messages"] = [{"channel": "D0ALEX", "ts": slack_ts("09:20"), "from": "U0ALEX"}]
+        self.world["t3"]["assistant"]["status"] = "running"
+        self.save()
+        self.scan("10:05")
+        self.world["slack"]["messages"].append({"channel": "D0ALEX", "ts": slack_ts("10:15"), "from": "U0ME"})
+        self.world["t3"]["assistant"]["status"] = "completed"
+        self.save()
+        self.scan("11:05")
+        self.assertEqual(len(self.sent()), 1)
+
+    def test_a_source_that_never_signed_in_reports_what_happened_once_it_does(self):
+        self.world["fail"] = {"linear": "auth"}
+        self.save()
+        self.scan("08:30")
+        self.scan("09:05")
+        self.deliver()
+        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:10:00.000Z")
+        del self.world["fail"]
+        self.save()
+        self.scan("10:05")
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned DEV-103"])
+
+    def test_status_warns_when_no_overview_was_delivered_by_09_30(self):
+        self.world["t3"]["assistant"]["status"] = "running"
+        self.save()
+        self.scan("08:30")
+        self.scan("09:05")
+        self.assertIn("No overview delivered today", self.run_cli("status", "acme", now=utc("09:35")).stdout)
+
+    def test_an_unreadable_thread_fails_the_unit_on_the_third_scan(self):
+        self.start_day()
+        self.world["t3"]["assistant"] = None
+        self.save()
+        self.scan("10:05")
+        self.scan("11:05")
+        done = self.scan("12:05", code=1)
+        self.assertIn("unreadable 3 scans in a row", done.stderr)
+
+    def test_a_repeated_ledger_command_changes_nothing_more(self):
+        self.scan("08:30")
+        self.ledger("call", "set", "first offer")
+        self.ledger("call", "queue", "second offer")
+        self.ledger("call", "queue", "third offer")
+        self.ledger("call", "clear", "c1")
+        self.assertIn("second offer", self.ledger("call", "clear", "c1"))
+        self.ledger("started", "t-new", "--ticket", "DEV-1")
+        self.ledger("started", "t-new", "--ticket", "DEV-1")
+        self.assertEqual(len(json.loads(self.ledger("show"))["started"]), 1)
+
+    def test_a_call_that_replaced_another_within_15_minutes_says_so(self):
+        self.scan("08:30")
+        self.ledger("call", "set", "first offer", now=utc("10:00"))
+        self.ledger("call", "queue", "second offer", now=utc("10:00"))
+        self.ledger("call", "clear", "c1", now=utc("10:05"))
+        self.assertIn("replaced another call", self.ledger("call", "show", now=utc("10:10")))
+        self.assertNotIn("replaced another call", self.ledger("call", "show", now=utc("10:30")))
+
+    def test_an_issue_assigned_again_within_a_week_wakes_again(self):
+        self.start_day()
+        issue = {"number": 5, "createdAt": f"{THU}T07:00:00Z", "updatedAt": f"{THU}T08:30:00Z",
+                 "assignees": [{"login": "me-login"}]}
+        self.world["github"]["example/web"]["issues"] = [issue]
+        self.save()
+        self.scan("10:05")
+        self.deliver()
+        issue.update(assignees=[], updatedAt=f"{THU}T09:30:00Z")
+        self.save()
+        self.scan("11:05")
+        issue.update(assignees=[{"login": "me-login"}], updatedAt=f"{THU}T10:30:00Z")
+        self.save()
+        self.scan("12:05")
+        self.assertEqual([self.kinds(m) for m in self.sent()[1:]], [["issue.assigned example/web#5"]] * 2)
+
+    def test_a_malformed_profile_fails_with_its_line(self):
+        (self.root / "config" / "acme" / "profile.toml").write_text('org = "acme"\nthread = \n')
+        done = self.run_cli("scan", "acme", now=utc("10:05"))
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("line 2", done.stderr)
+
+    def test_one_broken_profile_leaves_the_other_organisations_scanned(self):
+        broken = self.root / "config" / "aaa"
+        broken.mkdir(parents=True)
+        (broken / "profile.toml").write_text('timezone = "Mars/Olympus"\n[[sources]]\nname = "x"\nkind = "t3"\n')
+        done = self.run_cli("scan", now=utc("08:30"))
+        self.assertEqual(done.returncode, 1)
+        self.assertIn("unknown timezone", done.stderr)
+        self.assertTrue((self.root / "state" / "acme" / "snapshot.json").exists())
+
+    def test_the_executor_refuses_a_write_tool_even_when_it_is_listed(self):
+        sys.path.insert(0, str(SCRIPT.parent))
+        from orgscan.calls import Executor, SourceError
+        os.environ["FAKE"] = str(self.fake)
+        tool = "tools.linear.mark_notification"
+        executor = Executor([sys.executable, str(HERE / "fakes.py"), "probe"], {"tools": [tool], "account": "a"})
+        with self.assertRaises(SourceError):
+            executor.call([(tool, {"id": "n1", "read": True})])
+        self.assertFalse((self.fake / "probe.jsonl").exists())
+
 
 if __name__ == "__main__":
     unittest.main()

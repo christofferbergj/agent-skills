@@ -4,15 +4,16 @@ Reads only; never marks an inbox item read. Keeps ids, states, and staff names, 
 from __future__ import annotations
 
 import re
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 from ..calls import Executor, SourceError
 from ..changes import change
+from ..times import iso, parse
 
 TOOLS = ("tools.linear.get_notifications", "tools.linear.list_issues", "tools.linear.get_issue")
 ISSUE = re.compile(r"/issue/([A-Z][A-Z0-9]*-\d+)")
 CLOSED = {"completed", "canceled", "duplicate"}
-PAGES = 4
+PAGES = 20  # at most 1,000 inbox items or 5,000 team updates a scan
 TEAM_MEMORY = timedelta(days=30)
 # Inbox type → change kind; any other type is `linear.other`, shown in the pulse.
 INBOX = {
@@ -29,7 +30,7 @@ TEAM_FIELDS = ["id", "status", "statusType", "assignee", "assigneeId", "createdA
 
 
 def _iso(moment: datetime) -> str:
-    return moment.astimezone(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z")
+    return iso(moment, ms=True)
 
 
 def _priority(value) -> int | None:
@@ -55,7 +56,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     now = ctx.now
     baseline = prev is None and ctx.since is None
     prev = prev or {}
-    since = datetime.fromisoformat(prev["at"].replace("Z", "+00:00")) if prev.get("at") else (ctx.since or now)
+    since = parse(prev["at"]) if prev.get("at") else (ctx.since or now)
     changes: list[dict] = []
 
     # The inbox, newest first, back to the last item already seen.
@@ -99,16 +100,17 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             for field in ("priority", "due"):
                 if old.get(field) != mine[ref][field]:
                     changes.append(change("ticket.changed", ref, issue.get("updatedAt") or _iso(now),
-                                          key=f"{field}={mine[ref][field]}", field=field, to=mine[ref][field],
+                                          key=f"{field}@{issue.get('updatedAt')}", field=field, to=mine[ref][field],
                                           by="unknown"))
     # The inbox items, read against the user's tickets: a status change or a comment counts
     # only on their own ticket, and a status change the history already shows isn't repeated.
     moved = {c["ref"] for c in changes if c["detail"].get("field") == "status"}
+    owned = set(mine) | set(before)  # a ticket closed or reassigned since the last scan was still theirs
     for note in [] if baseline else fresh:
         found = ISSUE.search(note.get("url") or "")
         ref = found.group(1) if found else "linear"
         kind = INBOX.get(note.get("type", ""), "linear.other")
-        if kind in ("ticket.changed", "ticket.comment") and ref not in mine:
+        if kind in ("ticket.changed", "ticket.comment") and ref not in owned:
             kind = "linear.other"
         if kind == "ticket.changed" and ref in moved:
             continue
@@ -137,7 +139,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             depends.setdefault(pair["on"], set()).add(pair["ticket"])
     # A blocker this scan can't read keeps its last state, so one deleted ticket can't stop the source.
     order = sorted(depends)
-    fetched = executor.call([(TOOLS[2], {"id": ref, "fields": ["id", "status", "statusType", "assignee"]})
+    fetched = executor.call([(TOOLS[2], {"id": ref, "fields": ["id", "status", "statusType", "assignee", "updatedAt"]})
                              for ref in order], partial=True) if depends else []
     deps, old_deps = {}, prev.get("deps", {})
     for ref, issue in zip(order, fetched):
@@ -146,16 +148,17 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
                 deps[ref] = old_deps[ref]
             continue
         deps[ref] = {"status": issue.get("status"), "type": issue.get("statusType"), "owner": issue.get("assignee")}
+        moment = issue.get("updatedAt") or deps[ref]["status"]
         old = old_deps.get(ref)
         if baseline or not old or old.get("status") == deps[ref]["status"]:
             continue
         for blocked in sorted(depends[ref]):
             if deps[ref]["type"] in CLOSED:
-                changes.append(change("ticket.unblocked", blocked, _iso(now), key=f"{ref}:{deps[ref]['status']}",
+                changes.append(change("ticket.unblocked", blocked, _iso(now), key=f"{ref}@{moment}",
                                       blocker=ref, to=deps[ref]["status"]))
             else:
-                changes.append(change("dependency.changed", ref, _iso(now), key=f"{deps[ref]['status']}@{blocked}",
-                                      blocks=blocked, frm=old.get("status"), to=deps[ref]["status"],
+                changes.append(change("dependency.changed", ref, _iso(now), key=f"{moment}@{blocked}",
+                                      blocks=blocked, before=old.get("status"), to=deps[ref]["status"],
                                       owner=deps[ref]["owner"]))
 
     # Each team's movement since the last scan, as a pulse, and new tickets in the user's projects.
@@ -188,7 +191,7 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
                 else:
                     new += 1
         if people or new:
-            changes.append(change("team.pulse", name, _iso(now), people=people, new=new))
+            changes.append(change("team.pulse", name, _iso(now), key=_iso(since), people=people, new=new))
     state = {"at": _iso(now), "inbox_at": newest, "inbox_ids": inbox_ids, "me": me, "mine": mine,
              "deps": deps, "deadlines": deadlines, "team": team}
     return state, changes

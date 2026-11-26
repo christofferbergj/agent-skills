@@ -36,17 +36,15 @@ KINDS = {
     "team.pulse": (PULSE, False),
     "slack.channel": (PULSE, False),
 }
-# Kinds that sum into one item per ref instead of arriving one by one.
-TALLIES = {"team.pulse", "slack.channel"}
 
 
 def change(kind: str, ref: str, at: str, key: str = "", scope: str = "", **detail) -> dict:
     """One change. Its id is the same however often the scan sees the same event, so a scan
-    that runs twice over it, after a crash, adds it once."""
+    that runs twice over it, after a crash, adds it once. A count, such as a team's moves,
+    takes the scan window's start as its key: one item per window, which the post sums."""
     if kind not in KINDS:
         raise ValueError(f"unknown change kind {kind}")
-    ident = f"{kind}:{ref}" if kind in TALLIES else f"{kind}:{ref}:{key or at}"
-    item = {"id": ident, "kind": kind, "ref": ref, "at": at, "detail": detail}
+    item = {"id": f"{kind}:{ref}:{key or at}", "kind": kind, "ref": ref, "at": at, "detail": detail}
     if scope:
         item["scope"] = scope
     return item
@@ -60,29 +58,14 @@ def urgent(item: dict) -> bool:
     return KINDS[item["kind"]][1]
 
 
-def _add(into: dict, extra: dict) -> dict:
-    out = dict(into)
-    for key, value in extra.items():
-        if isinstance(value, bool) or not isinstance(value, (int, float, dict)):
-            out[key] = value
-        elif isinstance(value, dict):
-            out[key] = _add(out.get(key) or {}, value)
-        else:
-            out[key] = (out.get(key) or 0) + value
-    return out
-
-
-def gather(items: list[dict], new: list[dict], seen: dict) -> list[dict]:
-    """items plus new: a tally adds its counts to the item with its id; any other change
-    joins once, skipping an id already gathered, in flight, or delivered (`seen`)."""
-    out = [dict(item) for item in items]
-    index = {item["id"]: i for i, item in enumerate(out)}
+def gather(items: list[dict], new: list[dict], skip) -> list[dict]:
+    """items plus each new change whose id isn't gathered already or in `skip`: the ids in
+    flight or delivered in the last week."""
+    known = {item["id"] for item in items} | set(skip)
+    out = list(items)
     for item in new:
-        if item["kind"] in TALLIES and item["id"] in index:
-            old = out[index[item["id"]]]
-            out[index[item["id"]]] = {**old, "at": item["at"], "detail": _add(old["detail"], item["detail"])}
-        elif item["id"] not in index and item["id"] not in seen:
-            index[item["id"]] = len(out)
+        if item["id"] not in known:
+            known.add(item["id"])
             out.append(item)
     return out
 

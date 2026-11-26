@@ -1,42 +1,91 @@
 """The model's edits to ledger.json, the one state file the scan reads but never writes.
-Each command reads the file, changes one thing, and replaces it atomically."""
+Each command reads the file, changes one thing, and replaces it atomically; running a
+command twice leaves the ledger as running it once did."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+import json
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from . import store
+from .times import iso, parse
 
 KEEP = 50  # entries kept in each history list
+CHANGED = timedelta(minutes=15)  # a call that replaced another this recently makes a bare letter ambiguous
 
 
 def _utc(value: str, tz: str) -> str:
     moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=ZoneInfo(tz))
-    return moment.astimezone(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+    return iso(moment if moment.tzinfo else moment.replace(tzinfo=ZoneInfo(tz)))
 
 
-def _now() -> str:
-    return datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z")
+def _show_call(ledger: dict, now: datetime) -> str:
+    call = ledger.get("call")
+    queued = len(ledger.get("queue", []))
+    if not call:
+        return f"no open call · {queued} queued"
+    minutes = int((now - parse(call["since"])).total_seconds() // 60)
+    line = f"open call {call['id']} ({minutes} min old): {call['text']} · {queued} queued"
+    if call.get("replaced") and now - parse(call["since"]) < CHANGED:
+        line += f"\n⚠️ It replaced another call {minutes} min ago: {call['replaced']}. Ask which one a bare letter means."
+    return line
 
 
-def edit(org: str, args) -> str:
+def _open_next(ledger: dict, now: datetime, replaced: str | None) -> None:
+    """Moves the oldest queued offer up as the call, numbering it."""
+    queue = ledger.get("queue", [])
+    ledger["call"] = None
+    if queue:
+        ledger["serial"] = ledger.get("serial", 0) + 1
+        ledger["call"] = {"id": f"c{ledger['serial']}", "text": queue[0]["text"], "since": iso(now),
+                          "replaced": replaced}
+        ledger["queue"] = queue[1:]
+
+
+def _call(ledger: dict, args, now: datetime) -> None:
+    call = ledger.get("call")
+    if args.action == "set":
+        if call and call["text"] == args.text:
+            return
+        if call:
+            raise SystemExit(f"call {call['id']} is open; queue this one, or clear that call first")
+        ledger.setdefault("queue", []).insert(0, {"text": args.text, "queued": iso(now)})
+        _open_next(ledger, now, ledger.pop("cleared", None))
+    elif args.action == "queue":
+        if (call and call["text"] == args.text) or any(q["text"] == args.text for q in ledger.get("queue", [])):
+            return
+        ledger.setdefault("queue", []).append({"text": args.text, "queued": iso(now)})
+    elif args.action in ("clear", "drop"):
+        if not call or call["id"] != args.text:  # already cleared: a repeat leaves the next call alone
+            return
+        if args.action == "drop":
+            ledger["dropped"] = [{**call, "dropped": iso(now)}, *ledger.get("dropped", [])][:KEEP]
+        recent = f"{call['id']}: {call['text']}"
+        _open_next(ledger, now, recent)
+        if ledger["call"] is None:
+            ledger["cleared"] = recent if args.action == "clear" else None
+
+
+def edit(org: str, args, now: datetime) -> str:
     """Applies one `assistant.py ledger` command and returns what to print."""
-    profile = store.load_profile(org)
-    tz = profile["timezone"]
+    tz = store.load_profile(org)["timezone"]
     path = store.state_dir(org) / "ledger.json"
     ledger = store.read_json(path, {})
     what = args.what
     if what == "show":
-        import json
         return json.dumps(ledger, indent=1, ensure_ascii=False)
+    if what == "call":
+        if args.action != "show":
+            _call(ledger, args, now)
+            store.write_json(path, ledger)
+        return _show_call(ledger, now)
     if what == "delivered":
+        if ledger.get("last_delivered") != args.batch:
+            ledger["delivered"] = [{"batch": args.batch, "at": iso(now)}, *ledger.get("delivered", [])][:KEEP]
         ledger["last_delivered"] = args.batch
-        ledger["delivered"] = ([{"batch": args.batch, "at": _now()}] + ledger.get("delivered", []))[:KEEP]
         out = f"batch {args.batch} delivered"
     elif what in ("quiet", "pause"):
-        key = f"{'quiet' if what == 'quiet' else 'paused'}_until"
+        key = "quiet_until" if what == "quiet" else "paused_until"
         ledger[key] = None if args.until == "off" else _utc(args.until, tz)
         out = f"{key}: {ledger[key] or 'off'}"
     elif what == "mute":
@@ -46,35 +95,10 @@ def edit(org: str, args) -> str:
     elif what == "unmute":
         ledger["mutes"] = [m for m in ledger.get("mutes", []) if m.get("ref") != args.ref]
         out = f"unmuted {args.ref}"
-    elif what == "call":
-        call = ledger.get("call")
-        if args.action == "set":
-            if call:
-                raise SystemExit("a call is already open; queue this one, or clear the open call first")
-            ledger["call"] = {"text": args.text, "since": _now()}
-        elif args.action == "clear":
-            ledger["call"] = None
-            queue = ledger.get("queue", [])
-            if queue:
-                ledger["call"], ledger["queue"] = {**queue[0], "since": _now()}, queue[1:]
-        elif args.action == "queue":
-            ledger.setdefault("queue", []).append({"text": args.text, "queued": _now()})
-        elif args.action == "drop":
-            if call:
-                ledger.setdefault("dropped", []).insert(0, {**call, "dropped": _now()})
-                ledger["dropped"] = ledger["dropped"][:KEEP]
-            ledger["call"] = None
-        if args.action != "show":
-            store.write_json(path, ledger)
-        call = ledger.get("call")
-        if not call:
-            return f"no open call · {len(ledger.get('queue', []))} queued"
-        since = datetime.fromisoformat(call["since"].replace("Z", "+00:00"))
-        minutes = int((datetime.now(timezone.utc) - since).total_seconds() // 60)
-        return f"open call ({minutes} min old): {call['text']} · {len(ledger.get('queue', []))} queued"
     elif what == "started":
-        ledger.setdefault("started", []).append({"thread": args.thread, "ticket": args.ticket, "at": _now()})
-        out = f"started {args.thread} for {args.ticket}"
+        ledger["started"] = [s for s in ledger.get("started", []) if s.get("thread") != args.thread]
+        ledger["started"].append({"thread": args.thread, "ticket": args.ticket, "at": iso(now)})
+        out = f"following {args.thread} for {args.ticket}"
     elif what == "finished":
         ledger["started"] = [s for s in ledger.get("started", []) if s.get("thread") != args.thread]
         out = f"no longer following {args.thread}"
@@ -85,17 +109,16 @@ def edit(org: str, args) -> str:
         out = f"{args.pr} waits on {args.on}"
     elif what == "depends":
         pair = {"ticket": args.ticket, "on": args.on}
-        ledger["depends"] = [d for d in ledger.get("depends", []) if d != pair]
-        if not args.remove:
-            ledger["depends"].append(pair)
+        ledger["depends"] = [d for d in ledger.get("depends", []) if d != pair] + ([] if args.remove else [pair])
         out = f"{args.ticket} {'no longer depends' if args.remove else 'depends'} on {args.on}"
     elif what == "lead":
-        ledger.setdefault("leads", []).append({"ticket": args.ticket, "on": args.on, "answer": args.answer,
-                                               "at": _now()})
+        ledger["leads"] = [l for l in ledger.get("leads", []) if (l["ticket"], l["on"]) != (args.ticket, args.on)]
+        ledger["leads"].append({"ticket": args.ticket, "on": args.on, "answer": args.answer, "at": iso(now)})
         out = f"lead {args.ticket} → {args.on}: {args.answer}"
     elif what == "log":
-        ledger.setdefault("log", []).insert(0, {"at": _now(), "kind": args.kind, "text": args.text})
-        ledger["log"] = ledger["log"][:KEEP * 4]
+        entry = {"kind": args.kind, "text": args.text}
+        if entry not in [{"kind": e["kind"], "text": e["text"]} for e in ledger.get("log", [])[:1]]:
+            ledger["log"] = [{"at": iso(now), **entry}, *ledger.get("log", [])][:KEEP * 4]
         out = f"logged {args.kind}"
     else:
         raise SystemExit(f"unknown ledger command {what}")

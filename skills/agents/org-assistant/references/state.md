@@ -25,6 +25,8 @@ overview = "09:00"
 batch_slots = ["13:00", "17:00"]
 daily_deltas = 6
 slack_wait_minutes = 30
+retries = 1 # resends of an undelivered batch before the unit fails
+source_failures = 3 # failed scans in a row before the unit fails
 
 [[sources]]
 name = "linear"
@@ -74,13 +76,13 @@ Find the Executor tools and account ids with `probe.ts client search '{"query":"
 
 `~/.local/state/org-assistant/<org>/`. Each file has one writer.
 
-| File            | Writer                             | Holds                                                                                                                                                                                                |
-| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `snapshot.json` | the scan                           | Each source's cursors and fingerprints, the Slack waiting list, source health, the last scan time, and the day's overview, deltas, and batch slots.                                                  |
-| `pending.json`  | the scan                           | The frozen `sent` batch with its tries, the `gathered` changes, and the ids seen in the last 7 days.                                                                                                 |
-| `scan.stamp`    | the scan                           | The time of the last scan.                                                                                                                                                                           |
-| `ledger.json`   | you, through `assistant.py ledger` | The delivered batches, quiet and pause, mutes, the open call and its queue, started threads, release waits, confirmed dependencies, leads, and a log of what the user was told, asked, and answered. |
-| `rules.md`      | you                                | The user's rules for you, one numbered line each, in their words.                                                                                                                                    |
-| `radar.md`      | you                                | The current picture in under 150 lines: open loops, live dependencies, pending offers, started threads.                                                                                              |
+| File            | Writer                             | Holds                                                                                                                                                                                                                                                                  |
+| --------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `snapshot.json` | the scan                           | Each source's cursors and fingerprints, the Slack waiting list, source health, the first attempt of a source that hasn't succeeded yet, and the last scan time.                                                                                                        |
+| `pending.json`  | the scan                           | The frozen `sent` batch with its tries, the `inline` batch, the `gathered` changes, the ids delivered in the last 7 days, and `meta`: today's overview, delta count, and batch slots.                                                                                  |
+| `scan.stamp`    | the scan                           | The time of the last scan.                                                                                                                                                                                                                                             |
+| `ledger.json`   | you, through `assistant.py ledger` | The delivered batches, quiet and pause, mutes, the open call with its id and its queue, started threads, release waits, confirmed dependencies, leads, and a log of what the user was told, asked, and answered. A command run twice leaves it as running it once did. |
+| `rules.md`      | you                                | The user's rules for you, one numbered line each, in their words.                                                                                                                                                                                                      |
+| `radar.md`      | you                                | The current picture in under 150 lines: open loops, live dependencies, pending offers, started threads.                                                                                                                                                                |
 
 None of them holds a message body, a ticket title or description, or anything naming a practitioner. Times are UTC in the files and Danish time on screen. A scan holds `.lock` while it runs, so a timer scan and a "scan now" never write at once.

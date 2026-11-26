@@ -14,14 +14,14 @@ Weekdays at 09:05 the overview goes out whatever happened. On weekends the scan 
 
 ## What a post holds
 
-- **Overview**: what waits on the user, what they can start today, what is blocked and by whom, deadlines within 7 days, the team pulse, and the health line with each source's state and the time of the last scan. Read the user's open tickets, PRs, and blockers from the sources yourself for it; the batch carries only what changed. An open call left unanswered since the last overview is dropped (`call drop`) and stays on the radar.
-- **Delta**: one glance of at most six items, most urgent first, ending with a one-line team pulse when the team moved, such as "Alex moved 14 tickets and finished 2". Sum the batch's `team.pulse` and `slack.channel` counts for it. More than six items: show the six that need the user and count the rest in the fold.
+- **Overview**: what waits on the user, what they can start today, what is blocked and by whom, deadlines within 7 days, the team pulse, and the health line with each source's state and the time of the last scan. Read the user's open tickets, PRs, and blockers from the sources yourself for it; the batch carries only what changed. Drop the call the last overview left open (`call drop <id>`).
+- **Delta**: one glance of at most six items, most urgent first, ending with a one-line team pulse when the team moved, such as "Alex moved 14 tickets and finished 2". Sum the batch's `team.pulse` and `slack.channel` items for it: each covers one scan's window. More than six items: show the six that need the user and count the rest in the fold.
 
-Name people by first name from the profile's people file. A Slack item links its message (`https://<workspace>.slack.com/archives/<channel>/p<ts without the dot>`) and says who wrote and how long ago, never what they wrote.
+Name people by first name from the profile's people file. A Slack item links its message (`https://<workspace>.slack.com/archives/<channel>/p<ts without the dot>`) and says who wrote and how long ago, never what they wrote. Never quote a message body, and never name or quote a practitioner, their email, or their user id.
 
 ## One open call at a time
 
-The ledger holds one open call and a queue behind it. While a call is open, every post repeats it with the same letter and adds no new option; other offers queue, oldest first. The user's `a` acts only on the call shown in the latest post, and your first line names what you are about to do. When the open call changed in the 15 minutes before their `a`, ask which one they meant. The overview drops a call that waited a whole day unanswered.
+The ledger holds one open call, numbered such as `c3`, and a queue behind it. While a call is open, every post repeats it with the same letter and adds no new option; other offers queue, oldest first. The user's `a` acts only on the call shown in the latest post, and your first line names what you are about to do. When the open call replaced another in the 15 minutes before their `a`, ask which one they meant. A call left unanswered is dropped at the next overview and stays on the radar.
 
 ## Dependencies
 

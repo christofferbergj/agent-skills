@@ -1,35 +1,42 @@
-"""When the gathered changes wake the thread, as one pure function of the time, the
-schedule, what the scan already sent today, the ledger, and the changes themselves."""
+"""When the gathered changes wake the thread, as pure functions of the time, the schedule,
+what today already sent, the ledger, and the changes themselves."""
 from __future__ import annotations
 
 from datetime import datetime
 
 from .changes import NOW, PULSE, tier, urgent
+from .times import parse
 
 
-def _until(value: str | None, now: datetime) -> bool:
+def _before(value: str | None, now: datetime) -> bool:
+    """Whether a ledger hold such as `quiet_until` is still ahead of now."""
     if not value:
         return False
     try:
-        return datetime.fromisoformat(value.replace("Z", "+00:00")) > now
+        return parse(value) > now
     except ValueError:
         return False
+
+
+def held(now: datetime, ledger: dict, kind: str) -> bool:
+    """A pause holds every wake; quiet holds deltas and lets the overview through."""
+    return _before(ledger.get("paused_until"), now) or (kind != "overview" and _before(ledger.get("quiet_until"), now))
 
 
 def decide(now: datetime, schedule: dict, meta: dict, ledger: dict, gathered: list[dict]):
     """(kind, items, reason): kind is "overview", "delta", or None for no wake; items are the
     changes the wake carries, which leave the gathered list once it is frozen."""
     today, clock = now.date().isoformat(), now.strftime("%H:%M")
-    if _until(ledger.get("paused_until"), now):
+    if held(now, ledger, "overview"):
         return None, [], f"paused until {ledger['paused_until']}"
     first, last = schedule["window"]
     if not first <= clock <= last:
         return None, [], "outside the scan window"
-    if _until(ledger.get("quiet_until"), now):
-        return None, [], f"quiet until {ledger['quiet_until']}"
     weekday = now.weekday() < 5
     if weekday and meta.get("overview_on") != today and clock >= schedule["overview"]:
         return "overview", list(gathered), "the weekday overview"
+    if held(now, ledger, "delta"):
+        return None, [], f"quiet until {ledger['quiet_until']}"
     worth = [item for item in gathered if tier(item) != PULSE]
     capped = meta.get("deltas", {}).get(today, 0) >= schedule["daily_deltas"]
     if not weekday or capped:

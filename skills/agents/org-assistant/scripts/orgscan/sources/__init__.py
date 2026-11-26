@@ -10,4 +10,6 @@ from __future__ import annotations
 from . import github, linear, slack, t3
 
 ADAPTERS = {"linear": linear.scan, "slack": slack.scan, "github": github.scan, "t3": t3.scan}
+# still(section, change): whether a gathered change is still true after the source's latest scan.
+STILL = {"slack": slack.still_waiting}
 PLANNED = {"azure-boards": "the Azure Boards adapter is not built yet; see references/scan.md"}

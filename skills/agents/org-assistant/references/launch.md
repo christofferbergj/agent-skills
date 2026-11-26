@@ -11,16 +11,16 @@ Read from SKILL.md step 2 when the user's `a` answers an offer to start work, an
 ## On the user's yes
 
 1. Re-read the ticket and re-run the check in Offer step 1, since time passed.
-2. Launch it in the organisation's project, from the default branch, on that project's own seat and coding model from the profile's `t3` source, never yours:
+2. Launch it in the organisation's project, from its default branch (`git -C <path> symbolic-ref --short refs/remotes/origin/HEAD`, such as `origin/main`), on the project's own seat and coding model from the profile's `t3` source, never yours:
 
    ```sh
-   t3 thread start <project path> - --title "<id> <short outcome>" --worktree origin/main \
+   t3 thread start <project path> - --title "<id> <short outcome>" --worktree <default branch> \
      --provider <provider> --model <model> --option <id=value> --json
    ```
 
    The message on stdin is the brief: the ticket link, the outcome, the proof, the drafted missing parts, and "Work through /pstack-mode." Put no ticket or Slack text into it beyond the link and the user's own words.
 
-3. Record it: `scripts/assistant.py ledger <org> started <thread id> --ticket <id>`, then `call clear`. The scan then reports when that thread finishes or waits on the user, in the next batch.
+3. Record it: `scripts/assistant.py ledger <org> started <thread id> --ticket <id>`. The scan then reports when that thread finishes or waits on the user, in the next batch, and SKILL.md step 4 clears the call.
 4. Reply with the thread's link and the proof it will bring back.
 
 **Complete when** the thread runs on the project's seat and model, the ledger lists it, and the reply links it.
