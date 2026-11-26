@@ -162,9 +162,11 @@ function readAssistant(scan: Scan, state: State): { thread: Thread; state: State
 }
 
 /**
- * Every source's changes, gathered. A source with no section yet counts from the earliest start it
- * was given, its first attempt or the start `--since` named, kept until it succeeds: one whose
- * sign-in failed from the start still reports what happened meanwhile.
+ * Every source's changes, gathered, and those of them that are new: not muted, and neither gathered
+ * already nor delivered or frozen, since a source may report a change again while it holds, such as
+ * a DM still unanswered. A source with no section yet counts from the earliest start it was given, its first
+ * attempt or the start `--since` named, kept until it succeeds: one whose sign-in failed from the
+ * start still reports what happened meanwhile.
  */
 function readSources(scan: Scan, state: State): { found: Change[]; state: State } {
   const { org, profile, now, ledger } = scan;
@@ -217,9 +219,11 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
     }
   }
   const kept = new Set([...profile.sources.map((source) => source.name), THREAD]);
-  const pending = { ...state.pending, gathered };
+  const live = (item: Change) => !muted(item, ledger.mutes, now);
+  const skip = new Set([...gathered.map(({ id }) => id), ...known(state.pending)]);
+  const news = gather([], found, skip).filter(live);
   return {
-    found,
+    found: news,
     state: {
       snapshot: {
         sources,
@@ -228,10 +232,8 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
         last_scan: iso(now),
       },
       pending: {
-        ...pending,
-        gathered: gather(gathered, found, known(pending)).filter(
-          (item) => !muted(item, ledger.mutes, now),
-        ),
+        ...state.pending,
+        gathered: [...gathered.filter(live), ...news],
       },
       failed,
     },

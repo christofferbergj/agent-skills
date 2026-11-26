@@ -107,7 +107,7 @@ test("a batch delivered after its scan crashed isn't sent again when the next sc
   org.save();
   org.crashAfterPending("10:05");
   org.deliver();
-  assert.deepEqual(org.found("11:05"), { "ticket.assigned": 1 }); // the same event, read again
+  assert.deepEqual(org.found("11:05"), {}); // the same event, read again, is no news
   assert.equal(org.sent().length, 2);
   assert.deepEqual(org.pending().gathered, []);
 });
