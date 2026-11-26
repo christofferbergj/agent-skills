@@ -330,12 +330,26 @@ test("two Slack sources share the scan's one call budget, and the next scan read
   org.save();
   const slackCalls = () => org.probed().filter((call) => call.path.includes(".slack.")).length;
   let read = 0;
+  const health: string[] = [];
   for (const clock of ["10:05", "11:05", "12:05"]) {
     const before = slackCalls();
-    read += org.found(clock)["slack.channel"] ?? 0;
+    const report = org.report(clock);
+    read += report.found["slack.channel"] ?? 0;
+    health.push(
+      report.health
+        .split(" · ")
+        .filter((part) => part.startsWith("slack"))
+        .join(" · "),
+    );
     assert.ok(slackCalls() - before <= 40, `${slackCalls() - before} calls at ${clock}`);
   }
   assert.equal(read, 76);
+  // The second source's allowance ran out at the first scan, which is no stuck watermark.
+  assert.deepEqual(health, [
+    "slack ok · slack-ops ok, read budget used: resumes next scan",
+    "slack ok · slack-ops ok",
+    "slack ok · slack-ops ok",
+  ]);
 });
 
 test("a copied record heading in a one-second burst is read again for its page alone, stranding none", (t) => {
@@ -376,14 +390,17 @@ test("a second holding more messages than a scan reads says the watermark is stu
   assert.match(org.status("11:10"), /slack ok, watermark stuck at 2026-11-26T09:10\+01:00: /);
 });
 
+/** `count` messages in `channel` from `from`, one a second from `clock`. */
+const messages = (count: number, channel: string, from: string, clock: string): SlackMessage[] =>
+  Array.from({ length: count }, (_, n) => ({
+    channel,
+    ts: (Number(slackTs(clock)) + n).toFixed(6),
+    from,
+  }));
+
 /** `count` messages in a confirmed channel, one a second from `clock`: enough fill a scan's budget. */
 const chatter = (clock: string, count: number): SlackMessage[] =>
-  Array.from({ length: count }, (_, n) => ({
-    channel: "C0DEV",
-    ts: (Number(slackTs(clock)) + n).toFixed(6),
-    from: "U0ALEX",
-    name: "dev",
-  }));
+  messages(count, "C0DEV", "U0ALEX", clock);
 
 /** Whether any wake so far carried a waiting DM or mention. */
 const wokeWaiting = (org: Org) =>
@@ -447,4 +464,43 @@ test("a gathered DM whose replies the budget left unread doesn't wake, and its a
   org.scan("12:05");
   assert.equal(wokeWaiting(org), false);
   assert.deepEqual(org.waiting(), []);
+});
+
+test("a budget that runs out before an ambiguous page is read again says so, not stuck", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = messages(741, "D0BOT", "USLACKBOT", "09:10");
+  org.world.slack.messages.push({
+    channel: "C0DEV",
+    ts: slackTs("09:30"),
+    from: "U0X",
+    text: "pasted\n### Result 1 of 1",
+  });
+  org.save();
+  org.scan("10:05");
+  assert.match(org.status("10:10"), /slack ok, read budget used: resumes next scan ·/);
+});
+
+test("a budget that runs out re-reading the overlap of messages already seen says so, not stuck", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const base = Number(slackTs("09:56"));
+  org.world.slack.messages = Array.from({ length: 25 }, (_, n) => ({
+    channel: "C0DEV",
+    ts: (base + n * 20).toFixed(6),
+    from: "U0ALEX",
+  }));
+  org.save();
+  org.scan("10:05");
+  const dm = Number(slackTs("10:10"));
+  org.world.slack.messages.push(
+    ...Array.from({ length: 750 }, (_, n) => ({
+      channel: "D0ALEX",
+      ts: (dm + n * 4).toFixed(6),
+      from: "U0ALEX",
+    })),
+  );
+  org.save();
+  org.scan("11:05");
+  assert.match(org.status("11:10"), /slack ok, read budget used: resumes next scan ·/);
 });
