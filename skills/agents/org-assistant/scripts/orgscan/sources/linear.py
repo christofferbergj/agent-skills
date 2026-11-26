@@ -194,7 +194,8 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             # One pulse item per move, keyed by the ticket's own update, so a replay adds it once.
             if moved or finished:
                 # A finish is keyed by its completion, so a later edit to the ticket can't count it twice.
-                key = f"finished@{issue.get('completedAt')}" if finished else f"{status}@{issue.get('updatedAt')}"
+                # A move is keyed by the window it was seen in, so a later edit can't count it twice either.
+                key = f"finished@{issue.get('completedAt')}" if finished else f"{old[0]}>{status}@{_iso(since)}"
                 changes.append(change("team.pulse", ref, issue.get("updatedAt") or _iso(now), key=key, team=name,
                                       who=who, finished=finished))
             if issue.get("createdAt", "") > _iso(since):

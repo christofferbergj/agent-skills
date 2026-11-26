@@ -67,15 +67,14 @@ def wake_message(org: str, batch: dict, snapshot: dict, tz) -> str:
         parts.append(f"{len(named) - 12} more")
     parts += [f"{count} {kind}" for kind, count in sorted(pulse.items())]
     refs = ", ".join(parts)
-    more = ""
     return (f'<org-assistant org="{org}" batch="{batch["id"]}" kind="{batch["kind"]}" try="{len(batch["tries"]) + 1}">\n'
             f"Use /org-assistant: post batch {batch['id']} from pending.json, then mark it delivered.\n"
-            f"Why now: {batch['reason']}. {len(batch['items'])} items{': ' + refs + more if refs else ''}.\n"
+            f"Why now: {batch['reason']}. {len(batch['items'])} items{': ' + refs if refs else ''}.\n"
             f"Health: {health_line(snapshot, tz)}\n</org-assistant>\n")
 
 
 def delivered(ledger: dict) -> set:
-    return {ledger.get("last_delivered")} | {d.get("batch") for d in ledger.get("delivered", [])}
+    return {d["batch"] for d in ledger.get("delivered", []) if d.get("batch")}
 
 
 def _freeze(org: str, pending: dict, local: datetime, kind: str, items: list[dict], reason: str) -> dict:
@@ -91,7 +90,6 @@ def _settle(pending: dict, slot: str, now: datetime) -> None:
     """Moves a delivered batch's ids into `seen`, so the same events never join a later batch."""
     for item in pending[slot]["items"]:
         pending["seen"][item["id"]] = iso(now)
-    pending["last_delivered"] = pending[slot]["id"]
     if pending[slot]["id"] == pending["meta"].get("overview_id"):
         pending["meta"]["overview_delivered"] = pending[slot]["id"]
     pending[slot] = None
@@ -214,11 +212,11 @@ class Scan:
         busy = (shown is None or shown.get("status") in t3_source.ACTIVE) if thread else not dry_run
         reason = ""
         sent = pending["sent"]
-        if sent and not inline and not busy and \
+        if sent and not inline and shown is not None and not busy and \
                 re.search(rf"\bbatch {re.escape(sent['id'])}(?![\w-])", shown.get("lastText", "")):
             _settle(pending, "sent", now)
             reason = "the thread's last reply already named the sent batch"
-        elif sent and not inline and not busy and held(self.local, self.ledger, sent["kind"]) and \
+        elif sent and not inline and shown is not None and not busy and held(self.local, self.ledger, sent["kind"]) and \
                 overview_due(self.local, schedule, pending["meta"], self.ledger):
             _unfreeze(pending, "sent")  # a delta quiet holds goes out in the overview that is due
             reason = "the held delta joins the overview"
@@ -271,6 +269,8 @@ class Scan:
         store.write_json(self.folder / "pending.json", pending)
         store.write_json(self.folder / "snapshot.json", self.snapshot)
         (self.folder / "scan.stamp").write_text(iso(now) + "\n")
+        if send and self.thread_moved(send):
+            send = None  # sources took minutes to read; the thread got busy or answered meanwhile
         if send:
             # The try is written before the send, so a crash mid-send still counts it.
             send["tries"].append({"at": iso(now), "ok": None})
@@ -286,6 +286,15 @@ class Scan:
         for line in self.failed:
             print(f"org-assistant: {self.org}: {line}", file=sys.stderr)
         return 1 if self.failed else 0
+
+    def thread_moved(self, batch: dict) -> bool:
+        """Whether the thread turned busy, or named this batch, since it was read at the start."""
+        thread = self.profile.get("thread", "")
+        shown = t3_source.show(thread) if thread else None
+        if shown is None:
+            return True
+        return shown.get("status") in t3_source.ACTIVE or \
+            bool(re.search(rf"\bbatch {re.escape(batch['id'])}(?![\w-])", shown.get("lastText", "")))
 
     def _count(self, kind: str) -> None:
         """Records what today sent, beside the batch, so the two are written together."""

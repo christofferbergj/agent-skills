@@ -33,7 +33,7 @@ command = ["{python}", "{fakes}", "probe"]
 name = "linear"
 kind = "linear"
 account = "acc-linear"
-teams = ["DEV", "BIZ"]
+teams = ["ENG", "OPS"]
 tools = [{linear_tools}]
 
 [[sources]]
@@ -154,22 +154,22 @@ class Scan(unittest.TestCase):
     def test_each_change_is_classified_and_a_wake_carries_it_once(self):
         self.start_day()
         linear = self.world["linear"]
-        self.note("n1", "issueAssignedToYou", "DEV-103", "2026-11-26T08:30:00.000Z")
-        linear["mine"].append({**linear["mine"][1], "id": "DEV-103", "updatedAt": "2026-11-26T08:30:00.000Z"})
-        self.note("n2", "issueCommentMention", "DEV-101", "2026-11-26T08:40:00.000Z")
-        # Someone else moved DEV-101 (the inbox says so); the user moved DEV-102 themselves.
-        self.note("n3", "issueStatusChanged", "DEV-101", "2026-11-26T08:45:00.000Z")
-        for ref, status, at in (("DEV-101", "In Review", "08:45"), ("DEV-102", "In Progress", "08:50")):
+        self.note("n1", "issueAssignedToYou", "ENG-103", "2026-11-26T08:30:00.000Z")
+        linear["mine"].append({**linear["mine"][1], "id": "ENG-103", "updatedAt": "2026-11-26T08:30:00.000Z"})
+        self.note("n2", "issueCommentMention", "ENG-101", "2026-11-26T08:40:00.000Z")
+        # Someone else moved ENG-101 (the inbox says so); the user moved ENG-102 themselves.
+        self.note("n3", "issueStatusChanged", "ENG-101", "2026-11-26T08:45:00.000Z")
+        for ref, status, at in (("ENG-101", "In Review", "08:45"), ("ENG-102", "In Progress", "08:50")):
             linear["issues"][ref]["stateHistory"].append(
                 {"state": {"name": status}, "startedAt": f"{THU}T{at}:00.000Z", "endedAt": None})
             mine = next(i for i in linear["mine"] if i["id"] == ref)
             mine.update(status=status, updatedAt=f"{THU}T{at}:00.000Z")
-        linear["team"]["DEV"][0].update(status="Done", statusType="completed", updatedAt=f"{THU}T08:20:00.000Z",
+        linear["team"]["ENG"][0].update(status="Done", statusType="completed", updatedAt=f"{THU}T08:20:00.000Z",
                                         completedAt=f"{THU}T08:20:00.000Z")
-        linear["team"]["DEV"].append({"id": "DEV-300", "status": "Todo", "statusType": "unstarted", "assignee": "Sam Sample",
+        linear["team"]["ENG"].append({"id": "ENG-300", "status": "Todo", "statusType": "unstarted", "assignee": "Sam Sample",
                                       "assigneeId": "u-sam", "createdAt": f"{THU}T08:25:00.000Z",
                                       "updatedAt": f"{THU}T08:25:00.000Z", "project": "Invented Project"})
-        linear["issues"]["DEV-200"].update(status="Done", statusType="completed")
+        linear["issues"]["ENG-200"].update(status="Done", statusType="completed")
         web = self.world["github"]["example/web"]
         web["mine"][0].update(statusCheckRollup=[{"status": "COMPLETED", "conclusion": "FAILURE"}],
                               updatedAt=f"{THU}T08:35:00Z")
@@ -180,26 +180,26 @@ class Scan(unittest.TestCase):
         self.scan("10:05")
         self.assertIn("1 release.new, 1 team.pulse, 1 ticket.moved", self.sent()[-1]["message"])
         self.assertEqual(self.batch(), sorted([
-            "ticket.assigned DEV-103", "ticket.mention DEV-101", "ticket.changed DEV-101", "ticket.moved DEV-102",
-            "ticket.unblocked DEV-102", "ticket.new_in_project DEV-300", "team.pulse DEV-200", "pr.ci_failed example/web#11",
+            "ticket.assigned ENG-103", "ticket.mention ENG-101", "ticket.changed ENG-101", "ticket.moved ENG-102",
+            "ticket.unblocked ENG-102", "ticket.new_in_project ENG-300", "team.pulse ENG-200", "pr.ci_failed example/web#11",
             "pr.review_requested example/web#12", "release.new example/api@v1.1.0"]))
         pulse = next(i for i in self.state("pending.json")["sent"]["items"] if i["kind"] == "team.pulse")
-        self.assertEqual(pulse["detail"], {"team": "DEV", "who": "Sam Sample", "finished": True})
+        self.assertEqual(pulse["detail"], {"team": "ENG", "who": "Sam Sample", "finished": True})
         self.deliver()
         self.scan("11:05")  # the same sources again: nothing new, so nothing is sent
         self.assertEqual(len(self.sent()), 2)
 
     def test_a_batched_change_waits_for_the_next_slot(self):
         self.start_day()
-        self.world["linear"]["team"]["DEV"].append(
-            {"id": "DEV-301", "status": "Todo", "statusType": "unstarted", "assignee": "Alex Example", "assigneeId": "u-alex",
+        self.world["linear"]["team"]["ENG"].append(
+            {"id": "ENG-301", "status": "Todo", "statusType": "unstarted", "assignee": "Alex Example", "assigneeId": "u-alex",
              "createdAt": f"{THU}T09:00:00.000Z", "updatedAt": f"{THU}T09:00:00.000Z", "project": "Invented Project"})
         self.save()
         self.scan("10:05")
         self.scan("12:05")
         self.assertEqual(len(self.sent()), 1)
         self.scan("13:05")
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.new_in_project DEV-301"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.new_in_project ENG-301"])
 
     def test_a_slack_message_wakes_after_30_unanswered_minutes_across_two_scans(self):
         self.start_day()
@@ -222,31 +222,31 @@ class Scan(unittest.TestCase):
 
     def test_a_sent_batch_stays_frozen_while_in_flight(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00.000Z")
         self.save()
         self.scan("10:05")
         first = self.state("pending.json")["sent"]
-        self.note("n2", "issueCommentMention", "DEV-101", f"{THU}T09:30:00.000Z")
+        self.note("n2", "issueCommentMention", "ENG-101", f"{THU}T09:30:00.000Z")
         self.world["t3"]["assistant"]["status"] = "running"
         self.save()
         self.scan("11:05")  # busy: nothing sent, the batch unchanged, the new change gathered beside it
         pending = self.state("pending.json")
         self.assertEqual(len(self.sent()), 2)
         self.assertEqual(pending["sent"], first)
-        self.assertEqual([i["ref"] for i in pending["gathered"]], ["DEV-101"])
+        self.assertEqual([i["ref"] for i in pending["gathered"]], ["ENG-101"])
         self.world["t3"]["assistant"]["status"] = "completed"
         self.save()
         self.scan("12:05")  # idle and undelivered: the same batch once more, still without the new change
         self.assertEqual(len(self.sent()), 3)
         self.assertIn(f'batch="{first["id"]}"', self.sent()[-1]["message"])
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned DEV-103"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned ENG-103"])
         self.deliver(first["id"])
         self.scan("13:05")  # delivered: the next batch carries the change that waited
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention DEV-101"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention ENG-101"])
 
     def test_a_reply_that_names_the_batch_counts_as_delivered(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00.000Z")
         self.save()
         self.scan("10:05")
         batch = self.state("pending.json")["sent"]["id"]
@@ -262,7 +262,7 @@ class Scan(unittest.TestCase):
 
     def test_a_failed_wake_is_retried_once_then_fails_the_unit(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00.000Z")
         self.world["t3"]["send_code"] = 1
         self.save()
         self.scan("10:05")
@@ -275,15 +275,15 @@ class Scan(unittest.TestCase):
 
     def test_a_missed_scan_loses_nothing_and_sends_the_overview_late(self):
         self.scan("08:30")
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:40:00.000Z")
-        self.world["linear"]["team"]["DEV"].append(
-            {"id": "DEV-302", "status": "Todo", "statusType": "unstarted", "assignee": "Alex Example", "assigneeId": "u-alex",
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:40:00.000Z")
+        self.world["linear"]["team"]["ENG"].append(
+            {"id": "ENG-302", "status": "Todo", "statusType": "unstarted", "assignee": "Alex Example", "assigneeId": "u-alex",
              "createdAt": f"{THU}T10:00:00.000Z", "updatedAt": f"{THU}T10:00:00.000Z", "project": "Invented Project"})
         self.save()
         self.scan("14:05")  # the timer missed 09:05 to 13:05
         self.assertEqual(len(self.sent()), 1)
         self.assertIn('kind="overview"', self.sent()[0]["message"])
-        self.assertEqual(self.kinds(self.sent()[0]), ["ticket.assigned DEV-103", "ticket.new_in_project DEV-302"])
+        self.assertEqual(self.kinds(self.sent()[0]), ["ticket.assigned ENG-103", "ticket.new_in_project ENG-302"])
         self.deliver()
         self.scan("15:05")
         self.assertEqual(len(self.sent()), 1)
@@ -291,7 +291,7 @@ class Scan(unittest.TestCase):
     def test_an_expired_sign_in_fails_the_unit_on_the_third_scan_and_loses_nothing(self):
         self.start_day()
         self.world["fail"] = {"linear": "auth"}
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T09:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T09:30:00.000Z")
         self.save()
         self.scan("10:05")
         self.scan("11:05")
@@ -302,12 +302,12 @@ class Scan(unittest.TestCase):
         del self.world["fail"]
         self.save()
         self.scan("13:05")
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned DEV-103"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned ENG-103"])
 
     def test_a_busy_thread_gets_nothing_until_it_is_idle(self):
         self.start_day()
         self.world["t3"]["assistant"]["status"] = "running"
-        self.note("n1", "issueCommentMention", "DEV-101", f"{THU}T09:30:00.000Z")
+        self.note("n1", "issueCommentMention", "ENG-101", f"{THU}T09:30:00.000Z")
         self.save()
         self.scan("10:05")
         self.scan("11:05")
@@ -315,12 +315,12 @@ class Scan(unittest.TestCase):
         self.world["t3"]["assistant"]["status"] = "completed"
         self.save()
         self.scan("12:05")
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention DEV-101"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention ENG-101"])
 
     def test_past_the_daily_cap_only_urgent_changes_wake(self):
         self.write_profile(extra="\n[schedule]\ndaily_deltas = 1\n")
         self.start_day()
-        self.note("n1", "issueStatusChanged", "DEV-101", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueStatusChanged", "ENG-101", f"{THU}T08:30:00.000Z")
         self.save()
         self.scan("10:05")  # the day's one delta
         self.deliver()
@@ -330,10 +330,10 @@ class Scan(unittest.TestCase):
         self.save()
         self.scan("11:05")
         self.assertEqual(len(self.sent()), 2)
-        self.note("n2", "issueCommentMention", "DEV-101", f"{THU}T10:30:00.000Z")
+        self.note("n2", "issueCommentMention", "ENG-101", f"{THU}T10:30:00.000Z")
         self.save()
         self.scan("12:05")
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention DEV-101"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention ENG-101"])
         self.assertEqual([i["kind"] for i in self.state("pending.json")["gathered"]], ["pr.ci_failed"])
 
     def test_weekends_wake_only_for_urgent_changes(self):
@@ -345,20 +345,20 @@ class Scan(unittest.TestCase):
         self.save()
         self.scan("10:05", sat)
         self.assertEqual(self.sent(), [])
-        self.note("n1", "issueCommentMention", "DEV-101", f"{sat}T09:30:00.000Z")
+        self.note("n1", "issueCommentMention", "ENG-101", f"{sat}T09:30:00.000Z")
         self.save()
         self.scan("11:05", sat)
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention DEV-101"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.mention ENG-101"])
         self.assertEqual([i["kind"] for i in self.state("pending.json")["gathered"]], ["pr.ci_failed"])
 
     def test_inline_scan_freezes_everything_for_the_run_and_wakes_nothing(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T09:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T09:30:00.000Z")
         self.world["t3"]["assistant"]["status"] = "running"  # the run that asked for it
         self.save()
         done = self.scan("10:20", THU, "--inline")
         report = json.loads(done.stdout)
-        self.assertEqual([i["ref"] for i in report["items"]], ["DEV-103"])
+        self.assertEqual([i["ref"] for i in report["items"]], ["ENG-103"])
         self.assertEqual(len(self.sent()), 1)
         self.deliver(report["batch"])
         self.world["t3"]["assistant"]["status"] = "completed"
@@ -367,7 +367,7 @@ class Scan(unittest.TestCase):
         self.assertEqual(len(self.sent()), 1)
 
     def test_a_dry_run_writes_and_sends_nothing(self):
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00.000Z")
         self.save()
         done = self.scan("10:05", THU, "--dry-run", "--since", "24h")
         report = json.loads(done.stdout)
@@ -399,29 +399,29 @@ class Scan(unittest.TestCase):
 
     def test_an_inline_scan_leaves_the_batch_in_flight_frozen(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00.000Z")
         self.save()
         self.scan("10:05")
         frozen = self.state("pending.json")["sent"]
-        self.note("n2", "issueCommentMention", "DEV-101", f"{THU}T09:10:00.000Z")
+        self.note("n2", "issueCommentMention", "ENG-101", f"{THU}T09:10:00.000Z")
         self.save()
         first = json.loads(self.scan("10:15", THU, "--inline").stdout)
         second = json.loads(self.scan("10:16", THU, "--inline").stdout)
         self.assertEqual(self.state("pending.json")["sent"], frozen)
         self.assertEqual(first["in_flight"]["id"], frozen["id"])
-        self.assertEqual([i["ref"] for i in second["items"]], ["DEV-101"])
+        self.assertEqual([i["ref"] for i in second["items"]], ["ENG-101"])
         self.assertEqual(len({frozen["id"], first["batch"], second["batch"]}), 3)
 
     def test_team_counts_made_while_a_batch_is_in_flight_wait_beside_it(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00.000Z")
-        team = self.world["linear"]["team"]["DEV"]
-        team.append({"id": "DEV-201", "status": "Done", "statusType": "completed", "assignee": "Alex Example",
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00.000Z")
+        team = self.world["linear"]["team"]["ENG"]
+        team.append({"id": "ENG-201", "status": "Done", "statusType": "completed", "assignee": "Alex Example",
                      "assigneeId": "u-alex", "createdAt": "2026-11-20T08:00:00.000Z", "project": "Other Project",
                      "updatedAt": f"{THU}T08:30:00.000Z", "completedAt": f"{THU}T08:30:00.000Z"})
         self.save()
         self.scan("10:05")
-        self.assertIn("team.pulse DEV-201", self.batch())
+        self.assertIn("team.pulse ENG-201", self.batch())
         team[0].update(status="Done", statusType="completed", updatedAt=f"{THU}T09:30:00.000Z",
                        completedAt=f"{THU}T09:30:00.000Z")
         self.world["t3"]["assistant"]["status"] = "running"
@@ -450,7 +450,7 @@ class Scan(unittest.TestCase):
 
     def test_a_ticket_someone_closed_and_a_new_red_pr_both_wake(self):
         self.start_day()
-        self.note("n1", "issueStatusChanged", "DEV-101", f"{THU}T08:30:00.000Z")
+        self.note("n1", "issueStatusChanged", "ENG-101", f"{THU}T08:30:00.000Z")
         self.world["linear"]["mine"][0].update(status="Canceled", statusType="canceled")
         self.world["github"]["example/web"]["mine"].append(
             {"number": 13, "isDraft": False, "reviewDecision": "CHANGES_REQUESTED", "updatedAt": f"{THU}T08:40:00Z",
@@ -476,11 +476,11 @@ class Scan(unittest.TestCase):
         self.scan("08:30")
         self.scan("09:05")
         self.deliver()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:10:00.000Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:10:00.000Z")
         del self.world["fail"]
         self.save()
         self.scan("10:05")
-        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned DEV-103"])
+        self.assertEqual(self.kinds(self.sent()[-1]), ["ticket.assigned ENG-103"])
 
     def test_status_warns_when_no_overview_was_delivered_by_09_30(self):
         self.world["t3"]["assistant"]["status"] = "running"
@@ -505,8 +505,8 @@ class Scan(unittest.TestCase):
         self.ledger("call", "queue", "third offer")
         self.ledger("call", "clear", "c1")
         self.assertIn("second offer", self.ledger("call", "clear", "c1"))
-        self.ledger("started", "t-new", "--ticket", "DEV-1")
-        self.ledger("started", "t-new", "--ticket", "DEV-1")
+        self.ledger("started", "t-new", "--ticket", "ENG-1")
+        self.ledger("started", "t-new", "--ticket", "ENG-1")
         self.assertEqual(len(json.loads(self.ledger("show"))["started"]), 1)
 
     def test_a_call_that_replaced_another_within_15_minutes_says_so(self):
@@ -574,11 +574,11 @@ class Scan(unittest.TestCase):
 
     def test_inbox_times_in_another_format_still_compare_in_order(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", f"{THU}T08:30:00Z")
+        self.note("n1", "issueAssignedToYou", "ENG-103", f"{THU}T08:30:00Z")
         self.save()
         self.scan("10:05")
         self.deliver()
-        self.note("n2", "issueAssignedToYou", "DEV-104", f"{THU}T08:30:00.500Z")
+        self.note("n2", "issueAssignedToYou", "ENG-104", f"{THU}T08:30:00.500Z")
         self.save()
         self.assertEqual(self.found("11:05"), {"ticket.assigned": 1})
 
@@ -586,20 +586,20 @@ class Scan(unittest.TestCase):
 
     def test_a_delta_quiet_holds_overnight_joins_the_next_overview(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", utc("21:30"))
+        self.note("n1", "issueAssignedToYou", "ENG-103", utc("21:30"))
         self.save()
         self.scan("22:05")
         fri = "2026-11-27"
         self.ledger("quiet", f"{fri}T14:00", now=utc("08:00", fri))
         self.scan("09:05", fri)
         self.assertIn('kind="overview"', self.sent()[-1]["message"])
-        self.assertIn("ticket.assigned DEV-103", self.batch())
+        self.assertIn("ticket.assigned ENG-103", self.batch())
 
     def test_an_overview_settled_from_its_reply_stays_recorded(self):
         self.scan("08:30")
         self.scan("09:05")
         assistant = self.world["t3"]["assistant"]
-        self.note("n1", "issueAssignedToYou", "DEV-103", utc("09:30"))
+        self.note("n1", "issueAssignedToYou", "ENG-103", utc("09:30"))
         for clock in ("10:05", "11:05"):
             assistant["last"] = f"Posted (batch {self.state('pending.json')['sent']['id']})"
             self.save()
@@ -618,14 +618,12 @@ class Scan(unittest.TestCase):
                 self.deliver()
         self.assertEqual(len(self.state("snapshot.json")["sources"]["slack"]["waiting"]), 201)
 
-    def test_a_slack_page_whose_records_can_not_be_told_apart_is_refused(self):
+    def test_a_slack_message_that_copies_a_record_heading_stays_one_message(self):
         sys.path.insert(0, str(SCRIPT.parent))
-        from orgscan.calls import SourceError
         from orgscan.sources.slack import _messages
         page = {"results": "### Result 1 of 1\nChannel: DM (ID: D01)\nMessage_ts: 1.000001\nText: see below\n"
                            "### Result 2 of 2\nChannel: DM (ID: D99)\nMessage_ts: 2.000002"}
-        with self.assertRaises(SourceError):
-            _messages(page)
+        self.assertEqual([m["channel"] for m in _messages(page)[0]], ["D01"])
 
     def test_a_dm_answered_after_an_abandoned_inline_scan_wakes_nothing(self):
         self.start_day()
@@ -640,7 +638,7 @@ class Scan(unittest.TestCase):
 
     def test_a_team_finish_after_a_crash_still_counts(self):
         self.start_day()
-        team = self.world["linear"]["team"]["DEV"]
+        team = self.world["linear"]["team"]["ENG"]
         snapshot = self.root / "state" / "acme" / "snapshot.json"
 
         def finish(ref, clock):
@@ -649,13 +647,13 @@ class Scan(unittest.TestCase):
             self.save()
 
         self.world["t3"]["assistant"]["status"] = "running"
-        finish("DEV-201", "09:30")
+        finish("ENG-201", "09:30")
         before = snapshot.read_bytes()
         self.scan("10:05")
         snapshot.write_bytes(before)  # as if the scan died after writing pending.json
-        finish("DEV-202", "10:30")
+        finish("ENG-202", "10:30")
         self.scan("11:05")
-        self.assertEqual(sorted(i["ref"] for i in self.state("pending.json")["gathered"]), ["DEV-201", "DEV-202"])
+        self.assertEqual(sorted(i["ref"] for i in self.state("pending.json")["gathered"]), ["ENG-201", "ENG-202"])
 
     def test_red_ci_wakes_again_after_a_green_run_with_the_same_pr_timestamp(self):
         self.start_day()
@@ -688,14 +686,14 @@ class Scan(unittest.TestCase):
 
     def test_a_held_delta_rejoins_before_mutes_and_answered_messages_are_applied(self):
         self.start_day()
-        self.note("n1", "issueAssignedToYou", "DEV-103", utc("09:30"))
+        self.note("n1", "issueAssignedToYou", "ENG-103", utc("09:30"))
         messages = self.world["slack"]["messages"]
         messages.append({"channel": "D0ALEX", "ts": slack_ts("09:20"), "from": "U0ALEX"})
         self.save()
         self.scan("10:05")
         fri = "2026-11-27"
         self.ledger("quiet", f"{fri}T14:00", now=utc("10:10"))
-        self.ledger("mute", "DEV-103", now=utc("10:10"))
+        self.ledger("mute", "ENG-103", now=utc("10:10"))
         messages.append({"channel": "D0ALEX", "ts": slack_ts("10:15"), "from": "U0ME"})
         self.save()
         self.scan("11:05")
@@ -719,20 +717,18 @@ class Scan(unittest.TestCase):
             self.scan(clock)
         self.assertIn(late, [w["ts"] for w in self.state("snapshot.json")["sources"]["slack"]["waiting"]])
 
-    def test_a_slack_ordinal_past_its_page_count_is_refused(self):
+    def test_a_slack_ordinal_past_its_page_count_is_not_a_record(self):
         sys.path.insert(0, str(SCRIPT.parent))
-        from orgscan.calls import SourceError
         from orgscan.sources.slack import _messages
         page = {"results": "## Messages (1 result)\n### Result 1 of 1\nChannel: DM (ID: D01)\nMessage_ts: 1.000001\n"
                            "Text: copied\n### Result 2 of 1\nChannel: DM (ID: D99)\nMessage_ts: 2.000002"}
-        with self.assertRaises(SourceError):
-            _messages(page)
+        self.assertEqual([m["channel"] for m in _messages(page)[0]], ["D01"])
 
     def test_a_finish_edited_before_crash_recovery_counts_once(self):
         self.start_day()
         self.world["t3"]["assistant"]["status"] = "running"
-        team = self.world["linear"]["team"]["DEV"]
-        ticket = {**team[0], "id": "DEV-201", "status": "Done", "statusType": "completed",
+        team = self.world["linear"]["team"]["ENG"]
+        ticket = {**team[0], "id": "ENG-201", "status": "Done", "statusType": "completed",
                   "updatedAt": f"{utc('09:30')[:-1]}.000Z", "completedAt": f"{utc('09:30')[:-1]}.000Z"}
         team.append(ticket)
         self.save()
@@ -743,7 +739,7 @@ class Scan(unittest.TestCase):
         ticket["updatedAt"] = f"{utc('10:30')[:-1]}.000Z"
         self.save()
         self.scan("11:05")
-        self.assertEqual([i["ref"] for i in self.state("pending.json")["gathered"]], ["DEV-201"])
+        self.assertEqual([i["ref"] for i in self.state("pending.json")["gathered"]], ["ENG-201"])
 
 
 if __name__ == "__main__":

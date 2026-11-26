@@ -6,7 +6,7 @@ Read from SKILL.md step 2 when the user's `a` answers an offer to start work, an
 
 1. **Check that nothing covers it yet.** Search for the ticket id in the organisation's projects: `t3 thread list --project <path> --json` for thread titles and branches, `git -C <path> branch -a --list '*<id>*'` (lowercased too), and `gh pr list -R <repo> --search <id> --state all`. When one exists, report it instead of offering.
 2. **Check the ticket** against [the ticket standard](rules.md#ticket-standard). A missing part goes into the offer as a draft, not a blocker.
-3. **Offer it as the call.** `a` names the outcome, the ticket, and the proof: "a → start a thread for DEV-3104: export PDFs, proof is the PR's passing e2e run". Work that needs several PRs: say so, and leave starting `/coordinator` to the user.
+3. **Offer it as the call.** `a` names the outcome, the ticket, and the proof: "a → start a thread for ENG-12: export PDFs, proof is the PR's passing e2e run". Work that needs several PRs: say so, and leave starting `/coordinator` to the user.
 
 ## On the user's yes
 

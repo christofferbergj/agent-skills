@@ -15,8 +15,7 @@ CHANGED = timedelta(minutes=15)  # a call that replaced another this recently ma
 
 
 def _utc(value: str, tz: str) -> str:
-    moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    return iso(moment if moment.tzinfo else moment.replace(tzinfo=ZoneInfo(tz)))
+    return iso(parse(value, ZoneInfo(tz)))
 
 
 def _show_call(ledger: dict, now: datetime) -> str:

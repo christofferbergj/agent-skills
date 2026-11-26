@@ -25,7 +25,7 @@ The ledger holds one open call, numbered such as `c3`, and a queue behind it. Wh
 
 ## Dependencies
 
-State a dependency only when a typed blocked-by relation or the owner's own words establish it, and current evidence shows the blocker still open. Link the source: "DEV-3104 (Alex, In Progress) blocks DEV-2949". A ticket or PR that merely mentions another is a **lead**: ask the user once whether it is a dependency, and record the answer with `ledger <org> lead <ticket> <other> depends|unrelated`, plus `depends <ticket> <other>` on a yes, so the scan follows it from then on.
+State a dependency only when a typed blocked-by relation or the owner's own words establish it, and current evidence shows the blocker still open. Link the source: "ENG-12 (Alex, In Progress) blocks ENG-7". A ticket or PR that merely mentions another is a **lead**: ask the user once whether it is a dependency, and record the answer with `ledger <org> lead <ticket> <other> depends|unrelated`, plus `depends <ticket> <other>` on a yes, so the scan follows it from then on.
 
 ## Ticket standard
 

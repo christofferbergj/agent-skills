@@ -20,7 +20,6 @@ FORGET = timedelta(days=3)  # a waiting message older than this leaves the list
 SEARCHES = ("dm", "mention", "channels")
 COMMON = {"response_format": "detailed", "include_context": False, "limit": 20}
 OVERLAP = 600  # seconds each search reaches back before the cursor, for messages Slack indexed late
-COUNT = re.compile(r"^## Messages \((\d+) results?\)", re.M)  # the page's own record count
 RESULT = re.compile(r"^### Result (\d+) of (\d+)\s*$", re.M)
 CHANNEL = re.compile(r"^Channel: (.*?)\s*\(ID: ([A-Z0-9]+)\)", re.M)
 FROM = re.compile(r"^From: .*\(ID: ([A-Z0-9]+)\)", re.M)
@@ -32,21 +31,26 @@ PAUSE = float(os.environ.get("ORG_ASSISTANT_SLACK_PAUSE", "60"))  # seconds befo
 SPACING = float(os.environ.get("ORG_ASSISTANT_SLACK_SPACING", "6"))  # seconds between searches: ≤ 10 a minute
 
 
+def _records(text: str) -> list[str]:
+    """Each record's field lines: from its `### Result N of M` heading up to its `Text:` line.
+    A heading counts only when it numbers on from the one before under the page's own total,
+    so a message body that copies a heading stays part of that message, and is never read."""
+    headings, expected, total = [], None, None
+    for match in RESULT.finditer(text):
+        number, of = int(match.group(1)), int(match.group(2))
+        if (expected is None or (number == expected and of == total)) and number <= of:
+            headings.append(match)
+            expected, total = number + 1, of
+    ends = [h.start() for h in headings[1:]] + [len(text)]
+    return [text[h.end():end].split("\nText:", 1)[0] for h, end in zip(headings, ends)]
+
+
 def _messages(result) -> tuple[list[dict], str | None]:
     """A search page as (messages, next cursor). Only ids are kept from it."""
     if not isinstance(result, dict) or not isinstance(result.get("results"), str):
         raise SourceError("Slack search returned no results text")
-    text = result["results"]
-    numbers = [(int(n), int(of)) for n, of in RESULT.findall(text)]
-    # Real records number on without a gap under one "of"; a message body that copies the
-    # heading breaks that, and the page is refused rather than read wrong.
-    count = COUNT.search(text)
-    if numbers and (any(b[0] != a[0] + 1 for a, b in zip(numbers, numbers[1:])) or len({of for _, of in numbers}) > 1
-                    or numbers[-1][0] != numbers[-1][1] or (count and int(count.group(1)) != len(numbers))):
-        raise SourceError("Slack search returned a page whose records can't be told apart")
     found = []
-    for block in RESULT.split(text)[3::3]:
-        block = block.split("\nText:", 1)[0]  # the record's fields come before its text, which can hold anything
+    for block in _records(result["results"]):
         channel, sender, ts = CHANNEL.search(block), FROM.search(block), TS.search(block)
         if not (channel and ts):
             continue
@@ -72,12 +76,12 @@ def _call(executor, args: dict):
         return executor.call([(TOOL, args)])[0]
 
 
-def _search(executor, args: dict) -> tuple[list[dict], bool]:
+def _search(executor, args: dict, order: str = "asc") -> tuple[list[dict], bool]:
     """Every message a search finds, oldest first, across up to PAGES pages, and whether it
     read them all: a page shorter than the limit, or one with no next cursor, is the last.
     Oldest first means a cut-off search misses only the newest messages, which the next scan
     reads from where this one stopped."""
-    args = {**args, "sort": "timestamp", "sort_dir": "asc"}
+    args = {**args, "sort": "timestamp", "sort_dir": order}
     found, cursor = [], None
     for _ in range(PAGES):
         page, cursor = _messages(_call(executor, {**args, **({"cursor": cursor} if cursor else {})}))
@@ -114,9 +118,10 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
     baseline = prev is None and ctx.since is None
     prev = prev or {}
     start = ctx.since.timestamp() if ctx.since else now
-    # One cursor per search. A cut-off search resumes exactly where it stopped; the others
-    # reach back OVERLAP for messages Slack indexed late, which their ids keep from counting twice.
-    cursors = {name: prev.get("cursors", {}).get(name) or {"at": start} for name in SEARCHES}
+    # One cursor per search. `reach` says where the next search starts: OVERLAP back from `at`,
+    # for messages Slack indexed late, or exactly at it when a cut-off search made no progress
+    # past its cursor, so a burst can't replay forever.
+    cursors = {name: prev.get("cursors", {}).get(name) or {"at": start, "reach": "overlap"} for name in SEARCHES}
     wait = ctx.schedule["slack_wait_minutes"] * 60
     waiting = [w for w in prev.get("waiting", []) if now - float(w["ts"]) < FORGET.total_seconds()]
     if baseline:
@@ -130,16 +135,14 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
             found[name] = []
             continue
         cursor = cursors[name]
-        # Each search reaches back OVERLAP for messages Slack indexed late. Only a cut-off search
-        # that made no progress past its cursor resumes exactly there, so a burst can't replay forever.
-        after = cursor["at"] if cursor.get("exact") else cursor["at"] - OVERLAP
+        after = cursor["at"] if cursor.get("reach") == "exact" else cursor["at"] - OVERLAP
         found[name], whole = _search(executor, {**COMMON, **filters[name], "after": str(int(after))})
         last = float(found[name][-1]["ts"]) if found[name] else None
         if whole or last is None:
-            cursors[name] = {"at": now}
+            cursors[name] = {"at": now, "reach": "overlap"}
         else:
-            stuck = cursor.get("resume", False) and last <= cursor["at"]
-            cursors[name] = {"at": max(last, cursor["at"]), "resume": True, "exact": stuck}
+            stuck = cursor.get("reach") in ("resume", "exact") and last <= cursor["at"]
+            cursors[name] = {"at": max(last, cursor["at"]), "reach": "exact" if stuck else "resume"}
     changes: list[dict] = []
     known = {(w["channel"], w["ts"]) for w in waiting}
     for message in found["dm"] + found["mention"]:
@@ -148,9 +151,10 @@ def scan(source: dict, prev: dict | None, ctx) -> tuple[dict, list[dict]]:
         known.add((message["channel"], message["ts"]))
         # The sender's id is needed only for the check above, so it stays out of the snapshot.
         waiting.append({**{k: v for k, v in message.items() if k != "from"}, "woke": False})
-    # The user's own messages since the oldest one still waiting, the ones just found included.
+    # The user's own messages since the oldest one still waiting, newest first: a cut-off read
+    # then misses only the oldest replies, never the reply to a message that just arrived.
     oldest = min([float(w["ts"]) for w in waiting] + [now - OVERLAP])
-    mine, _ = _search(executor, {**COMMON, "filters": f"from:<@{me}>", "after": str(int(oldest))})
+    mine, _ = _search(executor, {**COMMON, "filters": f"from:<@{me}>", "after": str(int(oldest))}, order="desc")
     kept = []
     for item in waiting:
         if _answered(item, mine):

@@ -5,13 +5,13 @@
       {
         "id": "n-old",
         "type": "issueSubscribed",
-        "url": "https://linear.app/example/issue/DEV-100/x",
+        "url": "https://linear.app/example/issue/ENG-100/x",
         "createdAt": "2026-11-25T08:00:00.000Z"
       }
     ],
     "mine": [
       {
-        "id": "DEV-101",
+        "id": "ENG-101",
         "status": "In Progress",
         "statusType": "started",
         "priority": { "value": 2, "name": "High" },
@@ -22,7 +22,7 @@
         "team": "Engineering"
       },
       {
-        "id": "DEV-102",
+        "id": "ENG-102",
         "status": "Todo",
         "statusType": "unstarted",
         "priority": { "value": 3, "name": "Medium" },
@@ -34,8 +34,8 @@
       }
     ],
     "issues": {
-      "DEV-101": {
-        "id": "DEV-101",
+      "ENG-101": {
+        "id": "ENG-101",
         "relations": { "blocks": [], "blockedBy": [], "relatedTo": [] },
         "stateHistory": [
           {
@@ -45,11 +45,11 @@
           }
         ]
       },
-      "DEV-102": {
-        "id": "DEV-102",
+      "ENG-102": {
+        "id": "ENG-102",
         "relations": {
           "blocks": [],
-          "blockedBy": [{ "id": "DEV-200", "title": "left out" }],
+          "blockedBy": [{ "id": "ENG-200", "title": "left out" }],
           "relatedTo": []
         },
         "stateHistory": [
@@ -60,17 +60,17 @@
           }
         ]
       },
-      "DEV-200": {
-        "id": "DEV-200",
+      "ENG-200": {
+        "id": "ENG-200",
         "status": "In Progress",
         "statusType": "started",
         "assignee": "Sam Sample"
       }
     },
     "team": {
-      "DEV": [
+      "ENG": [
         {
-          "id": "DEV-200",
+          "id": "ENG-200",
           "status": "In Progress",
           "statusType": "started",
           "assignee": "Sam Sample",
@@ -80,7 +80,7 @@
           "project": "Other Project"
         }
       ],
-      "BIZ": []
+      "OPS": []
     }
   },
   "slack": {

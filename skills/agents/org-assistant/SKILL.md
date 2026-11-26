@@ -35,7 +35,7 @@ Take the branch that matches what started this run.
 
 ## 3. Post
 
-Shape the post as /reply-shape's glance, with the content [the rules](references/rules.md#what-a-post-holds) give the overview and the delta. Every time is the profile's timezone, Danish time for FysioScout. Name tickets and PRs as links with their id. End with /next-options: the open call as `a`, repeated with the same letter while it stays open and adding no new option; a new offer becomes the call only when none is open (`ledger <org> call set "<offer>"`), and otherwise joins the queue (`call queue "<offer>"`). Put the batch id and the open call's id in the fold, as `batch <id> · call <id>`, so the scan can tell the post went out and the next `a` can tell which call it answers.
+Shape the post as /reply-shape's glance, with the content [the rules](references/rules.md#what-a-post-holds) give the overview and the delta. Every time is in the profile's timezone. Name tickets and PRs as links with their id. End with /next-options: the open call as `a`, repeated with the same letter while it stays open and adding no new option; a new offer becomes the call only when none is open (`ledger <org> call set "<offer>"`), and otherwise joins the queue (`call queue "<offer>"`). Put the batch id and the open call's id in the fold, as `batch <id> · call <id>`, so the scan can tell the post went out and the next `a` can tell which call it answers.
 
 **Complete when** the post shows at most six items, ends on the one open call or on **Done**, and carries the batch id and the call id.
 

@@ -11,9 +11,10 @@ def iso(moment: datetime, ms: bool = False) -> str:
         .replace("+00:00", "Z")
 
 
-def parse(text: str) -> datetime:
+def parse(text: str, tz=timezone.utc) -> datetime:
+    """An ISO time; one without an offset is read in `tz`."""
     moment = datetime.fromisoformat(text.replace("Z", "+00:00"))
-    return moment if moment.tzinfo else moment.replace(tzinfo=timezone.utc)
+    return moment if moment.tzinfo else moment.replace(tzinfo=tz)
 
 
 def from_ts(ts) -> datetime:
