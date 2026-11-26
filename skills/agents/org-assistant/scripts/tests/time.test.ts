@@ -39,6 +39,25 @@ test("a time written with an offset keeps it, and one that isn't a time is null"
   assert.equal(parseTime("2026-13-01T00:00"), null);
 });
 
+test("a time that doesn't exist is null, never another time it rolls over to", () => {
+  for (const text of [
+    "2026-02-30T14:00", // 30 February
+    "2026-02-29", // 2026 is no leap year
+    "2026-04-31T09:00",
+    "2026-11-26T14:99",
+    "2026-11-26T14:60",
+    "2026-11-26T24:00",
+    "2026-11-26T14:00:61Z",
+    "2026-11-26T14:00+25:00",
+    "2026-11-26T14:00+01:75",
+    "0099-01-01T00:00Z", // Date.UTC reads a year under 100 as 19xx
+  ]) {
+    assert.equal(parseTime(text, ZONE), null, text);
+  }
+  assert.equal(utcOf("2028-02-29T12:00"), "2028-02-29T11:00:00.000Z");
+  assert.equal(utcOf("2026-11-26T14:00-11:30"), "2026-11-27T01:30:00.000Z");
+});
+
 test("times read as the user sees them, in summer and in winter", () => {
   const summer = local(new Date("2026-06-01T07:05:00Z"), ZONE);
   assert.equal(localIso(summer), "2026-06-01T09:05+02:00");

@@ -1,6 +1,6 @@
 /** `assistant.ts ledger`, through the CLI: each command, and that a repeat changes nothing more. */
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { Org, THU, utc } from "./helpers.ts";
@@ -115,6 +115,24 @@ test("a ledger command with the wrong words is a usage error that changes nothin
     assert.equal(done.code, 2, `${args.join(" ")}: ${done.stderr}`);
   }
   assert.throws(() => org.ledgerState());
+});
+
+test("a time that doesn't exist is a usage error that changes nothing", (t) => {
+  const org = new Org(t);
+  org.ledger(["quiet", `${THU}T14:00`]);
+  const before = readFileSync(org.statePath("ledger.json"), "utf8");
+  for (const args of [
+    ["quiet", "2026-02-30T14:00"],
+    ["pause", `${THU}T14:99`],
+    ["mute", "ENG-1", "--until", `${THU}T25:00`],
+  ]) {
+    const done = org.cli(["ledger", "acme", ...args]);
+    assert.equal(done.code, 2, `${args.join(" ")}: ${done.stderr}`);
+  }
+  assert.equal(org.cli(["ledger", "acme", "call", "show"], `${THU}T14:99:00Z`).code, 2);
+  assert.equal(org.cli(["scan", "acme"], "2026-02-30T09:05:00Z").code, 2);
+  assert.equal(readFileSync(org.statePath("ledger.json"), "utf8"), before);
+  assert.equal(existsSync(org.statePath("snapshot.json")), false);
 });
 
 test("ledger -h lists every command", (t) => {

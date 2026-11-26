@@ -122,7 +122,26 @@ const ISO =
  */
 export type WrittenTime = { wall: Wall; ms: number; offset: number | null };
 
-/** The parts of an ISO time such as `2026-11-26T14:00` or `2026-11-26T09:05:00Z`, or null. */
+/**
+ * Whether a wall clock names a moment that exists: a day its month has, and an hour, minute, and
+ * second in range. `Date.UTC` rolls anything else over, so 30 February reads back as March.
+ */
+function exists(wall: Wall): boolean {
+  const back = new Date(wallMs(wall));
+  return (
+    back.getUTCFullYear() === wall.year &&
+    back.getUTCMonth() + 1 === wall.month &&
+    back.getUTCDate() === wall.day &&
+    back.getUTCHours() === wall.hour &&
+    back.getUTCMinutes() === wall.minute &&
+    back.getUTCSeconds() === wall.second
+  );
+}
+
+/**
+ * The parts of an ISO time such as `2026-11-26T14:00` or `2026-11-26T09:05:00Z`, or null when it
+ * isn't one or names a time that doesn't exist, such as `2026-02-30T14:99`.
+ */
 export function readTime(text: string): WrittenTime | null {
   const match = ISO.exec(text.trim());
   if (match === null) return null;
@@ -135,14 +154,15 @@ export function readTime(text: string): WrittenTime | null {
     minute: Number(minute),
     second: Number(second),
   };
-  if (wall.month < 1 || wall.month > 12 || wall.day < 1 || wall.day > 31 || wall.hour > 23) {
-    return null;
-  }
+  if (!exists(wall)) return null;
   const ms = Number(fraction.padEnd(3, "0").slice(0, 3));
   if (offset === undefined) return { wall, ms, offset: null };
-  const sign = offset === "Z" ? 0 : offset.startsWith("-") ? -1 : 1;
+  if (offset === "Z") return { wall, ms, offset: 0 };
   const digits = offset.replace(/[^0-9]/g, "");
-  return { wall, ms, offset: sign * (Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2))) };
+  const hours = Number(digits.slice(0, 2));
+  const minutes = Number(digits.slice(2));
+  if (hours > 23 || minutes > 59) return null;
+  return { wall, ms, offset: (offset.startsWith("-") ? -1 : 1) * (hours * 60 + minutes) };
 }
 
 /** The instant a written time names; one without an offset is a wall-clock time in `zone`. */
