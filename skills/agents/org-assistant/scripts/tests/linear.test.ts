@@ -201,13 +201,48 @@ test("an inbox read past the cap reads the newest items, says so, and next time 
   org.startDay();
   org.world.linear.page_size = 1; // twenty pages then hold 20 items
   // 21 items at one time: the read past the cap takes 20, and the 21st stays unread.
-  for (let n = 0; n < 21; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", linearTime("09:10"));
+  for (let n = 0; n < 21; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("09:10", n));
   org.save();
   assert.deepEqual(org.found("10:05"), { "linear.other": 20 });
   assert.equal(health(org, "10:10"), "ok, inbox capped at 1,000: older items unread");
   org.note("n-new", "issueAssignedToYou", "ENG-103", linearTime("10:30"));
   org.save();
   assert.deepEqual(org.found("11:05"), { "ticket.assigned": 1 });
+  assert.equal(health(org, "11:10"), "ok");
+  assert.deepEqual(org.found("12:05"), {});
+});
+
+test("an inbox read past the cap at one time reads the items at that time again, once each", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.linear.page_size = 1;
+  for (let n = 0; n < 21; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", linearTime("09:10"));
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "linear.other": 20 });
+  org.world.linear.page_size = 50;
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "linear.other": 1 });
+  assert.equal(health(org, "11:10"), "ok");
+  assert.deepEqual(org.found("12:05"), {});
+});
+
+test("an inbox item at the watermark's time, paged after one already read, is still read", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const tie = linearTime("09:30");
+  org.note("n-read", "issueSubscribed", "ENG-999", tie);
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "linear.other": 1 });
+  // 49 newer items fill the first page with the read item, so the unread one at its time is next.
+  org.world.linear.notifications.unshift({
+    id: "n-late",
+    type: "issueAssignedToYou",
+    url: "https://linear.app/example/issue/ENG-103/x",
+    createdAt: tie,
+  });
+  for (let n = 1; n <= 49; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("10:30", n));
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "linear.other": 49, "ticket.assigned": 1 });
   assert.equal(health(org, "11:10"), "ok");
   assert.deepEqual(org.found("12:05"), {});
 });

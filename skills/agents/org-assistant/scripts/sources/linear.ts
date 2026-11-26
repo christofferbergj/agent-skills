@@ -216,16 +216,17 @@ function newest(items: Note[], mark: Mark): Mark {
 }
 
 /**
- * The inbox items above the watermark, newest first, read down to the first item it covers: one
- * older than it, or one at its time already read. The watermark rises to the newest item read, so
- * items a read past the cap didn't reach stay unread.
+ * The inbox items above the watermark, newest first, read down to the first item older than it;
+ * an item at its time that was read already joins once, by its id. The watermark rises to the
+ * newest item read, so items a read past the cap didn't reach stay unread.
  */
 function readInbox(executor: Executor, prev: Section | null, since: Stamp) {
   const mark: Mark = { at: prev?.inbox_at ?? since, ids: prev?.inbox_ids ?? [] };
-  const covered = (item: Note) =>
-    item.createdAt < mark.at || (item.createdAt === mark.at && mark.ids.includes(item.id));
-  const read = walk(executor, TOOLS.inbox, { limit: INBOX_PAGE }, notes, covered);
-  const fresh = read.items.filter((item) => !covered(item));
+  const older = (item: Note) => item.createdAt < mark.at;
+  const read = walk(executor, TOOLS.inbox, { limit: INBOX_PAGE }, notes, older);
+  const fresh = read.items.filter(
+    (item) => !older(item) && !(item.createdAt === mark.at && mark.ids.includes(item.id)),
+  );
   const top = newest(fresh, mark);
   return { fresh, capped: read.capped, mark: { inbox_at: top.at, inbox_ids: top.ids } };
 }
