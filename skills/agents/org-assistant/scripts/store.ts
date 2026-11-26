@@ -141,8 +141,12 @@ function flock(file: string, waitSeconds: number): Held | null {
   throw new FileError(file, `can't be locked (flock exit ${taken.status ?? taken.signal})`);
 }
 
-/** Takes `file` by creating it, polling until `waitSeconds` pass; releasing removes it. */
-function create(file: string, waitSeconds: number): Held | null {
+/**
+ * Takes `lock` by creating `lock.held`, polling until `waitSeconds` pass; releasing removes it. The
+ * name is its own, so the file a lock taken with flock leaves behind never reads as taken.
+ */
+function create(lock: string, waitSeconds: number): Held | null {
+  const file = `${lock}.held`;
   process.stderr.write(
     `org-assistant: flock isn't on PATH, so ${file} is a plain file: one a crashed run leaves ` +
       "behind keeps later runs out until it is removed\n",
@@ -164,8 +168,8 @@ function create(file: string, waitSeconds: number): Held | null {
  * Runs `body` holding `file`, waiting up to ORG_ASSISTANT_LOCK_WAIT seconds (60) for whoever holds
  * it; returns "busy" when it stays taken. flock(1) takes it for this process, so the kernel lets go
  * however the process ends, and the file itself stays: nothing a dead process left can keep a later
- * run out. Without flock, as on a Mac, the lock is the file itself, created exclusively and removed
- * when `body` ends.
+ * run out. Without flock, as on a Mac, the lock is `file.held`, created exclusively and removed when
+ * `body` ends.
  */
 export function withLock<T>(file: string, body: () => T): T | "busy" {
   const waitSeconds = Number(process.env.ORG_ASSISTANT_LOCK_WAIT ?? 60);

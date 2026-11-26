@@ -77,11 +77,23 @@ test("without flock the lock is a plain file: the scan says so, and one left beh
   const noFlock = { PATH: join(org.fake, "bin") };
   const done = org.cli(["scan", "acme"], utc("08:30"), noFlock);
   assert.equal(done.code, 0, done.stderr);
-  assert.match(done.stderr, /flock isn't on PATH, so .*\.lock is a plain file/);
+  assert.match(done.stderr, /flock isn't on PATH, so .*\.lock\.held is a plain file/);
   assert.ok(org.snapshot().last_scan);
-  assert.equal(existsSync(org.statePath(".lock")), false);
-  writeFileSync(org.statePath(".lock"), "");
+  assert.equal(existsSync(org.statePath(".lock.held")), false);
+  writeFileSync(org.statePath(".lock.held"), "");
   assert.match(org.cli(["scan", "acme"], utc("09:05"), noFlock).stderr, SKIPPED);
+});
+
+test("the file a lock taken with flock leaves keeps no run without flock out", (t) => {
+  const org = new Org(t);
+  const noFlock = { PATH: join(org.fake, "bin") };
+  org.scan("08:30");
+  org.ledger(["log", "told", "with flock"]);
+  assert.ok(existsSync(org.statePath(".lock")) && existsSync(org.statePath(".ledger.lock")));
+  assert.doesNotMatch(org.cli(["scan", "acme"], utc("09:05"), noFlock).stderr, SKIPPED);
+  assert.ok(org.sent().length > 0, "the scan without flock didn't run");
+  const edit = org.cli(["ledger", "acme", "log", "told", "without flock"], undefined, noFlock);
+  assert.equal(edit.code, 0, edit.stderr);
 });
 
 test("ledger commands run at once each land", async (t) => {
