@@ -12,7 +12,7 @@ import type { Parser } from "../parse.ts";
 import type { Schedule, Source } from "../profile.ts";
 import { github } from "./github.ts";
 import { linear } from "./linear.ts";
-import { slack } from "./slack.ts";
+import { SLACK_CALLS, slack } from "./slack.ts";
 import { t3 } from "./t3.ts";
 
 /**
@@ -26,6 +26,11 @@ export type Window<S> =
   | { kind: "baseline" };
 export type Fresh = Exclude<Window<never>, { kind: "resume" }>;
 
+/** What one organisation's scan lets all its sources of a kind spend between them. */
+export type Allowance = { slackCalls: number };
+
+export const newAllowance = (): Allowance => ({ slackCalls: SLACK_CALLS });
+
 export type Context = {
   now: Date;
   zone: string;
@@ -33,6 +38,8 @@ export type Context = {
   ledger: Ledger;
   /** The assistant thread, which the T3 source leaves out. */
   thread: string | null;
+  /** The scan's one allowance, which every source draws on. */
+  allowance: Allowance;
   /** A change found by this source. */
   change<K extends ChangeKind>(kind: K, fields: ChangeFields<K>): ChangeOf<K>;
 };

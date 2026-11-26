@@ -42,7 +42,7 @@ import {
   healthLine,
   snapshotParser,
 } from "./snapshot.ts";
-import { type Context, type Fresh, scanSource } from "./sources/index.ts";
+import { type Context, type Fresh, newAllowance, scanSource } from "./sources/index.ts";
 import { readThread, sendWake } from "./sources/t3.ts";
 import { FileError, readJson, stateDir, withLock, writeJson, writeText } from "./store.ts";
 import { type Local, iso, local, localIso } from "./time.ts";
@@ -175,6 +175,7 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
   const failed = [...state.failed];
   let gathered = state.pending.gathered;
   const found: Change[] = [];
+  const allowance = newAllowance();
   for (const source of profile.sources) {
     const { name } = source;
     const prev = sources[name];
@@ -192,6 +193,7 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
       schedule: profile.schedule,
       ledger,
       thread: profile.thread,
+      allowance,
       change: <K extends ChangeKind>(kind: K, fields: ChangeFields<K>) =>
         makeChange(name, kind, fields),
     };

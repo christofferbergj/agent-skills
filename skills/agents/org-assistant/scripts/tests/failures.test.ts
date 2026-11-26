@@ -10,7 +10,7 @@ import { change } from "../changes.ts";
 import { EMPTY_LEDGER } from "../ledger.ts";
 import { object, parse, string } from "../parse.ts";
 import { scheduleParser } from "../profile.ts";
-import { type Context, scanWith } from "../sources/index.ts";
+import { type Context, newAllowance, scanWith } from "../sources/index.ts";
 import { Org, THU, linearTime, slackTs } from "./helpers.ts";
 
 test("an expired sign-in fails the unit on the third scan and loses nothing", (t) => {
@@ -139,6 +139,7 @@ test("an adapter's unexpected error fails its source by the error's type, never 
     schedule: parse(scheduleParser, {}),
     ledger: EMPTY_LEDGER,
     thread: null,
+    allowance: newAllowance(),
     change: (kind, fields) => change("x", kind, fields),
   };
   const adapter = {

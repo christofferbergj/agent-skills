@@ -306,3 +306,34 @@ test("a rate-limited search fails the source as rate limited, never with its tex
   );
   assert.doesNotMatch(done.stderr + org.stateText(), /PRIVATE-CANARY/);
 });
+
+test("two Slack sources share the scan's one call budget, and the next scan reads what it left", (t) => {
+  const org = new Org(t);
+  org.writeProfile((profile) => {
+    const first = profile.sources.find(({ kind }) => kind === "slack");
+    assert.ok(first);
+    profile.sources.push({ ...first, name: "slack-ops", channels: [{ id: "C0OPS" }] });
+  });
+  org.startDay();
+  const start = Number(slackTs("09:10"));
+  for (const channel of ["C0DEV", "C0OPS"]) {
+    // Each first body copies a record heading, so its page is read again one message per call.
+    org.world.slack.messages.push(
+      ...Array.from({ length: 38 }, (_, n) => ({
+        channel,
+        from: "U0BOT",
+        ts: (start + n).toFixed(6),
+        ...(n === 0 ? { text: "see below\n### Result 1 of 20" } : {}),
+      })),
+    );
+  }
+  org.save();
+  const slackCalls = () => org.probed().filter((call) => call.path.includes(".slack.")).length;
+  let read = 0;
+  for (const clock of ["10:05", "11:05", "12:05"]) {
+    const before = slackCalls();
+    read += org.found(clock)["slack.channel"] ?? 0;
+    assert.ok(slackCalls() - before <= 40, `${slackCalls() - before} calls at ${clock}`);
+  }
+  assert.equal(read, 76);
+});

@@ -18,15 +18,15 @@ import {
 } from "../parse.ts";
 import type { SlackSource } from "../profile.ts";
 import { DAY, fromSlackTs, isSlackTs, iso, sleep, slackTs } from "../time.ts";
-import type { Adapter, Context, Window } from "./index.ts";
+import type { Adapter, Allowance, Context, Window } from "./index.ts";
 
 const TOOL = "tools.slack.mcp.slack_search_public_and_private";
 const LIMIT = 20;
 /**
- * The calls one scan makes at most, retries and one-message re-reads included: four minutes at one
- * call each six seconds.
+ * The calls one organisation's scan makes at most, across all its Slack sources, retries and
+ * one-message re-reads included: four minutes at one call each six seconds.
  */
-const BUDGET = 40;
+export const SLACK_CALLS = 40;
 const FORGET = 3 * DAY; // a waiting message older than this leaves the list
 const SEARCHES = ["dm", "mention", "channels"] as const;
 type Search = (typeof SEARCHES)[number];
@@ -150,15 +150,14 @@ function onlyMessage(text: string): Message | null {
 type Ask = (input: Record<string, unknown>) => { results: string; pagination: string } | null;
 
 /**
- * The scan's search calls, out of one budget of BUDGET. Slack limits search bursts, so the calls go
- * one at a time, and a rate-limited call waits a minute and tries once more, which costs a call too,
- * before it fails the source.
+ * The source's search calls, out of the scan's one allowance. Slack limits search bursts, so the
+ * calls go one at a time, and a rate-limited call waits a minute and tries once more, which costs a
+ * call too, before it fails the source.
  */
-function asker(executor: Executor): Ask {
-  let left = BUDGET;
+function asker(executor: Executor, allowance: Allowance): Ask {
   return (input) => {
-    for (let tries = 0; left > 0; tries++) {
-      left -= 1;
+    for (let tries = 0; allowance.slackCalls > 0; tries++) {
+      allowance.slackCalls -= 1;
       const pause = tries === 0 ? 0 : seconds("ORG_ASSISTANT_SLACK_PAUSE", 60);
       sleep(seconds("ORG_ASSISTANT_SLACK_SPACING", 6) + pause); // at most 10 searches a minute
       try {
@@ -227,7 +226,7 @@ function answered(item: Waiting, mine: Message[]): boolean {
 }
 
 function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
-  const ask = asker(new Executor(source, [TOOL]));
+  const ask = asker(new Executor(source, [TOOL]), ctx.allowance);
   const me = source.me;
   const now = ctx.now.getTime() / 1000;
   const prev = window.kind === "resume" ? window.prev : null;
