@@ -80,9 +80,10 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
   const threads: Section["threads"] = {};
   const watching = new Set<string>();
   const changes: Change[] = [];
-  for (const project of source.projects) {
+  for (const [index, project] of source.projects.entries()) {
     const args = ["t3", "thread", "list", "--project", project.path, "--json", ...QUIET];
-    for (const thread of runJson(args, `T3 threads in ${project.path}`, array(listed))) {
+    // Named by its place in the profile: stderr reaches the journal and never names a path.
+    for (const thread of runJson(args, `T3 threads in projects[${index}]`, array(listed))) {
       const id = thread.threadId;
       if (id === ctx.thread || thread.archived) continue;
       const prev = seen[id];

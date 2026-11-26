@@ -152,5 +152,5 @@ test("gh failing on its credentials fails the source as an expired sign-in", (t)
   org.world.fail = { github: "on" };
   org.save();
   org.scan("10:05");
-  assert.match(org.status("10:10"), /⚠️ github: example\/web PRs \(exit 1\): sign-in expired$/m);
+  assert.match(org.status("10:10"), /⚠️ github: repos\[0\] PRs \(exit 1\): sign-in expired$/m);
 });

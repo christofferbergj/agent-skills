@@ -31,6 +31,26 @@ test("an expired sign-in fails the unit on the third scan and loses nothing", (t
   assert.deepEqual(org.kinds(org.lastSent()), ["ticket.assigned ENG-103"]);
 });
 
+test("stderr names a failed call by its place in the profile, never a repository or project", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.writeProfile((profile) => {
+    const linear = profile.sources.find(({ kind }) => kind === "linear");
+    assert.ok(linear);
+    linear.repo = "/invented/gone-repository";
+  });
+  org.world.fail = { github: "boom" };
+  const [thread] = org.world.t3.threads;
+  assert.ok(thread);
+  thread.snoozedUntil = "soon";
+  org.save();
+  const { stderr } = org.scan("10:05");
+  assert.match(stderr, /^org-assistant: acme: github: repos\[0\] PRs \(exit 1\): /m);
+  assert.match(stderr, /^org-assistant: acme: linear: the folder its repo field names is missing/m);
+  assert.match(stderr, /^org-assistant: acme: t3: T3 threads in projects\[0\]: /m);
+  assert.doesNotMatch(stderr, /example\/|invented/);
+});
+
 test("a source that never signed in reports what happened since its first attempt once it does", (t) => {
   const org = new Org(t);
   org.world.fail = { linear: "auth" };
@@ -123,7 +143,7 @@ test("a value no real source sends fails that source alone, and the scan goes on
   );
   assert.match(
     org.status("10:10"),
-    /⚠️ t3: T3 threads in \/invented\/project: unexpected response at \[0\]\.snoozedUntil$/m,
+    /⚠️ t3: T3 threads in projects\[0\]: unexpected response at \[0\]\.snoozedUntil$/m,
   );
   assert.match(
     org.status("10:10"),

@@ -143,7 +143,7 @@ export class Executor {
     }
     const { command, account, repo } = this.#source;
     if (repo !== undefined && !(existsSync(repo) && statSync(repo).isDirectory())) {
-      throw new SourceError(`its repository ${repo} is missing`);
+      throw new SourceError("the folder its repo field names is missing");
     }
     const body = {
       calls: calls.map(({ path, input }) => ({ path, input: { accountId: account, input } })),

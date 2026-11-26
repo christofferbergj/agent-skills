@@ -77,10 +77,19 @@ function ciOf(rollup: Infer<typeof check>[] | null): Infer<typeof ci> {
   return states.some(running) ? "pending" : "passing";
 }
 
-function gh<T>(repo: string, args: string[], what: string, item: Parser<T>): T[] {
+/**
+ * A `gh` list of one repository, named in errors by its place in the profile, `repos[1] PRs`, since
+ * stderr reaches the journal and never names a repository.
+ */
+function gh<T>(
+  repo: { name: string; index: number },
+  args: string[],
+  what: string,
+  item: Parser<T>,
+): T[] {
   return runJson(
-    ["gh", ...args.slice(0, 2), "-R", repo, ...args.slice(2)],
-    `${repo} ${what}`,
+    ["gh", ...args.slice(0, 2), "-R", repo.name, ...args.slice(2)],
+    `repos[${repo.index}] ${what}`,
     array(item),
   );
 }
@@ -100,14 +109,15 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
   for (const wait of ctx.ledger.waits) waits.set(wait.on, [...(waits.get(wait.on) ?? []), wait.pr]);
   const repos: Section["repos"] = {};
   const changes: Change[] = [];
-  for (const entry of source.repos) {
+  for (const [index, entry] of source.repos.entries()) {
     const repo = entry.repo;
+    const at = { name: repo, index };
     const old: RepoState = prev?.repos[repo] ?? {};
     const state: RepoState = {};
     if (entry.mine) {
       const fields = "number,isDraft,reviewDecision,statusCheckRollup,updatedAt";
       const prs = gh(
-        repo,
+        at,
         ["pr", "list", "--author", "@me", "--state", "open", "--limit", "100", "--json", fields],
         "PRs",
         minePr,
@@ -148,7 +158,7 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
         "--json",
         "number,updatedAt",
       ];
-      const asked = gh(repo, args, "review requests", requestedPr);
+      const asked = gh(at, args, "review requests", requestedPr);
       state.requested = asked.map((pr) => String(pr.number)).sort();
       for (const pr of asked) {
         if (baseline || (old.requested ?? []).includes(String(pr.number))) continue;
@@ -173,7 +183,7 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
         "--json",
         "number,assignees,createdAt,updatedAt",
       ];
-      const issues = gh(repo, args, "issues", issue);
+      const issues = gh(at, args, "issues", issue);
       const before = old.issues;
       state.issues = {};
       for (const found of issues) {
@@ -201,7 +211,7 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
     }
     if (entry.open_prs) {
       const prs = gh(
-        repo,
+        at,
         ["pr", "list", "--state", "open", "--limit", "200", "--json", "number,createdAt"],
         "open PRs",
         openPr,
@@ -230,7 +240,7 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
     }
     if (entry.releases) {
       const found = gh(
-        repo,
+        at,
         ["release", "list", "--limit", "10", "--json", "tagName,publishedAt,isDraft"],
         "releases",
         release,
