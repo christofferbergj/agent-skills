@@ -101,7 +101,8 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
         items: thread.itemCount,
         run: thread.latestRunId,
         since: same ? prev.since : now,
-        turn: moved ? null : prev.turn,
+        // A new status or run ends a turn, and a new item a stall, even while the thread is unwatched.
+        turn: moved || (!same && thread.status === "running") ? null : prev.turn,
       };
       threads[id] = record;
       if (!watched(thread, ctx.now)) continue;
@@ -133,9 +134,8 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
           at: now,
         };
       }
-      // A new item ends a stall; an hour without one starts it, reported first at this scan.
+      // An hour without a new item starts a stall, reported first at this scan.
       const running = thread.status === "running";
-      if (running && !same) record.turn = null;
       if (running && same && ctx.now.getTime() - Date.parse(prev.since) >= STALL) {
         record.turn ??= { key: stallKey(record.since), at: now };
       }

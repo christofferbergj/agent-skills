@@ -126,6 +126,44 @@ test("a stall first seen after days without a scan is reported, counted from tha
   assert.deepEqual(back.kinds, { "thread.stalled": 1 });
 });
 
+test("a failed run stays news after the thread starts its next run while the assistant is busy", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.threadIs("running");
+  Object.assign(other(org), { status: "failed", latestRunId: "r-other-2", itemCount: 20 });
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "thread.failed": 1 });
+  Object.assign(other(org), { status: "running", latestRunId: "r-other-3", itemCount: 21 });
+  org.save();
+  org.threadIs("completed");
+  org.scan("10:35");
+  assert.deepEqual(org.kinds(org.lastSent()), ["thread.failed t3:t-other"]);
+});
+
+test("a stall is reported again for seven days from its first report, then stops", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.threadIs("running"); // the assistant stays busy, so the stall stays gathered
+  turn(org, "running", 20);
+  org.scan("10:05");
+  assert.deepEqual(org.report("10:05", { day: "2026-12-04" }).gathered, { "thread.stalled": 1 });
+  assert.deepEqual(org.report("10:04", { day: "2026-12-11" }).gathered, { "thread.stalled": 1 });
+  assert.deepEqual(org.report("10:05", { day: "2026-12-11" }).gathered, {});
+});
+
+test("a new item read while the thread is snoozed ends its stall", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  turn(org, "running", 13);
+  org.scan("10:05");
+  assert.deepEqual(org.found("11:05"), { "thread.stalled": 1 });
+  Object.assign(other(org), { snoozedUntil: utc("11:50"), itemCount: 14 });
+  org.save();
+  assert.deepEqual(org.report("11:20").gathered, {});
+  assert.deepEqual(org.found("11:55"), {}); // the new item has held for 35 minutes
+  assert.deepEqual(org.found("12:20"), { "thread.stalled": 1 });
+});
+
 test("a gathered stall is dropped once the thread starts another run", (t) => {
   const org = new Org(t);
   org.startDay();
