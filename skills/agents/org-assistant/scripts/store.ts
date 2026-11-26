@@ -147,11 +147,11 @@ type Backend = { kind: "flock"; path: string } | { kind: "file" };
  */
 function backendOf(folder: string): Backend {
   const record = join(folder, ".lock-backend");
-  const path = findFlock();
-  if (readText(record) === null) {
+  let recorded = readText(record)?.trim();
+  if (recorded === undefined) {
     // Linked into place, so of two first runs one records its backend and the other reads it.
     const temporary = temporaryBeside(record);
-    writeFileSync(temporary, `${path === null ? "file" : "flock"}\n`, { flag: "wx" });
+    writeFileSync(temporary, `${findFlock() === null ? "file" : "flock"}\n`, { flag: "wx" });
     try {
       linkSync(temporary, record);
     } catch (error) {
@@ -159,10 +159,12 @@ function backendOf(folder: string): Backend {
     } finally {
       unlinkSync(temporary);
     }
+    recorded = readText(record)?.trim();
   }
-  const recorded = readText(record)?.trim();
   if (recorded === "file") return { kind: "file" };
-  if (recorded === "flock" && path !== null) return { kind: "flock", path };
+  // flock(1) is looked up only where the folder records it, so a plain-file folder never runs it.
+  const path = recorded === "flock" ? findFlock() : null;
+  if (path !== null) return { kind: "flock", path };
   throw new FileError(
     record,
     recorded === "flock"

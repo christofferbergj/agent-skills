@@ -6,7 +6,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
@@ -103,6 +103,20 @@ test(
     assert.equal(org.sent().length, 0);
   },
 );
+
+test("a folder that records plain-file locks never runs flock", (t) => {
+  const org = new Org(t);
+  mkdirSync(org.statePath(""), { recursive: true });
+  writeFileSync(org.statePath(".lock-backend"), "file\n");
+  const calls = join(org.fake, "flock-calls");
+  const fake = join(org.fake, "flock");
+  writeFileSync(fake, `#!/bin/sh\necho "$@" >> "${calls}"\n`);
+  chmodSync(fake, 0o755);
+  const env = { ORG_ASSISTANT_FLOCK: fake };
+  assert.equal(org.cli(["scan", "acme"], utc("08:30"), env).code, 0);
+  assert.equal(org.cli(["ledger", "acme", "log", "told", "first"], undefined, env).code, 0);
+  assert.equal(existsSync(calls), false);
+});
 
 test("a run that can't take the lock the folder records fails its organisation, naming the record", (t) => {
   const org = new Org(t);
