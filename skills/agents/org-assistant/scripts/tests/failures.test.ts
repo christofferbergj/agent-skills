@@ -45,6 +45,19 @@ test("a source that never signed in reports what happened since its first attemp
   assert.deepEqual(org.kinds(org.lastSent()), ["ticket.assigned ENG-103"]);
 });
 
+test("a first scan with --since that a source fails keeps that source's lookback for the next", (t) => {
+  const org = new Org(t);
+  org.world.fail = { linear: "auth" };
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("08:00"));
+  org.save();
+  org.scan("10:05", { flags: ["--since", "24h"] });
+  org.deliver();
+  delete org.world.fail;
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "ticket.assigned": 1 });
+  assert.deepEqual(org.snapshot().starts, {});
+});
+
 test("a source error reaches no file or log with its text", (t) => {
   const org = new Org(t);
   org.scan("08:30");

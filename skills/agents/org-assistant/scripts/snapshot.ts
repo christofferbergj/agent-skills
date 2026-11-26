@@ -1,6 +1,7 @@
 /**
  * snapshot.json: each source's section, its cursors and fingerprints, which only its adapter reads;
- * each source's health; the first attempt of a source not yet read; and the last scan's time.
+ * each source's health; where a source not yet read starts counting, its first attempt or an
+ * earlier start `--since` gave; and the last scan's time.
  */
 import {
   type Infer,

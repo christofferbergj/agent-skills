@@ -162,8 +162,9 @@ function readAssistant(scan: Scan, state: State): { thread: Thread; state: State
 }
 
 /**
- * Every source's changes, gathered. A source with no snapshot yet counts from its first attempt, so
- * one whose sign-in failed from the start still reports what happened meanwhile.
+ * Every source's changes, gathered. A source with no section yet counts from the earliest start it
+ * was given, its first attempt or the start `--since` named, kept until it succeeds: one whose
+ * sign-in failed from the start still reports what happened meanwhile.
  */
 function readSources(scan: Scan, state: State): { found: Change[]; state: State } {
   const { org, profile, now, ledger } = scan;
@@ -177,13 +178,14 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
   for (const source of profile.sources) {
     const { name } = source;
     const prev = sources[name];
-    if (prev === undefined) starts[name] ??= iso(now);
-    const fresh: Fresh =
-      scan.since !== null
-        ? { kind: "since", since: new Date(now.getTime() - scan.since) }
-        : scan.first
-          ? { kind: "baseline" }
-          : { kind: "since", since: new Date(starts[name] ?? iso(now)) };
+    if (prev === undefined) {
+      const asked = now.getTime() - (scan.since ?? 0);
+      const kept = starts[name];
+      starts[name] = iso(new Date(Math.min(asked, kept === undefined ? asked : Date.parse(kept))));
+    }
+    const fresh: Fresh = scan.first
+      ? { kind: "baseline" }
+      : { kind: "since", since: new Date(starts[name] ?? now) };
     const context: Context = {
       now,
       zone: profile.timezone,
