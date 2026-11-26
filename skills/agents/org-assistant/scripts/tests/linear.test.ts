@@ -200,7 +200,7 @@ test("an inbox read past the cap reads the newest items, says so, and next time 
   const org = new Org(t);
   org.startDay();
   org.world.linear.page_size = 1; // twenty pages then hold 20 items
-  // 21 items at one time: the read past the cap takes 20, and the 21st stays unread.
+  // 21 items a second apart: the read past the cap takes the 20 newest, and the oldest stays unread.
   for (let n = 0; n < 21; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("09:10", n));
   org.save();
   assert.deepEqual(org.found("10:05"), { "linear.other": 20 });

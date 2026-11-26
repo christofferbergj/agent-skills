@@ -26,7 +26,10 @@ export type Window<S> =
   | { kind: "baseline" };
 export type Fresh = Exclude<Window<never>, { kind: "resume" }>;
 
-/** What one organisation's scan lets all its sources of a kind spend between them. */
+/**
+ * What one organisation's scan lets all its sources of a kind spend between them; only Slack's
+ * sources draw on it so far, for their search calls.
+ */
 export type Allowance = { slackCalls: number };
 
 export const newAllowance = (): Allowance => ({ slackCalls: SLACK_CALLS });
@@ -38,7 +41,7 @@ export type Context = {
   ledger: Ledger;
   /** The assistant thread, which the T3 source leaves out. */
   thread: string | null;
-  /** The scan's one allowance, which every source draws on. */
+  /** The scan's one allowance, which its Slack sources draw on. */
   allowance: Allowance;
   /** A change found by this source. */
   change<K extends ChangeKind>(kind: K, fields: ChangeFields<K>): ChangeOf<K>;
