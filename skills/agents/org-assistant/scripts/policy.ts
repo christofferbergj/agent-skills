@@ -8,7 +8,7 @@ import { type Change, tier, urgent } from "./changes.ts";
 import type { Ledger } from "./ledger.ts";
 import { type Pending, type SentBatch, type Slot, settle, unfreeze } from "./pending.ts";
 import type { Schedule } from "./profile.ts";
-import { type Clock, type Local, MINUTE, parseTime } from "./time.ts";
+import { type Clock, type Local, parseTime } from "./time.ts";
 
 /** The timer's scan, a "scan now" inside the assistant's run, or a dry run that writes nothing. */
 export type Mode = "timer" | "inline" | "dry";
@@ -71,7 +71,7 @@ export type Situation = {
 
 export type Step =
   | { kind: "settle"; slot: Slot; reason: string }
-  /** An inline batch nobody posted goes back to `gathered`. */
+  /** An inline batch its run didn't post goes back to `gathered`. */
   | { kind: "release"; reason: string }
   /** A delta that quiet holds joins the overview that is due. */
   | { kind: "rejoin"; reason: string }
@@ -104,8 +104,6 @@ export function apply(step: Transition, pending: Pending, now: Date): Pending {
   }
 }
 
-/** An inline batch nobody marked delivered within this long goes back to `gathered`. */
-const INLINE_GRACE = 30 * MINUTE;
 const IDLE: Thread = { kind: "idle", lastText: "" };
 
 /** Whether a reply names a batch, so `acme-…-1` doesn't match the reply to `acme-…-14`. */
@@ -130,16 +128,27 @@ export function nextStep(s: Situation): Step {
       reason: "the ledger marks the inline batch delivered",
     };
   }
-  if (
-    inline !== null &&
-    (s.mode === "inline" || s.at.instant.getTime() - Date.parse(inline.frozen_at) >= INLINE_GRACE)
-  ) {
-    return { kind: "release", reason: "the inline batch went unposted" };
-  }
   if (s.mode === "inline") {
+    if (inline !== null) {
+      return { kind: "release", reason: "a new scan now takes back the last inline batch" };
+    }
     return s.read
       ? { kind: "inline", reason: "inline batch for this run to post" }
       : { kind: "read" };
+  }
+  // The run that froze the inline batch may still post it, and mark it delivered, while the thread
+  // runs; once the thread is idle, that run has ended.
+  if (inline !== null && s.thread.kind === "idle") {
+    return names(s.thread.lastText, inline.id)
+      ? {
+          kind: "settle",
+          slot: "inline",
+          reason: "the thread's last reply already named the inline batch",
+        }
+      : { kind: "release", reason: "the inline batch's run ended without posting it" };
+  }
+  if (inline !== null && s.thread.kind === "absent") {
+    return { kind: "release", reason: "no assistant thread can post the inline batch" };
   }
   if (sent !== null && s.thread.kind === "idle") {
     if (names(s.thread.lastText, sent.id)) {

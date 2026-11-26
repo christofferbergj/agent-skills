@@ -164,7 +164,24 @@ test("an inline scan leaves the batch in flight frozen and reports it", (t) => {
   assert.equal(new Set([frozen?.id, first.batch, second.batch]).size, 3);
 });
 
-test("an inline batch nobody marked delivered within 30 minutes goes back to gathered", (t) => {
+test("an inline batch stays frozen while its run goes on, so the run can still post it", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.threadIs("running");
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  const { batch } = org.report("10:05", { flags: ["--inline"] });
+  org.scan("10:40"); // the run is still going, well past half an hour
+  assert.equal(org.pending().inline?.id, batch);
+  assert.deepEqual(org.pending().gathered, []);
+  org.deliver(batch ?? "");
+  org.threadIs("completed");
+  org.scan("11:05");
+  assert.equal(org.sent().length, 1);
+  assert.equal(org.pending().inline, null);
+});
+
+test("an inline batch whose run ended without posting it goes back to gathered", (t) => {
   const org = new Org(t);
   org.startDay();
   org.threadIs("running");
@@ -172,10 +189,22 @@ test("an inline batch nobody marked delivered within 30 minutes goes back to gat
   org.save();
   org.scan("10:05", { flags: ["--inline"] });
   org.threadIs("completed");
-  org.scan("10:30"); // 25 minutes: still the run's to post
-  assert.equal(org.sent().length, 1);
-  org.scan("10:40");
+  org.scan("10:10");
   assert.deepEqual(org.kinds(org.lastSent()), ["ticket.assigned ENG-103"]);
+});
+
+test("an inline batch the thread's last reply names counts as posted", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.threadIs("running");
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  const { batch } = org.report("10:05", { flags: ["--inline"] });
+  org.threadIs("completed");
+  org.replies(`One thing needs you. (batch ${batch})`);
+  org.scan("11:05");
+  assert.equal(org.sent().length, 1);
+  assert.equal(org.pending().inline, null);
 });
 
 test("team counts made while a batch is in flight wait beside it", (t) => {

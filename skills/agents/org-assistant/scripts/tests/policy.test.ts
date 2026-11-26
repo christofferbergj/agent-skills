@@ -7,7 +7,7 @@ import { test } from "node:test";
 
 import { type Change, change, gather } from "../changes.ts";
 import { parse } from "../parse.ts";
-import { EMPTY_PENDING, type Pending, type SentBatch } from "../pending.ts";
+import { EMPTY_PENDING, type InlineBatch, type Pending, type SentBatch } from "../pending.ts";
 import { type Mode, type Situation, type Step, type Thread, apply, nextStep } from "../policy.ts";
 import { type Schedule, scheduleParser } from "../profile.ts";
 import { clock, local } from "../time.ts";
@@ -48,6 +48,11 @@ function sent(kind: SentBatch["kind"], tries = 1, items: Change[] = [comment]): 
     tries: attempts,
     reason: "a change worth a wake",
   };
+}
+
+function inline(): InlineBatch {
+  const { tries: _, ...batch } = sent("delta");
+  return { ...batch, kind: "inline", reason: "scan now" };
 }
 
 type Given = {
@@ -107,39 +112,42 @@ const TABLE: [string, Given, string][] = [
   ],
   [
     "the ledger marks the inline batch delivered",
+    { read: false, thread: { kind: "busy" }, pending: { inline: inline() }, delivered: [BATCH] },
+    "settle inline",
+  ],
+  [
+    "an inline batch stays frozen while the thread runs, however long",
+    { clock: "13:05", read: false, thread: { kind: "busy" }, pending: { inline: inline() } },
+    "read",
+  ],
+  [
+    "and while the thread can't be read",
+    { read: false, thread: { kind: "unreadable" }, pending: { inline: inline() } },
+    "read",
+  ],
+  [
+    "an idle thread whose last reply names the inline batch has it",
     {
       read: false,
-      pending: { inline: { ...sent("delta"), kind: "inline", reason: "scan now" } },
-      delivered: [BATCH],
+      thread: { kind: "idle", lastText: `Posted. (batch ${BATCH})` },
+      pending: { inline: inline() },
     },
     "settle inline",
   ],
   [
-    "an inline batch unposted for 30 minutes goes back",
-    {
-      clock: "10:35",
-      read: false,
-      pending: { inline: { ...sent("delta"), kind: "inline", reason: "scan now" } },
-    },
-    "release: the inline batch went unposted",
+    "an idle thread that didn't post it gives it back",
+    { read: false, pending: { inline: inline() } },
+    "release: the inline batch's run ended without posting it",
   ],
   [
-    "an inline batch 25 minutes old stays the run's to post",
-    {
-      clock: "10:30",
-      read: false,
-      pending: { inline: { ...sent("delta"), kind: "inline", reason: "scan now" } },
-    },
-    "read",
+    "so does a profile with no thread",
+    { read: false, thread: { kind: "absent" }, pending: { inline: inline() } },
+    "release: no assistant thread can post the inline batch",
   ],
   [
     "a new inline scan takes back the last inline batch",
-    {
-      mode: "inline",
-      read: false,
-      pending: { inline: { ...sent("delta"), kind: "inline", reason: "scan now" } },
-    },
-    "release: the inline batch went unposted",
+    { mode: "inline", read: false, pending: { inline: inline() } },
+    "release: a new scan now takes back the last inline batch",
   ],
   [
     "an idle thread whose last reply names the batch has it",
@@ -369,22 +377,20 @@ test("a held delta rejoins before the read, so the overview carries it ahead of 
 });
 
 test("the ledger settles the sent batch, then the inline one, before anything else", () => {
-  const inline = {
-    ...sent("delta"),
-    id: "acme-20261126-1015-2",
-    kind: "inline" as const,
-    reason: "scan now",
-  };
+  const later = { ...inline(), id: "acme-20261126-1015-2" };
   assert.deepEqual(
-    drive({ meta: today, delivered: [BATCH, inline.id], pending: { sent: sent("delta"), inline } }),
+    drive({
+      meta: today,
+      delivered: [BATCH, later.id],
+      pending: { sent: sent("delta"), inline: later },
+    }),
     ["settle sent", "settle inline", "read", "wait: nothing worth a wake yet"],
   );
 });
 
 test("an inline scan gives back the last inline batch, reads, and freezes everything", () => {
-  const inline = { ...sent("delta"), kind: "inline" as const, reason: "scan now" };
-  assert.deepEqual(drive({ mode: "inline", pending: { inline } }, [assigned]), [
-    "release: the inline batch went unposted",
+  assert.deepEqual(drive({ mode: "inline", pending: { inline: inline() } }, [assigned]), [
+    "release: a new scan now takes back the last inline batch",
     "read",
     "inline: inline batch for this run to post",
   ]);
