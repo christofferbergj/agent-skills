@@ -49,7 +49,7 @@ const window = refine(
   'expected a start and an end time within one day, such as ["09:00", "23:59"]',
 );
 
-const schedule = object(
+export const scheduleParser = object(
   {
     window: withDefault(window, ["09:00", "23:59"]),
     overview: withDefault(clock, "09:00"),
@@ -63,7 +63,7 @@ const schedule = object(
   },
   strict,
 );
-export type Schedule = Infer<typeof schedule>;
+export type Schedule = Infer<typeof scheduleParser>;
 
 const name = refine(string, (value): value is string => value.length > 0, "expected a name");
 
@@ -176,7 +176,7 @@ const profile = object(
     /** Empty until go-live: the scan then sends nothing. */
     thread: withDefault(string, ""),
     executor: optional(object({ command: array(path) }, strict)),
-    schedule: withDefault(schedule, {}),
+    schedule: withDefault(scheduleParser, {}),
     sources: refine(
       array(source),
       (value): value is [Written, ...Written[]] => value.length > 0,

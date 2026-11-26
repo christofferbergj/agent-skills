@@ -22,7 +22,7 @@ import { join } from "node:path";
 import { parseArgs } from "node:util";
 
 import { COMMANDS, type Command, LedgerError, ledgerParser } from "./ledger.ts";
-import { ShapeError, parse } from "./parse.ts";
+import { ShapeError } from "./parse.ts";
 import type { Mode } from "./policy.ts";
 import { loadProfile, orgs } from "./profile.ts";
 import { scanOrg } from "./scan.ts";

@@ -11,6 +11,7 @@ import {
   boolean,
   count,
   literal,
+  oneOf,
   nullable,
   object,
   optional,
@@ -18,7 +19,7 @@ import {
   string,
   withDefault,
 } from "./parse.ts";
-import { MINUTE, iso, parseTime } from "./time.ts";
+import { MINUTE, type Written, instantOf, iso, written } from "./time.ts";
 
 const KEEP = 50; // entries kept in each history list
 const KEEP_LOG = 200;
@@ -116,11 +117,7 @@ function upsert<T>(list: T[], entry: T, key: (item: T) => string): T[] {
 }
 
 /** A time the user gave, read in the profile's timezone unless it names an offset, as UTC. */
-function utc(text: string, zone: string): string {
-  const parsed = parseTime(text, zone);
-  if (parsed === null) throw new LedgerError(`${text} is not a time such as 2026-11-26T14:00`);
-  return iso(parsed);
-}
+const utc = (time: Written, zone: string) => iso(instantOf(time, zone));
 
 function showCall(ledger: Ledger, now: Date): string {
   const queued = `${ledger.queue.length} queued`;
@@ -168,9 +165,11 @@ function settleCall(how: "clear" | "drop", help: string): Command {
   });
 }
 
+const untilOrOff = oneOf(literal("off"), written);
+
 function hold(key: "quiet_until" | "paused_until", help: string): Command {
   return command({
-    args: { until: string },
+    args: { until: untilOrOff },
     help,
     run: (ledger, input, { zone }) => {
       const until = input.until === "off" ? null : utc(input.until, zone);
@@ -181,7 +180,7 @@ function hold(key: "quiet_until" | "paused_until", help: string): Command {
 
 const answer = literal(...ANSWERS);
 const logKind = literal(...LOG_KINDS);
-const time = optional(string);
+const time = optional(written);
 const flag = withDefault(boolean, false);
 
 export const COMMANDS: Record<string, Command> = {

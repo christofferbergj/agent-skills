@@ -116,8 +116,11 @@ function fromWall(wall: Wall, zone: string): Date {
 const ISO =
   /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?(Z|[+-]\d{2}:?\d{2})?$/;
 
-/** An ISO time, such as `2026-11-26T09:05:00Z`; one without an offset is a wall-clock time in `zone`. */
-export function parseTime(text: string, zone = "UTC"): Date | null {
+/** An ISO time as written, before a timezone reads it: its wall clock, and its offset if it names one. */
+export type Written = { wall: Wall; ms: number; offset: number | null };
+
+/** The parts of an ISO time such as `2026-11-26T14:00` or `2026-11-26T09:05:00Z`, or null. */
+export function readTime(text: string): Written | null {
   const match = ISO.exec(text.trim());
   if (match === null) return null;
   const [, year, month, day, hour = "0", minute = "0", second = "0", fraction = "", offset] = match;
@@ -129,16 +132,35 @@ export function parseTime(text: string, zone = "UTC"): Date | null {
     minute: Number(minute),
     second: Number(second),
   };
-  const ms = Number(fraction.padEnd(3, "0").slice(0, 3));
   if (wall.month < 1 || wall.month > 12 || wall.day < 1 || wall.day > 31 || wall.hour > 23) {
     return null;
   }
-  if (offset === undefined) return new Date(fromWall(wall, zone).getTime() + ms);
+  const ms = Number(fraction.padEnd(3, "0").slice(0, 3));
+  if (offset === undefined) return { wall, ms, offset: null };
   const sign = offset === "Z" ? 0 : offset.startsWith("-") ? -1 : 1;
   const digits = offset.replace(/[^0-9]/g, "");
-  const minutes = sign * (Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2)));
-  return new Date(wallMs(wall) + ms - minutes * 60_000);
+  return { wall, ms, offset: sign * (Number(digits.slice(0, 2)) * 60 + Number(digits.slice(2))) };
 }
+
+/** The instant a written time names; one without an offset is a wall-clock time in `zone`. */
+export function instantOf(written: Written, zone: string): Date {
+  const { wall, ms, offset } = written;
+  if (offset === null) return new Date(fromWall(wall, zone).getTime() + ms);
+  return new Date(wallMs(wall) + ms - offset * 60_000);
+}
+
+/** An ISO time, such as `2026-11-26T09:05:00Z`; one without an offset is a wall-clock time in `zone`. */
+export function parseTime(text: string, zone = "UTC"): Date | null {
+  const written = readTime(text);
+  return written === null ? null : instantOf(written, zone);
+}
+
+/** A time the user writes, read once a timezone is known, as a parser. */
+export const written = (value: unknown, path: string): Written => {
+  const read = readTime(string(value, path));
+  if (read === null) throw new ShapeError(path, "expected a time such as 2026-11-26T14:00");
+  return read;
+};
 
 /** A time read from a file the scan wrote, or one a source sent, as a parser. */
 export const time = (value: unknown, path: string): Date => {
