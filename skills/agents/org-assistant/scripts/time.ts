@@ -120,10 +120,10 @@ const ISO =
  * An ISO time as written, before a timezone reads it: its wall clock, and its offset if it names
  * one.
  */
-export type Written = { wall: Wall; ms: number; offset: number | null };
+export type WrittenTime = { wall: Wall; ms: number; offset: number | null };
 
 /** The parts of an ISO time such as `2026-11-26T14:00` or `2026-11-26T09:05:00Z`, or null. */
-export function readTime(text: string): Written | null {
+export function readTime(text: string): WrittenTime | null {
   const match = ISO.exec(text.trim());
   if (match === null) return null;
   const [, year, month, day, hour = "0", minute = "0", second = "0", fraction = "", offset] = match;
@@ -146,7 +146,7 @@ export function readTime(text: string): Written | null {
 }
 
 /** The instant a written time names; one without an offset is a wall-clock time in `zone`. */
-export function instantOf(written: Written, zone: string): Date {
+export function instantOf(written: WrittenTime, zone: string): Date {
   const { wall, ms, offset } = written;
   if (offset === null) return new Date(fromWall(wall, zone).getTime() + ms);
   return new Date(wallMs(wall) + ms - offset * 60_000);
@@ -162,7 +162,7 @@ export function parseTime(text: string, zone = "UTC"): Date | null {
 }
 
 /** A time the user writes, read once a timezone is known, as a parser. */
-export const written = (value: unknown, path: string): Written => {
+export const written = (value: unknown, path: string): WrittenTime => {
   const read = readTime(string(value, path));
   if (read === null) throw new ShapeError(path, "expected a time such as 2026-11-26T14:00");
   return read;
@@ -178,11 +178,6 @@ export const time = (value: unknown, path: string): Date => {
 /** UTC to the second, as `2026-11-26T09:05:00Z`, the form every file holds. */
 export function iso(instant: Date): string {
   return instant.toISOString().replace(/\.\d{3}Z$/, "Z");
-}
-
-/** UTC to the millisecond, as Linear writes its times, so the two compare as strings. */
-export function isoMs(instant: Date): string {
-  return instant.toISOString();
 }
 
 /** The local midnight that starts `date` (`YYYY-MM-DD`) plus `days`, in `zone`. */

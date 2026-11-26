@@ -19,8 +19,7 @@ import {
   muted,
   tier,
 } from "./changes.ts";
-import { type Ledger, ledgerParser } from "./ledger.ts";
-import { type Parser, parse } from "./parse.ts";
+import { EMPTY_LEDGER, type Ledger, ledgerParser } from "./ledger.ts";
 import {
   EMPTY_PENDING,
   type Pending,
@@ -31,11 +30,9 @@ import {
   freezeSent,
   known,
   pendingParser,
-  settle,
   startTry,
-  unfreeze,
 } from "./pending.ts";
-import { type Mode, type Step, type Thread, holds, names, nextStep } from "./policy.ts";
+import { type Ending, type Mode, type Thread, apply, holds, names, nextStep } from "./policy.ts";
 import { type Profile, loadProfile } from "./profile.ts";
 import {
   EMPTY_SNAPSHOT,
@@ -47,15 +44,7 @@ import {
 } from "./snapshot.ts";
 import { type Context, type Fresh, scanSource } from "./sources/index.ts";
 import { readThread, sendWake } from "./sources/t3.ts";
-import {
-  FileError,
-  parseFile,
-  readJson,
-  stateDir,
-  withLock,
-  writeJson,
-  writeText,
-} from "./store.ts";
+import { FileError, readJson, stateDir, withLock, writeJson, writeText } from "./store.ts";
 import { type Local, iso, local, localIso } from "./time.ts";
 
 export type ScanOptions = {
@@ -71,10 +60,11 @@ export function scanOrg(org: string, now: Date, options: ScanOptions): number {
   try {
     const profile = loadProfile(org);
     const folder = stateDir(org);
+    const scan = { org, profile, folder, now, ...options };
     // A dry run reads only, so it takes no lock and creates no folder.
-    if (options.mode === "dry") return runScan(org, profile, folder, now, options);
+    if (options.mode === "dry") return runScan(scan);
     const wait = Number(process.env.ORG_ASSISTANT_LOCK_WAIT ?? 60) * 1000;
-    const done = withLock(folder, wait, () => runScan(org, profile, folder, now, options));
+    const done = withLock(folder, wait, () => runScan(scan));
     if (done !== "busy") return done;
     say(`${org}: another scan holds the lock; skipping this one`);
     return 0;
@@ -83,16 +73,6 @@ export function scanOrg(org: string, now: Date, options: ScanOptions): number {
     say(error.message);
     return 1;
   }
-}
-
-function load<T>(folder: string, name: string, parser: Parser<T>, empty: T) {
-  const file = join(folder, name);
-  const value = readJson(file);
-  return {
-    file,
-    loaded: value !== undefined,
-    value: value === undefined ? empty : parseFile(file, parser, value),
-  };
 }
 
 /** A failure recorded in a source's health entry; returns how many scans in a row it has failed. */
@@ -209,7 +189,7 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
         makeChange(name, kind, fields),
     };
     try {
-      const result = scanSource(source, prev, fresh, context);
+      const result = scanSource(source, { prev, fresh, ctx: context });
       sources[name] = result.section;
       delete starts[name];
       health[name] = { ok: true, at: iso(now) };
@@ -249,8 +229,6 @@ function readSources(scan: Scan, state: State): { found: Change[]; state: State 
   };
 }
 
-type End = Exclude<Step, { kind: "settle" | "release" | "rejoin" | "read" }>;
-
 /** Carries out each step the wake policy names, until one ends the scan. */
 function drive(scan: Scan, mode: Mode, start: State) {
   let state = start;
@@ -277,19 +255,15 @@ function drive(scan: Scan, mode: Mode, start: State) {
     );
     switch (step.kind) {
       case "settle":
-        state = { ...state, pending: settle(state.pending, step.slot, scan.now) };
-        break;
       case "release":
-        state = { ...state, pending: unfreeze(state.pending, "inline") };
-        break;
       case "rejoin":
-        state = { ...state, pending: unfreeze(state.pending, "sent") };
+        state = { ...state, pending: apply(step, state.pending, scan.now) };
         break;
       case "read":
         ({ found, state } = readSources(scan, state));
         break;
       default: {
-        const end: End = step;
+        const end: Ending = step;
         return { end, found: found ?? [], state };
       }
     }
@@ -297,18 +271,24 @@ function drive(scan: Scan, mode: Mode, start: State) {
 }
 
 /** Freezes the batch the scan's last step names; returns the batch to send, if any. */
-function finish(scan: Scan, end: End, state: State): { send: SentBatch | null; state: State } {
+function finish(scan: Scan, end: Ending, state: State): { send: SentBatch | null; state: State } {
   const { org, at, profile } = scan;
   switch (end.kind) {
     case "inline":
-      return { send: null, state: { ...state, pending: freezeInline(state.pending, org, at) } };
+      return { send: null, state: { ...state, pending: freezeInline(state.pending, { org, at }) } };
     case "giveUp":
       return { send: null, state: { ...state, failed: [...state.failed, end.failure] } };
     case "resend":
       return { send: state.pending.sent, state };
     case "wake": {
-      const wake = { kind: end.batch, items: end.items, reason: end.reason };
-      const pending = freezeSent(state.pending, org, at, profile.schedule, wake);
+      const pending = freezeSent(state.pending, {
+        org,
+        at,
+        schedule: profile.schedule,
+        kind: end.batch,
+        items: end.items,
+        reason: end.reason,
+      });
       return { send: pending.sent, state: { ...state, pending } };
     }
     case "wait":
@@ -317,28 +297,27 @@ function finish(scan: Scan, end: End, state: State): { send: SentBatch | null; s
 }
 
 function runScan(
-  org: string,
-  profile: Profile,
-  folder: string,
-  now: Date,
-  options: ScanOptions,
+  options: ScanOptions & { org: string; profile: Profile; folder: string; now: Date },
 ): number {
-  const { mode } = options;
+  const { org, profile, folder, now, mode } = options;
   const zone = profile.timezone;
-  const snapshotFile = load(folder, "snapshot.json", snapshotParser, EMPTY_SNAPSHOT);
-  const pendingFile = load(folder, "pending.json", pendingParser, EMPTY_PENDING);
+  const files = {
+    snapshot: join(folder, "snapshot.json"),
+    pending: join(folder, "pending.json"),
+  };
+  const stored = readJson(files.snapshot, snapshotParser);
   const scan: Scan = {
     org,
     profile,
     now,
     at: local(now, zone),
-    first: !snapshotFile.loaded && options.since === null,
+    first: stored === null && options.since === null,
     since: options.since,
-    ledger: load(folder, "ledger.json", ledgerParser, parse(ledgerParser, {})).value,
+    ledger: readJson(join(folder, "ledger.json"), ledgerParser) ?? EMPTY_LEDGER,
   };
   const start = {
-    snapshot: snapshotFile.value,
-    pending: forgetOld(pendingFile.value, now),
+    snapshot: stored ?? EMPTY_SNAPSHOT,
+    pending: forgetOld(readJson(files.pending, pendingParser) ?? EMPTY_PENDING, now),
     failed: [],
   };
   const driven = drive(scan, mode, start);
@@ -374,17 +353,17 @@ function runScan(
     return failed.length > 0 ? 1 : 0;
   }
 
-  writeJson(pendingFile.file, pending);
-  writeJson(snapshotFile.file, snapshot);
+  writeJson(files.pending, pending);
+  writeJson(files.snapshot, snapshot);
   writeText(join(folder, "scan.stamp"), `${iso(now)}\n`);
   const target = profile.thread;
   // The sources took minutes to read; the thread may have turned busy or answered meanwhile.
   if (send !== null && message !== null && target !== null && !moved(target, send.id)) {
     pending = startTry(pending, now);
-    writeJson(pendingFile.file, pending);
+    writeJson(files.pending, pending);
     const ok = sendWake(target, message);
     pending = finishTry(pending, ok);
-    writeJson(pendingFile.file, pending);
+    writeJson(files.pending, pending);
     if (!ok) {
       say(`${org}: t3 thread send failed`);
       if ((pending.sent?.tries.length ?? 0) >= 1 + profile.schedule.retries) {

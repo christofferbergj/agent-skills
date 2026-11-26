@@ -54,13 +54,13 @@ const PLANNED: Record<string, string> = {
   "azure-boards": "the Azure Boards adapter is not built yet; see references/scan.md",
 };
 
+/** Where a source's scan starts: its last section, `prev`, or `fresh` when it has none yet. */
+type Start = { prev: unknown; fresh: Fresh; ctx: Context };
+
 function scanWith<Src, S>(
-  adapter: Adapter<Src, S>,
-  source: Src,
-  prev: unknown,
-  fresh: Fresh,
-  ctx: Context,
+  scan: Start & { adapter: Adapter<Src, S>; source: Src },
 ): Result<unknown> {
+  const { adapter, source, prev, fresh, ctx } = scan;
   const window: Window<S> =
     prev === undefined
       ? fresh
@@ -68,22 +68,17 @@ function scanWith<Src, S>(
   return adapter.scan(source, window, ctx);
 }
 
-/** Scans one source from its last section, `prev`, or from `fresh` when it has none yet. */
-export function scanSource(
-  source: Source,
-  prev: unknown,
-  fresh: Fresh,
-  ctx: Context,
-): Result<unknown> {
+/** Scans one source from where `start` says. */
+export function scanSource(source: Source, start: Start): Result<unknown> {
   switch (source.kind) {
     case "linear":
-      return scanWith(linear, source, prev, fresh, ctx);
+      return scanWith({ ...start, adapter: linear, source });
     case "slack":
-      return scanWith(slack, source, prev, fresh, ctx);
+      return scanWith({ ...start, adapter: slack, source });
     case "github":
-      return scanWith(github, source, prev, fresh, ctx);
+      return scanWith({ ...start, adapter: github, source });
     case "t3":
-      return scanWith(t3, source, prev, fresh, ctx);
+      return scanWith({ ...start, adapter: t3, source });
     case "unbuilt":
       throw new SourceError(PLANNED[source.wanted] ?? `no adapter for kind ${source.wanted}`);
     default: {

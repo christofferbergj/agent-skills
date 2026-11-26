@@ -20,13 +20,13 @@
 import { join } from "node:path";
 import { parseArgs } from "node:util";
 
-import { COMMANDS, type Command, LedgerError, ledgerParser } from "./ledger.ts";
+import { COMMANDS, type Command, EMPTY_LEDGER, LedgerError, ledgerParser } from "./ledger.ts";
 import { ShapeError } from "./parse.ts";
 import type { Mode } from "./policy.ts";
 import { loadProfile, orgs } from "./profile.ts";
 import { scanOrg } from "./scan.ts";
 import { status } from "./status.ts";
-import { FileError, parseFile, readJson, stateDir, writeJson } from "./store.ts";
+import { FileError, readJson, stateDir, writeJson } from "./store.ts";
 import { HOUR, parseTime } from "./time.ts";
 
 const USAGE = `usage: assistant.ts scan [ORG ...] [--dry-run] [--since 24h]
@@ -83,8 +83,7 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
   }
   const zone = loadProfile(org).timezone;
   const file = join(stateDir(org), "ledger.json");
-  const value = readJson(file);
-  const book = parseFile(file, ledgerParser, value ?? {});
+  const book = readJson(file, ledgerParser) ?? EMPTY_LEDGER;
   let outcome: ReturnType<Command["execute"]>;
   try {
     outcome = command.execute(book, args, options, { now, zone });

@@ -53,30 +53,27 @@ export function readText(file: string): string | null {
   }
 }
 
-/** A JSON file's value, or undefined when it doesn't exist. */
-export function readJson(file: string): unknown {
+/**
+ * A JSON file's value read by `parser`, or null when the file doesn't exist. A file that isn't JSON,
+ * or holds a shape the parser doesn't know, fails its organisation, named by its line or field.
+ */
+export function readJson<T>(file: string, parser: Parser<T>): T | null {
   const text = readText(file);
-  return text === null ? undefined : parseJson(file, text);
-}
-
-/** A file's value read by `parser`; a shape it doesn't know fails the file's organisation. */
-export function parseFile<T>(file: string, parser: Parser<T>, value: unknown): T {
+  if (text === null) return null;
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch (error) {
+    if (!(error instanceof SyntaxError)) throw error;
+    // V8's message can quote the text around the error, so only its line is kept.
+    const line = errorLine(text, error);
+    throw new FileError(file, `not valid JSON${line === null ? "" : ` (line ${line})`}`);
+  }
   try {
     return parse(parser, value);
   } catch (error) {
     if (error instanceof ShapeError) throw new FileError(file, error.message);
     throw error;
-  }
-}
-
-/** JSON text's value; a syntax error names the file and the line, never the text around it. */
-export function parseJson(file: string, text: string): unknown {
-  try {
-    return JSON.parse(text);
-  } catch (error) {
-    if (!(error instanceof SyntaxError)) throw error;
-    const line = errorLine(text, error);
-    throw new FileError(file, `not valid JSON${line === null ? "" : ` (line ${line})`}`);
   }
 }
 

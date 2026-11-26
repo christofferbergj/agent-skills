@@ -6,13 +6,12 @@
  */
 import { join } from "node:path";
 
-import { ledgerParser } from "./ledger.ts";
-import { parse } from "./parse.ts";
+import { EMPTY_LEDGER, ledgerParser } from "./ledger.ts";
 import { pendingParser } from "./pending.ts";
 import { holds, overviewOwed } from "./policy.ts";
 import { loadProfile } from "./profile.ts";
 import { healthLine, snapshotParser } from "./snapshot.ts";
-import { parseFile, readJson, readText, stateDir } from "./store.ts";
+import { readJson, readText, stateDir } from "./store.ts";
 import { MINUTE, addMinutes, local, parseTime, shortTime } from "./time.ts";
 
 /** A stamp older than this, inside the window, means the timer may have stopped. */
@@ -26,13 +25,9 @@ export function status(org: string, now: Date): string {
   const profile = loadProfile(org);
   const zone = profile.timezone;
   const folder = stateDir(org);
-  const read = <T>(name: string, parser: (value: unknown, path: string) => T) => {
-    const value = readJson(join(folder, name));
-    return value === undefined ? null : parseFile(join(folder, name), parser, value);
-  };
-  const snapshot = read("snapshot.json", snapshotParser);
-  const pending = read("pending.json", pendingParser);
-  const ledger = read("ledger.json", ledgerParser) ?? parse(ledgerParser, {});
+  const snapshot = readJson(join(folder, "snapshot.json"), snapshotParser);
+  const pending = readJson(join(folder, "pending.json"), pendingParser);
+  const ledger = readJson(join(folder, "ledger.json"), ledgerParser) ?? EMPTY_LEDGER;
   const at = local(now, zone);
   const [opens, closes] = profile.schedule.window;
   const lines = [

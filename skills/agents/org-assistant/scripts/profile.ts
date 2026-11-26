@@ -21,7 +21,7 @@ import {
   string,
   withDefault,
 } from "./parse.ts";
-import { FileError, configRoot, expandHome, parseFile, parseJson, readText } from "./store.ts";
+import { FileError, configRoot, expandHome, readJson } from "./store.ts";
 import { type Clock, clock, isZone } from "./time.ts";
 
 /** Every organisation with a profile, by folder name. */
@@ -147,16 +147,18 @@ export type T3Source = Infer<typeof t3>;
 export type UnbuiltSource = { kind: "unbuilt"; name: string; wanted: string };
 export type Source = LinearSource | SlackSource | GithubSource | T3Source | UnbuiltSource;
 
-const KINDS = { linear, slack, github, t3 };
-type Written = Infer<(typeof KINDS)[keyof typeof KINDS]> | UnbuiltSource;
+/** Each kind of source an adapter reads, by the parser for its profile entry. */
+const SOURCE_KINDS = { linear, slack, github, t3 };
+/** A source as the profile writes it, before the Executor command is attached. */
+type ProfileSource = Infer<(typeof SOURCE_KINDS)[keyof typeof SOURCE_KINDS]> | UnbuiltSource;
 
-function isKind(kind: unknown): kind is keyof typeof KINDS {
-  return typeof kind === "string" && Object.hasOwn(KINDS, kind);
+function isSourceKind(kind: unknown): kind is keyof typeof SOURCE_KINDS {
+  return typeof kind === "string" && Object.hasOwn(SOURCE_KINDS, kind);
 }
 
-const source = (value: unknown, at: string): Written => {
+const source = (value: unknown, at: string): ProfileSource => {
   if (!isRecord(value)) throw new ShapeError(at, "expected an object");
-  if (isKind(value.kind)) return KINDS[value.kind](value, at);
+  if (isSourceKind(value.kind)) return SOURCE_KINDS[value.kind](value, at);
   return {
     kind: "unbuilt",
     name: name(value.name, `${at}.name`),
@@ -179,7 +181,7 @@ const profile = object(
     schedule: withDefault(scheduleParser, {}),
     sources: refine(
       array(source),
-      (value): value is [Written, ...Written[]] => value.length > 0,
+      (value): value is [ProfileSource, ...ProfileSource[]] => value.length > 0,
       "expected at least one source",
     ),
     people: optional(object({ file: path }, strict)),
@@ -201,9 +203,8 @@ export function profilePath(org: string): string {
 
 export function loadProfile(org: string): Profile {
   const file = profilePath(org);
-  const text = readText(file);
-  if (text === null) throw new FileError(file, "missing");
-  const read = parseFile(file, profile, parseJson(file, text));
+  const read = readJson(file, profile);
+  if (read === null) throw new FileError(file, "missing");
   if (read.org !== undefined && read.org !== org) {
     throw new FileError(file, `org is ${read.org}, but its folder is ${org}`);
   }
@@ -213,7 +214,7 @@ export function loadProfile(org: string): Profile {
     seen.add(entry.name);
   }
   const { executor, sources, ...rest } = read;
-  const withCommand = (entry: Written): Source => {
+  const withCommand = (entry: ProfileSource): Source => {
     if (entry.kind !== "linear" && entry.kind !== "slack") return entry;
     if (executor === undefined)
       throw new FileError(file, `the ${entry.name} source needs the executor command`);

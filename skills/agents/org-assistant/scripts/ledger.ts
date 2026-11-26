@@ -19,7 +19,7 @@ import {
   string,
   withDefault,
 } from "./parse.ts";
-import { MINUTE, type Written, instantOf, iso, written } from "./time.ts";
+import { MINUTE, type WrittenTime, instantOf, iso, written } from "./time.ts";
 
 const KEEP = 50; // entries kept in each history list
 const KEEP_LOG = 200;
@@ -62,7 +62,8 @@ export const ledgerParser = object({
 });
 
 export type Ledger = Infer<typeof ledgerParser>;
-export type Call = Infer<typeof call>;
+/** The ledger before its first command: every list empty, nothing held, no call. */
+export const EMPTY_LEDGER: Ledger = parse(ledgerParser, {});
 
 /** A ledger command the user's words can't carry out, such as setting a call while one is open. */
 export class LedgerError extends Error {}
@@ -88,27 +89,25 @@ export type Command = {
   ): Outcome;
 };
 
-/** A command whose arguments and options are read by parsers, positionals in `args` order. */
-function command<A extends Shape, O extends Shape = {}>(spec: {
+/**
+ * A command whose positionals, named in `args` order, and options are read by one parser; an option
+ * the command doesn't take fails it.
+ */
+function command<A extends Shape, O extends Shape>(spec: {
   args: A;
-  options?: O;
+  options: O;
   help: string;
-  run(ledger: Ledger, input: ObjectOf<A> & ObjectOf<O>, context: Context): Outcome;
+  run(ledger: Ledger, input: ObjectOf<A & O>, context: Context): Outcome;
 }): Command {
   const names = Object.keys(spec.args);
-  const args = object(spec.args);
-  const options = object(spec.options ?? {}, { strict: true });
+  const input = object({ ...spec.args, ...spec.options }, { strict: true });
   return {
     args: names,
-    options: Object.keys(spec.options ?? {}),
+    options: Object.keys(spec.options),
     help: spec.help,
     execute: (ledger, positionals, given, context) => {
-      const input = {
-        ...parse(args, Object.fromEntries(names.map((name, index) => [name, positionals[index]]))),
-        ...parse(options, given),
-      };
-      // Both halves were read by their parsers just above; the compiler can't merge mapped types.
-      return spec.run(ledger, input as ObjectOf<A> & ObjectOf<O>, context);
+      const named = Object.fromEntries(names.map((name, index) => [name, positionals[index]]));
+      return spec.run(ledger, parse(input, { ...named, ...given }), context);
     },
   };
 }
@@ -119,7 +118,7 @@ function upsert<T>(list: T[], entry: T, key: (item: T) => string): T[] {
 }
 
 /** A time the user gave, read in the profile's timezone unless it names an offset, as UTC. */
-const utc = (time: Written, zone: string) => iso(instantOf(time, zone));
+const utc = (time: WrittenTime, zone: string) => iso(instantOf(time, zone));
 
 function showCall(ledger: Ledger, now: Date): string {
   const queued = `${ledger.queue.length} queued`;
@@ -150,6 +149,7 @@ function openNext(ledger: Ledger, now: Date, replaced: string | null): Ledger {
 function settleCall(how: "clear" | "drop", help: string): Command {
   return command({
     args: { id: string },
+    options: {},
     help,
     run: (ledger, { id }, { now }) => {
       const open = ledger.call;
@@ -172,6 +172,7 @@ const untilOrOff = oneOf(literal("off"), written);
 function hold(key: "quiet_until" | "paused_until", help: string): Command {
   return command({
     args: { until: untilOrOff },
+    options: {},
     help,
     run: (ledger, input, { zone }) => {
       const until = input.until === "off" ? null : utc(input.until, zone);
@@ -188,11 +189,13 @@ const flag = withDefault(boolean, false);
 export const COMMANDS: Record<string, Command> = {
   show: command({
     args: {},
+    options: {},
     help: "print the whole ledger",
     run: (ledger) => ({ out: JSON.stringify(ledger, null, 1) }),
   }),
   delivered: command({
     args: { batch: string },
+    options: {},
     help: "mark a batch you posted delivered",
     run: (ledger, { batch }, { now }) => ({
       out: `batch ${batch} delivered`,
@@ -221,6 +224,7 @@ export const COMMANDS: Record<string, Command> = {
   }),
   unmute: command({
     args: { ref: string },
+    options: {},
     help: "end a mute",
     run: (ledger, { ref }) => ({
       out: `unmuted ${ref}`,
@@ -229,11 +233,13 @@ export const COMMANDS: Record<string, Command> = {
   }),
   "call show": command({
     args: {},
+    options: {},
     help: "the open call, its id and age, and the queue's length",
     run: (ledger, _input, { now }) => ({ out: showCall(ledger, now) }),
   }),
   "call set": command({
     args: { text: string },
+    options: {},
     help: "open a call when none is open",
     run: (ledger, { text }, { now }) => {
       if (ledger.call?.text === text) return { out: showCall(ledger, now) };
@@ -252,6 +258,7 @@ export const COMMANDS: Record<string, Command> = {
   }),
   "call queue": command({
     args: { text: string },
+    options: {},
     help: "queue an offer behind the open call",
     run: (ledger, { text }, { now }) => {
       if (ledger.call?.text === text || ledger.queue.some((entry) => entry.text === text)) {
@@ -280,6 +287,7 @@ export const COMMANDS: Record<string, Command> = {
   }),
   finished: command({
     args: { thread: string },
+    options: {},
     help: "stop following a thread",
     run: (ledger, { thread }) => ({
       out: `no longer following ${thread}`,
@@ -288,6 +296,7 @@ export const COMMANDS: Record<string, Command> = {
   }),
   waits: command({
     args: { pr: string, on: string },
+    options: {},
     help: "a PR that waits on another repository's release (owner/repo), or off",
     run: (ledger, { pr, on }) => {
       const others = ledger.waits.filter((wait) => wait.pr !== pr);
@@ -311,6 +320,7 @@ export const COMMANDS: Record<string, Command> = {
   }),
   lead: command({
     args: { ticket: string, on: string, answer },
+    options: {},
     help: "the user's answer about a ticket that mentions another: depends or unrelated",
     run: (ledger, { ticket, on, answer }, { now }) => ({
       out: `lead ${ticket} → ${on}: ${answer}`,
@@ -326,6 +336,7 @@ export const COMMANDS: Record<string, Command> = {
   }),
   log: command({
     args: { kind: logKind, text: string },
+    options: {},
     help: "what the user was told, asked, answered, offered, or declined, in ids and a few words",
     run: (ledger, { kind, text }, { now }) => {
       const [newest] = ledger.log;

@@ -6,7 +6,7 @@
  */
 import { type Change, tier, urgent } from "./changes.ts";
 import type { Ledger } from "./ledger.ts";
-import type { Pending, SentBatch, Slot } from "./pending.ts";
+import { type Pending, type SentBatch, type Slot, settle, unfreeze } from "./pending.ts";
 import type { Schedule } from "./profile.ts";
 import { type Clock, type Local, MINUTE, parseTime } from "./time.ts";
 
@@ -86,6 +86,23 @@ export type Step =
   | { kind: "resend"; reason: string }
   /** Ends the scan freezing `items` as a new batch and sending it. */
   | { kind: "wake"; batch: SentBatch["kind"]; items: Change[]; reason: string };
+
+/** A step that changes only the pending batches; the runner applies it and asks for the next. */
+export type Transition = Extract<Step, { kind: "settle" | "release" | "rejoin" }>;
+/** A step that ends the scan. */
+export type Ending = Exclude<Step, Transition | { kind: "read" }>;
+
+/** The pending batches after `step`. */
+export function apply(step: Transition, pending: Pending, now: Date): Pending {
+  switch (step.kind) {
+    case "settle":
+      return settle(pending, step.slot, now);
+    case "release":
+      return unfreeze(pending, "inline");
+    case "rejoin":
+      return unfreeze(pending, "sent");
+  }
+}
 
 /** An inline batch nobody marked delivered within this long goes back to `gathered`. */
 const INLINE_GRACE = 30 * MINUTE;

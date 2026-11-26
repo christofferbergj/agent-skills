@@ -139,7 +139,8 @@ function take(pending: Pending, org: string, at: Local, items: Change[]) {
 }
 
 /** Freezes everything gathered as the batch a "scan now" run posts. */
-export function freezeInline(pending: Pending, org: string, at: Local): Pending {
+export function freezeInline(pending: Pending, batch: { org: string; at: Local }): Pending {
+  const { org, at } = batch;
   const items = pending.gathered;
   const { id, rest } = take(pending, org, at, items);
   return {
@@ -154,11 +155,16 @@ export function freezeInline(pending: Pending, org: string, at: Local): Pending 
  */
 export function freezeSent(
   pending: Pending,
-  org: string,
-  at: Local,
-  schedule: Schedule,
-  wake: { kind: SentBatch["kind"]; items: Change[]; reason: string },
+  wake: {
+    org: string;
+    at: Local;
+    schedule: Schedule;
+    kind: SentBatch["kind"];
+    items: Change[];
+    reason: string;
+  },
 ): Pending {
+  const { org, at, schedule } = wake;
   const { id, rest } = take(pending, org, at, wake.items);
   const today = at.date;
   const old = rest.meta;

@@ -7,8 +7,8 @@ import { test } from "node:test";
 
 import { type Change, change, gather } from "../changes.ts";
 import { parse } from "../parse.ts";
-import { EMPTY_PENDING, type Pending, type SentBatch, settle, unfreeze } from "../pending.ts";
-import { type Mode, type Situation, type Step, type Thread, nextStep } from "../policy.ts";
+import { EMPTY_PENDING, type Pending, type SentBatch } from "../pending.ts";
+import { type Mode, type Situation, type Step, type Thread, apply, nextStep } from "../policy.ts";
 import { type Schedule, scheduleParser } from "../profile.ts";
 import { clock, local } from "../time.ts";
 import { FRI, SAT, THU, utc } from "./helpers.ts";
@@ -333,10 +333,9 @@ function drive(given: Given, found: Change[] = []): string[] {
     const step = nextStep(s);
     steps.push(summary(step));
     const now = s.at.instant;
-    if (step.kind === "settle") s = { ...s, pending: settle(s.pending, step.slot, now) };
-    else if (step.kind === "release") s = { ...s, pending: unfreeze(s.pending, "inline") };
-    else if (step.kind === "rejoin") s = { ...s, pending: unfreeze(s.pending, "sent") };
-    else if (step.kind === "read") {
+    if (step.kind === "settle" || step.kind === "release" || step.kind === "rejoin") {
+      s = { ...s, pending: apply(step, s.pending, now) };
+    } else if (step.kind === "read") {
       s = {
         ...s,
         read: true,
