@@ -2,11 +2,13 @@
  * Where an organisation's profile and state live, and how the files are read and written. Each
  * state file has one writer: the scan writes snapshot.json, pending.json, and scan.stamp; the model
  * writes ledger.json through `assistant.ts ledger`. Every write replaces its file atomically; a scan
- * holds `.lock` and a ledger command that writes `.ledger.lock`, so two of either never run at once.
+ * holds `.lock` and a ledger command that writes `.ledger.lock`, so two of either never run at once,
+ * and `.lock-backend` records how the folder's locks are taken.
  */
 import { spawnSync } from "node:child_process";
 import {
   closeSync,
+  linkSync,
   mkdirSync,
   openSync,
   readFileSync,
@@ -116,12 +118,51 @@ export function writeJson(file: string, value: unknown): void {
   writeText(file, `${JSON.stringify(value, sorted, 1)}\n`);
 }
 
-let flockFound: boolean | undefined;
+let flockFound: string | null | undefined;
 
-/** Whether flock(1) is on PATH; util-linux installs it, and macOS has none. */
-function hasFlock(): boolean {
-  flockFound ??= spawnSync("flock", ["--version"], { stdio: "ignore" }).error === undefined;
+/**
+ * flock(1), on PATH or where util-linux installs it, so a caller whose PATH lacks it still finds it;
+ * macOS has none. ORG_ASSISTANT_FLOCK names it instead, when it is elsewhere.
+ */
+function findFlock(): string | null {
+  const named = process.env.ORG_ASSISTANT_FLOCK;
+  const places = named ? [named] : ["flock", "/usr/bin/flock", "/bin/flock"];
+  flockFound ??=
+    places.find((place) => spawnSync(place, ["--version"], { stdio: "ignore" }).status === 0) ??
+    null;
   return flockFound;
+}
+
+/** How a state folder's locks are taken: by flock(1), or as plain files. */
+type Backend = "flock" | "file";
+
+/**
+ * The backend `folder`'s locks use, recorded in its `.lock-backend` by the first run that locks it,
+ * so every caller on the machine takes the same lock. A caller that can't use the recorded one fails
+ * its organisation, naming the file.
+ */
+function backendOf(folder: string): Backend {
+  const record = join(folder, ".lock-backend");
+  if (readText(record) === null) {
+    // Linked into place, so of two first runs one records its backend and the other reads it.
+    const temporary = join(folder, `.${process.pid}.${Date.now()}.tmp`);
+    writeFileSync(temporary, `${findFlock() === null ? "file" : "flock"}\n`, { flag: "wx" });
+    try {
+      linkSync(temporary, record);
+    } catch (error) {
+      if (code(error) !== "EEXIST") throw error;
+    } finally {
+      unlinkSync(temporary);
+    }
+  }
+  const recorded = readText(record)?.trim();
+  if (recorded === "file" || (recorded === "flock" && findFlock() !== null)) return recorded;
+  throw new FileError(
+    record,
+    recorded === "flock"
+      ? "records flock locks, and this run can't find flock(1); install it, or set ORG_ASSISTANT_FLOCK"
+      : "names no lock backend (flock or file); remove it while nothing runs, and the next run records one",
+  );
 }
 
 /** A lock this process holds, and how it lets go. */
@@ -134,7 +175,9 @@ const BUSY = 75;
 function flock(file: string, waitSeconds: number): Held | null {
   const handle = openSync(file, "a");
   const args = ["--wait", String(waitSeconds), "--conflict-exit-code", String(BUSY), "3"];
-  const taken = spawnSync("flock", args, { stdio: ["ignore", "ignore", "inherit", handle] });
+  const taken = spawnSync(findFlock() ?? "flock", args, {
+    stdio: ["ignore", "ignore", "inherit", handle],
+  });
   if (taken.status === 0) return { release: () => closeSync(handle) };
   closeSync(handle);
   if (taken.status === BUSY) return null;
@@ -148,8 +191,8 @@ function flock(file: string, waitSeconds: number): Held | null {
 function create(lock: string, waitSeconds: number): Held | null {
   const file = `${lock}.held`;
   process.stderr.write(
-    `org-assistant: flock isn't on PATH, so ${file} is a plain file: one a crashed run leaves ` +
-      "behind keeps later runs out until it is removed\n",
+    `org-assistant: locks here are plain files, as ${join(dirname(lock), ".lock-backend")} ` +
+      `records, so a ${file} a crashed run leaves behind keeps later runs out until it is removed\n`,
   );
   const deadline = Date.now() + waitSeconds * 1000;
   for (;;) {
@@ -168,15 +211,16 @@ function create(lock: string, waitSeconds: number): Held | null {
  * Runs `body` holding `file`, waiting up to ORG_ASSISTANT_LOCK_WAIT seconds (60) for whoever holds
  * it; returns "busy" when it stays taken. flock(1) takes it for this process, so the kernel lets go
  * however the process ends, and the file itself stays: nothing a dead process left can keep a later
- * run out. Without flock, as on a Mac, the lock is `file.held`, created exclusively and removed when
- * `body` ends.
+ * run out. Where the folder's first run found no flock, as on a Mac, the lock is `file.held`,
+ * created exclusively and removed when `body` ends.
  */
 export function withLock<T>(file: string, body: () => T): T | "busy" {
   const waitSeconds = Number(process.env.ORG_ASSISTANT_LOCK_WAIT ?? 60);
   let held: Held | null;
   try {
     mkdirSync(dirname(file), { recursive: true });
-    held = hasFlock() ? flock(file, waitSeconds) : create(file, waitSeconds);
+    held =
+      backendOf(dirname(file)) === "flock" ? flock(file, waitSeconds) : create(file, waitSeconds);
   } catch (error) {
     if (error instanceof FileError) throw error;
     throw new FileError(file, `can't be locked (${code(error) || "error"})`);

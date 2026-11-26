@@ -72,28 +72,51 @@ test("a dry run takes no lock, so it reads even while a scan runs", (t) => {
   assert.equal(existsSync(org.statePath("snapshot.json")), false);
 });
 
+/** A run on a machine without flock(1). */
+const NO_FLOCK = { ORG_ASSISTANT_FLOCK: "/invented/no/flock" };
+/** Where util-linux installs flock(1), for a run whose PATH lacks it. */
+const installed = ["/usr/bin/flock", "/bin/flock"].some((place) => existsSync(place));
+
 test("without flock the lock is a plain file: the scan says so, and one left behind keeps the next out", (t) => {
   const org = new Org(t);
-  const noFlock = { PATH: join(org.fake, "bin") };
-  const done = org.cli(["scan", "acme"], utc("08:30"), noFlock);
+  const done = org.cli(["scan", "acme"], utc("08:30"), NO_FLOCK);
   assert.equal(done.code, 0, done.stderr);
-  assert.match(done.stderr, /flock isn't on PATH, so .*\.lock\.held is a plain file/);
+  assert.match(done.stderr, /locks here are plain files, as .*\.lock-backend records/);
   assert.ok(org.snapshot().last_scan);
   assert.equal(existsSync(org.statePath(".lock.held")), false);
   writeFileSync(org.statePath(".lock.held"), "");
-  assert.match(org.cli(["scan", "acme"], utc("09:05"), noFlock).stderr, SKIPPED);
+  assert.match(org.cli(["scan", "acme"], utc("09:05"), NO_FLOCK).stderr, SKIPPED);
+  // A run that has flock takes the plain-file lock the folder records too.
+  assert.match(org.cli(["scan", "acme"], utc("09:05")).stderr, SKIPPED);
 });
 
-test("the file a lock taken with flock leaves keeps no run without flock out", (t) => {
+test(
+  "a run without flock on its PATH finds it by path, so it takes the same lock",
+  { skip: !installed },
+  (t) => {
+    const org = new Org(t);
+    org.scan("08:30");
+    org.hold(t, ".lock");
+    const done = org.cli(["scan", "acme"], utc("09:05"), { PATH: join(org.fake, "bin") });
+    assert.equal(done.code, 0, done.stderr);
+    assert.match(done.stderr, SKIPPED);
+    assert.equal(org.sent().length, 0);
+  },
+);
+
+test("a run that can't take the lock the folder records fails its organisation, naming the record", (t) => {
   const org = new Org(t);
-  const noFlock = { PATH: join(org.fake, "bin") };
   org.scan("08:30");
-  org.ledger(["log", "told", "with flock"]);
-  assert.ok(existsSync(org.statePath(".lock")) && existsSync(org.statePath(".ledger.lock")));
-  assert.doesNotMatch(org.cli(["scan", "acme"], utc("09:05"), noFlock).stderr, SKIPPED);
-  assert.ok(org.sent().length > 0, "the scan without flock didn't run");
-  const edit = org.cli(["ledger", "acme", "log", "told", "without flock"], undefined, noFlock);
-  assert.equal(edit.code, 0, edit.stderr);
+  const scan = org.cli(["scan", "acme"], utc("09:05"), NO_FLOCK);
+  assert.equal(scan.code, 1);
+  assert.match(
+    scan.stderr,
+    /acme\/\.lock-backend: records flock locks, and this run can't find flock/,
+  );
+  assert.equal(org.sent().length, 0);
+  const edit = org.cli(["ledger", "acme", "log", "told", "without flock"], undefined, NO_FLOCK);
+  assert.equal(edit.code, 1);
+  assert.match(edit.stderr, /\.lock-backend: records flock locks/);
 });
 
 test("ledger commands run at once each land", async (t) => {
