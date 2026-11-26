@@ -7,9 +7,11 @@ import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import {
   chmodSync,
+  closeSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
+  openSync,
   readFileSync,
   readdirSync,
   rmSync,
@@ -167,19 +169,30 @@ export class Org {
     writeFileSync(join(this.root, "config", org, "profile.json"), text);
   }
 
-  cli(args: string[], now?: string): Ran {
-    const done = spawnSync(process.execPath, [CLI, ...args, ...(now ? ["--now", now] : [])], {
+  /** The CLI's command line, with `--now` when given. */
+  argv(args: string[], now?: string): string[] {
+    return [CLI, ...args, ...(now ? ["--now", now] : [])];
+  }
+
+  /** The environment the CLI runs in, as `env` changes it. */
+  env(env: Record<string, string> = {}): Record<string, string | undefined> {
+    return {
+      ...process.env,
+      FAKE: this.fake,
+      PATH: `${join(this.fake, "bin")}:${process.env.PATH}`,
+      ORG_ASSISTANT_CONFIG: join(this.root, "config"),
+      ORG_ASSISTANT_STATE: join(this.root, "state"),
+      ORG_ASSISTANT_SLACK_SPACING: "0",
+      ORG_ASSISTANT_SLACK_PAUSE: "0",
+      ORG_ASSISTANT_LOCK_WAIT: "0",
+      ...env,
+    };
+  }
+
+  cli(args: string[], now?: string, env?: Record<string, string>): Ran {
+    const done = spawnSync(process.execPath, this.argv(args, now), {
       encoding: "utf8",
-      env: {
-        ...process.env,
-        FAKE: this.fake,
-        PATH: `${join(this.fake, "bin")}:${process.env.PATH}`,
-        ORG_ASSISTANT_CONFIG: join(this.root, "config"),
-        ORG_ASSISTANT_STATE: join(this.root, "state"),
-        ORG_ASSISTANT_SLACK_SPACING: "0",
-        ORG_ASSISTANT_SLACK_PAUSE: "0",
-        ORG_ASSISTANT_LOCK_WAIT: "0",
-      },
+      env: this.env(env),
     });
     return { code: done.status ?? -1, stdout: done.stdout, stderr: done.stderr };
   }
@@ -232,6 +245,33 @@ export class Org {
 
   statePath(name: string): string {
     return join(this.root, "state", "acme", name);
+  }
+
+  /**
+   * Holds one of acme's locks, such as `.lock`, with flock(1) as a running scan holds it, until the
+   * test ends or the returned function lets go.
+   */
+  hold(t: TestContext, name: string): () => void {
+    const file = this.statePath(name);
+    mkdirSync(dirname(file), { recursive: true });
+    const handle = openSync(file, "a");
+    const taken = spawnSync("flock", ["--nonblock", "3"], {
+      stdio: ["ignore", "ignore", "inherit", handle],
+    });
+    assert.equal(taken.status, 0, "flock couldn't take the lock");
+    let held = true;
+    const release = () => {
+      if (held) closeSync(handle);
+      held = false;
+    };
+    t.after(release);
+    return release;
+  }
+
+  /** Whether another process holds one of acme's locks with flock(1). */
+  locked(name: string): boolean {
+    const args = ["--nonblock", "--conflict-exit-code", "75", this.statePath(name), "true"];
+    return spawnSync("flock", args).status === 75;
   }
 
   /**

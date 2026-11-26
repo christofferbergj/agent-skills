@@ -63,8 +63,7 @@ export function scanOrg(org: string, now: Date, options: ScanOptions): number {
     const scan = { org, profile, folder, now, ...options };
     // A dry run reads only, so it takes no lock and creates no folder.
     if (options.mode === "dry") return runScan(scan);
-    const wait = Number(process.env.ORG_ASSISTANT_LOCK_WAIT ?? 60) * 1000;
-    const done = withLock(folder, wait, () => runScan(scan));
+    const done = withLock(join(folder, ".lock"), () => runScan(scan));
     if (done !== "busy") return done;
     say(`${org}: another scan holds the lock; skipping this one`);
     return 0;

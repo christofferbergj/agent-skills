@@ -3,8 +3,9 @@
  * `references/state.md` describe what each command reads and writes.
  *
  *   assistant.ts scan [ORG ...] [--dry-run] [--since 24h]
- *       scan each organisation (default: every profile) and wake its thread when there is news;
- *       --dry-run reads the sources, prints the batch it would send, and writes and sends nothing
+ *       scan each organisation (default: every profile), each in a process of its own, and wake its
+ *       thread when there is news; --dry-run reads the sources, prints the batch it would send, and
+ *       writes and sends nothing
  *   assistant.ts scan ORG --inline
  *       scan inside the assistant's own run ("scan now"): wake nothing, freeze everything gathered
  *       as one batch, and print it for the run to post
@@ -17,7 +18,9 @@
  * an unreadable profile or state file), and 2 on a usage error. Times are UTC in files and the
  * profile's timezone on screen.
  */
+import { spawnSync } from "node:child_process";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
 import { COMMANDS, type Command, EMPTY_LEDGER, LedgerError, ledgerParser } from "./ledger.ts";
@@ -26,7 +29,7 @@ import type { Mode } from "./policy.ts";
 import { loadProfile, orgs } from "./profile.ts";
 import { scanOrg } from "./scan.ts";
 import { status } from "./status.ts";
-import { FileError, readJson, stateDir, writeJson } from "./store.ts";
+import { FileError, readJson, stateDir, withLock, writeJson } from "./store.ts";
 import { HOUR, parseTime } from "./time.ts";
 
 const USAGE = `usage: assistant.ts scan [ORG ...] [--dry-run] [--since 24h]
@@ -84,17 +87,37 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
     throw new UsageError(`ledger ${name} takes ${wants}`);
   }
   const zone = loadProfile(org).timezone;
-  const file = join(stateDir(org), "ledger.json");
-  const book = readJson(file, ledgerParser) ?? EMPTY_LEDGER;
-  let outcome: ReturnType<Command["execute"]>;
-  try {
-    outcome = command.execute(book, args, options, { now, zone });
-  } catch (error) {
-    if (error instanceof ShapeError) throw new UsageError(`ledger ${name}: ${error.message}`);
-    throw error;
-  }
-  if (outcome.ledger !== undefined) writeJson(file, outcome.ledger);
-  return outcome.out;
+  const folder = stateDir(org);
+  const file = join(folder, "ledger.json");
+  // Each command reads the ledger and writes it back, so two at once would lose one's change.
+  const done = withLock(join(folder, ".ledger.lock"), () => {
+    const book = readJson(file, ledgerParser) ?? EMPTY_LEDGER;
+    let outcome: ReturnType<Command["execute"]>;
+    try {
+      outcome = command.execute(book, args, options, { now, zone });
+    } catch (error) {
+      if (error instanceof ShapeError) throw new UsageError(`ledger ${name}: ${error.message}`);
+      throw error;
+    }
+    if (outcome.ledger !== undefined) writeJson(file, outcome.ledger);
+    return outcome.out;
+  });
+  if (done === "busy") throw new FileError(file, "another ledger command holds it; run this again");
+  return done;
+}
+
+/**
+ * Scans each organisation in a process of its own, so one that crashes or can't write its state
+ * fails only itself; the exit code is the worst of theirs.
+ */
+function scanEach(orgs: string[], flags: string[]): number {
+  const script = fileURLToPath(import.meta.url);
+  const codes = orgs.map(
+    (org) =>
+      spawnSync(process.execPath, [script, "scan", org, ...flags], { stdio: "inherit" }).status ??
+      1,
+  );
+  return Math.max(0, ...codes);
 }
 
 const NOW = { now: { type: "string" } } as const;
@@ -117,11 +140,11 @@ const OPTIONS = {
 } as const;
 
 const parse = <O extends (typeof OPTIONS)[keyof typeof OPTIONS]>(args: string[], options: O) =>
-  parseArgs({ args, options, allowPositionals: true, strict: true });
+  parseArgs({ args, options, allowPositionals: true, strict: true, tokens: true });
 
 function run(command: string | undefined, args: string[]): number {
   if (command === "scan") {
-    const { values, positionals } = parse(args, OPTIONS.scan);
+    const { values, positionals, tokens } = parse(args, OPTIONS.scan);
     if (values["dry-run"] && values.inline)
       throw new UsageError("a scan is --dry-run or --inline, not both");
     if (values.inline && positionals.length !== 1)
@@ -129,10 +152,13 @@ function run(command: string | undefined, args: string[]): number {
     const mode: Mode = values["dry-run"] ? "dry" : values.inline ? "inline" : "timer";
     const options = { mode, since: values.since === undefined ? null : duration(values.since) };
     const at = instant(values.now);
-    const codes = (positionals.length > 0 ? positionals : orgs()).map((org) =>
-      scanOrg(org, at, options),
+    const [org] = positionals;
+    if (org !== undefined && positionals.length === 1) return scanOrg(org, at, options);
+    const named = new Set(
+      tokens.flatMap((token) => (token.kind === "positional" ? token.index : [])),
     );
-    return Math.max(0, ...codes);
+    const flags = args.filter((_, index) => !named.has(index));
+    return scanEach(positionals.length > 0 ? positionals : orgs(), flags);
   }
   if (command === "status") {
     const { values, positionals } = parse(args, OPTIONS.status);

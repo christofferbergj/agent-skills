@@ -2,7 +2,7 @@
 
 Read when changing the scan, reading its log, installing its timer, or adding a kind of source.
 
-`node scripts/assistant.ts scan` runs with no model, on Node 24 or later and nothing else. For each organisation with a profile under `~/.config/org-assistant/`, it reads every source, compares what it finds with `snapshot.json`, turns each difference into a **change**, gathers changes in `pending.json`, and wakes the assistant thread with `t3 thread send` only when [the wake rules](rules.md#what-wakes-the-thread) say so. One timer runs it for every organisation, so a new organisation needs no new timer, and one broken profile fails only its own organisation.
+`node scripts/assistant.ts scan` runs with no model, on Node 24 or later and nothing else. For each organisation with a profile under `~/.config/org-assistant/`, it reads every source, compares what it finds with `snapshot.json`, turns each difference into a **change**, gathers changes in `pending.json`, and wakes the assistant thread with `t3 thread send` only when [the wake rules](rules.md#what-wakes-the-thread) say so. One timer runs it for every organisation, each in a process of its own, so a new organisation needs no new timer, and one broken profile or state folder fails only its own organisation.
 
 ## Sources
 

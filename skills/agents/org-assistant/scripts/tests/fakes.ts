@@ -107,6 +107,8 @@ export type World = {
     send_code?: number;
     /** Statuses the assistant thread shows at the next `thread show` calls, one each, in order. */
     shows?: string[];
+    /** How long `thread show` takes, so a test can catch a scan while it runs. */
+    show_ms?: number;
   };
   /** A source's app (`linear`, `slack`, `github`) → `auth`, or the text its error should carry. */
   fail?: Record<string, string>;
@@ -260,6 +262,7 @@ function t3(args: string[]): void {
   if (verb === "list") {
     console.log(JSON.stringify(state.threads));
   } else if (verb === "show") {
+    if (state.show_ms) Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, state.show_ms);
     if (state.assistant === null) {
       process.stderr.write("the thread is gone\n");
       process.exit(1);

@@ -1,19 +1,18 @@
 /**
  * Where an organisation's profile and state live, and how the files are read and written. Each
  * state file has one writer: the scan writes snapshot.json, pending.json, and scan.stamp; the model
- * writes ledger.json through `assistant.ts ledger`. Every write replaces its file atomically, and
- * `.lock` keeps a timer scan and an inline scan from running at once.
+ * writes ledger.json through `assistant.ts ledger`. Every write replaces its file atomically; a scan
+ * holds `.lock` and a ledger command `.ledger.lock`, so two of either never run at once.
  */
+import { spawnSync } from "node:child_process";
 import {
   closeSync,
   mkdirSync,
   openSync,
   readFileSync,
   renameSync,
-  statSync,
   unlinkSync,
   writeFileSync,
-  writeSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
@@ -103,72 +102,85 @@ const sorted = (_key: string, value: unknown) =>
  * Replaces `file` with `text` in one step: a crash leaves the old file or the new one, never half.
  */
 export function writeText(file: string, text: string): void {
-  mkdirSync(dirname(file), { recursive: true });
-  const temporary = join(dirname(file), `.${process.pid}.${Date.now()}.tmp`);
-  writeFileSync(temporary, text, { flag: "wx" });
-  renameSync(temporary, file);
+  try {
+    mkdirSync(dirname(file), { recursive: true });
+    const temporary = join(dirname(file), `.${process.pid}.${Date.now()}.tmp`);
+    writeFileSync(temporary, text, { flag: "wx" });
+    renameSync(temporary, file);
+  } catch (error) {
+    throw new FileError(file, `can't be written (${code(error) || "error"})`);
+  }
 }
 
 export function writeJson(file: string, value: unknown): void {
   writeText(file, `${JSON.stringify(value, sorted, 1)}\n`);
 }
 
-function running(pid: number): boolean {
-  try {
-    process.kill(pid, 0);
-    return true;
-  } catch (error) {
-    return code(error) === "EPERM";
-  }
+let flockFound: boolean | undefined;
+
+/** Whether flock(1) is on PATH; util-linux installs it, and macOS has none. */
+function hasFlock(): boolean {
+  flockFound ??= spawnSync("flock", ["--version"], { stdio: "ignore" }).error === undefined;
+  return flockFound;
 }
 
-/** Whether the lock someone left can be taken: its process is gone, or it never wrote one. */
-function stale(file: string): boolean {
-  try {
-    const holder: unknown = JSON.parse(readFileSync(file, "utf8"));
-    const pid =
-      typeof holder === "object" && holder !== null && "pid" in holder ? holder.pid : null;
-    if (typeof pid === "number") return !running(pid);
-  } catch (error) {
-    if (code(error) === "ENOENT") return false;
-  }
-  // A holder that crashed between creating the lock and writing its pid leaves it empty.
-  return Date.now() - statSync(file).mtimeMs > 10_000;
+/** A lock this process holds, and how it lets go. */
+type Held = { release(): void };
+
+/** flock(1)'s exit when another process holds the file: EX_TEMPFAIL. */
+const BUSY = 75;
+
+/** Takes `file` with flock(1) on a descriptor this process keeps open, so the kernel holds it. */
+function flock(file: string, waitSeconds: number): Held | null {
+  const handle = openSync(file, "a");
+  const args = ["--wait", String(waitSeconds), "--conflict-exit-code", String(BUSY), "3"];
+  const taken = spawnSync("flock", args, { stdio: ["ignore", "ignore", "inherit", handle] });
+  if (taken.status === 0) return { release: () => closeSync(handle) };
+  closeSync(handle);
+  if (taken.status === BUSY) return null;
+  throw new FileError(file, `can't be locked (flock exit ${taken.status ?? taken.signal})`);
 }
 
-/**
- * Runs `body` holding `folder/.lock`, waiting up to `waitMs` for another scan to finish; returns
- * "busy" when it stays taken. The lock holds this process's pid and start time, so a lock whose
- * process no longer runs is stale and taken over, and it is removed however `body` ends.
- */
-export function withLock<T>(folder: string, waitMs: number, body: () => T): T | "busy" {
-  mkdirSync(folder, { recursive: true });
-  const file = join(folder, ".lock");
-  const deadline = Date.now() + waitMs;
+/** Takes `file` by creating it, polling until `waitSeconds` pass; releasing removes it. */
+function create(file: string, waitSeconds: number): Held | null {
+  process.stderr.write(
+    `org-assistant: flock isn't on PATH, so ${file} is a plain file: one a crashed run leaves ` +
+      "behind keeps later runs out until it is removed\n",
+  );
+  const deadline = Date.now() + waitSeconds * 1000;
   for (;;) {
     try {
-      const handle = openSync(file, "wx");
-      writeSync(handle, JSON.stringify({ pid: process.pid, started: new Date().toISOString() }));
-      closeSync(handle);
-      break;
+      closeSync(openSync(file, "wx"));
+      return { release: () => unlinkSync(file) };
     } catch (error) {
       if (code(error) !== "EEXIST") throw error;
     }
-    try {
-      if (stale(file)) {
-        unlinkSync(file);
-        continue;
-      }
-    } catch (error) {
-      if (code(error) !== "ENOENT") throw error;
-      continue;
-    }
-    if (Date.now() >= deadline) return "busy";
+    if (Date.now() >= deadline) return null;
     sleep(500);
   }
+}
+
+/**
+ * Runs `body` holding `file`, waiting up to ORG_ASSISTANT_LOCK_WAIT seconds (60) for whoever holds
+ * it; returns "busy" when it stays taken. flock(1) takes it for this process, so the kernel lets go
+ * however the process ends, and the file itself stays: nothing a dead process left can keep a later
+ * run out. Without flock, as on a Mac, the lock is the file itself, created exclusively and removed
+ * when `body` ends.
+ */
+export function withLock<T>(file: string, body: () => T): T | "busy" {
+  const waitSeconds = Number(process.env.ORG_ASSISTANT_LOCK_WAIT ?? 60);
+  let held: Held | null;
+  try {
+    mkdirSync(dirname(file), { recursive: true });
+    held = hasFlock() ? flock(file, waitSeconds) : create(file, waitSeconds);
+  } catch (error) {
+    if (error instanceof FileError) throw error;
+    throw new FileError(file, `can't be locked (${code(error) || "error"})`);
+  }
+  if (held === null) return "busy";
   try {
     return body();
   } finally {
-    unlinkSync(file);
+    held.release();
   }
 }
