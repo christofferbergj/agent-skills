@@ -30,6 +30,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 | End replies with the next step or choices        | `next-options`                                        |
 | Shape replies for skimming and action            | `reply-shape`                                         |
 | Coordinate separate PRs or one combined PR in T3 | `coordinator`                                         |
+| Keep up with one organisation from a T3 thread   | `org-assistant`                                       |
 | Tune the workflow from measured usage            | `usage-review`                                        |
 | Maintain this library                            | `maintain-skills`                                     |
 
@@ -60,6 +61,7 @@ For a feature or a bug, start with `pstack-mode` and give it the goal and how yo
 - [git-guardrails](skills/agents/git-guardrails/SKILL.md)
 - [learn-taste](skills/agents/learn-taste/SKILL.md)
 - [maintain-skills](skills/agents/maintain-skills/SKILL.md)
+- [org-assistant](skills/agents/org-assistant/SKILL.md)
 - [principles](skills/agents/principles/SKILL.md)
 - [pstack-help](skills/agents/pstack-help/SKILL.md)
 - [pstack-mode](skills/agents/pstack-mode/SKILL.md)
@@ -242,6 +244,7 @@ Skills CLI does not install dependencies transitively. Install each companion's 
 | `prune-tests`                                                                                                  | `principle-test-behavior-not-implementation`                                              |                                                                                                                                                                                                                                       |
 | `pstack-mode`                                                                                                  | `domain-modeling`, `principles`, `swarm`                                                  | `council` for the council consult on a fork no run can settle; install the complete library for all playbooks                                                                                                                         |
 | `coordinator`                                                                                                  | `swarm`, `pstack-mode`, `domain-modeling`, `review-loop`                                  | `reply-shape` lays out its decision card when active; install the complete library for the playbooks its workers run                                                                                                                  |
+| `org-assistant`                                                                                                | `reply-shape`, `next-options`                                                             | `pstack-mode` in the briefs of threads it launches; `coordinator` when the user starts multi-PR work it offered                                                                                                                       |
 | `babysit-and-ship`                                                                                             | `pstack-mode`, `next-options`                                                             | `principle-attack-the-premise` after two failed fixes for one verifier finding                                                                                                                                                        |
 | `pstack-setup`                                                                                                 |                                                                                           | `swarm` for the review and Computer Use keys in `scripts/target.py --help`; `create-verification-skill`, `create-formal-verification-skill` for the step 5 offers                                                                     |
 | `architect`                                                                                                    | `codebase-design`, `domain-modeling`                                                      | `arena` for a large or contested design; `tdd` at the chosen shape's public seams when useful                                                                                                                                         |
