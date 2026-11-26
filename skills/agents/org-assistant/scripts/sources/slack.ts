@@ -1,8 +1,10 @@
 /**
  * Slack: direct messages and mentions the user hasn't answered, and a message count for each
  * confirmed channel. The waiting list is kept apart from the search cursors, so a message stays on
- * it across scans until the user answers or it has woken the thread once. Keeps channel, message,
- * and thread ids only: the search text is parsed for them and dropped, and so is the sender.
+ * it across scans until the user answers or it is three days old; each scan that reads the user's
+ * replies to their end reports every one past the wait, and the pending state's ids keep it from
+ * joining a batch twice. Keeps channel, message, and thread ids only: the search text is parsed for
+ * them and dropped, and so is the sender.
  */
 import { Executor, LIMITED, SourceError, read } from "../calls.ts";
 import type { Change } from "../changes.ts";
@@ -28,7 +30,8 @@ const LIMIT = 20;
  */
 export const SLACK_CALLS = 40;
 const FORGET = 3 * DAY; // a waiting message older than this leaves the list
-const SEARCHES = ["dm", "mention", "channels"] as const;
+/** In this order: the user's replies come after the messages that may await them. */
+const SEARCHES = ["dm", "mention", "channels", "replies"] as const;
 type Search = (typeof SEARCHES)[number];
 const COMMON = { response_format: "detailed", include_context: false };
 /** Seconds a search read to its end reaches back the next time, for messages Slack indexed late. */
@@ -62,13 +65,16 @@ const waiting = object({
   /** The thread it was posted in, when it wasn't the thread's first message. */
   thread: nullable(string),
   dm: boolean,
-  /** Whether it has woken the thread; it does once. */
-  woke: boolean,
 });
 type Waiting = Infer<typeof waiting>;
 
 const section = object({
-  cursors: object({ dm: optional(cursor), mention: optional(cursor), channels: optional(cursor) }),
+  cursors: object({
+    dm: optional(cursor),
+    mention: optional(cursor),
+    channels: optional(cursor),
+    replies: optional(cursor),
+  }),
   waiting: array(waiting),
 });
 type Section = Infer<typeof section>;
@@ -172,18 +178,23 @@ function asker(executor: Executor, allowance: Allowance): Ask {
   };
 }
 
-type Order = "asc" | "desc";
-
 /**
- * The messages a search finds from `start` on, whether it read to its end before the budget ran
- * out, and the time of the latest message it read, seen or new, if any. A page a body may have forged a record in is read
- * again one message per call from that page's own cursor, where each page holds exactly one real
- * record, and the search then pages on from the page's next cursor. Slack's `after` takes whole
- * seconds, so a search starts at the second `start.from` falls in and skips what it has read; one
- * can't pass more messages within one second than the budget reads.
+ * The messages a search finds from `start` on, oldest first, whether it read to its end before the
+ * budget ran out, and the time of the latest message it read, seen or new, if any. A page a body
+ * may have forged a record in is read again one message per call from that page's own cursor, where
+ * each page holds exactly one real record, and the search then pages on from the page's next
+ * cursor. Slack's `after` takes whole seconds, so a search starts at the second `start.from` falls
+ * in and skips what it has read; one can't pass more messages within one second than the budget
+ * reads.
  */
-function search(ask: Ask, input: Record<string, unknown>, order: Order, start: Cursor) {
-  const args = { ...COMMON, ...input, after: String(Math.floor(start.from)), sort: "timestamp" };
+function search(ask: Ask, input: Record<string, unknown>, start: Cursor) {
+  const args = {
+    ...COMMON,
+    ...input,
+    after: String(Math.floor(start.from)),
+    sort: "timestamp",
+    sort_dir: "asc",
+  };
   const taken = new Set(start.seen.map(refOf));
   const found: Message[] = [];
   let latest: number | null = null;
@@ -194,7 +205,7 @@ function search(ask: Ask, input: Record<string, unknown>, order: Order, start: C
     found.push(message);
   };
   const call = (limit: number, cursor: string | null) => {
-    const got = ask({ ...args, sort_dir: order, limit, ...(cursor === null ? {} : { cursor }) });
+    const got = ask({ ...args, limit, ...(cursor === null ? {} : { cursor }) });
     return got && { results: got.results, next: CURSOR.exec(got.pagination)?.[1] ?? null };
   };
   const end = (ended: boolean) => ({ found, ended, latest });
@@ -246,24 +257,46 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     dm: prev?.cursors.dm ?? begin,
     mention: prev?.cursors.mention ?? begin,
     channels: prev?.cursors.channels ?? begin,
+    replies: prev?.cursors.replies ?? begin,
   };
   const wait = ctx.schedule.slack_wait_minutes * 60;
-  const list = (prev?.waiting ?? []).filter((item) => now - Number(item.ts) < FORGET / 1000);
+  const recent = (item: MessageId) => now - Number(item.ts) < FORGET / 1000;
+  const list = (prev?.waiting ?? []).filter(recent);
   if (window.kind === "baseline") return { section: { cursors, waiting: list }, changes: [] };
+
+  const known = new Set(list.map(refOf));
+  /**
+   * Puts a DM or mention on the waiting list. The user's replies after it that were read before it
+   * was on the list are read again: the replies cursor goes back to it, and forgets those it saw.
+   */
+  const awaits = (message: Message) => {
+    if (message.from === me || BOTS.has(message.from) || !recent(message)) return;
+    if (known.has(refOf(message))) return;
+    known.add(refOf(message));
+    // The sender's id is needed only for the check above, so it stays out of the snapshot.
+    list.push({ channel: message.channel, ts: message.ts, thread: message.thread, dm: message.dm });
+    const ts = Number(message.ts);
+    const replies = cursors.replies;
+    cursors.replies = {
+      from: Math.min(replies.from, ts),
+      seen: replies.seen.filter((seen) => Number(seen.ts) <= ts),
+    };
+  };
 
   const filters: Record<Search, Record<string, unknown>> = {
     dm: { filters: "to:me", channel_types: "im,mpim" },
     mention: { keywords: [`<@${me}>`] },
     channels: { filters: source.channels.map((entry) => `in:<#${entry.id}>`).join(" ") },
+    replies: { filters: `from:<@${me}>` },
   };
   // Each search goes on oldest first from where it stopped; once the budget runs out, the rest wait.
-  const found: Record<Search, Message[]> = { dm: [], mention: [], channels: [] };
+  const found: Record<Search, Message[]> = { dm: [], mention: [], channels: [], replies: [] };
   let spent = false;
   let stuck: number | null = null;
   for (const name of SEARCHES) {
     if (spent || (name === "channels" && source.channels.length === 0)) continue;
     const start = cursors[name];
-    const got = search(ask, filters[name], "asc", start);
+    const got = search(ask, filters[name], start);
     found[name] = got.found;
     spent = !got.ended;
     // The next scan reaches back OVERLAP once this one read to its end, else goes on from the
@@ -275,60 +308,30 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     if (spent && got.latest !== null && Math.floor(got.latest) === Math.floor(start.from)) {
       stuck = got.latest;
     }
+    if (name === "dm" || name === "mention") got.found.forEach(awaits);
   }
 
-  const known = new Set(list.map(refOf));
-  for (const message of [...found.dm, ...found.mention]) {
-    if (message.from === me || BOTS.has(message.from) || known.has(refOf(message))) continue;
-    known.add(refOf(message));
-    // The sender's id is needed only for the check above, so it stays out of the snapshot.
-    list.push({
-      channel: message.channel,
-      ts: message.ts,
-      thread: message.thread,
-      dm: message.dm,
-      woke: false,
-    });
-  }
-  // The user's own messages since the oldest one still waiting, newest first: a cut-off read then
-  // misses only the oldest replies, never the reply to a message that just arrived.
-  const oldest = Math.min(...list.map((item) => Number(item.ts)), now - OVERLAP);
-  const mine = spent
-    ? null
-    : search(ask, { filters: `from:<@${me}>` }, "desc", { from: oldest, seen: [] });
-  spent ||= mine?.ended === false;
-  const replies = mine?.found ?? [];
-  // How far back the replies were read: all of them, down to the oldest a cut-off read reached, or
-  // none when the budget left none to read them.
-  const reached = mine?.ended ? -Infinity : Math.min(...replies.map(({ ts }) => Number(ts)));
+  // A reply takes its message off the list whenever it is read. The rest are known unanswered only
+  // when the replies were read to their end, so only then does one past the wait wake the thread.
+  const waiting = list.filter((item) => !answered(item, found.replies));
+  const unanswered = spent ? [] : waiting;
   const changes: Change[] = [];
-  const kept: Waiting[] = [];
-  for (const item of list) {
-    if (answered(item, replies)) continue;
+  for (const item of unanswered) {
     const age = now - Number(item.ts);
-    if (Number(item.ts) < reached) {
-      // A reply may be among those unread: no wake this scan, and its gathered change leaves, so the
-      // next scan judges it again. Should it have woken the thread already, its change id is among
-      // those delivered or frozen, so it joins no batch twice.
-      kept.push({ ...item, woke: false });
-    } else if (age >= wait && !item.woke) {
-      changes.push(
-        ctx.change("slack.waiting", {
-          ref: refOf(item),
-          at: iso(fromSlackTs(item.ts)),
-          key: "waiting",
-          scope: `slack:${item.channel}`,
-          detail: {
-            via: item.dm ? "dm" : "mention",
-            channel: item.channel,
-            minutes: Math.floor(age / 60),
-          },
-        }),
-      );
-      kept.push({ ...item, woke: true });
-    } else {
-      kept.push(item);
-    }
+    if (age < wait) continue;
+    changes.push(
+      ctx.change("slack.waiting", {
+        ref: refOf(item),
+        at: iso(fromSlackTs(item.ts)),
+        key: "waiting",
+        scope: `slack:${item.channel}`,
+        detail: {
+          via: item.dm ? "dm" : "mention",
+          channel: item.channel,
+          minutes: Math.floor(age / 60),
+        },
+      }),
+    );
   }
   const names = new Map(source.channels.map((entry) => [entry.id, entry.name ?? entry.id]));
   for (const message of found.channels) {
@@ -344,9 +347,9 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
       }),
     );
   }
-  const refs = new Set(kept.filter((item) => Number(item.ts) >= reached).map(refOf));
+  const refs = new Set(unanswered.map(refOf));
   return {
-    section: { cursors, waiting: kept },
+    section: { cursors, waiting },
     changes,
     // A gathered DM or mention stays only while this scan read it as still unanswered.
     still: (item: Change) => item.kind !== "slack.waiting" || refs.has(item.ref),

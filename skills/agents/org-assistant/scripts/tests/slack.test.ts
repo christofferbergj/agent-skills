@@ -424,10 +424,10 @@ test("a DM whose replies the budget left unread waits for a scan that reads them
   ]);
 });
 
-test("a reply search the budget cut off before a waiting message's time wakes nothing for it", (t) => {
+test("a reply search the budget cut off still takes off the list a message a reply it read answers", (t) => {
   const org = new Org(t);
   org.startDay();
-  // 730 channel messages take 37 calls, so the replies get one page: the 20 newest, after the answer.
+  // 730 channel messages take 37 calls, so the replies get one page, oldest first: the answer and 19.
   org.world.slack.messages = [
     { channel: "D0ALEX", ts: slackTs("09:10"), from: "U0ALEX" },
     { channel: "D0ALEX", ts: slackTs("09:15"), from: "U0ME" },
@@ -464,6 +464,42 @@ test("a gathered DM whose replies the budget left unread doesn't wake, and its a
   org.scan("12:05");
   assert.equal(wokeWaiting(org), false);
   assert.deepEqual(org.waiting(), []);
+});
+
+test("a gathered DM a crash took from the pending list wakes once a scan reads its replies", (t) => {
+  const org = new Org(t);
+  org.writeProfile((profile) => {
+    profile.sources = profile.sources.filter(({ kind }) => kind === "slack");
+  });
+  org.startDay();
+  org.world.slack.messages = messages(1, "D0ALEX", "U0ALEX", "09:20");
+  org.threadIs("running");
+  org.scan("10:05");
+  assert.deepEqual(
+    org.pending().gathered.map((item) => item.kind),
+    ["slack.waiting"],
+  );
+  // The budget runs out before the replies, so the gathered DM leaves; then the snapshot is lost.
+  org.world.slack.messages.push(...chatter("10:20", 741));
+  org.save();
+  org.crashAfterPending("11:05");
+  org.world.slack.messages.pop();
+  org.threadIs("completed");
+  org.scan("12:05");
+  assert.ok(wokeWaiting(org));
+});
+
+test("a DM whose replies take more than one scan's budget wakes once a scan reads them all", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = [
+    ...messages(1, "D0ALEX", "U0ALEX", "09:10"),
+    ...messages(741, "C0OTHER", "U0ME", "09:20"),
+  ];
+  org.save();
+  assert.deepEqual(org.found("10:05"), {});
+  assert.equal(org.waiting().length, 1);
+  assert.deepEqual(org.found("11:05"), { "slack.waiting": 1 });
 });
 
 test("a budget that runs out before an ambiguous page is read again says so, not stuck", (t) => {
@@ -503,4 +539,57 @@ test("a budget that runs out re-reading the overlap of messages already seen say
   org.save();
   org.scan("11:05");
   assert.match(org.status("11:10"), /slack ok, read budget used: resumes next scan ·/);
+});
+
+test("a DM that woke, whose gathered change a budget-out scan drops, wakes at the next scan that reads its replies", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = messages(1, "D0ALEX", "U0ALEX", "09:20");
+  org.threadIs("running");
+  org.scan("10:05");
+  assert.deepEqual(
+    org.pending().gathered.map((item) => item.kind),
+    ["slack.waiting"],
+  );
+  org.world.slack.messages.push(...chatter("10:20", 741));
+  org.save();
+  org.scan("11:05");
+  assert.deepEqual(
+    org.pending().gathered.filter((item) => item.kind === "slack.waiting"),
+    [],
+  );
+  org.threadIs("completed");
+  org.scan("12:05");
+  assert.ok(wokeWaiting(org));
+});
+
+test("a DM Slack indexed late is judged by the replies a cut-off search read before it waited", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  // 741 replies of the user's take more than the budget; the one at 09:59 answers the late DM.
+  const replies = messages(741, "C0OTHER", "U0ME", "09:50");
+  const answer = replies[540];
+  assert.ok(answer);
+  answer.channel = "D0ALEX";
+  org.world.slack.messages = replies;
+  org.save();
+  org.scan("10:05");
+  org.world.slack.messages.push(...messages(1, "D0ALEX", "U0ALEX", "09:58"));
+  org.save();
+  org.scan("11:05");
+  assert.equal(wokeWaiting(org), false);
+  assert.deepEqual(org.waiting(), []);
+});
+
+test("a DM Slack indexed late that the user answered before the last scan wakes nothing", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = messages(1, "D0ALEX", "U0ME", "10:02");
+  org.save();
+  org.scan("10:05");
+  org.world.slack.messages.push(...messages(1, "D0ALEX", "U0ALEX", "10:01"));
+  org.save();
+  org.scan("11:05");
+  assert.equal(wokeWaiting(org), false);
+  assert.deepEqual(org.waiting(), []);
 });
