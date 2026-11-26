@@ -20,7 +20,7 @@ import {
   tier,
 } from "./changes.ts";
 import { type Ledger, ledgerParser } from "./ledger.ts";
-import { parse } from "./parse.ts";
+import { type Parser, parse } from "./parse.ts";
 import {
   EMPTY_PENDING,
   type Pending,
@@ -85,12 +85,7 @@ export function scanOrg(org: string, now: Date, options: ScanOptions): number {
   }
 }
 
-function load<T>(
-  folder: string,
-  name: string,
-  parser: (value: unknown, path: string) => T,
-  empty: T,
-) {
+function load<T>(folder: string, name: string, parser: Parser<T>, empty: T) {
   const file = join(folder, name);
   const value = readJson(file);
   return {
@@ -143,6 +138,180 @@ export function wakeMessage(
   );
 }
 
+/** What one scan knows from the start and doesn't change. */
+type Scan = {
+  org: string;
+  profile: Profile;
+  now: Date;
+  at: Local;
+  /** The organisation's first scan, which records a baseline; `--since` stands in for a snapshot. */
+  first: boolean;
+  since: number | null;
+  ledger: Ledger;
+};
+
+/** What a scan changes as it goes, and the lines that will fail its unit. */
+type State = { snapshot: Snapshot; pending: Pending; failed: string[] };
+
+/** The assistant thread; one that can't be read counts as a failing source. */
+function readAssistant(scan: Scan, state: State): { thread: Thread; state: State } {
+  const id = scan.profile.thread;
+  if (id === null) return { thread: { kind: "absent" }, state };
+  const thread = readThread(id);
+  const health = { ...state.snapshot.health };
+  const failed = [...state.failed];
+  if (thread.kind === "unreadable") {
+    const failures = failHealth(health, THREAD, new SourceError("t3 thread show: failed"));
+    say(`${scan.org}: can't read the assistant thread ${id}`);
+    if (failures >= scan.profile.schedule.source_failures) {
+      failed.push(`the assistant thread was unreadable ${failures} scans in a row`);
+    }
+  } else {
+    delete health[THREAD];
+  }
+  return { thread, state: { ...state, snapshot: { ...state.snapshot, health }, failed } };
+}
+
+/**
+ * Every source's changes, gathered. A source with no snapshot yet counts from its first attempt, so
+ * one whose sign-in failed from the start still reports what happened meanwhile.
+ */
+function readSources(scan: Scan, state: State): { found: Change[]; state: State } {
+  const { org, profile, now, ledger } = scan;
+  const { snapshot } = state;
+  const sources = { ...snapshot.sources };
+  const health = { ...snapshot.health };
+  const starts = { ...snapshot.starts };
+  const failed = [...state.failed];
+  let gathered = state.pending.gathered;
+  const found: Change[] = [];
+  for (const source of profile.sources) {
+    const { name } = source;
+    const prev = sources[name];
+    if (prev === undefined) starts[name] ??= iso(now);
+    const fresh: Fresh =
+      scan.since !== null
+        ? { kind: "since", since: new Date(now.getTime() - scan.since) }
+        : scan.first
+          ? { kind: "baseline" }
+          : { kind: "since", since: new Date(starts[name] ?? iso(now)) };
+    const context: Context = {
+      now,
+      zone: profile.timezone,
+      schedule: profile.schedule,
+      ledger,
+      thread: profile.thread,
+      change: <K extends ChangeKind>(kind: K, fields: ChangeFields<K>) =>
+        makeChange(name, kind, fields),
+    };
+    try {
+      const result = scanSource(source, prev, fresh, context);
+      sources[name] = result.section;
+      delete starts[name];
+      health[name] = { ok: true, at: iso(now) };
+      const { still } = result;
+      // A change no longer true, such as a DM since answered, leaves the gathered list.
+      if (still !== undefined)
+        gathered = gathered.filter((item) => item.source !== name || still(item));
+      found.push(...result.changes);
+    } catch (error) {
+      if (!(error instanceof SourceError)) throw error;
+      const failures = failHealth(health, name, error);
+      say(`${org}: ${name}: ${error.message}`);
+      if (failures >= profile.schedule.source_failures) {
+        failed.push(`${name} failed ${failures} scans in a row`);
+      }
+    }
+  }
+  const kept = new Set([...profile.sources.map((source) => source.name), THREAD]);
+  const pending = { ...state.pending, gathered };
+  return {
+    found,
+    state: {
+      snapshot: {
+        sources,
+        health: Object.fromEntries(Object.entries(health).filter(([name]) => kept.has(name))),
+        starts,
+        last_scan: iso(now),
+      },
+      pending: {
+        ...pending,
+        gathered: gather(gathered, found, known(pending)).filter(
+          (item) => !muted(item, ledger.mutes, now),
+        ),
+      },
+      failed,
+    },
+  };
+}
+
+type End = Exclude<Step, { kind: "settle" | "release" | "rejoin" | "read" }>;
+
+/** Carries out each step the wake policy names, until one ends the scan. */
+function drive(scan: Scan, mode: Mode, start: State) {
+  let state = start;
+  // An inline scan runs in the assistant thread's own run, so it doesn't read the thread.
+  let thread: Thread | null = null;
+  if (mode !== "inline") ({ thread, state } = readAssistant(scan, state));
+  const delivered = new Set(scan.ledger.delivered.map((entry) => entry.batch));
+  const hold = holds(scan.ledger, scan.now);
+  let found: Change[] | null = null;
+  for (;;) {
+    const base = {
+      at: scan.at,
+      schedule: scan.profile.schedule,
+      first: scan.first,
+      read: found !== null,
+      pending: state.pending,
+      delivered,
+      hold,
+    };
+    const step = nextStep(
+      thread === null
+        ? { ...base, mode: "inline" }
+        : { ...base, mode: mode === "dry" ? "dry" : "timer", thread },
+    );
+    switch (step.kind) {
+      case "settle":
+        state = { ...state, pending: settle(state.pending, step.slot, scan.now) };
+        break;
+      case "release":
+        state = { ...state, pending: unfreeze(state.pending, "inline") };
+        break;
+      case "rejoin":
+        state = { ...state, pending: unfreeze(state.pending, "sent") };
+        break;
+      case "read":
+        ({ found, state } = readSources(scan, state));
+        break;
+      default: {
+        const end: End = step;
+        return { end, found: found ?? [], state };
+      }
+    }
+  }
+}
+
+/** Freezes the batch the scan's last step names; returns the batch to send, if any. */
+function finish(scan: Scan, end: End, state: State): { send: SentBatch | null; state: State } {
+  const { org, at, profile } = scan;
+  switch (end.kind) {
+    case "inline":
+      return { send: null, state: { ...state, pending: freezeInline(state.pending, org, at) } };
+    case "giveUp":
+      return { send: null, state: { ...state, failed: [...state.failed, end.failure] } };
+    case "resend":
+      return { send: state.pending.sent, state };
+    case "wake": {
+      const wake = { kind: end.batch, items: end.items, reason: end.reason };
+      const pending = freezeSent(state.pending, org, at, profile.schedule, wake);
+      return { send: pending.sent, state: { ...state, pending } };
+    }
+    case "wait":
+      return { send: null, state };
+  }
+}
+
 function runScan(
   org: string,
   profile: Profile,
@@ -152,163 +321,41 @@ function runScan(
 ): number {
   const { mode } = options;
   const zone = profile.timezone;
-  const schedule = profile.schedule;
-  const at: Local = local(now, zone);
   const snapshotFile = load(folder, "snapshot.json", snapshotParser, EMPTY_SNAPSHOT);
   const pendingFile = load(folder, "pending.json", pendingParser, EMPTY_PENDING);
-  const ledger: Ledger = load(folder, "ledger.json", ledgerParser, parse(ledgerParser, {})).value;
-  // `--since` stands in for a snapshot from that long ago.
-  const first = !snapshotFile.loaded && options.since === null;
-  let snapshot = snapshotFile.value;
-  let pending: Pending = forgetOld(pendingFile.value, now);
-  const failed: string[] = [];
-  const delivered = new Set(ledger.delivered.map((entry) => entry.batch));
-  const hold = holds(ledger, now);
-
-  /** The assistant thread; one that can't be read counts as a failing source. */
-  const readAssistant = (): Thread => {
-    if (profile.thread === null) return { kind: "absent" };
-    const thread = readThread(profile.thread);
-    const health = { ...snapshot.health };
-    if (thread.kind === "unreadable") {
-      const failures = failHealth(health, THREAD, new SourceError("t3 thread show: failed"));
-      say(`${org}: can't read the assistant thread ${profile.thread}`);
-      if (failures >= schedule.source_failures) {
-        failed.push(`the assistant thread was unreadable ${failures} scans in a row`);
-      }
-    } else {
-      delete health[THREAD];
-    }
-    snapshot = { ...snapshot, health };
-    return thread;
+  const scan: Scan = {
+    org,
+    profile,
+    now,
+    at: local(now, zone),
+    first: !snapshotFile.loaded && options.since === null,
+    since: options.since,
+    ledger: load(folder, "ledger.json", ledgerParser, parse(ledgerParser, {})).value,
   };
-
-  /**
-   * Every source's changes. A source with no snapshot yet counts from its first attempt, so one
-   * whose sign-in failed from the start still reports what happened meanwhile.
-   */
-  const readSources = (): Change[] => {
-    const found: Change[] = [];
-    const sources = { ...snapshot.sources };
-    const health = { ...snapshot.health };
-    const starts = { ...snapshot.starts };
-    for (const source of profile.sources) {
-      const { name } = source;
-      const prev = sources[name];
-      if (prev === undefined) starts[name] ??= iso(now);
-      const fresh: Fresh =
-        options.since !== null
-          ? { kind: "since", since: new Date(now.getTime() - options.since) }
-          : first
-            ? { kind: "baseline" }
-            : { kind: "since", since: new Date(starts[name] ?? iso(now)) };
-      const context: Context = {
-        now,
-        zone,
-        schedule,
-        ledger,
-        thread: profile.thread,
-        change: <K extends ChangeKind>(kind: K, fields: ChangeFields<K>) =>
-          makeChange(name, kind, fields),
-      };
-      try {
-        const result = scanSource(source, prev, fresh, context);
-        sources[name] = result.section;
-        delete starts[name];
-        health[name] = { ok: true, at: iso(now) };
-        const { still } = result;
-        if (still !== undefined) {
-          // A change no longer true, such as a DM since answered, leaves the gathered list.
-          pending = {
-            ...pending,
-            gathered: pending.gathered.filter((item) => item.source !== name || still(item)),
-          };
-        }
-        found.push(...result.changes);
-      } catch (error) {
-        if (!(error instanceof SourceError)) throw error;
-        const failures = failHealth(health, name, error);
-        say(`${org}: ${name}: ${error.message}`);
-        if (failures >= schedule.source_failures)
-          failed.push(`${name} failed ${failures} scans in a row`);
-      }
-    }
-    const kept = new Set([...profile.sources.map((source) => source.name), THREAD]);
-    snapshot = {
-      sources,
-      health: Object.fromEntries(Object.entries(health).filter(([name]) => kept.has(name))),
-      starts,
-      last_scan: iso(now),
-    };
-    const gathered = gather(pending.gathered, found, known(pending));
-    pending = { ...pending, gathered: gathered.filter((item) => !muted(item, ledger.mutes, now)) };
-    return found;
+  const start = {
+    snapshot: snapshotFile.value,
+    pending: forgetOld(pendingFile.value, now),
+    failed: [],
   };
-
-  const thread = mode === "inline" ? null : readAssistant();
-  let found: Change[] | null = null;
-  const step = ((): Exclude<Step, { kind: "settle" | "release" | "rejoin" | "read" }> => {
-    for (;;) {
-      const base = { at, schedule, first, read: found !== null, pending, delivered, hold };
-      const next = nextStep(
-        thread === null
-          ? { ...base, mode: "inline" }
-          : { ...base, mode: mode === "dry" ? "dry" : "timer", thread },
-      );
-      switch (next.kind) {
-        case "settle":
-          pending = settle(pending, next.slot, now);
-          break;
-        case "release":
-          pending = unfreeze(pending, "inline");
-          break;
-        case "rejoin":
-          pending = unfreeze(pending, "sent");
-          break;
-        case "read":
-          found = readSources();
-          break;
-        default:
-          return next;
-      }
-    }
-  })();
-
-  let send: SentBatch | null = null;
-  switch (step.kind) {
-    case "inline":
-      pending = freezeInline(pending, org, at);
-      break;
-    case "giveUp":
-      failed.push(step.failure);
-      break;
-    case "resend":
-      send = pending.sent;
-      break;
-    case "wake":
-      pending = freezeSent(pending, org, at, schedule, {
-        kind: step.batch,
-        items: step.items,
-        reason: step.reason,
-      });
-      send = pending.sent;
-      break;
-    case "wait":
-      break;
-  }
+  const driven = drive(scan, mode, start);
+  const { end, found } = driven;
+  const { send, state } = finish(scan, end, driven.state);
+  let { pending } = state;
+  const { snapshot } = state;
+  const failed = [...state.failed];
 
   const shown = mode === "inline" ? pending.inline : send;
   const report: Record<string, unknown> = {
     org,
-    at: localIso(at),
-    first,
+    at: localIso(scan.at),
+    first: scan.first,
     dry_run: mode === "dry",
     wake: send?.kind ?? null,
-    reason: step.reason,
+    reason: end.reason,
     batch: shown?.id ?? null,
     items: (shown?.items ?? []).map(({ id, kind, ref }) => ({ id, kind, ref })),
     gathered: counts(pending.gathered),
-    found: counts(found ?? []),
+    found: counts(found),
     health: healthLine(snapshot, zone),
     failed,
   };
@@ -336,7 +383,7 @@ function runScan(
     writeJson(pendingFile.file, pending);
     if (!ok) {
       say(`${org}: t3 thread send failed`);
-      if ((pending.sent?.tries.length ?? 0) >= 1 + schedule.retries) {
+      if ((pending.sent?.tries.length ?? 0) >= 1 + profile.schedule.retries) {
         failed.push(`batch ${send.id}'s last wake failed to send`);
       }
     }

@@ -206,7 +206,7 @@ export function gather(items: Change[], found: Change[], skip: ReadonlySet<strin
 
 export type Mute = { ref: string; until: string | null };
 
-/** A mute names a ref (`DEV-12`, `owner/repo#3`), a scope (`slack:C123`), or a kind, until a time. */
+/** A mute names a ref (`ENG-12`, `owner/repo#3`), a scope (`slack:C123`), or a kind, until a time. */
 export function muted(item: Change, mutes: Mute[], now: Date): boolean {
   return mutes.some(
     (mute) =>

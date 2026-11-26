@@ -33,7 +33,7 @@ export function holds(ledger: Ledger, now: Date): Holds {
 }
 
 /** A pause holds every wake; quiet holds deltas and lets the overview through. */
-export function held(hold: Holds, kind: SentBatch["kind"]): boolean {
+function held(hold: Holds, kind: SentBatch["kind"]): boolean {
   return hold.paused !== null || (kind === "delta" && hold.quiet !== null);
 }
 

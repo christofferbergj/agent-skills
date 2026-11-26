@@ -96,78 +96,80 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
   return outcome.out;
 }
 
-export function main(argv: string[]): number {
-  try {
-    const { values, positionals } = parseArgs({
-      args: argv,
-      allowPositionals: true,
-      strict: true,
-      options: {
-        "dry-run": { type: "boolean" },
-        inline: { type: "boolean" },
-        since: { type: "string" },
-        now: { type: "string" },
-        until: { type: "string" },
-        ticket: { type: "string" },
-        remove: { type: "boolean" },
-        help: { type: "boolean", short: "h" },
-      },
-    });
-    const [command, ...rest] = positionals;
-    const { "dry-run": dry, inline, since, now, help, ...ledgerOptions } = values;
-    const extra = (allowed: boolean, what: string) => {
-      if (!allowed) throw new UsageError(`${what} is not an option of ${command}`);
-    };
-    if (command === "scan") {
-      extra(
-        Object.keys(ledgerOptions).length === 0 && !help,
-        Object.keys(ledgerOptions)
-          .map((key) => `--${key}`)
-          .join(", ") || "--help",
-      );
-      if (dry && inline) throw new UsageError("a scan is --dry-run or --inline, not both");
-      if (inline && rest.length !== 1)
-        throw new UsageError("--inline scans exactly one organisation");
-      const mode: Mode = dry ? "dry" : inline ? "inline" : "timer";
-      const options = { mode, since: since === undefined ? null : duration(since) };
-      const at = instant(now);
-      return Math.max(
-        0,
-        ...(rest.length > 0 ? rest : orgs()).map((org) => scanOrg(org, at, options)),
-      );
-    }
-    if (command === "status") {
-      extra(
-        Object.keys(ledgerOptions).length === 0 && !dry && !inline && since === undefined && !help,
-        "that",
-      );
-      if (rest.length !== 1) throw new UsageError("status takes one organisation");
-      process.stdout.write(`${status(rest[0]!, instant(now))}\n`);
-      return 0;
-    }
-    if (command === "ledger") {
-      extra(!dry && !inline && since === undefined, "--dry-run, --inline, or --since");
-      const [org, ...words] = rest;
-      if (help || org === undefined) {
-        process.stdout.write(`${ledgerHelp()}\n`);
-        return org === undefined && !help ? 2 : 0;
-      }
-      process.stdout.write(`${ledger(org, words, ledgerOptions, instant(now))}\n`);
-      return 0;
-    }
+const NOW = { now: { type: "string" } } as const;
+/** Each command's options; `--now` sets the time, for tests. */
+const OPTIONS = {
+  scan: {
+    ...NOW,
+    "dry-run": { type: "boolean" },
+    inline: { type: "boolean" },
+    since: { type: "string" },
+  },
+  status: NOW,
+  ledger: {
+    ...NOW,
+    until: { type: "string" },
+    ticket: { type: "string" },
+    remove: { type: "boolean" },
+    help: { type: "boolean", short: "h" },
+  },
+} as const;
+
+const parse = <O extends (typeof OPTIONS)[keyof typeof OPTIONS]>(args: string[], options: O) =>
+  parseArgs({ args, options, allowPositionals: true, strict: true });
+
+function run(command: string | undefined, args: string[]): number {
+  if (command === "scan") {
+    const { values, positionals } = parse(args, OPTIONS.scan);
+    if (values["dry-run"] && values.inline)
+      throw new UsageError("a scan is --dry-run or --inline, not both");
+    if (values.inline && positionals.length !== 1)
+      throw new UsageError("--inline scans exactly one organisation");
+    const mode: Mode = values["dry-run"] ? "dry" : values.inline ? "inline" : "timer";
+    const options = { mode, since: values.since === undefined ? null : duration(values.since) };
+    const at = instant(values.now);
+    const codes = (positionals.length > 0 ? positionals : orgs()).map((org) =>
+      scanOrg(org, at, options),
+    );
+    return Math.max(0, ...codes);
+  }
+  if (command === "status") {
+    const { values, positionals } = parse(args, OPTIONS.status);
+    const [org, ...more] = positionals;
+    if (org === undefined || more.length > 0) throw new UsageError("status takes one organisation");
+    process.stdout.write(`${status(org, instant(values.now))}\n`);
+    return 0;
+  }
+  if (command === "ledger") {
+    const { values, positionals } = parse(args, OPTIONS.ledger);
+    const { now, help, ...options } = values;
+    const [org, ...words] = positionals;
     if (help) {
-      process.stdout.write(`${USAGE}\n`);
+      process.stdout.write(`${ledgerHelp()}\n`);
       return 0;
     }
-    throw new UsageError(command === undefined ? "name a command" : `unknown command ${command}`);
+    if (org === undefined) throw new UsageError("ledger takes an organisation and a command");
+    process.stdout.write(`${ledger(org, words, options, instant(now))}\n`);
+    return 0;
+  }
+  if (command === "-h" || command === "--help") {
+    process.stdout.write(`${USAGE}\n`);
+    return 0;
+  }
+  throw new UsageError(command === undefined ? "name a command" : `unknown command ${command}`);
+}
+
+const isParseError = (error: unknown) =>
+  error instanceof TypeError && "code" in error && String(error.code).startsWith("ERR_PARSE_ARGS");
+
+export function main([command, ...args]: string[]): number {
+  try {
+    return run(command, args);
   } catch (error) {
-    if (
-      error instanceof UsageError ||
-      (error instanceof TypeError &&
-        "code" in error &&
-        String(error.code).startsWith("ERR_PARSE_ARGS"))
-    ) {
-      process.stderr.write(`assistant.ts: ${error.message}\n${USAGE}\n`);
+    if (error instanceof UsageError || isParseError(error)) {
+      process.stderr.write(
+        `assistant.ts: ${error instanceof Error ? error.message : error}\n${USAGE}\n`,
+      );
       return 2;
     }
     if (error instanceof FileError || error instanceof LedgerError) {

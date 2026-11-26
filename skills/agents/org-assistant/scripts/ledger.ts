@@ -105,7 +105,7 @@ function command<A extends Shape, O extends Shape = {}>(spec: {
         ...parse(args, Object.fromEntries(names.map((name, index) => [name, positionals[index]]))),
         ...parse(options, given),
       };
-      // Both halves were read by their parsers just above.
+      // Both halves were read by their parsers just above; the compiler can't merge mapped types.
       return spec.run(ledger, input as ObjectOf<A> & ObjectOf<O>, context);
     },
   };
