@@ -95,9 +95,12 @@ export type World = {
   _about?: string;
   linear: {
     notifications: Note[];
+    /** The user's tickets, in the order `list_issues` pages them. */
     mine: MineIssue[];
     issues: Record<string, IssueDetail>;
     team: Record<string, TeamIssue[]>;
+    /** The most items a page holds, when it is fewer than a call's `limit`. */
+    page_size?: number;
   };
   slack: { me: string; messages: SlackMessage[] };
   github: Record<string, Repo>;
@@ -177,20 +180,36 @@ function slack(args: Record<string, unknown>, state: World["slack"]) {
   return slackPage(picked, Number(args.limit ?? 20), Number(args.cursor ?? "0"));
 }
 
+/**
+ * One page of `items`, after the item the cursor names, as Linear pages them: at most the `limit`
+ * asked for, or the world's smaller `page_size`, with the last item's id as the next cursor.
+ */
+function page<T extends { id: string }>(
+  items: T[],
+  args: Record<string, unknown>,
+  state: World["linear"],
+): { items: T[]; hasNextPage: boolean; cursor: string | null } {
+  const start =
+    args.cursor === undefined ? 0 : items.findIndex((item) => item.id === args.cursor) + 1;
+  const size = Math.min(Number(args.limit ?? 50), state.page_size ?? Infinity);
+  const shown = items.slice(start, start + size);
+  const more = start + size < items.length;
+  return { items: shown, hasNextPage: more, cursor: more ? (shown.at(-1)?.id ?? null) : null };
+}
+
 function linear(path: string, args: Record<string, unknown>, state: World["linear"]) {
   if (path.endsWith("get_notifications")) {
-    const notifications = [...state.notifications].sort((a, b) =>
-      a.createdAt < b.createdAt ? 1 : -1,
-    );
-    return { notifications, hasNextPage: false };
+    const sorted = [...state.notifications].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    const { items, ...rest } = page(sorted, args, state);
+    return { notifications: items, ...rest };
   }
   if (path.endsWith("list_issues")) {
-    if (args.assignee === "me") return { issues: state.mine, hasNextPage: false };
-    const team = state.team[String(args.team)] ?? [];
-    return {
-      issues: team.filter((issue) => issue.updatedAt > String(args.updatedAt ?? "")),
-      hasNextPage: false,
-    };
+    const updated = (state.team[String(args.team)] ?? []).filter(
+      (issue) => issue.updatedAt > String(args.updatedAt ?? ""),
+    );
+    const { items, ...rest } =
+      args.assignee === "me" ? page(state.mine, args, state) : page(updated, args, state);
+    return { issues: items, ...rest };
   }
   if (path.endsWith("get_issue")) {
     const id = String(args.id);

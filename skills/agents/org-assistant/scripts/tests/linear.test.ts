@@ -184,3 +184,54 @@ test("a finish edited before crash recovery counts once", (t) => {
   org.scan("11:05");
   assert.deepEqual(caught(org), ["team.pulse ENG-201"]);
 });
+
+/** `clock` plus `seconds`, as Linear writes the time. */
+const later = (clock: string, seconds: number) =>
+  new Date(Date.parse(linearTime(clock)) + seconds * 1000).toISOString();
+
+test("an inbox read cut off at the page cap goes on where it stopped, and skips nothing", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.linear.page_size = 2; // twenty pages then hold 40 items
+  for (let n = 0; n < 45; n++) org.note(`n${n}`, "issueSubscribed", "ENG-999", later("09:10", n));
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "linear.other": 40 });
+  org.note("n-new", "issueAssignedToYou", "ENG-103", linearTime("10:30"));
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "linear.other": 5, "ticket.assigned": 1 });
+  assert.deepEqual(org.found("12:05"), {});
+});
+
+test("an assigned list cut off at the page cap keeps the tickets it didn't reach", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const [template] = org.world.linear.mine;
+  assert.ok(template);
+  org.world.linear.page_size = 2;
+  const more = Array.from({ length: 40 }, (_, n) => ({ ...template, id: `ENG-${500 + n}` }));
+  org.world.linear.mine.unshift(...more);
+  org.save();
+  org.scan("10:05");
+  org.note("n1", "issueNewComment", "ENG-101", linearTime("10:30"));
+  org.save();
+  assert.deepEqual(org.found("11:05"), { "ticket.comment": 1 });
+});
+
+test("a team read cut off at the page cap goes on where it stopped, and skips nothing", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const [sam] = org.world.linear.team.ENG ?? [];
+  assert.ok(sam);
+  org.world.linear.page_size = 2;
+  const created = { createdAt: linearTime("09:30"), updatedAt: linearTime("09:30") };
+  const tickets = Array.from({ length: 41 }, (_, n) => ({
+    ...sam,
+    ...created,
+    id: `ENG-${600 + n}`,
+  }));
+  org.world.linear.team.ENG?.push(...tickets);
+  org.save();
+  assert.deepEqual(org.found("10:05"), { "team.pulse": 40 });
+  assert.deepEqual(org.found("11:05"), { "team.pulse": 1 });
+  assert.deepEqual(org.found("12:05"), {});
+});
