@@ -375,3 +375,76 @@ test("a second holding more messages than a scan reads says the watermark is stu
   org.scan("11:05");
   assert.match(org.status("11:10"), /slack ok, watermark stuck at 2026-11-26T09:10\+01:00: /);
 });
+
+/** `count` messages in a confirmed channel, one a second from `clock`: enough fill a scan's budget. */
+const chatter = (clock: string, count: number): SlackMessage[] =>
+  Array.from({ length: count }, (_, n) => ({
+    channel: "C0DEV",
+    ts: (Number(slackTs(clock)) + n).toFixed(6),
+    from: "U0ALEX",
+    name: "dev",
+  }));
+
+/** Whether any wake so far carried a waiting DM or mention. */
+const wokeWaiting = (org: Org) =>
+  org.sent().some(({ message }) => message.includes("slack.waiting"));
+
+test("a DM whose replies the budget left unread waits for a scan that reads them", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  // 750 channel messages take 38 calls, which with the DM and mention searches spend the budget.
+  org.world.slack.messages = [
+    { channel: "D0ALEX", ts: slackTs("09:10"), from: "U0ALEX" },
+    ...chatter("09:20", 750),
+  ];
+  org.save();
+  org.scan("10:05");
+  assert.equal(wokeWaiting(org), false);
+  org.scan("11:05");
+  assert.deepEqual(org.kinds(org.lastSent()), [
+    "750 slack.channel",
+    `slack.waiting slack:D0ALEX:${slackTs("09:10")}`,
+  ]);
+});
+
+test("a reply search the budget cut off before a waiting message's time wakes nothing for it", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  // 730 channel messages take 37 calls, so the replies get one page: the 20 newest, after the answer.
+  org.world.slack.messages = [
+    { channel: "D0ALEX", ts: slackTs("09:10"), from: "U0ALEX" },
+    { channel: "D0ALEX", ts: slackTs("09:15"), from: "U0ME" },
+    ...chatter("09:20", 730),
+    ...Array.from({ length: 20 }, (_, n) => ({
+      channel: "C0OTHER",
+      ts: (Number(slackTs("09:40")) + n).toFixed(6),
+      from: "U0ME",
+    })),
+  ];
+  org.save();
+  org.scan("10:05");
+  org.scan("11:05");
+  assert.equal(wokeWaiting(org), false);
+  assert.deepEqual(org.waiting(), []);
+});
+
+test("a gathered DM whose replies the budget left unread doesn't wake, and its answer then clears it", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = [{ channel: "D0ALEX", ts: slackTs("09:20"), from: "U0ALEX" }];
+  org.threadIs("running");
+  org.scan("10:05");
+  assert.deepEqual(
+    org.pending().gathered.map((item) => item.kind),
+    ["slack.waiting"],
+  );
+  org.world.slack.messages.push(
+    { channel: "D0ALEX", ts: slackTs("10:15"), from: "U0ME" },
+    ...chatter("10:20", 750),
+  );
+  org.threadIs("completed");
+  org.scan("11:05");
+  org.scan("12:05");
+  assert.equal(wokeWaiting(org), false);
+  assert.deepEqual(org.waiting(), []);
+});

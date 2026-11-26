@@ -291,19 +291,27 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     });
   }
   // The user's own messages since the oldest one still waiting, newest first: a cut-off read then
-  // misses only the oldest replies, never the reply to a message that just arrived. With no budget
-  // left to read them, no message is judged answered or waiting this scan.
+  // misses only the oldest replies, never the reply to a message that just arrived.
   const oldest = Math.min(...list.map((item) => Number(item.ts)), now - OVERLAP);
   const mine = spent
     ? null
     : search(ask, { filters: `from:<@${me}>` }, "desc", { from: oldest, seen: [] });
   spent ||= mine?.ended === false;
+  const replies = mine?.found ?? [];
+  // How far back the replies were read: all of them, down to the oldest a cut-off read reached, or
+  // none when the budget left none to read them.
+  const reached = mine?.ended ? -Infinity : Math.min(...replies.map(({ ts }) => Number(ts)));
   const changes: Change[] = [];
   const kept: Waiting[] = [];
   for (const item of list) {
-    if (mine !== null && answered(item, mine.found)) continue;
+    if (answered(item, replies)) continue;
     const age = now - Number(item.ts);
-    if (mine !== null && age >= wait && !item.woke) {
+    if (Number(item.ts) < reached) {
+      // A reply may be among those unread: no wake this scan, and its gathered change leaves, so the
+      // next scan judges it again. Should it have woken the thread already, its change id is among
+      // those delivered or frozen, so it joins no batch twice.
+      kept.push({ ...item, woke: false });
+    } else if (age >= wait && !item.woke) {
       changes.push(
         ctx.change("slack.waiting", {
           ref: refOf(item),
@@ -336,11 +344,11 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
       }),
     );
   }
-  const refs = new Set(kept.map(refOf));
+  const refs = new Set(kept.filter((item) => Number(item.ts) >= reached).map(refOf));
   return {
     section: { cursors, waiting: kept },
     changes,
-    // A gathered DM or mention stays only while it is still unanswered.
+    // A gathered DM or mention stays only while this scan read it as still unanswered.
     still: (item: Change) => item.kind !== "slack.waiting" || refs.has(item.ref),
     ...(stuck !== null
       ? {
