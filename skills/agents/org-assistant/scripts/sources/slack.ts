@@ -10,7 +10,6 @@ import {
   type Infer,
   array,
   boolean,
-  literal,
   nullable,
   number,
   object,
@@ -38,14 +37,22 @@ const THREAD = /[?&]thread_ts=([0-9]+\.[0-9]+)/;
 const CURSOR = /`([A-Za-z0-9+/=_-]{8,})`/;
 const BOTS = new Set(["U00", "USLACKBOT"]);
 
+const HEADER = /^## Messages \((\d+) results?\)/m;
+/** One message for each call when a page has to be read again; one page's re-read stops here. */
+const REREAD = 2 * LIMIT;
+
 const seconds = (name: string, fallback: number) => Number(process.env[name] ?? fallback) * 1000;
 
 /**
- * Where a search's next run starts: `overlap` reaches back OVERLAP from `at`; `resume` continues a
- * cut-off search from its last message, with the same reach-back; `exact` starts at `at` itself,
- * when a cut-off search made no progress past its cursor, so a burst can't replay forever.
+ * Where a search's next run starts: OVERLAP before `at`, the time its last finished read began. A
+ * read cut off at the page budget saves the `after` it asked from, the next page's cursor, and the
+ * last message it reached, and goes on from there at the next scan; once that read is done, `at`
+ * moves to `until`, when it began, so nothing it hadn't reached is skipped.
  */
-const cursor = object({ at: number, reach: literal("overlap", "resume", "exact") });
+const cursor = object({
+  at: number,
+  more: nullable(object({ after: string, page: string, last: nullable(slackTs), until: number })),
+});
 type Cursor = Infer<typeof cursor>;
 
 const waiting = object({
@@ -69,52 +76,75 @@ const page = object({ results: string, pagination_info: optional(nullable(string
 
 type Message = { channel: string; ts: SlackTs; from: string; thread: string | null; dm: boolean };
 
-/**
- * Each record's field lines: from its `### Result N of M` heading up to its `Text:` line. A heading
- * counts only when it numbers on from the one before under the page's own total, so a message body
- * that copies a heading stays part of that message, and is never read.
- */
-export function records(text: string): string[] {
-  const headings: RegExpExecArray[] = [];
-  let expected: number | null = null;
-  let total: number | null = null;
-  for (const match of text.matchAll(RESULT)) {
-    const number = Number(match[1]);
-    const of = Number(match[2]);
-    if ((expected === null || (number === expected && of === total)) && number <= of) {
-      headings.push(match);
-      expected = number + 1;
-      total = of;
-    }
-  }
-  return headings.map((heading, index) => {
-    const end = headings[index + 1]?.index ?? text.length;
-    const body = text.slice(heading.index + heading[0].length, end);
-    return body.split("\nText:")[0] ?? "";
-  });
+/** A failed read of a page the tool sent, named by what failed only. */
+const unreadable = (why: string) => new SourceError(`${TOOL}: unexpected response (${why})`);
+
+/** A record's message, by ids only, from its field lines; null when it lacks one it needs. */
+function messageOf(fields: string): Message | null {
+  const channel = CHANNEL.exec(fields);
+  const ts = TS.exec(fields)?.[1];
+  if (channel === null || ts === undefined || !isSlackTs(ts)) return null;
+  const thread = THREAD.exec(fields)?.[1] ?? null;
+  const label = channel[1] ?? "";
+  return {
+    channel: channel[2] ?? "",
+    ts,
+    from: FROM.exec(fields)?.[1] ?? "",
+    thread: thread !== ts ? thread : null,
+    dm: label.startsWith("DM") || label.startsWith("Group DM"),
+  };
 }
 
-/** A search page as its messages, by ids only, and the next page's cursor. */
-export function messages(
-  text: string,
-  pagination: string,
-): { found: Message[]; next: string | null } {
-  const found: Message[] = [];
-  for (const block of records(text)) {
-    const channel = CHANNEL.exec(block);
-    const ts = TS.exec(block)?.[1];
-    if (channel === null || ts === undefined || !isSlackTs(ts)) continue;
-    const thread = THREAD.exec(block)?.[1] ?? null;
-    const label = channel[1] ?? "";
-    found.push({
-      channel: channel[2] ?? "",
-      ts,
-      from: FROM.exec(block)?.[1] ?? "",
-      thread: thread !== ts ? thread : null,
-      dm: label.startsWith("DM") || label.startsWith("Group DM"),
-    });
+/** A record's field lines: from its heading to its `Text:` line; the message body is never read. */
+const fieldsOf = (text: string, from: number, to: number) =>
+  text.slice(from, to).split("\nText:")[0] ?? "";
+
+/**
+ * A search page: its messages, the number of records it says it holds, and the next page's cursor.
+ * `messages` is null when a message body may have forged a record, since a body can hold anything,
+ * headings included: the headings don't number 1 to that count in order, or a record lacks its
+ * fields. A page with records none of which can be read is a format change, and fails the source.
+ */
+export function readPage(text: string, pagination: string) {
+  const headings = [...text.matchAll(RESULT)];
+  const header = HEADER.exec(text);
+  const count = header === null ? headings.length : Number(header[1]);
+  const records = headings.map((heading, index) =>
+    messageOf(fieldsOf(text, heading.index, headings[index + 1]?.index ?? text.length)),
+  );
+  if (count > 0 && !records.some((record) => record !== null)) {
+    throw unreadable("no record it can read");
   }
-  return { found, next: CURSOR.exec(pagination)?.[1] ?? null };
+  const numbered =
+    headings.length === count &&
+    headings.every(
+      (heading, index) => heading[1] === String(index + 1) && heading[2] === String(count),
+    );
+  const messages = records.filter((record) => record !== null);
+  return {
+    messages: numbered && messages.length === count ? messages : null,
+    count,
+    next: CURSOR.exec(pagination)?.[1] ?? null,
+  };
+}
+
+/**
+ * The message a one-message page holds, or null when the search has none left. Its first record is
+ * the only real one, and everything after that record's `Text:` line is the message's own.
+ */
+export function onlyMessage(text: string): Message | null {
+  const [first] = text.matchAll(RESULT);
+  const header = HEADER.exec(text);
+  if (first === undefined) {
+    if (header === null || header[1] === "0") return null;
+    throw unreadable("a page of one message with no record");
+  }
+  if ((header !== null && header[1] !== "1") || first[1] !== "1" || first[2] !== "1") {
+    throw unreadable("a page of one message that holds more");
+  }
+  const message = messageOf(fieldsOf(text, first.index, text.length));
+  if (message === null) throw unreadable("a message whose record it can't read");
+  return message;
 }
 
 /**
@@ -132,25 +162,72 @@ function call(executor: Executor, input: Record<string, unknown>) {
     [value] = executor.call([{ path: TOOL, input }]);
   }
   const got = read(page, value, TOOL);
-  return messages(got.results, got.pagination_info ?? "");
+  return { results: got.results, pagination: got.pagination_info ?? "" };
+}
+
+/** Where a search goes on: the next page's cursor, and the last message it read. */
+type Place = { page: string | null; last: SlackTs | null };
+type Order = "asc" | "desc";
+
+/** Whether `ts` comes after `last` in the search's order. */
+const past = (ts: SlackTs, last: SlackTs | null, order: Order) =>
+  last === null || (order === "asc" ? Number(ts) > Number(last) : Number(ts) < Number(last));
+
+/**
+ * The `count` messages of a page a body may have forged a record in, read again one per call from
+ * the page's own cursor. Only messages past the last one read before the page count, so a cursor
+ * that addresses pages rather than messages only costs more calls. A page that can't be read even
+ * so fails the source, and the search's saved place stays where it was.
+ */
+function reread(
+  executor: Executor,
+  args: Record<string, unknown>,
+  at: Place,
+  count: number,
+  order: Order,
+): Message[] {
+  const found: Message[] = [];
+  let { page, last } = at;
+  for (let calls = 0; found.length < count && calls < REREAD; calls++) {
+    const got = call(executor, { ...args, limit: 1, ...(page === null ? {} : { cursor: page }) });
+    const message = onlyMessage(got.results);
+    if (message === null) break;
+    if (past(message.ts, last, order)) {
+      found.push(message);
+      last = message.ts;
+    }
+    page = CURSOR.exec(got.pagination)?.[1] ?? null;
+    if (page === null) break;
+  }
+  if (found.length < count) throw unreadable("a page it couldn't read one message at a time");
+  return found;
 }
 
 /**
- * Every message a search finds across up to PAGES pages, and whether it read them all: a page
- * shorter than the limit, or one with no next cursor, is the last. Oldest first means a cut-off
- * search misses only the newest messages, which the next scan reads from where this one stopped.
+ * The messages a search finds on up to PAGES pages from `from`, and where it stopped: `next` is
+ * null once a page shorter than the limit, or one with no next cursor, ended it. Oldest first means
+ * a cut-off search misses only the newest messages, which the next scan reads from where this one
+ * stopped.
  */
-function search(executor: Executor, input: Record<string, unknown>, order: "asc" | "desc" = "asc") {
+function search(
+  executor: Executor,
+  input: Record<string, unknown>,
+  order: Order,
+  from: Place,
+): { found: Message[]; next: { page: string; last: SlackTs | null } | null } {
   const args = { ...input, sort: "timestamp", sort_dir: order };
   const found: Message[] = [];
-  let next: string | null = null;
-  for (let count = 0; count < PAGES; count++) {
-    const got = call(executor, next === null ? args : { ...args, cursor: next });
-    found.push(...got.found);
-    next = got.next;
-    if (next === null || got.found.length < LIMIT) return { found, whole: true };
+  let at = from;
+  for (let pages = 0; pages < PAGES; pages++) {
+    const got = call(executor, at.page === null ? args : { ...args, cursor: at.page });
+    const read = readPage(got.results, got.pagination);
+    const messages = read.messages ?? reread(executor, args, at, read.count, order);
+    found.push(...messages);
+    const last = messages.at(-1)?.ts ?? at.last;
+    if (read.next === null || read.count < LIMIT) return { found, next: null };
+    at = { page: read.next, last };
   }
-  return { found, whole: false };
+  return { found, next: at.page === null ? null : { page: at.page, last: at.last } };
 }
 
 const refOf = (item: { channel: string; ts: string }) => `slack:${item.channel}:${item.ts}`;
@@ -174,9 +251,9 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
   const prev = window.kind === "resume" ? window.prev : null;
   const start = window.kind === "since" ? window.since.getTime() / 1000 : now;
   const cursors: Record<Search, Cursor> = {
-    dm: prev?.cursors.dm ?? { at: start, reach: "overlap" },
-    mention: prev?.cursors.mention ?? { at: start, reach: "overlap" },
-    channels: prev?.cursors.channels ?? { at: start, reach: "overlap" },
+    dm: prev?.cursors.dm ?? { at: start, more: null },
+    mention: prev?.cursors.mention ?? { at: start, more: null },
+    channels: prev?.cursors.channels ?? { at: start, more: null },
   };
   const wait = ctx.schedule.slack_wait_minutes * 60;
   const list = (prev?.waiting ?? []).filter((item) => now - Number(item.ts) < FORGET / 1000);
@@ -190,18 +267,17 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
   const found: Record<Search, Message[]> = { dm: [], mention: [], channels: [] };
   for (const name of SEARCHES) {
     if (name === "channels" && source.channels.length === 0) continue;
-    const from = cursors[name];
-    const after = from.reach === "exact" ? from.at : from.at - OVERLAP;
-    const got = search(executor, { ...COMMON, ...filters[name], after: String(Math.trunc(after)) });
+    const { at, more } = cursors[name];
+    const after = more?.after ?? String(Math.trunc(at - OVERLAP));
+    const input = { ...COMMON, ...filters[name], after };
+    const got = search(executor, input, "asc", {
+      page: more?.page ?? null,
+      last: more?.last ?? null,
+    });
     found[name] = got.found;
-    const last = got.found.at(-1);
-    if (got.whole || last === undefined) {
-      cursors[name] = { at: now, reach: "overlap" };
-    } else {
-      const reached = Number(last.ts);
-      const stuck = from.reach !== "overlap" && reached <= from.at;
-      cursors[name] = { at: Math.max(reached, from.at), reach: stuck ? "exact" : "resume" };
-    }
+    const until = more?.until ?? now;
+    cursors[name] =
+      got.next === null ? { at: until, more: null } : { at, more: { after, ...got.next, until } };
   }
 
   const known = new Set(list.map(refOf));
@@ -224,6 +300,7 @@ function scan(source: SlackSource, window: Window<Section>, ctx: Context) {
     executor,
     { ...COMMON, filters: `from:<@${me}>`, after: String(Math.trunc(oldest)) },
     "desc",
+    { page: null, last: null },
   );
   const changes: Change[] = [];
   const kept: Waiting[] = [];

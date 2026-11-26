@@ -96,7 +96,10 @@ test("a value no real source sends fails that source alone, and the scan goes on
   ];
   org.save();
   const report = org.report("10:05");
-  assert.match(report.health, /^github ok · linear failing ×1 · slack ok · t3 failing ×1 · /);
+  assert.match(
+    report.health,
+    /^github ok · linear failing ×1 · slack failing ×1 · t3 failing ×1 · /,
+  );
   assert.match(
     org.status("10:10"),
     /⚠️ linear: tools\.linear\.list_issues: unexpected response at issues\[0\]\.dueDate$/m,
@@ -105,10 +108,11 @@ test("a value no real source sends fails that source alone, and the scan goes on
     org.status("10:10"),
     /⚠️ t3: T3 threads in \/invented\/project: unexpected response at \[0\]\.snoozedUntil$/m,
   );
-  assert.deepEqual(
-    org.waiting().map((item) => item.channel),
-    ["D0SAM"],
+  assert.match(
+    org.status("10:10"),
+    /⚠️ slack: .*: unexpected response \(a message whose record it can't read\)$/m,
   );
+  assert.deepEqual(org.waiting(), []);
 });
 
 test("an adapter's unexpected error fails its source by the error's type, never its text", () => {

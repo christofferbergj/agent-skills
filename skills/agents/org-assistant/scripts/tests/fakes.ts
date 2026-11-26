@@ -56,6 +56,8 @@ export type SlackMessage = {
   name?: string;
   /** What the record's `Text:` line holds; the fixture leaves message text out by default. */
   text?: string;
+  /** A record the tool sent without its `Message_ts:` line. */
+  broken?: boolean;
 };
 export type Check = { status: string; conclusion: string; name?: string; __typename?: string };
 export type Pr = {
@@ -146,7 +148,7 @@ function slackPage(messages: SlackMessage[], limit: number, offset: number) {
       `Channel: ${label} (ID: ${m.channel})`,
       `From: Invented Person <invented@example.com> (ID: ${m.from}) `,
       "Time: 2026-11-26 10:00:00 CET",
-      `Message_ts: ${m.ts}`,
+      ...(m.broken ? [] : [`Message_ts: ${m.ts}`]),
       `Permalink: [link](https://example.slack.com/archives/${m.channel}/p${m.ts.replace(".", "")}${thread})`,
       `Text: ${m.text ?? "(left out of the fixture)"}`,
       "---",

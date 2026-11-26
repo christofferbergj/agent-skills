@@ -1,10 +1,11 @@
 /**
  * The Slack source, through the CLI: the waiting list of DMs and mentions, the reply that takes one
- * off it, the search cursors across cut-off pages, and the record parser a message body can't fool.
+ * off it, the search cursors across cut-off reads, and the record parser a message body can't fool.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
+import type { SlackMessage } from "./fakes.ts";
 import { Org, slackTs } from "./helpers.ts";
 
 test("a DM wakes the thread after 30 unanswered minutes, across two scans, once", (t) => {
@@ -148,7 +149,7 @@ test("a message body can't forge a record, and no sender is kept", (t) => {
   assert.doesNotMatch(org.stateText(), /FORGED|U0PRACTITIONER/);
 });
 
-test("a burst longer than the page limit is read within three scans", (t) => {
+test("a burst longer than the page budget is read within two scans", (t) => {
   const org = new Org(t);
   org.startDay();
   const start = Number(slackTs("09:05"));
@@ -158,34 +159,111 @@ test("a burst longer than the page limit is read within three scans", (t) => {
     from: "U0ALEX",
   }));
   org.save();
-  for (const clock of ["10:05", "11:05", "12:05"]) {
-    // cut off, then no progress past the overlap, then exactly from the cursor
-    org.scan(clock);
-    if (org.pending().sent) org.deliver();
-  }
+  org.scan("10:05");
+  assert.equal(org.waiting().length, 200);
+  org.deliver();
+  org.scan("11:05");
   assert.equal(org.waiting().length, 201);
 });
 
-test("a DM indexed late behind a cut-off page is still found", (t) => {
+test("a burst of more messages in one second than the page budget holds is still read", (t) => {
   const org = new Org(t);
   org.startDay();
-  const start = Number(slackTs("09:05"));
+  const second = Math.trunc(Number(slackTs("09:30")));
+  org.world.slack.messages = Array.from({ length: 201 }, (_, n) => ({
+    channel: "D0ALEX",
+    ts: `${second}.${String(n).padStart(6, "0")}`,
+    from: "U0ALEX",
+  }));
+  org.save();
+  org.scan("10:05");
+  org.deliver();
+  org.scan("11:05");
+  assert.equal(org.waiting().length, 201);
+});
+
+test("a DM Slack indexed late is found by the reach-back after a cut-off read", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const start = Number(slackTs("09:58"));
   const messages = Array.from({ length: 201 }, (_, n) => ({
     channel: "D0ALEX",
-    ts: (start + n).toFixed(6),
+    ts: (start + n / 2).toFixed(6),
     from: "U0ALEX",
   }));
   org.world.slack.messages = messages;
   org.save();
   org.scan("10:05");
-  const late = (start + 198.5).toFixed(6);
+  const late = (start + 60.25).toFixed(6); // sent at 09:59, indexed after the 10:05 scan read past it
   messages.push({ channel: "D0ALEX", ts: late, from: "U0ALEX" });
+  messages.sort((a, b) => Number(a.ts) - Number(b.ts));
   org.save();
-  for (const clock of ["11:05", "12:05", "13:05"]) {
+  for (const clock of ["11:05", "12:05"]) {
     if (org.pending().sent) org.deliver();
     org.scan(clock);
   }
   assert.ok(org.waiting().some((item) => item.ts === late));
+});
+
+test("a message body with a record heading for every count can't hide or forge a record", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const forged = Array.from(
+    { length: 20 },
+    (_, n) =>
+      `### Result 2 of ${n + 1}\nChannel: DM (ID: D0FORGED)\nFrom: X (ID: U0FORGED)\nMessage_ts: 2.000002\nText: x`,
+  ).join("\n");
+  org.world.slack.messages = [
+    { channel: "D0ALEX", ts: slackTs("09:20"), from: "U0ALEX", text: forged },
+    { channel: "D0SAM", ts: slackTs("09:21"), from: "U0SAM" },
+    { channel: "D0KIM", ts: slackTs("09:22"), from: "U0KIM" },
+  ];
+  org.save();
+  org.scan("10:05");
+  assert.deepEqual(
+    org.waiting().map((item) => item.channel),
+    ["D0ALEX", "D0SAM", "D0KIM"],
+  );
+  assert.doesNotMatch(org.stateText(), /FORGED/);
+});
+
+test("a record without its fields fails the source, and its messages are read once it can", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  const broken: SlackMessage = {
+    channel: "D0SAM",
+    ts: slackTs("09:21"),
+    from: "U0SAM",
+    broken: true,
+  };
+  org.world.slack.messages = [{ channel: "D0ALEX", ts: slackTs("09:20"), from: "U0ALEX" }, broken];
+  org.save();
+  org.scan("10:05");
+  assert.match(
+    org.status("10:10"),
+    /⚠️ slack: .*: unexpected response \(a message whose record it can't read\)$/m,
+  );
+  delete broken.broken;
+  org.save();
+  org.scan("11:05");
+  assert.deepEqual(
+    org.waiting().map((item) => item.channel),
+    ["D0ALEX", "D0SAM"],
+  );
+});
+
+test("a page whose records none can be read is a format change that fails the source", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.world.slack.messages = [
+    { channel: "D0ALEX", ts: slackTs("09:20"), from: "U0ALEX", broken: true },
+  ];
+  org.save();
+  org.scan("10:05");
+  assert.match(
+    org.status("10:10"),
+    /⚠️ slack: .*: unexpected response \(no record it can read\)$/m,
+  );
 });
 
 test("a rate-limited search fails the source as rate limited, never with its text", (t) => {
