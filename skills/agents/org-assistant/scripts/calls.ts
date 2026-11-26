@@ -1,8 +1,8 @@
 /**
  * The scan's only ways out: Executor tool calls through `probe.ts`, and the `gh` and `t3` CLIs.
  * Every Executor call must name a tool the profile's source lists under `tools` and must not look
- * like a write, so a profile typo can't make the scan change a source. Every response is parsed here
- * or by its adapter before anything reads it, and a shape the parser doesn't know fails its source.
+ * like a write, so a profile typo can't make the scan change a source. Each response is parsed,
+ * here or in its adapter, before anything reads it; a shape the parser doesn't know fails a source.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, statSync } from "node:fs";
@@ -89,7 +89,9 @@ export function runJson<T>(
   throw new SourceError(`${what}: no JSON in its output`);
 }
 
-/** How a source reaches Executor: the command, the account, the repository to call from, its tools. */
+/**
+ * How a source reaches Executor: the command, the account, the repository to call from, its tools.
+ */
 export type ExecutorSource = { command: string[]; account: string; repo?: string; tools: string[] };
 export type ToolCall = { path: string; input: Record<string, unknown> };
 

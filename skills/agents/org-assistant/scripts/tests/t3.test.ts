@@ -1,6 +1,6 @@
 /**
- * The T3 source, through the CLI: every thread in the organisation's projects wakes the assistant on
- * its status, by the tiers in the kinds table, and only the threads the user would want to hear about.
+ * The T3 source, through the CLI: each thread in the organisation's projects wakes the assistant on
+ * its status, by the tiers in the kinds table, and only the threads the user wants to hear about.
  */
 import assert from "node:assert/strict";
 import { test } from "node:test";

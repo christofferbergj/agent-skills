@@ -1,4 +1,4 @@
-/** `assistant.ts status`, through the CLI: the health line and each warning, timed by the profile's schedule. */
+/** `assistant.ts status`, through the CLI: the health line and each warning, timed by schedule. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

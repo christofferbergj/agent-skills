@@ -1,7 +1,7 @@
 /**
- * An organisation's profile, `~/.config/org-assistant/<org>/profile.json`, parsed and checked when it
- * loads, so a broken profile fails only its own organisation and nothing past this file re-checks it.
- * `references/state.md` shows a whole profile.
+ * An organisation's profile, `~/.config/org-assistant/<org>/profile.json`, parsed and checked when
+ * it loads, so a broken profile fails only its own organisation and nothing past this file
+ * re-checks it. `references/state.md` shows a whole profile.
  */
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
@@ -143,7 +143,7 @@ export type LinearSource = Infer<typeof linear> & ViaExecutor;
 export type SlackSource = Infer<typeof slack> & ViaExecutor;
 export type GithubSource = Infer<typeof github>;
 export type T3Source = Infer<typeof t3>;
-/** A source whose kind has no adapter yet; it fails on every scan, so the gap shows in the health line. */
+/** A kind with no adapter yet: it fails every scan, so the gap shows in the health line. */
 export type UnbuiltSource = { kind: "unbuilt"; name: string; wanted: string };
 export type Source = LinearSource | SlackSource | GithubSource | T3Source | UnbuiltSource;
 

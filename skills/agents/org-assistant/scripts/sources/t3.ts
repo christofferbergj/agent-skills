@@ -134,7 +134,7 @@ function scan(source: T3Source, window: Window<Section>, ctx: Context) {
   return {
     section: { threads },
     changes,
-    // A gathered wait, failure, or stall stays only while the thread is still watched and as it was.
+    // A gathered wait, failure, or stall stays only while its thread is watched and unchanged.
     still: (item: Change) => {
       const id = item.ref.slice("t3:".length);
       const current = threads[id];

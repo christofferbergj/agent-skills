@@ -10,7 +10,7 @@ import type { Pending, SentBatch, Slot } from "./pending.ts";
 import type { Schedule } from "./profile.ts";
 import { type Clock, type Local, MINUTE, parseTime } from "./time.ts";
 
-/** A scan from the timer, one inside the assistant's own run ("scan now"), or one that writes nothing. */
+/** The timer's scan, a "scan now" inside the assistant's run, or a dry run that writes nothing. */
 export type Mode = "timer" | "inline" | "dry";
 
 /** The assistant thread as the scan read it. */
@@ -37,7 +37,9 @@ function held(hold: Holds, kind: SentBatch["kind"]): boolean {
   return hold.paused !== null || (kind === "delta" && hold.quiet !== null);
 }
 
-/** Whether today's overview is owed by `at`: a weekday in the window, past `from`, outside a pause. */
+/**
+ * Whether today's overview is owed by `at`: a weekday in the window, past `from`, outside a pause.
+ */
 export function overviewOwed(
   at: Local,
   schedule: Schedule,

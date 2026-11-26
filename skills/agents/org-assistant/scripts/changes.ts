@@ -41,7 +41,9 @@ const field = object(
 );
 const team = object({ team: string, who: string, finished: boolean }, strict);
 const newInTeam = object({ team: string, who: string, new: literal(true) }, strict);
-/** A T3 thread by its id, link, status, and item count; one the assistant started names its ticket. */
+/**
+ * A T3 thread by its id, link, status, and item count; one the assistant started names its ticket.
+ */
 const thread = oneOf(
   object({ status: string, link: string, items: count, started: literal(false) }, strict),
   object(
@@ -113,7 +115,9 @@ export type ChangeKind = keyof typeof KINDS;
 export type Detail<K extends ChangeKind> = Infer<(typeof KINDS)[K]["detail"]>;
 
 type Item<K extends ChangeKind> = {
-  /** The same however often the scan sees the same event, so a replay after a crash adds it once. */
+  /**
+   * The same however often the scan sees the same event, so a replay after a crash adds it once.
+   */
   id: string;
   kind: K;
   /** What changed: a ticket id, `owner/repo#12`, `slack:<channel>:<ts>`, or `t3:<thread>`. */
@@ -133,8 +137,8 @@ export type ChangeFields<K extends ChangeKind> = {
   ref: string;
   at: string;
   /**
-   * What tells this event from another of the same kind and ref; the time by default. A count,
-   * such as a team's moves, takes the scan window's start: one item per window, which the post sums.
+   * What tells this event from another of the same kind and ref; the time by default. A count, such
+   * as a team's moves, takes the scan window's start: one item per window, which the post sums.
    */
   key?: string;
   scope?: string;
@@ -206,7 +210,9 @@ export function gather(items: Change[], found: Change[], skip: ReadonlySet<strin
 
 export type Mute = { ref: string; until: string | null };
 
-/** A mute names a ref (`ENG-12`, `owner/repo#3`), a scope (`slack:C123`), or a kind, until a time. */
+/**
+ * A mute names a ref (`ENG-12`, `owner/repo#3`), a scope (`slack:C123`), or a kind, until a time.
+ */
 export function muted(item: Change, mutes: Mute[], now: Date): boolean {
   return mutes.some(
     (mute) =>

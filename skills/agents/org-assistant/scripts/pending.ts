@@ -29,7 +29,9 @@ const sent = object({
   kind: literal("overview", "delta"),
   items: array(changeParser),
   frozen_at: string,
-  /** Each wake that carried it; `ok` is null while its send runs, so a crash mid-send still counts. */
+  /**
+   * Each wake that carried it; `ok` is null while its send runs, so a crash mid-send still counts.
+   */
   tries: array(tryParser),
   /** Why it woke the thread, for the wake message. */
   reason: string,

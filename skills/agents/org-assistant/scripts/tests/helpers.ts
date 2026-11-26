@@ -234,7 +234,9 @@ export class Org {
     return join(this.root, "state", "acme", name);
   }
 
-  /** Everything the scan and the ledger wrote, as one text, for checks on what it must never hold. */
+  /**
+   * Everything the scan and the ledger wrote, as one text, for checks on what it must never hold.
+   */
   stateText(): string {
     const folder = join(this.root, "state", "acme");
     return readdirSync(folder)

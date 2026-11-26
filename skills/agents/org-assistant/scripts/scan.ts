@@ -115,7 +115,9 @@ function counts(items: Change[]): Record<string, number> {
   return out;
 }
 
-/** The message that wakes the assistant thread: the batch's id, why now, and its refs, never text. */
+/**
+ * The message that wakes the assistant thread: the batch's id, why now, and its refs, never text.
+ */
 export function wakeMessage(
   org: string,
   batch: SentBatch,
@@ -144,7 +146,9 @@ type Scan = {
   profile: Profile;
   now: Date;
   at: Local;
-  /** The organisation's first scan, which records a baseline; `--since` stands in for a snapshot. */
+  /**
+   * The organisation's first scan, which records a baseline; `--since` stands in for a snapshot.
+   */
   first: boolean;
   since: number | null;
   ledger: Ledger;

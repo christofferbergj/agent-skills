@@ -1,6 +1,6 @@
 /**
- * snapshot.json: each source's section (its cursors and fingerprints, which only its adapter reads),
- * each source's health, the first attempt of a source that hasn't succeeded yet, and the last scan.
+ * snapshot.json: each source's section, its cursors and fingerprints, which only its adapter reads;
+ * each source's health; the first attempt of a source not yet read; and the last scan's time.
  */
 import {
   type Infer,
@@ -27,7 +27,9 @@ const health = oneOf(
     at: nullable(string),
     failures: count,
     error: literal("auth", "failed"),
-    /** What failed and its category, such as `Executor call: sign-in expired`, never a tool's text. */
+    /**
+     * What failed and its category, such as `Executor call: sign-in expired`, never a tool's text.
+     */
     message: string,
   }),
 );

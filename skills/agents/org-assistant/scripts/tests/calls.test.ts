@@ -1,4 +1,6 @@
-/** The scan's ways out: what reaches Executor and the CLIs, and what a failure keeps of its text. */
+/**
+ * The scan's ways out: what reaches Executor and the CLIs, and what a failure keeps of its text.
+ */
 import assert from "node:assert/strict";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -11,7 +13,7 @@ import { array, number, object, string } from "../parse.ts";
 
 const FAKES = join(dirname(fileURLToPath(import.meta.url)), "fakes.ts");
 
-/** An Executor on the fake probe, for a source that lists `listed` and an adapter that names `named`. */
+/** An Executor on the fake probe, for a source listing `listed` and an adapter naming `named`. */
 function fakeExecutor(t: { after(fn: () => void): void }, listed: string[], named = listed) {
   const fake = mkdtempSync(join(tmpdir(), "org-assistant-calls-"));
   t.after(() => rmSync(fake, { recursive: true, force: true }));

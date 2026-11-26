@@ -116,7 +116,10 @@ function fromWall(wall: Wall, zone: string): Date {
 const ISO =
   /^(\d{4})-(\d{2})-(\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:\.(\d+))?)?)?(Z|[+-]\d{2}:?\d{2})?$/;
 
-/** An ISO time as written, before a timezone reads it: its wall clock, and its offset if it names one. */
+/**
+ * An ISO time as written, before a timezone reads it: its wall clock, and its offset if it names
+ * one.
+ */
 export type Written = { wall: Wall; ms: number; offset: number | null };
 
 /** The parts of an ISO time such as `2026-11-26T14:00` or `2026-11-26T09:05:00Z`, or null. */
@@ -149,7 +152,10 @@ export function instantOf(written: Written, zone: string): Date {
   return new Date(wallMs(wall) + ms - offset * 60_000);
 }
 
-/** An ISO time, such as `2026-11-26T09:05:00Z`; one without an offset is a wall-clock time in `zone`. */
+/**
+ * An ISO time, such as `2026-11-26T09:05:00Z`; one without an offset is a wall-clock time in
+ * `zone`.
+ */
 export function parseTime(text: string, zone = "UTC"): Date | null {
   const written = readTime(text);
   return written === null ? null : instantOf(written, zone);

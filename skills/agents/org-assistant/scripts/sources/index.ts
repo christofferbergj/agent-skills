@@ -17,8 +17,8 @@ import { t3 } from "./t3.ts";
 
 /**
  * Where a source's scan starts. `resume` compares with the source's last section; a source with no
- * section yet records a `baseline` on the organisation's first scan and returns no changes, or counts
- * changes `since` a time: its first attempt, or the start `--since` gives.
+ * section yet records a `baseline` on the organisation's first scan and returns no changes, or
+ * counts changes `since` a time: its first attempt, or the start `--since` gives.
  */
 export type Window<S> =
   | { kind: "resume"; prev: S }

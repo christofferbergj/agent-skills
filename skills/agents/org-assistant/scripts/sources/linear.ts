@@ -1,7 +1,7 @@
 /**
  * Linear: the user's inbox as the event feed, their open tickets with relations and status history,
- * the tickets those depend on, and each listed team's changes since the last scan. Reads only; never
- * marks an inbox item read. Keeps ids, states, and staff names, never titles.
+ * the tickets those depend on, and each listed team's changes since the last scan. Reads only;
+ * never marks an inbox item read. Keeps ids, states, and staff names, never titles.
  */
 import { Executor, read } from "../calls.ts";
 import type { Change } from "../changes.ts";
@@ -329,7 +329,7 @@ function scan(source: LinearSource, window: Window<Section>, ctx: Context) {
   for (const [ref, issue] of Object.entries(mine))
     for (const blockerRef of issue.blockedBy) blocks(blockerRef, ref);
   for (const pair of ctx.ledger.depends) if (pair.ticket in mine) blocks(pair.on, pair.ticket);
-  // A blocker this scan can't read keeps its last state, so one deleted ticket can't stop the source.
+  // A blocker this scan can't read keeps its last state: one deleted ticket can't stop the source.
   const order = [...depends.keys()].sort();
   const fetched = executor.callEach(
     order.map((id) => ({

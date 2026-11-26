@@ -1,4 +1,4 @@
-/** The GitHub source, through the CLI: the user's PRs, review requests, issues, other PRs, and releases. */
+/** The GitHub source, through the CLI: PRs, review requests, issues, and releases. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
 

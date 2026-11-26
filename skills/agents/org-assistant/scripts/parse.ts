@@ -110,8 +110,8 @@ export function record<T>(item: Parser<T>): Parser<Record<string, T>> {
 }
 
 /**
- * An object with the fields `shape` names. Other fields are ignored, as a source's response may grow
- * them, unless `strict`, as for the profile, where an unknown field is most often a typo.
+ * An object with the fields `shape` names. Other fields are ignored, as a source's response may
+ * grow them, unless `strict`, as for the profile, where an unknown field is most often a typo.
  */
 export function object<S extends Shape>(
   shape: S,

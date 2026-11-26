@@ -40,7 +40,9 @@ export const ledgerParser = object({
   call: nullable(call),
   queue: list(object({ text: string, queued: string })),
   serial: withDefault(count, 0),
-  /** The call cleared last with nothing queued, which the next call names as the one it replaced. */
+  /**
+   * The call cleared last with nothing queued, which the next call names as the one it replaced.
+   */
   cleared: nullable(string),
   dropped: list(
     object({
@@ -86,7 +88,7 @@ export type Command = {
   ): Outcome;
 };
 
-/** A command whose positional arguments and options are read by parsers, in the order `args` names them. */
+/** A command whose arguments and options are read by parsers, positionals in `args` order. */
 function command<A extends Shape, O extends Shape = {}>(spec: {
   args: A;
   options?: O;
@@ -144,7 +146,7 @@ function openNext(ledger: Ledger, now: Date, replaced: string | null): Ledger {
   };
 }
 
-/** `call clear` and `call drop`: settles the open call by its id; a repeat leaves the next call alone. */
+/** `call clear` and `call drop` settle the open call by its id; a repeat leaves the next alone. */
 function settleCall(how: "clear" | "drop", help: string): Command {
   return command({
     args: { id: string },

@@ -1,8 +1,8 @@
 /**
- * Where an organisation's profile and state live, and how the files are read and written. Each state
- * file has one writer: the scan writes snapshot.json, pending.json, and scan.stamp; the model writes
- * ledger.json through `assistant.ts ledger`. Every write replaces its file atomically, and `.lock`
- * keeps a timer scan and an inline scan from running at once.
+ * Where an organisation's profile and state live, and how the files are read and written. Each
+ * state file has one writer: the scan writes snapshot.json, pending.json, and scan.stamp; the model
+ * writes ledger.json through `assistant.ts ledger`. Every write replaces its file atomically, and
+ * `.lock` keeps a timer scan and an inline scan from running at once.
  */
 import {
   closeSync,
@@ -102,7 +102,9 @@ const sorted = (_key: string, value: unknown) =>
     ? Object.fromEntries(Object.entries(value).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
     : value;
 
-/** Replaces `file` with `text` in one step: a crash leaves the old file or the new one, never half. */
+/**
+ * Replaces `file` with `text` in one step: a crash leaves the old file or the new one, never half.
+ */
 export function writeText(file: string, text: string): void {
   mkdirSync(dirname(file), { recursive: true });
   const temporary = join(dirname(file), `.${process.pid}.${Date.now()}.tmp`);

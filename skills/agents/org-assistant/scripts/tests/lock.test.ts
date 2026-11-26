@@ -1,4 +1,6 @@
-/** `.lock`: one scan of an organisation at a time, and a lock its process left behind is taken over. */
+/**
+ * `.lock`: one scan of an organisation at a time, and a lock its process left behind is taken over.
+ */
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, utimesSync, writeFileSync } from "node:fs";

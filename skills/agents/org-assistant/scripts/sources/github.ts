@@ -93,7 +93,7 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
   // The start of what this scan covers. A transition this scan sees for the first time is keyed by
   // it: a replay after a crash keeps the key, and the next transition gets a new one.
   const key = prev?.at ?? since ?? now;
-  /** Whether `id` is new since the last scan; with no list yet, whether it was created since `--since`. */
+  /** New since the last scan; with no list yet, created after the `--since` start. */
   const isNew = (before: string[] | undefined, id: string, created: string | null) =>
     before !== undefined ? !before.includes(id) : since !== null && (created ?? "") >= since;
   const waits = new Map<string, string[]>();
@@ -119,7 +119,7 @@ function scan(source: GithubSource, window: Window<Section>, ctx: Context) {
         state.mine[String(pr.number)] = seen;
         const was = old.mine?.[String(pr.number)];
         const at = pr.updatedAt ?? now;
-        // A PR first seen after the baseline counts its state now as new: one already red still wakes.
+        // A PR first seen after the baseline counts its state as new: one opened red still wakes.
         if (
           baseline ||
           (was === undefined && old.mine === undefined && !(since !== null && at >= since))

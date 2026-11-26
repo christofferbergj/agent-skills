@@ -1,4 +1,4 @@
-/** `assistant.ts ledger`, through the CLI: each command, and that running one twice changes nothing more. */
+/** `assistant.ts ledger`, through the CLI: each command, and that a repeat changes nothing more. */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";

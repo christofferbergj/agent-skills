@@ -21,7 +21,7 @@ Linear and Slack go through Executor's `probe.ts`, from the repository the sourc
 
 ## Kinds
 
-`KINDS` in `scripts/changes.ts` gives each kind its tier, as [the wake rules](rules.md#what-wakes-the-thread) define them, and marks the urgent ones that still wake on a weekend and past the day's sixth delta. Two kinds need a judgement the scan makes:
+`KINDS` in `scripts/changes.ts` gives each kind its tier, as [the wake rules](rules.md#what-wakes-the-thread) define them, and marks the urgent ones that still wake on a weekend and past the day's sixth delta. Three kinds need a judgement the scan makes:
 
 - A status change on the user's ticket counts as someone else's (`ticket.changed`) when the inbox holds a status notification for it, and as the user's own (`ticket.moved`, pulse) when it doesn't. A ticket closed or reassigned since the last scan still counts as theirs.
 - Linear's tools don't say who changed a priority or due date, so those always count as `ticket.changed`, marked `by: unknown`.
@@ -39,7 +39,7 @@ When the wake policy, `nextStep` in `scripts/policy.ts`, calls for a wake, the s
 
 - **A busy thread** (running, starting, or waiting) gets nothing: the scan holds new wakes and resends until the thread is idle. Quiet holds a resent delta and pause holds any resend, as they hold new wakes.
 - **An undelivered batch** on an idle thread is sent once more at the next scan. After two tries it stops waking and exits 1, failing its unit, which the server's health alert pushes to the phone. A `t3 thread send` that exits non-zero is a failed try.
-- **A source**, or the assistant thread itself, that fails three scans in a row exits 1 the same way. A failed source keeps its last good section, so its changes arrive once it recovers; one that has never succeeded counts from its first attempt. An error shows as its category only: `sign-in expired`, `rate limited`, or `failed` with its HTTP status, since a tool's error text can quote what it was reading.
+- **A source**, or the assistant thread itself, that fails three scans in a row exits 1 the same way. A failed source keeps its last good section, so its changes arrive once it recovers; one that has never succeeded counts from its first attempt. An error shows as its category only: `sign-in expired`, `rate limited`, `failed` with its HTTP status, or `unexpected response` with the field whose shape the scan doesn't know, since a tool's error text can quote what it was reading. A profile or state file the scan can't read fails only its own organisation.
 - **The stamp**: every scan writes `scan.stamp`. `assistant.ts status` warns when it is over 90 minutes old from 15 minutes after the window opens to its end, and when no overview was delivered within 30 minutes of the overview's time on a weekday outside a pause: 09:15 and 09:30 with the default schedule.
 - **A missed scan** loses nothing: cursors move only when a scan succeeds, and the overview and batch slots go out at the first scan after their time. One scan reads at most 1,000 Linear inbox items and 200 Slack messages per search. Each Slack search keeps its own cursor and reaches back 10 minutes for messages Slack indexed late; a cut-off one resumes where it stopped at the next scan, and exactly there when the reach-back made no progress.
 
