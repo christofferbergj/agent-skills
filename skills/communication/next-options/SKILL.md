@@ -10,9 +10,9 @@ The user skims replies and answers a choice with a letter. Follow these rules on
 
 ## Pick the ending
 
-Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act ("can you…?") is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit, made through /pstack-mode unless the mode is on, a coordinator owns the work, or the edit is trivial or agent config. When the turn ends, pick its ending by who moves next.
+Keep working through reversible steps inside the agreed scope, as /principle-never-block-on-the-human describes. A question asking you to act is an instruction: do it. A question about which, when, whether, or why gets an answer, and a change it implies becomes option `a` rather than an edit, made through /pstack-mode unless the mode is on, a coordinator owns the work, or the edit is trivial or agent config. When the turn ends, pick its ending by who moves next.
 
-**You** move next when something you started will wake you: a subagent, delegated task, workflow, background command, or watch. End with a plain next step: one sentence of what you will do and what it waits on, as in `**Next**: I'll write the report when the exploration agent finishes.` Add `Nothing needed from you.` unless the reply already says so. When nothing will wake you, keep working in this turn.
+**You** move next when something you started will wake you: a subagent, delegated task, workflow, background command, or watch. End with a plain next step: one sentence of what you'll do and what it waits on, as in `**Next**: I'll write the report when the exploration agent finishes.` Add `Nothing needed from you.` unless the reply already says so. When nothing will wake you, keep working in this turn.
 
 **The user** moves next when the work waits for their answer. End with lettered options, by Format:
 
@@ -20,11 +20,11 @@ Keep working through reversible steps inside the agreed scope, as /principle-nev
 - after answering a question or a read-only request, when a follow-up needs their choice; or
 - when only CI, bots, other people's reviews, or threads you didn't start are left, and nothing you started will wake you.
 
-When the user's answer is needed while your own work runs, say in one line what is still running, then end with the options.
+When the user's answer is needed while your own work runs, say in one line what is still running, then end with options.
 
-**Nobody** moves next when the work is finished. End with **Done**, without options, and one line naming what is still open, or that nothing is. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
+**Nobody** moves next when no found work is left to do or offer: an unblocked defect, cleanup, or follow-up seen in this task, named with its effect, not one you'd go looking for. Do it now if reversible and in scope; offer the rest as `a` unless Leave out drops it. Otherwise end with **Done**, without options, and one line naming each open item and why it's open, or that none is. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
 
-**Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. For a scope, interface, or product call it leaves to the user, apply a default and report it with its reason and, in plain words, what they could say instead, without a letter to type back. Every other point only the user can pass, from the list above, still waits for them and ends with lettered options.
+**Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. For a scope, interface, or product call it leaves to the user, apply a default and report its reason and, in plain words, what they could say instead, with no letter to type back. Every other point only the user can pass still ends with lettered options.
 
 ## Format
 
@@ -35,13 +35,13 @@ When the user's answer is needed while your own work runs, say in one line what 
 - `b` → no: fix only the currency column
 ```
 
-- **One or two options**, each at most 12 words. A report's `a` stands alone, and the user steers in their own words; `b` appears only on a yes-or-no call, such as /reply-shape's decision card, as the no and the smallest option, or as Waiting's /babysit-and-ship. The options are the turn's only question, so the reply doesn't also end on "Should I…?".
-- **Only real choices**: each option waits for the user's pick. Work you will do anyway, even a single remaining step, goes in the plain next step.
+- **One or two options**, each at most 12 words. A report's `a` stands alone, and the user steers in their own words; `b` appears only on a yes-or-no call, as the no and the smallest option, or as Waiting's /babysit-and-ship. The options are the turn's only question, so the reply doesn't also end on "Should I…?".
+- **Only real choices**: each option waits for the user's pick. Work you'll do anyway, even a single remaining step, goes in the plain next step.
 - **`a` is the recommendation**: bold only its option text and add the italic tag. It serves the session's goal and names every push, post, PR, or issue it creates in a word or two, as in `…, then push`. The option names the action; its plan stays with you. It creates no issue, messages no person, and changes no PR's state unless the user asked for that this session.
 - **Each option** is a step the user would naturally take next, in plain words that make sense on their own. Name each item in options, summaries, and handoffs. Build options on PR, CI, thread, or issue state checked this turn, and drop what that state makes moot.
 - **Do it yourself**: an option is never a step for the user while a CLI, an MCP server such as Executor, or computer control could do it. Hand over only credentials, payment, or physical actions, and say why.
-- **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. A Workflow handoffs line that still applies, such as the /thermos line on a draft PR, outranks the watch: its stage is `a` and its `b` follows that line, even while checks run and though the skill it names waits for the user's pick. When nothing else is left and the PR has checks, bots, or reviews still to report, `a` is the watch (`watch_pull_request` in T3 Code); with none, a watch has nothing to wake on. Beside a watch, or an `a` that marks a PR ready, `b` is /babysit-and-ship; beside one that opens a PR, off a yes-or-no call, that `a`, then the /thermos line's `b`, else /babysit-and-ship.
-- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>` (or beside this skill, if installed elsewhere). On `verdict: person`, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), list each item with its link as something only the user can do, and end with options. An `info` line is an item the repository doesn't require that may never finish, such as a stalled outside status or a check outside GitHub Actions skipped on the draft, so it never holds the watch. On `verdict: ready`, the merge is a point only the user can pass, unless a merge workflow such as /babysit-and-ship holds their go and merges.
+- **Waiting**: when the next step waits on CI, bots, builds, or other threads, do the next independent work in scope first. A Workflow handoffs line that still applies, such as the /thermos line on a draft PR, outranks the watch: its stage is `a` and its `b` follows that line, even while checks run and though the skill it names waits for the user's pick. When nothing else is left and the PR has checks, bots, or reviews still to report, `a` is the watch (`watch_pull_request` in T3 Code); with none, offer no watch. Beside a watch, or an `a` that marks a PR ready, `b` is /babysit-and-ship; beside one that opens a PR, off a yes-or-no call, that `a`, then the /thermos line's `b`, else /babysit-and-ship.
+- **Manual checks**: before you end a turn on a PR watch, including after each wake, run `node ~/.agents/skills/next-options/scripts/pr-waiting-on.ts <PR>` (or this skill's `scripts/`). On `verdict: person`, the user moves next even while other checks run: stop the watch (`unwatch_pull_request` in T3 Code), list each item with its link as something only the user can do, and end with options. An `info` line is an item the repository doesn't require that may never finish, such as a stalled outside status, so it never holds the watch. On `verdict: ready`, the merge is a point only the user can pass, unless a merge workflow such as /babysit-and-ship holds their go and merges.
 - **Leave out** filler such as stop, done, list what's open, or something else, and any option the user passed over in both of the last two lists, including a past `a`, though not the babysit-and-ship `b`.
 
 ## Answers
@@ -57,7 +57,7 @@ When a stage of this library's flows finishes, the usual `a` is the next stage t
 - /to-tickets → /implement-spec, or /coordinator for a multi-PR graph
 - /wayfinder → /to-spec for the destination it charted
 - A Pstack prototype → build the recommended variant through Pstack's Feature playbook, or /architect for its shape
-- Code no /review-loop or /thermos pass has seen, off the /thermos line → /review-loop over it, fix its findings, then the step that ships it, such as a PR update or merge; it isn't **Done** before that
+- Code no /review-loop or /thermos pass has seen, off the /thermos line → /review-loop over it, fix its findings, then the step that ships it; it isn't **Done** before that
 - Implementation with review findings open → fix them and re-review
 - A Clean review without a PR → open a draft PR through /pr
 - A draft PR with code /thermos hasn't seen → /thermos, fix in-scope findings, re-review them with /review-loop, then mark it ready
