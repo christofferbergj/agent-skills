@@ -14,7 +14,10 @@
         "id": "ENG-101",
         "status": "In Progress",
         "statusType": "started",
-        "priority": { "value": 2, "name": "High" },
+        "priority": {
+          "value": 2,
+          "name": "High"
+        },
         "dueDate": null,
         "assigneeId": "u-me",
         "updatedAt": "2026-11-25T08:00:00.000Z",
@@ -25,7 +28,10 @@
         "id": "ENG-102",
         "status": "Todo",
         "statusType": "unstarted",
-        "priority": { "value": 3, "name": "Medium" },
+        "priority": {
+          "value": 3,
+          "name": "Medium"
+        },
         "dueDate": null,
         "assigneeId": "u-me",
         "updatedAt": "2026-11-25T08:00:00.000Z",
@@ -36,10 +42,17 @@
     "issues": {
       "ENG-101": {
         "id": "ENG-101",
-        "relations": { "blocks": [], "blockedBy": [], "relatedTo": [] },
+        "relations": {
+          "blocks": [],
+          "blockedBy": [],
+          "relatedTo": []
+        },
         "stateHistory": [
           {
-            "state": { "name": "In Progress", "type": "started" },
+            "state": {
+              "name": "In Progress",
+              "type": "started"
+            },
             "startedAt": "2026-11-24T08:00:00.000Z",
             "endedAt": null
           }
@@ -49,12 +62,20 @@
         "id": "ENG-102",
         "relations": {
           "blocks": [],
-          "blockedBy": [{ "id": "ENG-200", "title": "left out" }],
+          "blockedBy": [
+            {
+              "id": "ENG-200",
+              "title": "left out"
+            }
+          ],
           "relatedTo": []
         },
         "stateHistory": [
           {
-            "state": { "name": "Todo", "type": "unstarted" },
+            "state": {
+              "name": "Todo",
+              "type": "unstarted"
+            },
             "startedAt": "2026-11-24T08:00:00.000Z",
             "endedAt": null
           }
@@ -109,26 +130,51 @@
       "issues": []
     },
     "example/api": {
-      "open": [{ "number": 21, "createdAt": "2026-11-20T08:00:00Z" }],
+      "open": [
+        {
+          "number": 21,
+          "createdAt": "2026-11-20T08:00:00Z"
+        }
+      ],
       "releases": [
-        { "tagName": "v1.0.0", "publishedAt": "2026-11-20T08:00:00Z", "isDraft": false }
+        {
+          "tagName": "v1.0.0",
+          "publishedAt": "2026-11-20T08:00:00Z",
+          "isDraft": false
+        }
       ],
       "requested": []
     }
   },
   "t3": {
-    "assistant": { "threadId": "t-assistant", "status": "completed", "last": "" },
+    "assistant": {
+      "threadId": "t-assistant",
+      "status": "completed",
+      "last": ""
+    },
     "threads": [
       {
         "threadId": "t-assistant",
         "status": "completed",
         "settled": false,
+        "snoozed": false,
+        "snoozedUntil": null,
+        "parentThreadId": null,
+        "itemCount": 40,
+        "latestRunId": "r-assistant-1",
+        "createdAt": "2026-11-20T08:00:00Z",
         "updatedAt": "2026-11-25T08:00:00Z"
       },
       {
         "threadId": "t-other",
         "status": "completed",
         "settled": false,
+        "snoozed": false,
+        "snoozedUntil": null,
+        "parentThreadId": null,
+        "itemCount": 12,
+        "latestRunId": "r-other-1",
+        "createdAt": "2026-11-24T08:00:00Z",
         "updatedAt": "2026-11-25T08:00:00Z",
         "link": "https://example.invalid/t-other"
       }

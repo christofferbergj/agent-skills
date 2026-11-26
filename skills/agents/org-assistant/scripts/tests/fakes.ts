@@ -81,14 +81,15 @@ export type T3Thread = {
   threadId: string;
   status: string;
   settled: boolean;
+  snoozed: boolean;
+  snoozedUntil: string | null;
+  parentThreadId: string | null;
+  itemCount: number;
+  latestRunId: string | null;
+  createdAt: string;
   updatedAt: string;
   link?: string;
   archived?: boolean;
-  snoozed?: boolean;
-  snoozedUntil?: string | null;
-  parentThreadId?: string | null;
-  itemCount?: number;
-  latestRunId?: string | null;
 };
 export type World = {
   _about?: string;

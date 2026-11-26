@@ -8,12 +8,12 @@ Read when changing the scan, reading its log, installing its timer, or adding a 
 
 Each `[[sources]]` entry in the profile names a `kind`, and each kind has one adapter in `scripts/orgscan/sources/`:
 
-| Kind     | Reads                                                                                                                                                                                               |
-| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `linear` | The user's inbox as the event feed (never marked read), their open tickets with relations and status history, the tickets those are blocked by, and each listed team's changes since the last scan. |
-| `slack`  | DMs and mentions, kept on a waiting list until the user answers, and a message count for the confirmed channels. Searches run one at a time, oldest first, since Slack limits bursts.               |
-| `github` | Per repository, as its flags say: the user's open PRs with reviews and checks, review requests, issues, other open PRs, and releases, through `gh`.                                                 |
-| `t3`     | Threads in the organisation's projects that wait on the user, and the threads the assistant started.                                                                                                |
+| Kind     | Reads                                                                                                                                                                                                                    |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `linear` | The user's inbox as the event feed (never marked read), their open tickets with relations and status history, the tickets those are blocked by, and each listed team's changes since the last scan.                      |
+| `slack`  | DMs and mentions, kept on a waiting list until the user answers, and a message count for the confirmed channels. Searches run one at a time, oldest first, since Slack limits bursts.                                    |
+| `github` | Per repository, as its flags say: the user's open PRs with reviews and checks, review requests, issues, other open PRs, and releases, through `gh`.                                                                      |
+| `t3`     | Every thread in the organisation's projects but the assistant thread and settled, snoozed, archived, and child threads: its status and item count, so the scan sees when one waits, fails, finishes, stalls, or appears. |
 
 Linear and Slack go through Executor's `probe.ts`, from the repository the source names, and only through the tools both the adapter and the source's `tools` list name; a source without `tools` calls nothing, and a tool whose name reads as a write (`mark_`, `save_`, `send`, `draft`, and the like) is refused even when listed. Every adapter keeps ids, states, counts, and staff names only, never a title or a message body.
 
@@ -25,14 +25,15 @@ Linear and Slack go through Executor's `probe.ts`, from the repository the sourc
 
 - A status change on the user's ticket counts as someone else's (`ticket.changed`) when the inbox holds a status notification for it, and as the user's own (`ticket.moved`, pulse) when it doesn't. A ticket closed or reassigned since the last scan still counts as theirs.
 - Linear's tools don't say who changed a priority or due date, so those always count as `ticket.changed`, marked `by: unknown`.
+- A T3 thread is `thread.stalled` once it has run for an hour with the same item count; a new item or status ends the stall, and the next one counts again.
 
-A release is `release.awaited` when the ledger's `waits` names its repository. A PR of the user's first seen after the baseline counts its state as new, so one opened already red still wakes.
+A release is `release.awaited` when the ledger's `waits` names its repository. A PR of the user's first seen after the baseline counts its state as new, so one opened already red still wakes, and a new T3 thread that already waits wakes as waiting as well as counting as new.
 
 ## The batch
 
 `pending.json` holds `sent`, the batch the last wake carried; `inline`, the batch a "scan now" froze; `gathered`, the changes since; the ids delivered in the last 7 days; and `meta`, what today already sent. A change's id is the same each time the scan sees the same event, so it joins once. A pulse item, such as one team move or one channel message, has an id of its own like any change, and the post sums them; the wake message counts pulse items instead of listing them.
 
-When decide() calls for a wake, the scan freezes the chosen changes as `sent` under an id no batch had before, such as `acme-20261126-1005-14`, and counts it in `meta`, all in one write of `pending.json`; then it writes `snapshot.json` and sends. A crash between the two writes only makes the next scan read the same events again. While `sent` is undelivered it stays frozen: later changes gather beside it, and an inline scan reports it as `in_flight` without touching it. A delta that quiet holds rejoins `gathered` when the overview comes due, so the overview carries it. A gathered change that stopped being true, such as a DM since answered, leaves before the next wake. The run marks a batch delivered with `ledger <org> delivered <id>`; the scan also counts `sent` delivered when the thread's last reply names its id. An inline batch nobody marked delivered within 30 minutes returns to `gathered`.
+When decide() calls for a wake, the scan freezes the chosen changes as `sent` under an id no batch had before, such as `acme-20261126-1005-14`, and counts it in `meta`, all in one write of `pending.json`; then it writes `snapshot.json` and sends. A crash between the two writes only makes the next scan read the same events again. While `sent` is undelivered it stays frozen: later changes gather beside it, and an inline scan reports it as `in_flight` without touching it. A delta that quiet holds rejoins `gathered` when the overview comes due, so the overview carries it. A gathered change that stopped being true, such as a DM since answered or a thread wait answered in T3, leaves before the next wake. The run marks a batch delivered with `ledger <org> delivered <id>`; the scan also counts `sent` delivered when the thread's last reply names its id. An inline batch nobody marked delivered within 30 minutes returns to `gathered`.
 
 ## Failure
 

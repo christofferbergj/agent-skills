@@ -10,6 +10,7 @@ import {
   ShapeError,
   array,
   boolean,
+  count,
   literal,
   nullable,
   number,
@@ -40,8 +41,14 @@ const field = object(
 );
 const team = object({ team: string, who: string, finished: boolean }, strict);
 const newInTeam = object({ team: string, who: string, new: literal(true) }, strict);
-const thread = object({ link: string }, strict);
-const startedThread = object({ ticket: string, link: string }, strict);
+/** A T3 thread by its id, link, status, and item count; one the assistant started names its ticket. */
+const thread = oneOf(
+  object({ status: string, link: string, items: count, started: literal(false) }, strict),
+  object(
+    { status: string, link: string, items: count, started: literal(true), ticket: string },
+    strict,
+  ),
+);
 
 /**
  * Each kind's tier; `urgent` marks the kinds a weekend, or a day past its delta cap, still wakes
@@ -83,12 +90,12 @@ export const KINDS = {
     urgent: false,
     detail: object({ project: string }, strict),
   },
-  "thread.finished": {
-    tier: "batch",
-    urgent: false,
-    detail: object({ status: string, ticket: string, link: string }, strict),
-  },
-  "thread.waiting": { tier: "batch", urgent: false, detail: startedThread },
+  /** An agent waits on the user. */
+  "thread.waiting": { tier: "now", urgent: false, detail: thread },
+  "thread.failed": { tier: "now", urgent: false, detail: thread },
+  "thread.finished": { tier: "batch", urgent: false, detail: thread },
+  /** Running an hour with no new item. */
+  "thread.stalled": { tier: "batch", urgent: false, detail: thread },
   "ticket.moved": { tier: "pulse", urgent: false, detail: status },
   "linear.other": { tier: "pulse", urgent: false, detail: inbox },
   "pr.approved": { tier: "pulse", urgent: false, detail: none },
@@ -96,7 +103,8 @@ export const KINDS = {
   "pr.closed": { tier: "pulse", urgent: false, detail: none },
   "release.new": { tier: "pulse", urgent: false, detail: object({ prs: array(string) }, strict) },
   "issue.new": { tier: "pulse", urgent: false, detail: none },
-  "thread.waits_on_you": { tier: "pulse", urgent: false, detail: thread },
+  /** A thread that wasn't there at the last scan. */
+  "thread.started": { tier: "pulse", urgent: false, detail: thread },
   "team.pulse": { tier: "pulse", urgent: false, detail: oneOf(team, newInTeam) },
   "slack.channel": { tier: "pulse", urgent: false, detail: object({ name: string }, strict) },
 } satisfies Record<string, { tier: Tier; urgent: boolean; detail: Parser<unknown> }>;
