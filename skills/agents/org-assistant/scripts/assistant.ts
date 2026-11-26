@@ -9,13 +9,16 @@
  *   assistant.ts scan ORG --inline
  *       scan inside the assistant's own run ("scan now"): wake nothing, freeze everything gathered
  *       as one batch, and print it for the run to post
+ *   assistant.ts org [--name NAME]
+ *       the organisation this assistant thread serves: the one whose profile names the thread in
+ *       $T3CODE_THREAD_ID, or else the one named NAME, from the title `✦ NAME assistant`
  *   assistant.ts status ORG
  *       the health line, the scan stamp's age, the batch in flight, and the holds
  *   assistant.ts ledger ORG COMMAND ...
  *       the model's edits to ledger.json; `assistant.ts ledger ORG -h` lists them
  *
  * Exits 1 when a unit should fail (two undelivered wakes, a source failing three scans in a row, or
- * an unreadable profile or state file), and 2 on a usage error. Times are UTC in files and the
+ * an unreadable profile or state file) or `org` finds no one organisation, and 2 on a usage error. Times are UTC in files and the
  * profile's timezone on screen.
  */
 import { spawnSync } from "node:child_process";
@@ -26,7 +29,7 @@ import { parseArgs } from "node:util";
 import { COMMANDS, type Command, EMPTY_LEDGER, LedgerError, ledgerParser } from "./ledger.ts";
 import { ShapeError } from "./parse.ts";
 import type { Mode } from "./policy.ts";
-import { loadProfile, orgs } from "./profile.ts";
+import { loadProfile, matchOrgs, orgs } from "./profile.ts";
 import { scanOrg } from "./scan.ts";
 import { status } from "./status.ts";
 import { FileError, readJson, stateDir, withLock, writeJson } from "./store.ts";
@@ -34,10 +37,14 @@ import { HOUR, parseTime } from "./time.ts";
 
 const USAGE = `usage: assistant.ts scan [ORG ...] [--dry-run] [--since 24h]
        assistant.ts scan ORG --inline
+       assistant.ts org [--name NAME]
        assistant.ts status ORG
        assistant.ts ledger ORG COMMAND ...   (assistant.ts ledger ORG -h lists the commands)`;
 
 class UsageError extends Error {}
+
+/** `org` found no organisation, or more than one. */
+class LookupError extends Error {}
 
 function duration(text: string): number {
   const match = /^(\d+)([hd])$/.exec(text);
@@ -106,6 +113,24 @@ function ledger(org: string, words: string[], options: Record<string, unknown>, 
   return done;
 }
 
+/** The one organisation this assistant thread serves, by its id or else by the title's `name`. */
+function findOrg(name: string | null): string {
+  const thread = process.env.T3CODE_THREAD_ID || null;
+  const { matches, unreadable } = matchOrgs({ thread, name });
+  const [org, ...more] = matches;
+  if (org !== undefined && more.length === 0) return org;
+  const by = [thread && "this thread's id", name && `the name ${name}`]
+    .filter(Boolean)
+    .join(" or ");
+  const broken =
+    unreadable.length > 0 ? `; can't read the profiles of ${unreadable.join(", ")}` : "";
+  throw new LookupError(
+    org === undefined
+      ? `no profile matches ${by || "anything: give --name"}${broken}`
+      : `${matches.length} profiles match ${by}: ${matches.join(", ")}`,
+  );
+}
+
 /**
  * Scans each organisation in a process of its own, so one that crashes or can't write its state
  * fails only itself; the exit code is the worst of theirs.
@@ -129,6 +154,7 @@ const OPTIONS = {
     inline: { type: "boolean" },
     since: { type: "string" },
   },
+  org: { name: { type: "string" } },
   status: NOW,
   ledger: {
     ...NOW,
@@ -159,6 +185,12 @@ function run(command: string | undefined, args: string[]): number {
     );
     const flags = args.filter((_, index) => !named.has(index));
     return scanEach(positionals.length > 0 ? positionals : orgs(), flags);
+  }
+  if (command === "org") {
+    const { values, positionals } = parse(args, OPTIONS.org);
+    if (positionals.length > 0) throw new UsageError("org takes no organisation, only --name");
+    process.stdout.write(`${findOrg(values.name ?? null)}\n`);
+    return 0;
   }
   if (command === "status") {
     const { values, positionals } = parse(args, OPTIONS.status);
@@ -199,7 +231,11 @@ export function main([command, ...args]: string[]): number {
       );
       return 2;
     }
-    if (error instanceof FileError || error instanceof LedgerError) {
+    if (
+      error instanceof FileError ||
+      error instanceof LedgerError ||
+      error instanceof LookupError
+    ) {
       process.stderr.write(`assistant.ts: ${error.message}\n`);
       return 1;
     }

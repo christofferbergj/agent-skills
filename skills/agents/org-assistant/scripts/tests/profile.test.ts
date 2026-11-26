@@ -116,3 +116,30 @@ test("a loaded profile fills the schedule's defaults and reads ~ as the home fol
     { name: "t3", kind: "t3", projects: [{ path: join(homedir(), "code/example"), options: [] }] },
   ]);
 });
+
+test("org finds the organisation by this thread's id, or else by the profile's own name", (t) => {
+  const org = new Org(t);
+  org.writeRaw(
+    "aaa",
+    JSON.stringify({
+      name: "Other",
+      thread: "t-other-assistant",
+      sources: [{ name: "Acme", kind: "t3", projects: [] }],
+    }),
+  );
+  const find = (args: string[], thread = "") =>
+    org.cli(["org", ...args], undefined, { T3CODE_THREAD_ID: thread });
+  assert.equal(find(["--name", "Acme"]).stdout, "acme\n");
+  assert.equal(find(["--name", "Acme"], "t-other-assistant").stdout, "aaa\n");
+  assert.equal(find([], "t-assistant").stdout, "acme\n");
+  assert.equal(find(["--name", "Other"], "t-unknown").stdout, "aaa\n");
+  const none = find(["--name", "Nobody"]);
+  assert.equal(none.code, 1);
+  assert.match(none.stderr, /no profile matches the name Nobody/);
+  org.writeRaw("bbb", JSON.stringify({ ...org.profile(), org: "bbb", thread: "" }));
+  const two = find(["--name", "Acme"]);
+  assert.equal(two.code, 1);
+  assert.match(two.stderr, /2 profiles match the name Acme: acme, bbb/);
+  org.writeRaw("ccc", "{");
+  assert.match(find(["--name", "Nobody"]).stderr, /can't read the profiles of ccc/);
+});

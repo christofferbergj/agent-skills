@@ -185,6 +185,8 @@ export class Org {
       ORG_ASSISTANT_SLACK_SPACING: "0",
       ORG_ASSISTANT_SLACK_PAUSE: "0",
       ORG_ASSISTANT_LOCK_WAIT: "0",
+      // The id of the T3 thread running the tests, when one does, is no assistant thread's.
+      T3CODE_THREAD_ID: "",
       ...env,
     };
   }

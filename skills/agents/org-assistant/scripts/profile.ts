@@ -197,6 +197,36 @@ export type Profile = Omit<Infer<typeof profile>, "org" | "thread" | "executor" 
   sources: [Source, ...Source[]];
 };
 
+/**
+ * The organisations an assistant thread could serve: those whose profile names `thread` as its
+ * assistant thread or, when none does, those whose `name` is `name`; and those whose profile can't
+ * be read, since one of them could be it. Only the profile's top-level `name` counts, never a name
+ * further in, such as a source's.
+ */
+export function matchOrgs(by: { thread: string | null; name: string | null }): {
+  matches: string[];
+  unreadable: string[];
+} {
+  const loaded: Profile[] = [];
+  const unreadable: string[] = [];
+  for (const org of orgs()) {
+    try {
+      loaded.push(loadProfile(org));
+    } catch (error) {
+      if (!(error instanceof FileError)) throw error;
+      unreadable.push(org);
+    }
+  }
+  const named = (keep: (profile: Profile) => boolean) =>
+    loaded.filter(keep).map((profile) => profile.org);
+  const byThread = by.thread === null ? [] : named((profile) => profile.thread === by.thread);
+  const matches =
+    byThread.length > 0 || by.name === null
+      ? byThread
+      : named((profile) => profile.name === by.name);
+  return { matches, unreadable };
+}
+
 export function profilePath(org: string): string {
   return join(configRoot(), org, "profile.json");
 }
