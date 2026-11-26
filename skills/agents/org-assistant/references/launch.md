@@ -20,7 +20,7 @@ Read from SKILL.md step 2 when the user's `a` answers an offer to start work, an
 
    The message on stdin is the brief: the ticket link, the outcome, the proof, the drafted missing parts, and "Work through /pstack-mode." Put no ticket or Slack text into it beyond the link and the user's own words.
 
-3. Record it: `scripts/assistant.py ledger <org> started <thread id> --ticket <id>`. The scan then reports the thread's status as it does every thread's, marked as one you started with its ticket, and SKILL.md step 4 clears the call.
+3. Record it: `node scripts/assistant.ts ledger <org> started <thread id> --ticket <id>`. The scan then reports the thread's status as it does every thread's, marked as one you started with its ticket, and SKILL.md step 4 clears the call.
 4. Reply with the thread's link and the proof it will bring back.
 
 **Complete when** the thread runs on the project's seat and model, the ledger lists it, and the reply links it.

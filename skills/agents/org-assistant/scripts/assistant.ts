@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /**
  * The organisation assistant's scan and state, with no model. `references/scan.md` and
  * `references/state.md` describe what each command reads and writes.
