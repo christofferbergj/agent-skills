@@ -66,7 +66,10 @@ export type Report = {
   wake: string | null;
   reason: string;
   batch: string | null;
+  /** A dry run's or an inline scan's batch, change by change. */
   items: { id: string; kind: string; ref: string }[];
+  /** A timer scan's batch, counted by kind. */
+  kinds?: Record<string, number>;
   gathered: Record<string, number>;
   found: Record<string, number>;
   health: string;

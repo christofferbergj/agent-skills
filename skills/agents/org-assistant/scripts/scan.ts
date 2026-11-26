@@ -151,7 +151,7 @@ function readAssistant(scan: Scan, state: State): { thread: Thread; state: State
   const failed = [...state.failed];
   if (thread.kind === "unreadable") {
     const failures = failHealth(health, THREAD, new SourceError("t3 thread show: failed"));
-    say(`${scan.org}: can't read the assistant thread ${id}`);
+    say(`${scan.org}: can't read the assistant thread`);
     if (failures >= scan.profile.schedule.source_failures) {
       failed.push(`the assistant thread was unreadable ${failures} scans in a row`);
     }
@@ -335,6 +335,7 @@ function runScan(
   const failed = [...state.failed];
 
   const shown = mode === "inline" ? pending.inline : send;
+  const items = shown?.items ?? [];
   const report: Record<string, unknown> = {
     org,
     at: localIso(scan.at),
@@ -343,7 +344,11 @@ function runScan(
     wake: send?.kind ?? null,
     reason: end.reason,
     batch: shown?.id ?? null,
-    items: (shown?.items ?? []).map(({ id, kind, ref }) => ({ id, kind, ref })),
+    // The timer's report goes to the journal, so it counts the batch by kind; a dry run's and an
+    // inline scan's go to the person or the run, and name each change.
+    ...(mode === "timer"
+      ? { kinds: counts(items) }
+      : { items: items.map(({ id, kind, ref }) => ({ id, kind, ref })) }),
     gathered: counts(pending.gathered),
     found: counts(found),
     health: healthLine(snapshot, zone),

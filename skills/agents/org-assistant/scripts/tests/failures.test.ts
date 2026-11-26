@@ -70,6 +70,23 @@ test("a source error reaches no file or log with its text", (t) => {
   assert.match(status, /⚠️ linear: tools\.linear\.get_notifications: failed$/m);
 });
 
+test("a timer scan's log counts its batch by kind and names no source id", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  const wake = org.scan("10:05");
+  assert.deepEqual(JSON.parse(wake.stdout).kinds, { "ticket.assigned": 1 });
+  org.world.t3.assistant = null;
+  org.save();
+  const unread = org.scan("11:05");
+  assert.match(unread.stderr, /can't read the assistant thread/);
+  assert.doesNotMatch(
+    wake.stdout + wake.stderr + unread.stdout + unread.stderr,
+    /ENG-103|\bn1\b|t-assistant/,
+  );
+});
+
 test("an unreadable thread fails the unit on the third scan", (t) => {
   const org = new Org(t);
   org.startDay();

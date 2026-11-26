@@ -44,7 +44,7 @@ When the wake policy, `nextStep` in `scripts/policy.ts`, calls for a wake, the s
 - **A missed scan** loses nothing short of a cap: cursors move only when a scan succeeds, and the overview and batch slots go out at the first scan after their time.
 - **Caps** bound how much one scan reads. A day brings a few dozen items, so only an outage of days reaches one. A Linear read takes at most 20 pages: 1,000 inbox items, newest first, or 5,000 tickets of the user's list or of a team's. A read past its cap still moves its watermark, so what it didn't reach stays unread, and the source's health entry says so, such as `linear ok, inbox capped at 1,000: older items unread`; tickets of the user's it didn't reach keep their state from the last scan. Slack makes at most 40 calls a scan, retries and one-message re-reads included. Each search reads oldest first from its watermark: the time it stopped at, and the messages from then on it read, by channel and timestamp. One the budget cut off goes on from its last message at the next scan; one that read to its end reaches back 10 minutes, for messages Slack indexed late. Once the budget runs out, the searches left wait for the next scan, no waiting message is judged until a scan reads the user's replies, and the health entry says `slack ok, read budget used: resumes next scan`.
 
-The scan's log line names batch ids, kinds, and refs, never text.
+The timer's log line names the batch id and counts its changes by kind, never a ref or text, and stderr names what failed without its ids. A dry run and an inline scan, whose output goes to the person or the run, list each change's id, kind, and ref.
 
 ## Dry run
 
