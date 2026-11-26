@@ -22,7 +22,7 @@ Keep working through reversible steps inside the agreed scope, as /principle-nev
 
 When the user's answer is needed while your own work runs, say in one line what is still running, then end with options.
 
-**Nobody** moves next when no found work is left to do or offer: an unblocked defect, cleanup, or follow-up seen in this task, named with its effect, not one you'd go looking for. Do it now if reversible and in scope; offer the rest as `a` unless Leave out drops it. Otherwise end with **Done**, without options, and one line naming each open item and its blocker, or that none is. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
+**Nobody** moves next when no found work is left to do or offer: an unblocked defect, cleanup, or follow-up seen in this task, named with its effect, not one you'd go looking for. Do it now if reversible and in scope; offer the rest as `a` unless Leave out drops it. Otherwise end with **Done**, without options, and one line naming each open item and why it's open, or that none is. A finished stage whose next stage waits on the user's go ends with options instead, as Workflow handoffs lists.
 
 **Under a full-autonomy grant**, such as "run until done" in /pstack-mode, decide each call the grant covers and report it rather than offering it. For a scope, interface, or product call it leaves to the user, apply a default and report its reason and, in plain words, what they could say instead, with no letter to type back. Every other point only the user can pass still ends with lettered options.
 
