@@ -38,7 +38,7 @@ When the wake policy, `nextStep` in `scripts/policy.ts`, calls for a wake, the s
 ## Failure
 
 - **A busy thread** (preparing, queued, starting, running, or waiting) gets nothing: the scan holds new wakes and resends until the thread is idle. Quiet and pause hold a resend as [the wake rules](rules.md#what-wakes-the-thread) say they hold a new wake.
-- **An undelivered batch** on an idle thread is sent once more at the next scan. After two tries it stops waking and exits 1, failing its unit, which the server's health alert pushes to the phone. A `t3 thread send` that exits non-zero is a failed try.
+- **An undelivered batch** on an idle thread is sent once more an hour after its wake, whatever the timer's pace, so a run that stopped before posting, such as at a usage limit, gets time to come back. An hour after the second try it stops waking and exits 1, failing its unit, which the server's health alert pushes to the phone. A `t3 thread send` that exits non-zero is a failed try, and when it was the last try the unit fails at once.
 - **A source**, or the assistant thread itself, that fails three scans in a row exits 1 the same way. A failed source keeps its last good section, so its changes arrive once it recovers, and its standing changes leave `gathered` until a good read reports them again, while frozen batches stay as they are; one that has never succeeded counts from its first attempt, or from the earlier start a `--since` gave it. An error shows as what failed and its category only, since a tool's error text can quote what it was reading: `sign-in expired`; `rate limited`; `failed`, with its HTTP status when there is one; `unexpected response`, with the field whose shape the scan doesn't know, or for a Slack page what it couldn't read; `no JSON in its output`; `failed unexpectedly`, with the error's type, for an error no parser caught, whose first stack frame goes to stderr; a tool outside the source's `tools`, or one that reads as a write; a missing repository; Executor printing no result, or a different number of results than calls; and a kind with no adapter yet. A profile or state file the scan can't read fails only its own organisation.
 - **The stamp**: every scan writes `scan.stamp`. `assistant.ts status` warns when it is over 90 minutes old from 15 minutes after the window opens to its end, and when no overview was delivered within 30 minutes of the overview's time on a weekday outside a pause: 09:15 and 09:30 with the default schedule.
 - **A missed scan** loses nothing short of a cap: cursors move only when a scan succeeds, and the overview and batch slots go out at the first scan after their time.
@@ -52,7 +52,7 @@ The timer's log line names the batch id and counts its changes by kind, never a 
 
 ## Timer
 
-One user unit runs every organisation at five past each hour from 09:05 to 23:05 Danish time:
+One user unit runs every organisation every 15 minutes from 09:00 to 23:45 Danish time. A scan runs no model and wakes the thread only as [the wake rules](rules.md#what-wakes-the-thread) say, so a faster timer brings urgent changes sooner without adding runs for the rest:
 
 ```ini
 # ~/.config/systemd/user/org-assistant-scan.service
@@ -63,7 +63,7 @@ Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin:/bin
 
 # ~/.config/systemd/user/org-assistant-scan.timer
 [Timer]
-OnCalendar=*-*-* 09..23:05:00 Europe/Copenhagen
+OnCalendar=*-*-* 09..23:00/15:00 Europe/Copenhagen
 Persistent=false
 
 [Install]
@@ -71,3 +71,5 @@ WantedBy=timers.target
 ```
 
 Point it at the installed skill, so a skill refresh updates what runs, and at a Node 24 install by path, since a timer has no shell to put mise's Node on its `PATH`. Where the machine declares its user timers in a config tool, such as `~/.config/mise/config.toml` on the servers, declare it there instead of writing the files by hand. Read its log with `journalctl --user -u org-assistant-scan`.
+
+After a T3 update, `~/.local/bin/t3` can run the new version before the server restarts, and that CLI refuses to work with the older server. Where updates arrive that way, put first on the unit's `PATH` a folder whose `t3` runs the version of the running server, the one `pgrep -af '/runtime/versions/[^/]*/t3 serve'` names under `~/.t3/runtime/versions/`, and falls back to `~/.local/bin/t3`.
