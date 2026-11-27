@@ -3,8 +3,9 @@
  * broken, the batches in flight, and the holds. The warnings' times come from the profile's
  * schedule: the stamp counts as old from shortly after the window opens, and the overview as
  * missing when the scan froze none today by half an hour after it is due. An overview frozen but
- * not yet posted shows on the "In flight" line instead, since the run posting it reads this first;
- * the scan's give-up fails its unit when a thread never posts it.
+ * not yet posted shows on the "In flight" line instead, since the run posting it reads this first.
+ * The scan gives up on it, failing its unit, only on an idle thread, so while the thread stays busy
+ * that line is the only sign.
  */
 import { join } from "node:path";
 
