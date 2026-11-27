@@ -55,7 +55,7 @@ A usage-limit failure gets no retry and skips the other routes on that vendor's 
 
 Resolve the counterpart before dispatch with `python3 scripts/target.py --parent <codex|claude-code> review-full` from this skill directory, for a whole artifact, plan, or judging pass, or with `review-delta` for the changes since a reviewed head. It fills what the `review` entry leaves out and steps Codex down as its usage runs low. It answers in milliseconds from local files, except when a window is under its line, or usage is below the fallback threshold, and the hour's banked-reset reading is missing, when it asks `codex app-server` for up to five seconds; `--help` shows the personal file's keys and thresholds. It prints one JSON target:
 
-- `run` names the counterpart's vendor. Pass the target's `model`, `effort`, and `serviceTier` on every route, because a model's default effort can be `low`. Without a `model`, a Claude counterpart takes the newest Opus model available, and the Codex CLI keeps its configured model.
+- `run` names the counterpart's vendor. Pass the target's `model`, `effort`, and `serviceTier` on routes 1 and 2, because a model's default effort can be `low`. Without a `model`, a Claude counterpart takes the newest Opus model available, and the Codex CLI keeps its configured model.
 - `run: "fallback"` means Codex usage is nearly spent: skip routes 1 and 2 and disclose the target's `reason`.
 - A review target's `alternate` is the alternate route's target: pass its `model` and `effort`.
 - `note` records a step down to standard speed, unknown usage, or a banked reset the reset guard will redeem before it lapses; carry it into the report.
