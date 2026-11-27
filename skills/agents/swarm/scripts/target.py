@@ -60,6 +60,11 @@ counterpart route in Claude Code and natively in Codex. A roles entry for a pane
 seats, each a model name or {"model", "effort"}, such as ["fable", "opus", {"model": "inherit-parent"}];
 Claude models are opus, sonnet, haiku, fable, or claude-*, Gemini models are gemini-*, and any
 other model is Codex's.
+
+A review target also prints an "alternate" for when the counterpart cannot run, whether it is run
+"fallback" or its routes failed: Gemini 4 Neon at the review's effort through T3 Code's Antigravity
+provider, so the review keeps a model from another vendor. Computer-use targets and a panel's
+counterpart seats print none.
 """
 
 import argparse
@@ -96,7 +101,8 @@ NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
 # Opus at high, and Gemini 4 Neon at xhigh through T3 Code's Antigravity provider.
 PANEL_ROLES = {'arena-runners', 'interrogate-reviewers'}
 ANTIGRAVITY = 'antigravity'
-PANEL_SEATS = (('claude-code', 'fable'), ('claude-code', 'opus'), (ANTIGRAVITY, 'gemini-4-neon'))
+GEMINI = 'gemini-4-neon'
+PANEL_SEATS = (('claude-code', 'fable'), ('claude-code', 'opus'), (ANTIGRAVITY, GEMINI))
 SEAT_EFFORT = {ANTIGRAVITY: 'xhigh'}
 CLAUDE_MODELS = ('opus', 'sonnet', 'haiku', 'fable')
 ALIASES = ('inherit-parent', 'auto')
@@ -457,20 +463,31 @@ def resolve_native(parent, role, config, usage, read_banked):
 def resolve(parent, role, config, codex_model, usage, read_banked):
     if role not in CROSS_VENDOR_ROLES:
         return resolve_native(parent, role, config, usage, read_banked)
+    target, effort = resolve_counterpart(parent, role, config, codex_model, usage, read_banked)
+    if role.startswith('review'):
+        target['alternate'] = {'run': ANTIGRAVITY, 'model': GEMINI, 'effort': effort}
+    return target
+
+
+def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
+    """Return the other vendor's target for a review or computer-use role, or run "fallback" when Codex usage is nearly spent, with the role's effort, which a fallback target leaves out."""
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
-    effort = capped(text(table(entry.get('effort')).get(effort_key)) or default_effort)
+    effort = capped(text(table(entry.get('effort')).get(effort_key)))
+    # Both targets take this value as a provider option, so a value no provider lists falls back to the role's default.
+    if effort not in EFFORTS:
+        effort = default_effort
     model = entry.get('model')
     model = text(model) or text(table(model).get(effort_key))
     target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': model, 'effort': effort}
     # Claude targets run at standard speed, so only a Codex target carries one.
     if vendor == 'claude-code':
-        return target
+        return target, effort
     target.update(model=target['model'] or codex_model, serviceTier=text(entry.get('serviceTier')) or 'priority')
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
-        return target
+        return target, effort
     tightest = min(usage['windows'], key=lambda window: window['left'])
     left = round(tightest['left'])
     target['usage'] = {'left': left, 'seenAt': usage['seen']}
@@ -478,7 +495,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
         reason, expiries = describe(left, tightest['resets']), read_banked()
         if expiries and tightest['resets'] is not None and lapsing(expiries, tightest):
             reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first; the reset guard redeems it before it expires'
-        return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
+        return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}, effort
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:
         target['usage']['bankedResets'] = len(expiries)
@@ -486,7 +503,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
         target['serviceTier'] = 'default'
     if window is not None:
         target['note'] = speed_note(fast, window, expiries)
-    return target
+    return target, effort
 
 
 def vendor_of(model):
@@ -520,7 +537,7 @@ def resolve_seat(parent, vendor, model, effort, config, codex_model, usage, read
         if parent == 'codex':
             seat['serviceTier'] = 'priority' if usage is None or check_speed(usage, read_banked)[0] else 'default'
     else:
-        seat = resolve(parent, 'review-full', config, codex_model, usage, read_banked)
+        seat, _ = resolve_counterpart(parent, 'review-full', config, codex_model, usage, read_banked)
         del seat['role']
         if seat['run'] != 'fallback':
             seat.update(model=model or seat['model'], effort=effort)

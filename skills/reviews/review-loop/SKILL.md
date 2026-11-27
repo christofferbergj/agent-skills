@@ -33,7 +33,7 @@ Round 1 is a full review by both models. A plan target gets only the counterpart
 
 4. Collect the counterpart's reports. Every reviewer belongs to the round, so wait for each one before reporting.
 
-When the counterpart's review fails after the route's retry and fallbacks, continue with the other passes and record it missing; label the round **single model**, with the reason, when no counterpart pass returned. A small-diff tier whose counterpart failed runs the full round instead. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
+Every counterpart dispatch asks /swarm's route for its alternate route. When the route ends on the target's Gemini **alternate**, the alternate takes each pass these steps give the counterpart in that round, apart from the Codex correctness pass, and the report labels the round **Gemini alternate**, with the reason. Resolve the target again each round, so the counterpart returns when it can run. When neither returned, continue with the other passes and record it missing; label the round **single model**, with the reason. A small-diff tier the counterpart itself did not review runs the full round instead, beside the alternate when it ran. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
 
 **Complete when:** every reviewer returned a terminal report or a recorded failure for the same revisions.
 
@@ -49,9 +49,9 @@ Group verified findings by root cause and number them; numbers continue across r
 
 A finding the change did not cause, newly reach, or worsen, such as one a reviewer labeled Pre-existing, is context, not a finding. One that nobody can reach yet, behind an off flag or an input the real configuration cannot produce, is Cleanup at most and needs no shim.
 
-For code, the round's **rating** is the counterpart's, moved to the band of the worst kept finding when a finding it rests on was dropped or its severity changed. A rating never changes a verdict or a severity.
+For code, the round's **rating** is the Code pass's, the counterpart's or its alternate's, moved to the band of the worst kept finding when a finding it rests on was dropped or its severity changed. A rating never changes a verdict or a severity.
 
-**Complete when:** every finding is kept on its rerun output or quoted lines, or dropped with a reason, and each kept one has a group, a number, a severity, and a call; and for code, the round has a rating, or no counterpart pass returned one.
+**Complete when:** every finding is kept on its rerun output or quoted lines, or dropped with a reason, and each kept one has a group, a number, a severity, and a call; and for code, the round has a rating, or neither the counterpart nor its alternate returned one.
 
 ## 4. Report
 
