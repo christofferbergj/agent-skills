@@ -7,12 +7,12 @@ Read from SKILL.md step 2 and step 3. Each section is one rule set; the scan enf
 The scan sorts each change into a tier ([scan](scan.md#kinds) lists every kind):
 
 - **Now**, at the next scan: a ticket assigned to the user or taken from them; someone else changed status, priority, or due date on their ticket; a comment or mention on their ticket; a Slack DM or mention unanswered for 30 minutes; a review request, requested changes, or red CI on their PR; a blocker of their ticket closed; a release their PR waits on shipped; a deadline within 24 hours; a T3 thread that waits on them or failed.
-- **Batched**, with the next wake and at the latest at the first scan after 13:00 and 17:00: a status change on a ticket their work depends on; a new ticket in a project they work in; a T3 thread that finished, or that has run an hour with no new item.
+- **Batched**, with the next wake and at the latest at the first scan at or after 13:00 and 17:00: a status change on a ticket their work depends on; a new ticket in a project they work in; a T3 thread that finished, or that has run an hour with no new item.
 - **Pulse**, never waking on its own: everything else, such as other people's moves, new PRs and releases elsewhere, channel traffic, and a new T3 thread. It reaches the user as the team pulse.
 
 A T3 thread counts when it is in one of the organisation's projects and is not this thread, settled, snoozed, archived, or a child of another thread. A thread you started says so and names its ticket.
 
-Weekdays at the first scan after 09:00 the overview goes out whatever happened. On weekends the scan still runs, and only a person waiting on the user, a new assignment, or a deadline within 24 hours wakes the thread; Monday's overview covers the rest. A day allows six deltas; after the sixth only those same urgent changes wake it, and the rest waits for the next overview. Mutes in the ledger drop matching changes before they count. Quiet holds every delta, a resent one included, and lets the overview through; pause holds every wake, the overview included. The first scan of an organisation records a baseline and wakes nothing.
+Weekdays at the first scan at or after 09:00 the overview goes out whatever happened. On weekends the scan still runs, and only a person waiting on the user, a new assignment, or a deadline within 24 hours wakes the thread; Monday's overview covers the rest. A day allows six deltas; after the sixth only those same urgent changes wake it, and the rest waits for the next overview. Mutes in the ledger drop matching changes before they count. Quiet holds every delta, a resent one included, and lets the overview through; pause holds every wake, the overview included. The first scan of an organisation records a baseline and wakes nothing.
 
 ## What a post holds
 
