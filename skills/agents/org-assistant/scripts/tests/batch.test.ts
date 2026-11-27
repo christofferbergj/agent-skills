@@ -115,15 +115,6 @@ test("each kind of ref becomes its link, from the workspaces the profile gives",
   );
 });
 
-test("a release's waiting PRs keep the ref the ledger's waits take", (t) => {
-  const org = new Org(t);
-  writePending(org, everyRef());
-  const line = printed(org, "10:10")
-    .split("\n")
-    .find((row) => row.startsWith("- release.awaited"));
-  assert.match(line ?? "", /prs: example\/web#11 </);
-});
-
 test("without a workspace, a ticket or a Slack message keeps its ref", (t) => {
   const org = new Org(t);
   writePending(org, everyRef());
@@ -184,7 +175,7 @@ test("the ids inside a detail are linked like refs", (t) => {
   assert.deepEqual(rows, [
     `- ticket.unblocked · ${ticket("ENG-102")} · 30 min ago · blocker: ${ticket("ENG-200")}, to: Done`,
     `- dependency.changed · ${ticket("ENG-200")} · 30 min ago · blocks: ${ticket("ENG-102")}, before: In Progress, to: Done, owner: Sam Sample`,
-    `- thread.waiting · t3:thr-2 <t3://thread/thr-2> · 5 min ago · status: waiting, items: 2, started: true, ticket: ${ticket("ENG-102")}`,
+    `- thread.waiting · t3:thr-2 <t3://thread/thr-2> · 5 min ago · status: waiting, items: 2, started: true, ticket: ENG-102`,
   ]);
 });
 
@@ -216,7 +207,7 @@ test("a change links only through the source it names, which a rename leaves bar
   assert.match(shown, /^- slack\.waiting · slack:D1:1795681200\.000100 · /m);
 });
 
-test("a nested ref borrows the only Linear workspace only while its own source is configured", (t) => {
+test("a ticket a T3 change names stays bare, since the change doesn't say which Linear source", (t) => {
   const org = new Org(t);
   withWorkspaces(org);
   const started = change("t3", "thread.waiting", {
@@ -231,12 +222,6 @@ test("a nested ref borrows the only Linear workspace only while its own source i
     },
   });
   writePending(org, delta([started]));
-  assert.match(printed(org, "10:10"), /ticket: .*https:\/\/linear\.app\/acme-eng\/issue\/ENG-102/);
-  org.writeProfile((profile) => {
-    profile.sources = profile.sources.filter((source) => source.kind !== "t3");
-    for (const source of profile.sources)
-      if (source.kind === "linear") source.workspace = "acme-eng";
-  });
   const shown = printed(org, "10:10");
   assert.doesNotMatch(shown, /linear\.app/);
   assert.match(shown, /ticket: ENG-102$/m);
