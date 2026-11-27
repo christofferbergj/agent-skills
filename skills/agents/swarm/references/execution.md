@@ -48,7 +48,7 @@ Prefer the counterpart, the other vendor's model, for independent judgment, revi
 
 1. A T3 Code child task, when the `t3-code` MCP server exposes `delegate_task`: follow [the T3 route](t3.md).
 2. The other CLI, through the bounded wrapper below.
-3. The target's `alternate`, when it prints one and `orchestrator_capabilities` lists the Antigravity provider: Gemini 4 Neon through [the T3 route](t3.md) with the same brief, disclosed as the Gemini alternate with the reason the counterpart did not run. It keeps the critic on another vendor's model.
+3. The target's `alternate`, when it prints one, `orchestrator_capabilities` lists the Antigravity provider, and the calling skill sets no order of vendors of its own, as /arena's judge and /council do: Gemini 4 Neon through [the T3 route](t3.md) with the same brief, disclosed as the Gemini alternate with the reason the counterpart did not run. It keeps the critic on another vendor's model.
 4. A native critic of the same vendor, disclosed as same-model coverage.
 
 A usage-limit failure gets no retry and skips the other routes on that vendor's account, so it goes straight to route 3. A caller that runs its own counterpart pass, such as /review-loop, can ask for same-model critics for the rest of its review.
@@ -56,7 +56,7 @@ A usage-limit failure gets no retry and skips the other routes on that vendor's 
 Resolve the counterpart before dispatch with `python3 scripts/target.py --parent <codex|claude-code> review-full` from this skill directory, for a whole artifact, plan, or judging pass, or with `review-delta` for the changes since a reviewed head. It fills what the `review` entry leaves out and steps Codex down as its usage runs low. It answers in milliseconds from local files, except when a window is under its line, or usage is below the fallback threshold, and the hour's banked-reset reading is missing, when it asks `codex app-server` for up to five seconds; `--help` shows the personal file's keys and thresholds. It prints one JSON target:
 
 - `run` names the counterpart's vendor. Pass the target's `model`, `effort`, and `serviceTier` on every route, because a model's default effort can be `low`. Without a `model`, a Claude counterpart takes the newest Opus model available, and the Codex CLI keeps its configured model.
-- `run: "fallback"` means Codex usage is nearly spent: start at route 3 and disclose the target's `reason`.
+- `run: "fallback"` means Codex usage is nearly spent: start at route 3, or take the calling skill's own rule when it sets one, and disclose the target's `reason`.
 - `alternate`, which only a review target prints, is route 3's target: pass its `model` and `effort`.
 - `note` records a step down to standard speed, unknown usage, or a banked reset the reset guard will redeem before it lapses; carry it into the report.
 
