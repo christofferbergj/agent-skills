@@ -19,9 +19,9 @@ import {
   withDefault,
 } from "./parse.ts";
 import type { Schedule } from "./profile.ts";
-import { type Local, clock, iso } from "./time.ts";
+import { type Local, clock, instant, iso } from "./time.ts";
 
-const tryParser = object({ at: string, ok: nullable(boolean) });
+const tryParser = object({ at: instant, ok: nullable(boolean) });
 
 const sent = object({
   /** An id no earlier batch had, such as `acme-20261126-1005-14`. */

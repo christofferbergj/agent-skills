@@ -4,6 +4,7 @@
  * crash, a busy thread, or an inline scan between two scans loses nothing and sends nothing twice.
  */
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { Org, linearTime, utc } from "./helpers.ts";
@@ -52,6 +53,22 @@ test("on a quarter-hour timer, an unposted batch is resent an hour after its wak
   const stopped = org.scan("12:05", { code: 1 });
   assert.match(stopped.stderr, /undelivered after 2 wakes/);
   assert.equal(org.sent().length, 3);
+});
+
+test("a wake time the scan can't read fails the organisation instead of resending early", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  org.scan("10:05");
+  const file = org.statePath("pending.json");
+  const pending = JSON.parse(readFileSync(file, "utf8"));
+  pending.sent.tries[0].at = "invalid";
+  writeFileSync(file, JSON.stringify(pending));
+  org.threadIs("completed");
+  const broken = org.scan("10:20", { code: 1 });
+  assert.match(broken.stderr, /tries.*expected a time such as/);
+  assert.equal(org.sent().length, 2);
 });
 
 test("a reply that names the batch counts as delivered, and one that names a longer id doesn't", (t) => {
