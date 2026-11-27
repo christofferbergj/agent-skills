@@ -67,6 +67,14 @@ export const scheduleParser = object(
 export type Schedule = Infer<typeof scheduleParser>;
 
 const name = refine(string, (value): value is string => value.length > 0, "expected a name");
+/** A workspace's URL slug, which turns a ref into a link. */
+const workspace = optional(
+  refine(
+    string,
+    (value): value is string => /^[a-z0-9][a-z0-9-]*$/i.test(value),
+    "expected the workspace's slug from its URLs, such as acme",
+  ),
+);
 
 const linear = object(
   {
@@ -75,6 +83,8 @@ const linear = object(
     /** Executor is called from this repository. */
     repo: optional(path),
     account: string,
+    /** A ticket's link is `https://linear.app/<workspace>/issue/<id>`. */
+    workspace,
     teams: names,
     tools: names,
   },
@@ -89,6 +99,8 @@ const slack = object(
     account: string,
     /** The user's Slack id. */
     me: string,
+    /** A message's link is `https://<workspace>.slack.com/archives/<channel>/p<ts without the dot>`. */
+    workspace,
     tools: names,
     channels: withDefault(array(object({ id: string, name: optional(string) }, strict)), []),
   },

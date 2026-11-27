@@ -34,6 +34,7 @@ Read when a file's contents surprise you, when writing a profile, or when changi
       "kind": "linear",
       "repo": "~/code/acme-web",
       "account": "<Executor account id>",
+      "workspace": "acme",
       "teams": ["DEV"],
       "tools": [
         "tools.linear.get_notifications",
@@ -47,6 +48,7 @@ Read when a file's contents surprise you, when writing a profile, or when changi
       "repo": "~/code/acme-web",
       "account": "<Executor account id>",
       "me": "<the user's Slack id>",
+      "workspace": "acme",
       "tools": ["tools.slack.mcp.slack_search_public_and_private"],
       "channels": [{ "id": "C0123", "name": "dev" }]
     },
@@ -81,6 +83,7 @@ Read when a file's contents surprise you, when writing a profile, or when changi
 - `thread` stays `""` until go-live, and the scan then sends nothing.
 - `schedule` may be left out; the values above are its defaults. `retries` counts the resends of an undelivered batch before the unit fails, and `source_failures` the failed scans in a row before it does.
 - A Linear or Slack source calls Executor through `executor.command`, from its `repo`, with its `account`, and only through the `tools` it lists. `channels` are the Slack channels the user confirmed.
+- A Linear or Slack source's `workspace` is the slug in its URLs, `acme` in `https://linear.app/acme/issue/DEV-1` or `https://acme.slack.com`. `assistant.ts batch` builds ticket and message links from it, and shows the bare ref when it is left out.
 - A thread launched in a T3 project runs on that project's `provider`, `model`, and `options`.
 - A path may start with `~`.
 

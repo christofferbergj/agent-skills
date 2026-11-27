@@ -75,6 +75,11 @@ test("each check a profile must pass names what is wrong", (t) => {
       (p) => void (p.schedule = { overview: "25:00" }),
       /schedule\.overview: expected a time of day/,
     ],
+    [
+      "a workspace given as a URL",
+      (p) => void (p.sources[1] = { ...p.sources[1], workspace: "https://acme.slack.com" }),
+      /sources\[1\]\.workspace: expected the workspace's slug/,
+    ],
   ];
   for (const [name, edit, error] of cases) {
     org.writeProfile(edit);
