@@ -8,7 +8,7 @@ import { type Change, tier, urgent } from "./changes.ts";
 import type { Ledger } from "./ledger.ts";
 import { type Pending, type SentBatch, type Slot, settle, unfreeze } from "./pending.ts";
 import type { Schedule } from "./profile.ts";
-import { type Clock, type Local, parseTime } from "./time.ts";
+import { type Clock, HOUR, type Local, parseTime } from "./time.ts";
 
 /** The timer's scan, a "scan now" inside the assistant's run, or a dry run that writes nothing. */
 export type Mode = "timer" | "inline" | "dry";
@@ -177,6 +177,9 @@ export function nextStep(s: Situation): Step {
   return wake;
 }
 
+/** How long a wake has to be posted before the next one, or before the scan gives up. */
+const RETRY_AFTER = HOUR;
+
 /** What happens to a sent batch still undelivered once the sources are read. */
 function inFlight(s: Situation, sent: SentBatch, thread: Thread): Step {
   if (thread.kind !== "idle") {
@@ -184,6 +187,11 @@ function inFlight(s: Situation, sent: SentBatch, thread: Thread): Step {
   }
   if (held(s.hold, sent.kind)) {
     return { kind: "wait", reason: "the sent batch waits for the quiet or pause to end" };
+  }
+  // A wake gets an hour to be posted, whatever the timer's pace, before the next one or giving up.
+  const last = sent.tries.at(-1);
+  if (last !== undefined && s.at.instant.getTime() - Date.parse(last.at) < RETRY_AFTER) {
+    return { kind: "wait", reason: "the sent batch waits an hour from its last wake" };
   }
   if (sent.tries.length >= 1 + s.schedule.retries) {
     return {

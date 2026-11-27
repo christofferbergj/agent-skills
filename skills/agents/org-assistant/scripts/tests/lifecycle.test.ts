@@ -37,6 +37,23 @@ test("a sent batch stays frozen while in flight, and the next batch carries what
   assert.deepEqual(org.kinds(org.lastSent()), ["ticket.mention ENG-101"]);
 });
 
+test("on a quarter-hour timer, an unposted batch is resent an hour after its wake, then fails the unit", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  org.scan("10:05");
+  org.threadIs("failed"); // the run stopped before posting, such as at a usage limit
+  for (const clock of ["10:20", "10:35", "10:50"]) org.scan(clock);
+  assert.equal(org.sent().length, 2);
+  org.scan("11:05");
+  assert.match(org.lastSent()?.message ?? "", /try="2"/);
+  for (const clock of ["11:20", "11:35", "11:50"]) org.scan(clock);
+  const stopped = org.scan("12:05", { code: 1 });
+  assert.match(stopped.stderr, /undelivered after 2 wakes/);
+  assert.equal(org.sent().length, 3);
+});
+
 test("a reply that names the batch counts as delivered, and one that names a longer id doesn't", (t) => {
   const org = new Org(t);
   org.startDay();

@@ -205,18 +205,28 @@ const TABLE: [string, Given, string][] = [
     "wait: the sent batch waits for the quiet or pause to end",
   ],
   [
-    "an undelivered batch on an idle thread goes once more",
-    { pending: { sent: sent("delta", 1) } },
+    "an undelivered batch waits an hour from its last wake",
+    { clock: "11:04", pending: { sent: sent("delta", 1) } },
+    "wait: the sent batch waits an hour from its last wake",
+  ],
+  [
+    "then goes once more",
+    { clock: "11:05", pending: { sent: sent("delta", 1) } },
     "resend: resending the undelivered batch",
   ],
   [
-    "after the retry the unit fails",
-    { pending: { sent: sent("delta", 2) } },
+    "the retry gets its hour too",
+    { clock: "10:50", pending: { sent: sent("delta", 2) } },
+    "wait: the sent batch waits an hour from its last wake",
+  ],
+  [
+    "after the retry's hour the unit fails",
+    { clock: "11:05", pending: { sent: sent("delta", 2) } },
     `giveUp: batch ${BATCH} undelivered after 2 wakes`,
   ],
   [
     "more retries in the schedule allow more",
-    { schedule: { retries: 2 }, pending: { sent: sent("delta", 2) } },
+    { clock: "11:05", schedule: { retries: 2 }, pending: { sent: sent("delta", 2) } },
     "resend: resending the undelivered batch",
   ],
   // New wakes.
