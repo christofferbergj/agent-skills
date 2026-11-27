@@ -4,19 +4,39 @@ import { test } from "node:test";
 
 import { Org, THU, linearTime } from "./helpers.ts";
 
-const NO_OVERVIEW = /No overview delivered today by/;
+const NO_OVERVIEW = /No overview sent today by/;
 const STALE = /The last scan ran \d+ min ago: the timer may be stopped/;
 
-test("status warns when no overview was delivered half an hour after it was due", (t) => {
+test("status warns when no overview was sent half an hour after it was due", (t) => {
   const org = new Org(t);
-  org.threadIs("running");
+  org.threadIs("running"); // a busy thread gets no wake, so the overview isn't frozen
   org.scan("08:30");
   org.scan("09:05");
   assert.doesNotMatch(org.status("09:25"), NO_OVERVIEW);
   assert.match(
     org.status("09:35"),
-    /⚠️ No overview delivered today by 09:30: the scan or the thread may be broken\./,
+    /⚠️ No overview sent today by 09:30: the scan or the thread may be broken\./,
   );
+});
+
+test("today's overview in flight shows as in flight, not as missing", (t) => {
+  const org = new Org(t);
+  org.scan("08:30");
+  org.scan("09:05");
+  const id = org.pending().sent?.id;
+  // The run posting it, held up past the grace time, reads status first.
+  const status = org.status("10:35");
+  assert.doesNotMatch(status, NO_OVERVIEW);
+  assert.match(status, new RegExp(`^In flight: batch ${id} \\(overview, `, "m"));
+});
+
+test("yesterday's overview still in flight leaves today's missing", (t) => {
+  const org = new Org(t);
+  org.scan("08:30", { day: "2026-11-25" });
+  org.scan("09:05", { day: "2026-11-25" });
+  org.threadIs("running");
+  org.scan("09:05");
+  assert.match(org.status("09:35"), NO_OVERVIEW);
 });
 
 test("an overview settled from its reply counts as delivered", (t) => {
@@ -59,7 +79,7 @@ test("the warnings' times come from the profile's schedule", (t) => {
   const late = org.status("10:20");
   assert.match(late, STALE);
   assert.doesNotMatch(late, NO_OVERVIEW);
-  assert.match(org.status("10:35"), /No overview delivered today by 10:30/);
+  assert.match(org.status("10:35"), /No overview sent today by 10:30/);
 });
 
 test("status shows the batch in flight, what gathered since, and quiet", (t) => {

@@ -2,7 +2,9 @@
  * `assistant.ts status`: the health line, a warning for each sign that the scan or the thread is
  * broken, the batches in flight, and the holds. The warnings' times come from the profile's
  * schedule: the stamp counts as old from shortly after the window opens, and the overview as
- * missing half an hour after it is due.
+ * missing when the scan froze none today by half an hour after it is due. An overview frozen but
+ * not yet posted shows on the "In flight" line instead, since the run posting it reads this first;
+ * the scan's give-up fails its unit when a thread never posts it.
  */
 import { join } from "node:path";
 
@@ -45,13 +47,10 @@ export function status(org: string, now: Date): string {
   }
 
   const delivered = new Set(ledger.delivered.map((entry) => entry.batch));
-  const meta = pending?.meta;
-  const overview = meta?.overview_on === at.date ? meta.overview_id : null;
-  const shipped =
-    overview !== null && (delivered.has(overview) || meta?.overview_delivered === overview);
+  const frozen = pending?.meta.overview_on === at.date;
   const due = addMinutes(profile.schedule.overview, OVERVIEW_GRACE);
-  if (!shipped && overviewOwed(at, profile.schedule, holds(ledger, now), due)) {
-    lines.push(`⚠️ No overview delivered today by ${due}: the scan or the thread may be broken.`);
+  if (!frozen && overviewOwed(at, profile.schedule, holds(ledger, now), due)) {
+    lines.push(`⚠️ No overview sent today by ${due}: the scan or the thread may be broken.`);
   }
 
   for (const [name, state] of Object.entries(snapshot?.health ?? {}).sort(([a], [b]) =>
