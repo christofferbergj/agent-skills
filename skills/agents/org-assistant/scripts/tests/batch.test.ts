@@ -141,6 +141,48 @@ test("a conversation links its oldest message by the full Slack timestamp, not t
   assert.match(lines[1] ?? "", /archives\/D1\/p1800000000100000 · .* · 2 messages waiting/);
 });
 
+test("two Slack sources never merge a conversation or a channel's count", (t) => {
+  const org = new Org(t);
+  org.writeProfile((profile) => {
+    const [, slack] = profile.sources;
+    assert.ok(slack);
+    slack.workspace = "acme-chat";
+    profile.sources.push({
+      ...slack,
+      name: "slack-ops",
+      account: "acc-ops",
+      workspace: "acme-ops",
+    });
+  });
+  const message = (source: string, channel: string, name: string, ts: string) =>
+    change(source, "slack.channel", {
+      ref: channel,
+      at: utc("09:30"),
+      key: ts,
+      detail: { name },
+    });
+  writePending(
+    org,
+    delta([
+      waits("slack", "D0ALEX", "1795681800.000100"),
+      waits("slack-ops", "D0ALEX", "1795681900.000100"),
+      message("slack", "C0DEV", "dev", "1"),
+      message("slack-ops", "C0DEV", "dev", "2"),
+      message("slack-ops", "C0DEV", "dev", "3"),
+      message("slack-ops", "C0RANDOM", "random", "4"),
+    ]),
+  );
+  const [, ...rows] = printed(org, "10:10").trim().split("\n");
+  assert.deepEqual(
+    rows.map((row) => row.replace(/ · \d+ min ago/, "")),
+    [
+      "- slack.waiting · https://acme-chat.slack.com/archives/D0ALEX/p1795681800000100 · 1 message waiting, via dm",
+      "- slack.waiting · https://acme-ops.slack.com/archives/D0ALEX/p1795681900000100 · 1 message waiting, via dm",
+      "- pulse · #dev (slack) 1 message · #dev (slack-ops) 2 messages · #random 1 message",
+    ],
+  );
+});
+
 test("a conversation's waiting messages make one line, linking the oldest", (t) => {
   const org = new Org(t);
   withWorkspaces(org);

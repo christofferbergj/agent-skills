@@ -92,14 +92,17 @@ export function renderBatch(
   const rows: (string | ChangeOf<"slack.waiting">[])[] = [];
   const waiting = new Map<string, ChangeOf<"slack.waiting">[]>();
   const people = new Map<string, Map<"moved" | "finished" | "new", number>>();
-  const channels = new Map<string, number>();
+  /** Each channel's messages, by its source and id, and its name. */
+  const channels = new Map<string, { source: string; name: string; count: number }>();
   for (const item of batch.items) {
     if (item.kind === "slack.waiting") {
-      const conversation = waiting.get(item.detail.channel);
+      // A channel id is unique only within its workspace, so two sources never share a line.
+      const key = `${item.source}\n${item.detail.channel}`;
+      const conversation = waiting.get(key);
       if (conversation !== undefined) conversation.push(item);
       else {
         const first = [item];
-        waiting.set(item.detail.channel, first);
+        waiting.set(key, first);
         rows.push(first);
       }
     } else if (item.kind === "team.pulse") {
@@ -107,8 +110,12 @@ export function renderBatch(
       const counts = people.get(detail.who) ?? new Map();
       tally(counts, "new" in detail ? "new" : detail.finished ? "finished" : "moved");
       people.set(detail.who, counts);
-    } else if (item.kind === "slack.channel") tally(channels, item.detail.name);
-    else rows.push(line(item, reading(item.detail)));
+    } else if (item.kind === "slack.channel") {
+      const key = `${item.source}\n${item.ref}`;
+      const { source, detail } = item;
+      const seen = channels.get(key);
+      channels.set(key, { source, name: detail.name, count: (seen?.count ?? 0) + 1 });
+    } else rows.push(line(item, reading(item.detail)));
   }
   const shown = rows.map((row) => {
     if (typeof row === "string") return row;
@@ -121,7 +128,10 @@ export function renderBatch(
       ([who, counts]) =>
         `${who} ${[...counts].map(([what, count]) => `${count} ${what}`).join(", ")}`,
     ),
-    ...[...channels].map(([name, count]) => `#${name} ${plural(count, "message")}`),
+    ...[...channels.values()].map(({ source, name, count }) => {
+      const shared = [...channels.values()].filter((other) => other.name === name).length > 1;
+      return `#${name}${shared ? ` (${source})` : ""} ${plural(count, "message")}`;
+    }),
   ];
   if (pulse.length > 0) shown.push(["pulse", ...pulse].join(" · "));
   const done = context.delivered ? ", already marked delivered" : "";
