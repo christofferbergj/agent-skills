@@ -6,7 +6,7 @@ Record each limit you see with `scripts/project.py <folder> learn "<instance>: u
 
 ## Pick an instance
 
-The project's **home** is the instance a standing rule names, which keeps it across phases and across a move of this thread. When no rule names one, append a rule that names this thread's instance as the home.
+The project's **home** is the instance a standing rule names, which keeps it across phases and across a move of this thread. When no rule names one, append it: the instance the project's first worker ran on, or this thread's instance when no worker has run yet.
 
 Every launch and every resend below takes the first **free** instance, one no recorded limit holds, in this order: the home, then the other instances of its driver, in a standing rule's order when one gives it, then the instances of the counterpart vendor, Codex for a Claude home and Claude for a Codex home. The order holds only instances `orchestrator_capabilities` lists with `canRunChildTask: true`. So work returns to the home once its limit resets.
 
@@ -14,7 +14,7 @@ Pass the instance as the target's `providerInstanceId`. On an instance of this t
 
 ## Resend a stopped task
 
-Move a worker whose run ended on a limit to the instance picked above with `t3_thread_configure`, or leave it where it is when its own instance is free again. Then resend the task the limit interrupted with `t3_thread_send`: that send in full, with its inputs and decisions and what the branch already holds, since T3 hands a new instance only a summary of the thread. The resend takes a slot like any later task (SKILL.md step 3) and leaves the worker's retry count as it was.
+Move a worker whose run ended on a limit to the instance picked above with `t3_thread_configure`, unless it is already on it. Then resend the task the limit interrupted with `t3_thread_send`: that send in full, with its inputs and decisions and what the branch already holds, since T3 hands a new instance only a summary of the thread. The resend takes a slot like any later task (SKILL.md step 3) and leaves the worker's retry count as it was.
 
 ## When no instance is free
 
