@@ -7,9 +7,9 @@
 - Original skill and resources: [`skills/engineering/to-tickets`](https://github.com/mattpocock/skills/tree/49dd158d1076134a641b33efb035946536778336/skills/engineering/to-tickets).
 - Tracking policy: upstream `main`; inspect the entire public skills inventory for additions, removals, category moves, and relevant shared documentation. Exclude personal skills and the recorded user exclusions.
 - Imported from commit: `49dd158d1076134a641b33efb035946536778336` (1.3.1).
-- Reviewed through commit: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
-- Fidelity checked through: `5beb35b040e3de97e54fa9e386d7e42d15c295c2`.
-- Last upstream review: 2026-10-21.
+- Reviewed through commit: `bbadaa631c37af594e5a05c9cefacd9956136b18`.
+- Fidelity checked through: `bbadaa631c37af594e5a05c9cefacd9956136b18`.
+- Last upstream review: 2026-11-28.
 - Upstream stage: `engineering`. Experimental and frozen status is retained in the combined catalog.
 - License: [MIT, copyright 2026 Matt Pocock](LICENSE). Retain the notice with derived material.
 
@@ -30,3 +30,4 @@ Invoke `/maintain-skills` for the combined maintenance guide and catalog. Its so
 | 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | No upstream change since `49dd158`. First fidelity check: restored the user as the approver of the breakdown, which the retained-approval clause had dropped. Re-recorded the wide-refactor delegation as a reversal with its reason.                                                                                 |
 | 2026-10-21  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | Dropped divergences now covered by the library-wide adaptations (#18).                                                                                                                                                                                                                                                |
 | 2026-11-10  | `5beb35b040e3de97e54fa9e386d7e42d15c295c2` | Local change (#88), no upstream revision reviewed: now model-invoked, and the description limits the agent starting it to the user naming /to-tickets or picking an option that names it, by AGENTS.md's /next-options rule and the library-wide Packaging adaptation (ADR 0007, revised 2026-11-09). Fidelity holds. |
+| 2026-11-28  | `bbadaa631c37af594e5a05c9cefacd9956136b18` | Delta `6f7f783..bbadaa6`; `5beb35b..6f7f783` changes none of the tracked files. Adopted 9223538 and 70c7fbb as written: a ticket's Parent section names the parent issue's title followed by its tracker reference, and no longer says to omit the section. Fidelity passes in both directions.                       |
