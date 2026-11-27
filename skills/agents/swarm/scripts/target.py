@@ -463,34 +463,28 @@ def resolve_native(parent, role, config, usage, read_banked):
 def resolve(parent, role, config, codex_model, usage, read_banked):
     if role not in CROSS_VENDOR_ROLES:
         return resolve_native(parent, role, config, usage, read_banked)
-    target = resolve_counterpart(parent, role, config, codex_model, usage, read_banked)
+    target, effort = resolve_counterpart(parent, role, config, codex_model, usage, read_banked)
     if role.startswith('review'):
-        # A fallback target carries no effort, so Gemini's comes from the configuration.
-        target['alternate'] = {'run': ANTIGRAVITY, 'model': GEMINI, 'effort': counterpart_effort(parent, role, config)}
+        target['alternate'] = {'run': ANTIGRAVITY, 'model': GEMINI, 'effort': effort}
     return target
 
 
-def counterpart_effort(parent, role, config):
-    entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
-    return capped(text(table(table(table(config.get(parent)).get(entry_name)).get('effort')).get(effort_key)) or default_effort)
-
-
 def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
-    """Return the other vendor's target for a review or computer-use role, or run "fallback" when Codex usage is nearly spent."""
-    entry_name, effort_key, _ = CROSS_VENDOR_ROLES[role]
+    """Return the other vendor's target for a review or computer-use role, or run "fallback" when Codex usage is nearly spent, with the role's effort, which a fallback target leaves out."""
+    entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
-    effort = counterpart_effort(parent, role, config)
+    effort = capped(text(table(entry.get('effort')).get(effort_key)) or default_effort)
     model = entry.get('model')
     model = text(model) or text(table(model).get(effort_key))
     target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': model, 'effort': effort}
     # Claude targets run at standard speed, so only a Codex target carries one.
     if vendor == 'claude-code':
-        return target
+        return target, effort
     target.update(model=target['model'] or codex_model, serviceTier=text(entry.get('serviceTier')) or 'priority')
     if usage is None:
         target['note'] = 'Codex usage unknown; using the configured speed'
-        return target
+        return target, effort
     tightest = min(usage['windows'], key=lambda window: window['left'])
     left = round(tightest['left'])
     target['usage'] = {'left': left, 'seenAt': usage['seen']}
@@ -498,7 +492,7 @@ def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
         reason, expiries = describe(left, tightest['resets']), read_banked()
         if expiries and tightest['resets'] is not None and lapsing(expiries, tightest):
             reason += f'; a banked reset expiring {first_lapse(expiries, tightest)} lapses first; the reset guard redeems it before it expires'
-        return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}
+        return {'role': role, 'run': 'fallback', 'reason': reason, 'usage': target['usage']}, effort
     fast, window, expiries = check_speed(usage, read_banked)
     if expiries is not None:
         target['usage']['bankedResets'] = len(expiries)
@@ -506,7 +500,7 @@ def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
         target['serviceTier'] = 'default'
     if window is not None:
         target['note'] = speed_note(fast, window, expiries)
-    return target
+    return target, effort
 
 
 def vendor_of(model):
@@ -540,7 +534,7 @@ def resolve_seat(parent, vendor, model, effort, config, codex_model, usage, read
         if parent == 'codex':
             seat['serviceTier'] = 'priority' if usage is None or check_speed(usage, read_banked)[0] else 'default'
     else:
-        seat = resolve_counterpart(parent, 'review-full', config, codex_model, usage, read_banked)
+        seat, _ = resolve_counterpart(parent, 'review-full', config, codex_model, usage, read_banked)
         del seat['role']
         if seat['run'] != 'fallback':
             seat.update(model=model or seat['model'], effort=effort)
