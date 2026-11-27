@@ -9,13 +9,13 @@
  */
 import { join } from "node:path";
 
-import { EMPTY_LEDGER, ledgerParser } from "./ledger.ts";
-import { pendingParser } from "./pending.ts";
-import { holds, overviewOwed } from "./policy.ts";
+import { EMPTY_LEDGER, deliveredNote, ledgerParser } from "./ledger.ts";
+import { EMPTY_PENDING, pendingParser } from "./pending.ts";
+import { holds, overviewDue } from "./policy.ts";
 import { loadProfile } from "./profile.ts";
 import { healthLine, snapshotParser } from "./snapshot.ts";
 import { readJson, readText, stateDir } from "./store.ts";
-import { MINUTE, addMinutes, local, parseTime, shortTime } from "./time.ts";
+import { MINUTE, addMinutes, local, minutesAgo, parseTime, shortTime } from "./time.ts";
 
 /** A stamp older than this, inside the window, means the timer may have stopped. */
 const STALE = 90 * MINUTE;
@@ -40,17 +40,14 @@ export function status(org: string, now: Date): string {
   const stamp = parseTime(readText(join(folder, "scan.stamp")) ?? "");
   const inWindow = addMinutes(opens, FIRST_SCAN) <= at.clock && at.clock <= closes;
   if (stamp === null || (inWindow && now.getTime() - stamp.getTime() > STALE)) {
-    const age =
-      stamp === null
-        ? "never"
-        : `${Math.floor((now.getTime() - stamp.getTime()) / MINUTE)} min ago`;
+    const age = stamp === null ? "never" : `${minutesAgo(stamp, now)} min ago`;
     lines.push(`⚠️ The last scan ran ${age}: the timer may be stopped.`);
   }
 
-  const delivered = new Set(ledger.delivered.map((entry) => entry.batch));
-  const frozen = pending?.meta.overview_on === at.date;
+  const hold = holds(ledger, now);
   const due = addMinutes(profile.schedule.overview, OVERVIEW_GRACE);
-  if (!frozen && overviewOwed(at, profile.schedule, holds(ledger, now), due)) {
+  const situation = { at, schedule: profile.schedule, hold, pending: pending ?? EMPTY_PENDING };
+  if (overviewDue(situation, due)) {
     lines.push(`⚠️ No overview sent today by ${due}: the scan or the thread may be broken.`);
   }
 
@@ -60,20 +57,19 @@ export function status(org: string, now: Date): string {
     if (!state.ok) lines.push(`⚠️ ${name}: ${state.message}`);
   }
   if (pending?.sent) {
-    const done = delivered.has(pending.sent.id) ? ", already marked delivered" : "";
     const { id, kind, items, tries } = pending.sent;
+    const done = deliveredNote(ledger, id);
     lines.push(
       `In flight: batch ${id} (${kind}, ${items.length} items, ${tries.length} wakes${done})`,
     );
   }
   if (pending?.inline) {
-    const done = delivered.has(pending.inline.id) ? ", already marked delivered" : "";
+    const done = deliveredNote(ledger, pending.inline.id);
     lines.push(
       `Inline, not yet delivered: batch ${pending.inline.id} (${pending.inline.items.length} items${done})`,
     );
   }
   lines.push(`Gathered since: ${pending?.gathered.length ?? 0} changes`);
-  const hold = holds(ledger, now);
   if (hold.quiet !== null) lines.push(`Quiet until ${shortTime(new Date(hold.quiet), zone)}`);
   if (hold.paused !== null) lines.push(`Paused until ${shortTime(new Date(hold.paused), zone)}`);
   return lines.join("\n");

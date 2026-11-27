@@ -5,9 +5,10 @@
  * message body or ticket title, so neither can show here.
  */
 import type { Change, ChangeOf } from "./changes.ts";
+import { type Ledger, deliveredNote } from "./ledger.ts";
 import type { InlineBatch, SentBatch } from "./pending.ts";
 import type { LinearSource, SlackSource, Source } from "./profile.ts";
-import { MINUTE } from "./time.ts";
+import { minutesAgo } from "./time.ts";
 
 const TICKET = /^[A-Z][A-Z0-9]*-\d+$/;
 const NUMBERED = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
@@ -105,11 +106,10 @@ function tally<K>(counts: Map<K, number>, key: K): void {
  */
 export function renderBatch(
   batch: SentBatch | InlineBatch,
-  context: { now: Date; sources: readonly Source[]; delivered: boolean },
+  context: { now: Date; sources: readonly Source[]; ledger: Ledger },
 ): string {
   const { now, sources } = context;
-  const age = (at: string) =>
-    `${Math.max(0, Math.floor((now.getTime() - Date.parse(at)) / MINUTE))} min ago`;
+  const age = (at: string) => `${minutesAgo(new Date(at), now)} min ago`;
   const line = (item: Change, read: string) =>
     [item.kind, link(item, sources), age(item.at), ...(read === "" ? [] : [read])].join(" · ");
   /** Each item's line, or a conversation's waiting messages where its first one stood. */
@@ -158,7 +158,7 @@ export function renderBatch(
     }),
   ];
   if (pulse.length > 0) shown.push(["pulse", ...pulse].join(" · "));
-  const done = context.delivered ? ", already marked delivered" : "";
+  const done = deliveredNote(context.ledger, batch.id);
   const changes = plural(batch.items.length, "change");
   const header = `Batch ${batch.id} (${batch.kind}, ${changes}${done}): ${batch.reason}`;
   return [header, ...shown.map((row) => `- ${row}`)].join("\n");

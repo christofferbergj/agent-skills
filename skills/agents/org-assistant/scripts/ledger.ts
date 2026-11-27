@@ -65,6 +65,13 @@ export type Ledger = Infer<typeof ledgerParser>;
 /** The ledger before its first command: every list empty, nothing held, no call. */
 export const EMPTY_LEDGER: Ledger = parse(ledgerParser, {});
 
+/** What `status` and `batch` add after a batch the ledger marks delivered, and "" otherwise. */
+export function deliveredNote(ledger: Ledger, batch: string): string {
+  return ledger.delivered.some((entry) => entry.batch === batch)
+    ? ", already marked delivered"
+    : "";
+}
+
 /** A ledger command the user's words can't carry out, such as setting a call while one is open. */
 export class LedgerError extends Error {}
 

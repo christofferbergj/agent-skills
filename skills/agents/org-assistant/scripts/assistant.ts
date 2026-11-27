@@ -155,8 +155,7 @@ function batch(org: string, id: string | null, now: Date): string {
     if (id === null) return "No batch waits to be posted.";
     throw new LookupError(`no batch ${id} waits to be posted: it went out already, or never froze`);
   }
-  const delivered = book.delivered.some((entry) => entry.batch === chosen.id);
-  return renderBatch(chosen, { now, sources, delivered });
+  return renderBatch(chosen, { now, sources, ledger: book });
 }
 
 /**
