@@ -214,8 +214,10 @@ export const calendarDate = refine(string, isCalendarDate, "expected a date such
 /** A time the scan wrote with `iso`, such as `2026-11-26T09:05:00Z`. */
 export const instant = refine(
   string,
-  (text): text is string =>
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(text) && !Number.isNaN(Date.parse(text)),
+  (text): text is string => {
+    const ms = Date.parse(text);
+    return !Number.isNaN(ms) && iso(new Date(ms)) === text;
+  },
   "expected a time such as 2026-11-26T09:05:00Z",
 );
 

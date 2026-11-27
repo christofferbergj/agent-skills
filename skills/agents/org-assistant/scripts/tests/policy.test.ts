@@ -216,7 +216,7 @@ const TABLE: [string, Given, string][] = [
   ],
   [
     "then goes once more, even when the timer starts a little early",
-    { clock: "11:01", pending: { sent: sent("delta", 1) } },
+    { clock: "11:00", pending: { sent: sent("delta", 1) } },
     "resend: resending the undelivered batch",
   ],
   [

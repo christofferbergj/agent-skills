@@ -63,7 +63,7 @@ test("a wake time the scan can't read fails the organisation instead of resendin
   org.scan("10:05");
   const file = org.statePath("pending.json");
   const pending = JSON.parse(readFileSync(file, "utf8"));
-  pending.sent.tries[0].at = "invalid";
+  pending.sent.tries[0].at = "2026-02-30T09:05:00Z"; // a day February lacks, which Date.parse moves on
   writeFileSync(file, JSON.stringify(pending));
   org.threadIs("completed");
   const broken = org.scan("10:20", { code: 1 });
