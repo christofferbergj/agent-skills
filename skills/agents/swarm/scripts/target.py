@@ -60,6 +60,11 @@ counterpart route in Claude Code and natively in Codex. A roles entry for a pane
 seats, each a model name or {"model", "effort"}, such as ["fable", "opus", {"model": "inherit-parent"}];
 Claude models are opus, sonnet, haiku, fable, or claude-*, Gemini models are gemini-*, and any
 other model is Codex's.
+
+A review target also prints an "alternate" for when the counterpart cannot run, whether it is run
+"fallback" or its routes failed: Gemini 4 Neon at the review's effort through T3 Code's Antigravity
+provider, so the review keeps a model from another vendor. Computer-use targets and a panel's
+counterpart seats print none.
 """
 
 import argparse
@@ -96,7 +101,8 @@ NATIVE_ROLES = {*NATIVE_DEFAULTS['claude-code'], 'long-running'}
 # Opus at high, and Gemini 4 Neon at xhigh through T3 Code's Antigravity provider.
 PANEL_ROLES = {'arena-runners', 'interrogate-reviewers'}
 ANTIGRAVITY = 'antigravity'
-PANEL_SEATS = (('claude-code', 'fable'), ('claude-code', 'opus'), (ANTIGRAVITY, 'gemini-4-neon'))
+GEMINI = 'gemini-4-neon'
+PANEL_SEATS = (('claude-code', 'fable'), ('claude-code', 'opus'), (ANTIGRAVITY, GEMINI))
 SEAT_EFFORT = {ANTIGRAVITY: 'xhigh'}
 CLAUDE_MODELS = ('opus', 'sonnet', 'haiku', 'fable')
 ALIASES = ('inherit-parent', 'auto')
@@ -457,10 +463,24 @@ def resolve_native(parent, role, config, usage, read_banked):
 def resolve(parent, role, config, codex_model, usage, read_banked):
     if role not in CROSS_VENDOR_ROLES:
         return resolve_native(parent, role, config, usage, read_banked)
+    target = resolve_counterpart(parent, role, config, codex_model, usage, read_banked)
+    if CROSS_VENDOR_ROLES[role][0] == 'review':
+        # A fallback target carries no effort, so Gemini's comes from the configuration.
+        target['alternate'] = {'run': ANTIGRAVITY, 'model': GEMINI, 'effort': counterpart_effort(parent, role, config)}
+    return target
+
+
+def counterpart_effort(parent, role, config):
+    entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
+    return capped(text(table(table(table(config.get(parent)).get(entry_name)).get('effort')).get(effort_key)) or default_effort)
+
+
+def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
+    """Return the other vendor's target for a review or computer-use role, or run "fallback" when Codex usage is nearly spent."""
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
-    effort = capped(text(table(entry.get('effort')).get(effort_key)) or default_effort)
+    effort = counterpart_effort(parent, role, config)
     model = entry.get('model')
     model = text(model) or text(table(model).get(effort_key))
     target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': model, 'effort': effort}
@@ -520,7 +540,7 @@ def resolve_seat(parent, vendor, model, effort, config, codex_model, usage, read
         if parent == 'codex':
             seat['serviceTier'] = 'priority' if usage is None or check_speed(usage, read_banked)[0] else 'default'
     else:
-        seat = resolve(parent, 'review-full', config, codex_model, usage, read_banked)
+        seat = resolve_counterpart(parent, 'review-full', config, codex_model, usage, read_banked)
         del seat['role']
         if seat['run'] != 'fallback':
             seat.update(model=model or seat['model'], effort=effort)

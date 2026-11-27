@@ -333,6 +333,23 @@ class TargetResolution(unittest.TestCase):
         self.assertEqual(self.run_target('swarm-workers',parent='codex')['serviceTier'],'priority')
 
 
+    def test_a_review_target_carries_a_gemini_alternate_at_its_effort_on_both_hosts_and_as_a_fallback(self):
+        self.log('a.jsonl',event(10))
+        gemini=lambda effort:{'run':'antigravity','model':'gemini-4-neon','effort':effort}
+        # The fixture's full effort is max, which no target runs above xhigh.
+        self.assertEqual([self.run_target(role)['alternate'] for role in ('review-full','review-delta')],[gemini('xhigh'),gemini('high')])
+        self.assertEqual(self.run_target('review-delta',parent='codex')['alternate'],gemini('high'))
+        self.log('a.jsonl',event(95))
+        result=self.run_target('review-full')
+        self.assertEqual((result['run'],result['alternate']),('fallback',gemini('xhigh')))
+
+    def test_computer_use_and_a_panels_counterpart_seat_carry_no_gemini_alternate(self):
+        self.log('a.jsonl',event(95))
+        self.assertNotIn('alternate',self.run_target('computer-use'))
+        self.config.write_text(json.dumps({**CONFIG,'claude-code':{**CONFIG['claude-code'],'roles':{'arena-runners':['fable','gpt-seat']}}}))
+        self.assertEqual(self.run_target('arena-runners')['seats'][1]['run'],'fallback')
+        self.assertNotIn('alternate',self.run_target('arena-runners')['seats'][1])
+
     def test_claude_code_panel_seats_fable_and_opus_natively_and_gemini_on_antigravity_with_a_codex_alternate(self):
         self.log('a.jsonl',event(10))
         self.assertEqual(self.run_target('arena-runners'),{'role':'arena-runners','seats':[

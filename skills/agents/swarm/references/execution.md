@@ -25,7 +25,7 @@ No role or counterpart runs above `xhigh`, and `target.py` lowers a configured `
 
 A model counts as rejected once the host's error says it is not valid, or leaves it out of its list of valid models. Never pass a rejected model again, skip any step below whose model is already rejected, and report what was rejected, the fallback taken, and the model and settings that ran.
 
-- **An Antigravity seat or judge** retries once with the closest Gemini model [the T3 route](t3.md) lists; then a seat takes its `alternate` target, and a judge recovers as /arena's Phase C says.
+- **An Antigravity seat, judge, or review alternate** retries once with the closest Gemini model [the T3 route](t3.md) lists; then a seat takes its `alternate` target, a judge recovers as /arena's Phase C says, and a review alternate gives way to the next route under Cross-vendor critics.
 - **A counterpart seat**, whether a critic, a panel runner, or a judge, keeps the counterpart's vendor while a counterpart route remains. A route that lists valid models, such as [the T3 route](t3.md), retries once with the closest listed counterpart model; otherwise take the next route under Cross-vendor critics that the calling skill allows.
 - **Every other spawn** tries these steps in order, skipping a step that does not apply:
   1. A rejected effort or speed adjustment: run at the role's resolved target, and try no other adjusted setting.
@@ -48,14 +48,16 @@ Prefer the counterpart, the other vendor's model, for independent judgment, revi
 
 1. A T3 Code child task, when the `t3-code` MCP server exposes `delegate_task`: follow [the T3 route](t3.md).
 2. The other CLI, through the bounded wrapper below.
-3. A native critic of the same vendor, disclosed as same-model coverage.
+3. The target's `alternate`, when it prints one and `orchestrator_capabilities` lists the Antigravity provider: Gemini 4 Neon through [the T3 route](t3.md) with the same brief, disclosed as the Gemini alternate with the reason the counterpart did not run. It keeps the critic on another vendor's model.
+4. A native critic of the same vendor, disclosed as same-model coverage.
 
 A usage-limit failure gets no retry and skips the other routes on that vendor's account, so it goes straight to route 3. A caller that runs its own counterpart pass, such as /review-loop, can ask for same-model critics for the rest of its review.
 
 Resolve the counterpart before dispatch with `python3 scripts/target.py --parent <codex|claude-code> review-full` from this skill directory, for a whole artifact, plan, or judging pass, or with `review-delta` for the changes since a reviewed head. It fills what the `review` entry leaves out and steps Codex down as its usage runs low. It answers in milliseconds from local files, except when a window is under its line, or usage is below the fallback threshold, and the hour's banked-reset reading is missing, when it asks `codex app-server` for up to five seconds; `--help` shows the personal file's keys and thresholds. It prints one JSON target:
 
 - `run` names the counterpart's vendor. Pass the target's `model`, `effort`, and `serviceTier` on every route, because a model's default effort can be `low`. Without a `model`, a Claude counterpart takes the newest Opus model available, and the Codex CLI keeps its configured model.
-- `run: "fallback"` means Codex usage is nearly spent: take route 3 and disclose the target's `reason`.
+- `run: "fallback"` means Codex usage is nearly spent: start at route 3 and disclose the target's `reason`.
+- `alternate`, which only a review target prints, is route 3's target: pass its `model` and `effort`.
 - `note` records a step down to standard speed, unknown usage, or a banked reset the reset guard will redeem before it lapses; carry it into the report.
 
 For a critic, the target sets the counterpart only; same-model critics inherit the session's model and effort unless the user configured them.
@@ -66,7 +68,7 @@ Review prompts name the actual evidence the critic should inspect and state that
 
 Resolve evidence against the reviewer's readable scope before launch. Claude's `Read,Glob,Grep` profile cannot run shell checks; supply their recorded results and embed relevant snapshots when external evidence paths are inaccessible. Use a native critic for independent execution or evidence that this restricted profile cannot reach, and report the actual coverage of each pass.
 
-If the wrapper reports unavailable or fails, dispatch a separate native critic. State that the cross-vendor pass did not complete and identify the actual completed pass. If delegation itself is unavailable, carry out separate sequential passes and label that loss of independence. Missing required workflow evidence remains a gap even when a different reviewer runs.
+If the wrapper reports unavailable or fails, take the next route. State that the counterpart's pass did not complete and identify the actual completed pass. If delegation itself is unavailable, carry out separate sequential passes and label that loss of independence. Missing required workflow evidence remains a gap even when a different reviewer runs.
 
 ## Execution and completion
 

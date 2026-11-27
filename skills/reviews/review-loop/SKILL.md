@@ -33,7 +33,7 @@ Round 1 is a full review by both models. A plan target gets only the counterpart
 
 4. Collect the counterpart's reports. Every reviewer belongs to the round, so wait for each one before reporting.
 
-When the counterpart's review fails after the route's retry and fallbacks, continue with the other passes and record it missing; label the round **single model**, with the reason, when no counterpart pass returned. A small-diff tier whose counterpart failed runs the full round instead. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
+When the counterpart cannot run, because its target is `fallback` or its routes failed after their retry, /swarm's route sends the same brief to the target's Gemini **alternate**. In that round the alternate takes each pass these steps give the counterpart, apart from the Codex correctness pass, and the report labels the round **Gemini alternate**, with the reason. Resolve the target again each round, so the counterpart returns when it can run. When neither returned, continue with the other passes and record it missing; label the round **single model**, with the reason. A small-diff tier the counterpart itself did not review runs the full round instead, beside the alternate when it ran. A failed Codex correctness pass is a recorded gap, and the round goes on without it.
 
 **Complete when:** every reviewer returned a terminal report or a recorded failure for the same revisions.
 
