@@ -16,31 +16,46 @@ const RELEASE = /^([\w.-]+\/[\w.-]+)@(.+)$/;
 const MESSAGE = /^slack:([A-Z0-9]+):(\d+)\.(\d+)$/;
 
 /**
- * The workspace slug for a link of `kind`: the one the source `from` gives, or else, for a ref that
- * another kind of source found, the one of the profile's only source of that kind.
+ * The workspace slug for a link of `kind` to a ref the source `from` found: that source's own when
+ * it is of `kind`. A ref nested in a change's detail, such as a started thread's ticket, may name
+ * another kind's thing, and then takes the profile's only source of that kind. A source no longer
+ * in the profile gives none, so a frozen change never takes another source's workspace.
  */
-function workspace(from: string, sources: readonly Source[], kind: "linear" | "slack") {
+function workspace(
+  from: string,
+  sources: readonly Source[],
+  kind: "linear" | "slack",
+  nested: boolean,
+): string | null {
   const ofKind = sources.filter(
     (source): source is LinearSource | SlackSource => source.kind === kind,
   );
   const own = ofKind.find((source) => source.name === from);
-  const chosen = own ?? (ofKind.length === 1 ? ofKind[0] : undefined);
-  return chosen?.workspace ?? null;
+  if (own !== undefined) return own.workspace ?? null;
+  const [only, ...more] = ofKind;
+  const origin = sources.some((source) => source.name === from);
+  return nested && origin && more.length === 0 ? (only?.workspace ?? null) : null;
 }
 
 /**
  * The URL of `ref`, found by the source `from`, or `ref` itself when the profile gives no way to
- * build one; `pull` reads `owner/repo#n` as a PR rather than an issue.
+ * build one; `pull` reads `owner/repo#n` as a PR rather than an issue, and `nested` marks a ref
+ * from a change's detail.
  */
-function linkRef(ref: string, from: string, sources: readonly Source[], pull: boolean): string {
+function linkRef(
+  ref: string,
+  from: string,
+  sources: readonly Source[],
+  options: { pull: boolean; nested: boolean },
+): string {
   if (TICKET.test(ref)) {
-    const linear = workspace(from, sources, "linear");
+    const linear = workspace(from, sources, "linear", options.nested);
     return linear === null ? ref : `https://linear.app/${linear}/issue/${ref}`;
   }
   const numbered = NUMBERED.exec(ref);
   if (numbered !== null) {
     const [, repo, number] = numbered;
-    return `https://github.com/${repo}/${pull ? "pull" : "issues"}/${number}`;
+    return `https://github.com/${repo}/${options.pull ? "pull" : "issues"}/${number}`;
   }
   const release = RELEASE.exec(ref);
   if (release !== null) {
@@ -49,7 +64,7 @@ function linkRef(ref: string, from: string, sources: readonly Source[], pull: bo
   }
   const message = MESSAGE.exec(ref);
   if (message !== null) {
-    const slack = workspace(from, sources, "slack");
+    const slack = workspace(from, sources, "slack", options.nested);
     const [, channel, seconds, fraction] = message;
     return slack === null
       ? ref
@@ -61,7 +76,8 @@ function linkRef(ref: string, from: string, sources: readonly Source[], pull: bo
 /** The URL of what `item` names: a T3 thread's own link, or its ref's. */
 function link(item: Change, sources: readonly Source[]): string {
   if ("link" in item.detail) return item.detail.link || item.ref;
-  return linkRef(item.ref, item.source, sources, item.kind.startsWith("pr."));
+  const pull = item.kind.startsWith("pr.");
+  return linkRef(item.ref, item.source, sources, { pull, nested: false });
 }
 
 /** The detail fields that hold refs: tickets, and the PRs a release names. */
@@ -84,7 +100,7 @@ function before(a: Change, b: Change): boolean {
 function reading(item: Change, sources: readonly Source[]): string {
   const show = (key: string, value: unknown) =>
     REFS.has(key) && typeof value === "string"
-      ? linkRef(value, item.source, sources, key === "prs")
+      ? linkRef(value, item.source, sources, { pull: key === "prs", nested: true })
       : String(value ?? "none");
   return Object.entries(item.detail)
     .filter(([key]) => key !== "link")

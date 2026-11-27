@@ -190,6 +190,49 @@ test("the oldest message wins even when the timestamps' fractions differ in widt
   assert.match(lines[1] ?? "", /archives\/D1\/p17956812001000001 /);
 });
 
+test("a change links only through the source it names, which a rename leaves bare", (t) => {
+  const org = new Org(t);
+  const slackAs = (name: string, workspace: string) =>
+    org.writeProfile((profile) => {
+      const [, slack] = profile.sources;
+      assert.ok(slack);
+      Object.assign(slack, { name, workspace });
+    });
+  slackAs("slack", "first");
+  writePending(org, delta([waits("slack", "D1", "1795681200.000100")]));
+  assert.match(printed(org, "10:10"), /https:\/\/first\.slack\.com\/archives\/D1\//);
+  slackAs("second-source", "second");
+  const shown = printed(org, "10:10");
+  assert.doesNotMatch(shown, /slack\.com/);
+  assert.match(shown, /^- slack\.waiting · slack:D1:1795681200\.000100 · /m);
+});
+
+test("a nested ref borrows the only Linear workspace only while its own source is configured", (t) => {
+  const org = new Org(t);
+  withWorkspaces(org);
+  const started = change("t3", "thread.waiting", {
+    ref: "t3:thr-2",
+    at: utc("10:05"),
+    detail: {
+      status: "waiting",
+      link: "t3://thread/thr-2",
+      items: 2,
+      started: true,
+      ticket: "ENG-102",
+    },
+  });
+  writePending(org, delta([started]));
+  assert.match(printed(org, "10:10"), /ticket: .*https:\/\/linear\.app\/acme-eng\/issue\/ENG-102/);
+  org.writeProfile((profile) => {
+    profile.sources = profile.sources.filter((source) => source.kind !== "t3");
+    for (const source of profile.sources)
+      if (source.kind === "linear") source.workspace = "acme-eng";
+  });
+  const shown = printed(org, "10:10");
+  assert.doesNotMatch(shown, /linear\.app/);
+  assert.match(shown, /ticket: ENG-102$/m);
+});
+
 test("two Slack sources never merge a conversation or a channel's count", (t) => {
   const org = new Org(t);
   org.writeProfile((profile) => {
