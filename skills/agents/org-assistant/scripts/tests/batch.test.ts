@@ -179,6 +179,17 @@ test("the ids inside a detail are linked like refs", (t) => {
   ]);
 });
 
+test("the oldest message wins even when the timestamps' fractions differ in width", (t) => {
+  const org = new Org(t);
+  withWorkspaces(org);
+  writePending(
+    org,
+    delta([waits("slack", "D1", "1795681200.900000"), waits("slack", "D1", "1795681200.1000001")]),
+  );
+  const lines = printed(org, "10:10").split("\n");
+  assert.match(lines[1] ?? "", /archives\/D1\/p17956812001000001 /);
+});
+
 test("two Slack sources never merge a conversation or a channel's count", (t) => {
   const org = new Org(t);
   org.writeProfile((profile) => {

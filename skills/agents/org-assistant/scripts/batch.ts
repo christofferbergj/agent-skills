@@ -68,12 +68,16 @@ function link(item: Change, sources: readonly Source[]): string {
 const REFS: ReadonlySet<string> = new Set(["blocks", "blocker", "ticket", "prs"]);
 
 /**
- * A message's place in time from the full Slack timestamp in its ref, since `at` keeps only the
- * second and two messages can share one.
+ * Whether message `a` was sent before `b`, by the full Slack timestamps in their refs, since `at`
+ * keeps only the second and two messages can share one: the seconds, then the fractions padded to
+ * the same width.
  */
-function sent(item: Change): bigint {
-  const [, , seconds = "0", fraction = ""] = MESSAGE.exec(item.ref) ?? [];
-  return BigInt(seconds + fraction.padEnd(6, "0"));
+function before(a: Change, b: Change): boolean {
+  const [, , aSeconds = "0", aFraction = ""] = MESSAGE.exec(a.ref) ?? [];
+  const [, , bSeconds = "0", bFraction = ""] = MESSAGE.exec(b.ref) ?? [];
+  if (aSeconds !== bSeconds) return BigInt(aSeconds) < BigInt(bSeconds);
+  const width = Math.max(aFraction.length, bFraction.length);
+  return aFraction.padEnd(width, "0") < bFraction.padEnd(width, "0");
 }
 
 /** The item's detail as `key: value` pairs, each ref in it linked. */
@@ -143,7 +147,7 @@ export function renderBatch(
   }
   const shown = rows.map((row) => {
     if (typeof row === "string") return row;
-    const oldest = row.reduce((a, b) => (sent(b) < sent(a) ? b : a));
+    const oldest = row.reduce((a, b) => (before(b, a) ? b : a));
     const via = [...new Set(row.map((item) => item.detail.via))].join(" and ");
     return line(oldest, `${plural(row.length, "message")} waiting, via ${via}`);
   });
