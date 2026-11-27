@@ -8,7 +8,7 @@ The coordinator's memory for one project, at `~/.local/state/coordinator/<projec
 - **Decisions**: `<worker> asked <question> → <answer> · <source>`, the source being "the user: '<their words>'", the plan, standing rule <n>, or what a probe showed.
 - **Workers**: one row per unit or subthread, with the columns below. A new row needs `--state`.
 - **Learnings**: `<worker>: <lesson a sibling worker should know>`.
-- **Listening**: `Heartbeat`, `tick` while the [tick](tick.md) checks the project, or none; `Startup`, a scheduled task id or none; and `Watches`, every watched PR with its owner on one line. `listen` replaces a whole line, so pass the full list.
+- **Listening**: `Heartbeat`, `tick` while the [tick](tick.md) checks the project, or none; `Startup`, a scheduled task id or none; `Watches`, every watched PR with its owner on one line; and `Limits`, every provider instance a usage limit holds with its reset time, or none. `listen` replaces a whole line, so pass the full list.
 
 ## Workers
 
