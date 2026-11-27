@@ -38,8 +38,13 @@ const moved = change("linear", "ticket.moved", {
   detail: { field: "status", to: "Done" },
 });
 
-function sent(kind: SentBatch["kind"], tries = 1, items: Change[] = [comment]): SentBatch {
-  const attempts = Array.from({ length: tries }, () => ({ at: utc("10:05"), ok: true }));
+function sent(
+  kind: SentBatch["kind"],
+  tries = 1,
+  items: Change[] = [comment],
+  ok: boolean | null = true,
+): SentBatch {
+  const attempts = Array.from({ length: tries }, () => ({ at: utc("10:05"), ok }));
   return {
     id: BATCH,
     kind,
@@ -206,13 +211,28 @@ const TABLE: [string, Given, string][] = [
   ],
   [
     "an undelivered batch waits an hour from its last wake",
-    { clock: "11:04", pending: { sent: sent("delta", 1) } },
+    { clock: "10:59", pending: { sent: sent("delta", 1) } },
     "wait: the sent batch waits an hour from its last wake",
   ],
   [
-    "then goes once more",
-    { clock: "11:05", pending: { sent: sent("delta", 1) } },
+    "then goes once more, even when the timer starts a little early",
+    { clock: "11:01", pending: { sent: sent("delta", 1) } },
     "resend: resending the undelivered batch",
+  ],
+  [
+    "a wake whose send failed goes again at the next scan",
+    { clock: "10:20", pending: { sent: sent("delta", 1, [comment], false) } },
+    "resend: resending the undelivered batch",
+  ],
+  [
+    "and a failed last send keeps failing the unit",
+    { clock: "10:20", pending: { sent: sent("delta", 2, [comment], false) } },
+    `giveUp: batch ${BATCH} undelivered after 2 wakes`,
+  ],
+  [
+    "a send cut off by a crash still gets its hour",
+    { clock: "10:20", pending: { sent: sent("delta", 1, [comment], null) } },
+    "wait: the sent batch waits an hour from its last wake",
   ],
   [
     "the retry gets its hour too",
