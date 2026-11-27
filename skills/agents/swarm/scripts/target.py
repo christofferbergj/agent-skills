@@ -474,7 +474,10 @@ def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
     entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
-    effort = capped(text(table(entry.get('effort')).get(effort_key)) or default_effort)
+    effort = capped(text(table(entry.get('effort')).get(effort_key)))
+    # Both targets take this value as a provider option, so a value no provider lists falls back to the role's default.
+    if effort not in EFFORTS:
+        effort = default_effort
     model = entry.get('model')
     model = text(model) or text(table(model).get(effort_key))
     target = {'role': role, 'run': vendor, 'providerInstanceId': text(entry.get('providerInstanceId')), 'model': model, 'effort': effort}
