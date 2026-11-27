@@ -14,20 +14,25 @@
  *       $T3CODE_THREAD_ID, or else the one named NAME, from the title `✦ NAME assistant`
  *   assistant.ts status ORG
  *       the health line, the scan stamp's age, the batch in flight, and the holds
+ *   assistant.ts batch ORG [ID]
+ *       the batch to post, as text: batch ID, or else the sent batch, or else the inline one, each
+ *       item with its kind, link, age, and detail
  *   assistant.ts ledger ORG COMMAND ...
  *       the model's edits to ledger.json; `assistant.ts ledger ORG -h` lists them
  *
  * Exits 1 when a unit should fail (two undelivered wakes, a source failing three scans in a row, or
- * an unreadable profile or state file) or `org` finds no one organisation, and 2 on a usage error. Times are UTC in files and the
- * profile's timezone on screen.
+ * an unreadable profile or state file), when `org` finds no one organisation or `batch` doesn't find
+ * batch ID, and 2 on a usage error. Times are UTC in files and the profile's timezone on screen.
  */
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
 
+import { renderBatch } from "./batch.ts";
 import { COMMANDS, type Command, EMPTY_LEDGER, LedgerError, ledgerParser } from "./ledger.ts";
 import { ShapeError } from "./parse.ts";
+import { pendingParser } from "./pending.ts";
 import type { Mode } from "./policy.ts";
 import { loadProfile, matchOrgs, orgs } from "./profile.ts";
 import { scanOrg } from "./scan.ts";
@@ -39,6 +44,7 @@ const USAGE = `usage: assistant.ts scan [ORG ...] [--dry-run] [--since 24h]
        assistant.ts scan ORG --inline
        assistant.ts org [--name NAME]
        assistant.ts status ORG
+       assistant.ts batch ORG [ID]
        assistant.ts ledger ORG COMMAND ...   (assistant.ts ledger ORG -h lists the commands)`;
 
 class UsageError extends Error {}
@@ -137,6 +143,22 @@ function findOrg(name: string | null): string {
   );
 }
 
+/** The batch to post: the one named `id`, or else the sent batch, or else the inline one. */
+function batch(org: string, id: string | null, now: Date): string {
+  const sources = loadProfile(org).sources;
+  const folder = stateDir(org);
+  const pending = readJson(join(folder, "pending.json"), pendingParser);
+  const book = readJson(join(folder, "ledger.json"), ledgerParser) ?? EMPTY_LEDGER;
+  const frozen = [pending?.sent, pending?.inline].flatMap((entry) => entry ?? []);
+  const chosen = id === null ? frozen[0] : frozen.find((entry) => entry.id === id);
+  if (chosen === undefined) {
+    if (id === null) return "No batch waits to be posted.";
+    throw new LookupError(`no batch ${id} waits to be posted: it went out already, or never froze`);
+  }
+  const delivered = book.delivered.some((entry) => entry.batch === chosen.id);
+  return renderBatch(chosen, { now, sources, delivered });
+}
+
 /**
  * Scans each organisation in a process of its own, so one that crashes or can't write its state
  * fails only itself; the exit code is the worst of theirs.
@@ -162,6 +184,7 @@ const OPTIONS = {
   },
   org: { name: { type: "string" } },
   status: NOW,
+  batch: NOW,
   ledger: {
     ...NOW,
     until: { type: "string" },
@@ -203,6 +226,14 @@ function run(command: string | undefined, args: string[]): number {
     const [org, ...more] = positionals;
     if (org === undefined || more.length > 0) throw new UsageError("status takes one organisation");
     process.stdout.write(`${status(org, instant(values.now))}\n`);
+    return 0;
+  }
+  if (command === "batch") {
+    const { values, positionals } = parse(args, OPTIONS.batch);
+    const [org, id = null, ...more] = positionals;
+    if (org === undefined || more.length > 0)
+      throw new UsageError("batch takes one organisation and, optionally, a batch id");
+    process.stdout.write(`${batch(org, id, instant(values.now))}\n`);
     return 0;
   }
   if (command === "ledger") {
