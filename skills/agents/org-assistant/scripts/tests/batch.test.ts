@@ -104,15 +104,24 @@ test("each kind of ref becomes its link, from the workspaces the profile gives",
     printed(org, "10:10"),
     [
       "Batch acme-20261126-1005-2 (delta, 6 changes): a review request",
-      "- ticket.assigned · https://linear.app/acme-eng/issue/ENG-103 · 30 min ago · type: issueAssignedToYou",
-      "- pr.review_requested · https://github.com/example/web/pull/12 · 20 min ago",
-      "- issue.assigned · https://github.com/example/web/issues/13 · 20 min ago",
-      "- release.awaited · https://github.com/example/api/releases/tag/v1.1.0 · 15 min ago · prs: https://github.com/example/web/pull/11",
-      `- slack.waiting · https://acme-chat.slack.com/archives/D0ALEX/p${ts} · 40 min ago · 1 message waiting, via dm`,
-      "- thread.finished · t3://thread/thr-1 · 5 min ago · status: completed, items: 4, started: false",
+      "- ticket.assigned · ENG-103 <https://linear.app/acme-eng/issue/ENG-103> · 30 min ago · type: issueAssignedToYou",
+      "- pr.review_requested · example/web#12 <https://github.com/example/web/pull/12> · 20 min ago",
+      "- issue.assigned · example/web#13 <https://github.com/example/web/issues/13> · 20 min ago",
+      "- release.awaited · example/api@v1.1.0 <https://github.com/example/api/releases/tag/v1.1.0> · 15 min ago · prs: example/web#11 <https://github.com/example/web/pull/11>",
+      `- slack.waiting · slack:D0ALEX:${slackTs("09:30")} <https://acme-chat.slack.com/archives/D0ALEX/p${ts}> · 40 min ago · 1 message waiting, via dm`,
+      "- thread.finished · t3:thr-1 <t3://thread/thr-1> · 5 min ago · status: completed, items: 4, started: false",
       "",
     ].join("\n"),
   );
+});
+
+test("a release's waiting PRs keep the ref the ledger's waits take", (t) => {
+  const org = new Org(t);
+  writePending(org, everyRef());
+  const line = printed(org, "10:10")
+    .split("\n")
+    .find((row) => row.startsWith("- release.awaited"));
+  assert.match(line ?? "", /prs: example\/web#11 </);
 });
 
 test("without a workspace, a ticket or a Slack message keeps its ref", (t) => {
@@ -126,7 +135,7 @@ test("without a workspace, a ticket or a Slack message keeps its ref", (t) => {
   );
   assert.equal(
     lines[2],
-    "- pr.review_requested · https://github.com/example/web/pull/12 · 20 min ago",
+    "- pr.review_requested · example/web#12 <https://github.com/example/web/pull/12> · 20 min ago",
   );
 });
 
@@ -138,7 +147,7 @@ test("a conversation links its oldest message by the full Slack timestamp, not t
     delta([waits("slack", "D1", "1800000000.200000"), waits("slack", "D1", "1800000000.100000")]),
   );
   const lines = printed(org, "10:10").split("\n");
-  assert.match(lines[1] ?? "", /archives\/D1\/p1800000000100000 · .* · 2 messages waiting/);
+  assert.match(lines[1] ?? "", /archives\/D1\/p1800000000100000> · .* · 2 messages waiting/);
 });
 
 test("the ids inside a detail are linked like refs", (t) => {
@@ -170,12 +179,12 @@ test("the ids inside a detail are linked like refs", (t) => {
       }),
     ]),
   );
-  const ticket = (id: string) => `https://linear.app/acme-eng/issue/${id}`;
+  const ticket = (id: string) => `${id} <https://linear.app/acme-eng/issue/${id}>`;
   const [, ...rows] = printed(org, "10:10").trim().split("\n");
   assert.deepEqual(rows, [
     `- ticket.unblocked · ${ticket("ENG-102")} · 30 min ago · blocker: ${ticket("ENG-200")}, to: Done`,
     `- dependency.changed · ${ticket("ENG-200")} · 30 min ago · blocks: ${ticket("ENG-102")}, before: In Progress, to: Done, owner: Sam Sample`,
-    `- thread.waiting · t3://thread/thr-2 · 5 min ago · status: waiting, items: 2, started: true, ticket: ${ticket("ENG-102")}`,
+    `- thread.waiting · t3:thr-2 <t3://thread/thr-2> · 5 min ago · status: waiting, items: 2, started: true, ticket: ${ticket("ENG-102")}`,
   ]);
 });
 
@@ -187,7 +196,7 @@ test("the oldest message wins even when the timestamps' fractions differ in widt
     delta([waits("slack", "D1", "1795681200.900000"), waits("slack", "D1", "1795681200.1000001")]),
   );
   const lines = printed(org, "10:10").split("\n");
-  assert.match(lines[1] ?? "", /archives\/D1\/p17956812001000001 /);
+  assert.match(lines[1] ?? "", /archives\/D1\/p17956812001000001>/);
 });
 
 test("a change links only through the source it names, which a rename leaves bare", (t) => {
@@ -268,8 +277,8 @@ test("two Slack sources never merge a conversation or a channel's count", (t) =>
   assert.deepEqual(
     rows.map((row) => row.replace(/ · \d+ min ago/, "")),
     [
-      "- slack.waiting · https://acme-chat.slack.com/archives/D0ALEX/p1795681800000100 · 1 message waiting, via dm",
-      "- slack.waiting · https://acme-ops.slack.com/archives/D0ALEX/p1795681900000100 · 1 message waiting, via dm",
+      "- slack.waiting · slack:D0ALEX:1795681800.000100 <https://acme-chat.slack.com/archives/D0ALEX/p1795681800000100> · 1 message waiting, via dm",
+      "- slack.waiting · slack:D0ALEX:1795681900.000100 <https://acme-ops.slack.com/archives/D0ALEX/p1795681900000100> · 1 message waiting, via dm",
       "- pulse · #dev (slack) 1 message · #dev (slack-ops) 2 messages · #random 1 message",
     ],
   );
@@ -293,8 +302,8 @@ test("a conversation's waiting messages make one line, linking the oldest", (t) 
   const [header, ...rows] = printed(org, "10:10").trim().split("\n");
   assert.match(header ?? "", /^Batch acme-\S+ \(delta, 4 changes\): /);
   assert.deepEqual(rows, [
-    `- slack.waiting · https://acme-chat.slack.com/archives/D0ALEX/p${slackTs("09:20").replace(".", "")} · 50 min ago · 3 messages waiting, via dm`,
-    `- slack.waiting · https://acme-chat.slack.com/archives/D0SAM/p${slackTs("09:30").replace(".", "")} · 40 min ago · 1 message waiting, via dm`,
+    `- slack.waiting · slack:D0ALEX:${slackTs("09:20")} <https://acme-chat.slack.com/archives/D0ALEX/p${slackTs("09:20").replace(".", "")}> · 50 min ago · 3 messages waiting, via dm`,
+    `- slack.waiting · slack:D0SAM:${slackTs("09:30")} <https://acme-chat.slack.com/archives/D0SAM/p${slackTs("09:30").replace(".", "")}> · 40 min ago · 1 message waiting, via dm`,
   ]);
 });
 

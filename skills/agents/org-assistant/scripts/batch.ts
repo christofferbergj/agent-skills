@@ -38,19 +38,19 @@ function workspace(
 }
 
 /**
- * The URL of `ref`, found by the source `from`, or `ref` itself when the profile gives no way to
- * build one; `pull` reads `owner/repo#n` as a PR rather than an issue, and `nested` marks a ref
+ * The URL of `ref`, found by the source `from`, or null when the profile gives no way to build one;
+ * `pull` reads `owner/repo#n` as a PR rather than an issue, and `nested` marks a ref
  * from a change's detail.
  */
-function linkRef(
+function urlOf(
   ref: string,
   from: string,
   sources: readonly Source[],
   options: { pull: boolean; nested: boolean },
-): string {
+): string | null {
   if (TICKET.test(ref)) {
     const linear = workspace(from, sources, "linear", options.nested);
-    return linear === null ? ref : `https://linear.app/${linear}/issue/${ref}`;
+    return linear === null ? null : `https://linear.app/${linear}/issue/${ref}`;
   }
   const numbered = NUMBERED.exec(ref);
   if (numbered !== null) {
@@ -67,17 +67,23 @@ function linkRef(
     const slack = workspace(from, sources, "slack", options.nested);
     const [, channel, seconds, fraction] = message;
     return slack === null
-      ? ref
+      ? null
       : `https://${slack}.slack.com/archives/${channel}/p${seconds}${fraction}`;
   }
-  return ref;
+  return null;
 }
 
-/** The URL of what `item` names: a T3 thread's own link, or its ref's. */
+/**
+ * A ref as the post names it and the ledger takes it, with its URL after it when there is one, such
+ * as `example/web#11 <https://github.com/example/web/pull/11>`.
+ */
+const cite = (ref: string, url: string | null) => (url ? `${ref} <${url}>` : ref);
+
+/** What `item` names, cited with its URL: a T3 thread's own link, or its ref's. */
 function link(item: Change, sources: readonly Source[]): string {
-  if ("link" in item.detail) return item.detail.link || item.ref;
+  if ("link" in item.detail) return cite(item.ref, item.detail.link);
   const pull = item.kind.startsWith("pr.");
-  return linkRef(item.ref, item.source, sources, { pull, nested: false });
+  return cite(item.ref, urlOf(item.ref, item.source, sources, { pull, nested: false }));
 }
 
 /** The detail fields that hold refs: tickets, and the PRs a release names. */
@@ -96,11 +102,11 @@ function before(a: Change, b: Change): boolean {
   return aFraction.padEnd(width, "0") < bFraction.padEnd(width, "0");
 }
 
-/** The item's detail as `key: value` pairs, each ref in it linked. */
+/** The item's detail as `key: value` pairs, each ref in it cited. */
 function reading(item: Change, sources: readonly Source[]): string {
   const show = (key: string, value: unknown) =>
     REFS.has(key) && typeof value === "string"
-      ? linkRef(value, item.source, sources, { pull: key === "prs", nested: true })
+      ? cite(value, urlOf(value, item.source, sources, { pull: key === "prs", nested: true }))
       : String(value ?? "none");
   return Object.entries(item.detail)
     .filter(([key]) => key !== "link")
