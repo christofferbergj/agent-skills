@@ -7,7 +7,7 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { test } from "node:test";
 
-import { change } from "../changes.ts";
+import { type Change, change } from "../changes.ts";
 import { EMPTY_PENDING, type Pending } from "../pending.ts";
 import { Org, linearTime, slackTs, utc } from "./helpers.ts";
 
@@ -60,6 +60,11 @@ function everyRef(): Pending {
       detail: { status: "completed", link: "t3://thread/thr-1", items: 4, started: false },
     }),
   ];
+  return delta(items);
+}
+
+/** A sent delta of `items`, frozen at 10:05. */
+function delta(items: Change[]): Pending {
   return {
     ...EMPTY_PENDING,
     sent: {
@@ -72,6 +77,16 @@ function everyRef(): Pending {
     },
     serial: 2,
   };
+}
+
+/** A DM waiting in `channel`, found by `source`, with the Slack timestamp `ts`. */
+function waits(source: string, channel: string, ts: string): Change {
+  return change(source, "slack.waiting", {
+    ref: `slack:${channel}:${ts}`,
+    at: new Date(Math.floor(Number(ts)) * 1000).toISOString(),
+    key: "waiting",
+    detail: { via: "dm", channel, minutes: 40 },
+  });
 }
 
 function writePending(org: Org, pending: Pending): void {
@@ -113,6 +128,17 @@ test("without a workspace, a ticket or a Slack message keeps its ref", (t) => {
     lines[2],
     "- pr.review_requested · https://github.com/example/web/pull/12 · 20 min ago",
   );
+});
+
+test("a conversation links its oldest message by the full Slack timestamp, not the second", (t) => {
+  const org = new Org(t);
+  withWorkspaces(org);
+  writePending(
+    org,
+    delta([waits("slack", "D1", "1800000000.200000"), waits("slack", "D1", "1800000000.100000")]),
+  );
+  const lines = printed(org, "10:10").split("\n");
+  assert.match(lines[1] ?? "", /archives\/D1\/p1800000000100000 · .* · 2 messages waiting/);
 });
 
 test("a conversation's waiting messages make one line, linking the oldest", (t) => {

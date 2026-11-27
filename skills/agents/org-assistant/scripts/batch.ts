@@ -49,6 +49,15 @@ export function link(item: Change, sources: readonly Source[]): string {
   return ref;
 }
 
+/**
+ * A message's place in time from the full Slack timestamp in its ref, since `at` keeps only the
+ * second and two messages can share one.
+ */
+function sent(item: Change): bigint {
+  const [, , seconds = "0", fraction = ""] = MESSAGE.exec(item.ref) ?? [];
+  return BigInt(seconds + fraction.padEnd(6, "0"));
+}
+
 function reading(detail: Record<string, unknown>): string {
   return Object.entries(detail)
     .filter(([key]) => key !== "link")
@@ -103,7 +112,7 @@ export function renderBatch(
   }
   const shown = rows.map((row) => {
     if (typeof row === "string") return row;
-    const oldest = row.reduce((a, b) => (Date.parse(b.at) < Date.parse(a.at) ? b : a));
+    const oldest = row.reduce((a, b) => (sent(b) < sent(a) ? b : a));
     const via = [...new Set(row.map((item) => item.detail.via))].join(" and ");
     return line(oldest, `${plural(row.length, "message")} waiting, via ${via}`);
   });
