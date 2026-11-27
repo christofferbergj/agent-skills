@@ -40,7 +40,7 @@ function held(hold: Holds, kind: SentBatch["kind"]): boolean {
 /**
  * Whether today's overview is owed by `at`: a weekday in the window, past `from`, outside a pause.
  */
-export function overviewOwed(
+function overviewOwed(
   at: Local,
   schedule: Schedule,
   hold: Holds,
@@ -207,9 +207,15 @@ function inFlight(s: Situation, sent: SentBatch, thread: Thread): Step {
   return { kind: "resend", reason: "resending the undelivered batch" };
 }
 
-/** A weekday in the window, past the overview's time, with no overview frozen today. */
-function overviewDue(s: Situation): boolean {
-  return overviewOwed(s.at, s.schedule, s.hold) && s.pending.meta.overview_on !== s.at.date;
+/**
+ * A weekday in the window, past the overview's time or the later `by`, outside a pause, with no
+ * overview frozen today.
+ */
+export function overviewDue(
+  s: Pick<Situation, "at" | "schedule" | "hold"> & { pending: Pick<Pending, "meta"> },
+  by?: Clock,
+): boolean {
+  return overviewOwed(s.at, s.schedule, s.hold, by) && s.pending.meta.overview_on !== s.at.date;
 }
 
 /** Whether the gathered changes wake the thread now, and with which of them. */

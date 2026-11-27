@@ -22,6 +22,17 @@ test("the first scan records a baseline and wakes nothing", (t) => {
   assert.deepEqual(org.batch(), []);
 });
 
+test("a wake tells the run the command that prints its batch", (t) => {
+  const org = new Org(t);
+  org.scan("08:30");
+  org.scan("09:05");
+  const id = org.pending().sent?.id;
+  assert.ok(id);
+  const message = org.lastSent()?.message ?? "";
+  assert.ok(message.includes(`node scripts/assistant.ts batch acme ${id}`), message);
+  assert.doesNotMatch(message, /pending\.json/);
+});
+
 test("a wake names each change worth one, counts the pulse, and carries each change once", (t) => {
   const org = new Org(t);
   org.startDay();

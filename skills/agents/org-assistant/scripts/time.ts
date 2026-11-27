@@ -285,3 +285,8 @@ export function sleep(ms: number): void {
 export const MINUTE = 60_000;
 export const HOUR = 60 * MINUTE;
 export const DAY = 24 * HOUR;
+
+/** Whole minutes from `then` to `now`, and 0 for a time still ahead. */
+export function minutesAgo(then: Date, now: Date): number {
+  return Math.max(0, Math.floor((now.getTime() - then.getTime()) / MINUTE));
+}

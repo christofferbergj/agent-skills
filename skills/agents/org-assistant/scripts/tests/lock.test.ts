@@ -42,8 +42,10 @@ test("a scan killed while it holds the lock leaves the next one free to run", as
     stdio: "ignore",
   });
   t.after(() => scan.kill("SIGKILL"));
-  for (let tries = 0; !org.locked(".lock"); tries++) {
-    assert.ok(tries < 200, "the scan never took its lock");
+  // A deadline, not a count of tries: a slow runner can take seconds to start Node.
+  const deadline = Date.now() + 60_000;
+  while (!org.locked(".lock")) {
+    assert.ok(Date.now() < deadline, "the scan never took its lock");
     await delay(50);
   }
   scan.kill("SIGKILL");
