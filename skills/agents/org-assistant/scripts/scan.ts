@@ -120,7 +120,7 @@ export function wakeMessage(
   const refs = parts.length > 0 ? `: ${parts.join(", ")}` : "";
   return (
     `<org-assistant org="${org}" batch="${batch.id}" kind="${batch.kind}" try="${batch.tries.length + 1}">\n` +
-    `Use /org-assistant: post batch ${batch.id} from pending.json, then mark it delivered.\n` +
+    `Use /org-assistant: post batch ${batch.id}, which \`node scripts/assistant.ts batch ${org} ${batch.id}\` prints, then mark it delivered.\n` +
     `Why now: ${batch.reason}. ${batch.items.length} items${refs}.\n` +
     `Health: ${healthLine(snapshot, zone)}\n</org-assistant>\n`
   );
