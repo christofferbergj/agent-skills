@@ -1,0 +1,183 @@
+{
+  "_about": "A quiet invented organisation, shaped like the Linear, Slack, GitHub, and T3 responses recorded on 26 Nov 2026. Every id, name, and number is made up.",
+  "linear": {
+    "notifications": [
+      {
+        "id": "n-old",
+        "type": "issueSubscribed",
+        "url": "https://linear.app/example/issue/ENG-100/x",
+        "createdAt": "2026-11-25T08:00:00.000Z"
+      }
+    ],
+    "mine": [
+      {
+        "id": "ENG-101",
+        "status": "In Progress",
+        "statusType": "started",
+        "priority": {
+          "value": 2,
+          "name": "High"
+        },
+        "dueDate": null,
+        "assigneeId": "u-me",
+        "updatedAt": "2026-11-25T08:00:00.000Z",
+        "project": "Invented Project",
+        "team": "Engineering"
+      },
+      {
+        "id": "ENG-102",
+        "status": "Todo",
+        "statusType": "unstarted",
+        "priority": {
+          "value": 3,
+          "name": "Medium"
+        },
+        "dueDate": null,
+        "assigneeId": "u-me",
+        "updatedAt": "2026-11-25T08:00:00.000Z",
+        "project": "Invented Project",
+        "team": "Engineering"
+      }
+    ],
+    "issues": {
+      "ENG-101": {
+        "id": "ENG-101",
+        "relations": {
+          "blocks": [],
+          "blockedBy": [],
+          "relatedTo": []
+        },
+        "stateHistory": [
+          {
+            "state": {
+              "name": "In Progress",
+              "type": "started"
+            },
+            "startedAt": "2026-11-24T08:00:00.000Z",
+            "endedAt": null
+          }
+        ]
+      },
+      "ENG-102": {
+        "id": "ENG-102",
+        "relations": {
+          "blocks": [],
+          "blockedBy": [
+            {
+              "id": "ENG-200",
+              "title": "left out"
+            }
+          ],
+          "relatedTo": []
+        },
+        "stateHistory": [
+          {
+            "state": {
+              "name": "Todo",
+              "type": "unstarted"
+            },
+            "startedAt": "2026-11-24T08:00:00.000Z",
+            "endedAt": null
+          }
+        ]
+      },
+      "ENG-200": {
+        "id": "ENG-200",
+        "status": "In Progress",
+        "statusType": "started",
+        "assignee": "Sam Sample"
+      }
+    },
+    "team": {
+      "ENG": [
+        {
+          "id": "ENG-200",
+          "status": "In Progress",
+          "statusType": "started",
+          "assignee": "Sam Sample",
+          "assigneeId": "u-sam",
+          "createdAt": "2026-11-20T08:00:00.000Z",
+          "updatedAt": "2026-11-25T08:00:00.000Z",
+          "project": "Other Project"
+        }
+      ],
+      "OPS": []
+    }
+  },
+  "slack": {
+    "me": "U0ME",
+    "messages": []
+  },
+  "github": {
+    "example/web": {
+      "mine": [
+        {
+          "number": 11,
+          "isDraft": false,
+          "reviewDecision": "",
+          "statusCheckRollup": [
+            {
+              "__typename": "CheckRun",
+              "name": "ci",
+              "status": "COMPLETED",
+              "conclusion": "SUCCESS"
+            }
+          ],
+          "updatedAt": "2026-11-25T08:00:00Z"
+        }
+      ],
+      "requested": [],
+      "issues": []
+    },
+    "example/api": {
+      "open": [
+        {
+          "number": 21,
+          "createdAt": "2026-11-20T08:00:00Z"
+        }
+      ],
+      "releases": [
+        {
+          "tagName": "v1.0.0",
+          "publishedAt": "2026-11-20T08:00:00Z",
+          "isDraft": false
+        }
+      ],
+      "requested": []
+    }
+  },
+  "t3": {
+    "assistant": {
+      "threadId": "t-assistant",
+      "status": "completed",
+      "last": ""
+    },
+    "threads": [
+      {
+        "threadId": "t-assistant",
+        "status": "completed",
+        "settled": false,
+        "snoozed": false,
+        "snoozedUntil": null,
+        "parentThreadId": null,
+        "itemCount": 40,
+        "latestRunId": "r-assistant-1",
+        "createdAt": "2026-11-20T08:00:00Z",
+        "updatedAt": "2026-11-25T08:00:00Z"
+      },
+      {
+        "threadId": "t-other",
+        "status": "completed",
+        "settled": false,
+        "snoozed": false,
+        "snoozedUntil": null,
+        "parentThreadId": null,
+        "itemCount": 12,
+        "latestRunId": "r-other-1",
+        "createdAt": "2026-11-24T08:00:00Z",
+        "updatedAt": "2026-11-25T08:00:00Z",
+        "link": "https://example.invalid/t-other"
+      }
+    ]
+  }
+}

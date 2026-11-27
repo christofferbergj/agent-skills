@@ -15,6 +15,7 @@ Configure agents, coordinate work, maintain skills, and learn from completed ses
 | [git-guardrails](git-guardrails/SKILL.md)                       | Block dangerous Git commands with Codex or Claude Code hooks. |
 | [learn-taste](learn-taste/SKILL.md)                             | Turn design corrections into written rules.                   |
 | [maintain-skills](maintain-skills/SKILL.md)                     | Adopt upstream changes and audit the library.                 |
+| [org-assistant](org-assistant/SKILL.md)                         | Keep up with one organisation from a pinned T3 thread.        |
 | [principles](principles/SKILL.md)                               | Apply shared principles inside Matt or Pstack flows.          |
 | [pstack-help](pstack-help/SKILL.md)                             | Find the right Pstack workflow.                               |
 | [pstack-mode](pstack-mode/SKILL.md)                             | Run coordinated Pstack playbooks.                             |

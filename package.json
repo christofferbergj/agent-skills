@@ -8,8 +8,10 @@
     "prepare": "husky"
   },
   "devDependencies": {
+    "@types/node": "24.19.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.6.0",
-    "oxfmt": "^0.73.0"
+    "oxfmt": "^0.73.0",
+    "typescript": "7.0.2"
   }
 }

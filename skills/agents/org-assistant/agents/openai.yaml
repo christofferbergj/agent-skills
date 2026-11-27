@@ -1,0 +1,4 @@
+interface:
+  display_name: "Organisation Assistant"
+  short_description: "Keep up with one organisation from a pinned T3 thread"
+  default_prompt: "Use $org-assistant in this assistant thread."
