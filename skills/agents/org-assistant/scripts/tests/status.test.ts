@@ -4,7 +4,8 @@ import { test } from "node:test";
 
 import { Org, THU, linearTime } from "./helpers.ts";
 
-const NO_OVERVIEW = /No overview sent today by/;
+/** The missing-overview warning, in any wording it has had. */
+const NO_OVERVIEW = /No overview \w+ today by/;
 const STALE = /The last scan ran \d+ min ago: the timer may be stopped/;
 
 test("status warns when no overview was sent half an hour after it was due", (t) => {
