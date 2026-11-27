@@ -6,7 +6,7 @@
  */
 import type { Change, ChangeOf } from "./changes.ts";
 import type { InlineBatch, SentBatch } from "./pending.ts";
-import type { Source } from "./profile.ts";
+import type { LinearSource, SlackSource, Source } from "./profile.ts";
 import { MINUTE } from "./time.ts";
 
 const TICKET = /^[A-Z][A-Z0-9]*-\d+$/;
@@ -14,24 +14,32 @@ const NUMBERED = /^([\w.-]+\/[\w.-]+)#(\d+)$/;
 const RELEASE = /^([\w.-]+\/[\w.-]+)@(.+)$/;
 const MESSAGE = /^slack:([A-Z0-9]+):(\d+)\.(\d+)$/;
 
-/** The workspace slug the profile gives the source of `kind` that found `item`. */
-function workspace(item: Change, sources: readonly Source[], kind: "linear" | "slack") {
-  const found = sources.find((source) => source.name === item.source);
-  return found?.kind === kind ? (found.workspace ?? null) : null;
+/**
+ * The workspace slug for a link of `kind`: the one the source `from` gives, or else, for a ref that
+ * another kind of source found, the one of the profile's only source of that kind.
+ */
+function workspace(from: string, sources: readonly Source[], kind: "linear" | "slack") {
+  const ofKind = sources.filter(
+    (source): source is LinearSource | SlackSource => source.kind === kind,
+  );
+  const own = ofKind.find((source) => source.name === from);
+  const chosen = own ?? (ofKind.length === 1 ? ofKind[0] : undefined);
+  return chosen?.workspace ?? null;
 }
 
-/** The URL of what `item` names, or its ref when the profile gives no way to build one. */
-export function link(item: Change, sources: readonly Source[]): string {
-  const { ref } = item;
-  if ("link" in item.detail) return item.detail.link || ref;
+/**
+ * The URL of `ref`, found by the source `from`, or `ref` itself when the profile gives no way to
+ * build one; `pull` reads `owner/repo#n` as a PR rather than an issue.
+ */
+function linkRef(ref: string, from: string, sources: readonly Source[], pull: boolean): string {
   if (TICKET.test(ref)) {
-    const linear = workspace(item, sources, "linear");
+    const linear = workspace(from, sources, "linear");
     return linear === null ? ref : `https://linear.app/${linear}/issue/${ref}`;
   }
   const numbered = NUMBERED.exec(ref);
   if (numbered !== null) {
     const [, repo, number] = numbered;
-    return `https://github.com/${repo}/${item.kind.startsWith("pr.") ? "pull" : "issues"}/${number}`;
+    return `https://github.com/${repo}/${pull ? "pull" : "issues"}/${number}`;
   }
   const release = RELEASE.exec(ref);
   if (release !== null) {
@@ -40,7 +48,7 @@ export function link(item: Change, sources: readonly Source[]): string {
   }
   const message = MESSAGE.exec(ref);
   if (message !== null) {
-    const slack = workspace(item, sources, "slack");
+    const slack = workspace(from, sources, "slack");
     const [, channel, seconds, fraction] = message;
     return slack === null
       ? ref
@@ -48,6 +56,15 @@ export function link(item: Change, sources: readonly Source[]): string {
   }
   return ref;
 }
+
+/** The URL of what `item` names: a T3 thread's own link, or its ref's. */
+function link(item: Change, sources: readonly Source[]): string {
+  if ("link" in item.detail) return item.detail.link || item.ref;
+  return linkRef(item.ref, item.source, sources, item.kind.startsWith("pr."));
+}
+
+/** The detail fields that hold refs: tickets, and the PRs a release names. */
+const REFS: ReadonlySet<string> = new Set(["blocks", "blocker", "ticket", "prs"]);
 
 /**
  * A message's place in time from the full Slack timestamp in its ref, since `at` keeps only the
@@ -58,11 +75,18 @@ function sent(item: Change): bigint {
   return BigInt(seconds + fraction.padEnd(6, "0"));
 }
 
-function reading(detail: Record<string, unknown>): string {
-  return Object.entries(detail)
+/** The item's detail as `key: value` pairs, each ref in it linked. */
+function reading(item: Change, sources: readonly Source[]): string {
+  const show = (key: string, value: unknown) =>
+    REFS.has(key) && typeof value === "string"
+      ? linkRef(value, item.source, sources, key === "prs")
+      : String(value ?? "none");
+  return Object.entries(item.detail)
     .filter(([key]) => key !== "link")
     .map(([key, value]) => {
-      const shown = Array.isArray(value) ? value.join(" ") || "none" : String(value ?? "none");
+      const shown = Array.isArray(value)
+        ? value.map((entry) => show(key, entry)).join(" ") || "none"
+        : show(key, value);
       return `${key}: ${shown}`;
     })
     .join(", ");
@@ -115,7 +139,7 @@ export function renderBatch(
       const { source, detail } = item;
       const seen = channels.get(key);
       channels.set(key, { source, name: detail.name, count: (seen?.count ?? 0) + 1 });
-    } else rows.push(line(item, reading(item.detail)));
+    } else rows.push(line(item, reading(item, sources)));
   }
   const shown = rows.map((row) => {
     if (typeof row === "string") return row;
