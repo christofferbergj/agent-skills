@@ -211,6 +211,16 @@ export function isCalendarDate(text: string): text is CalendarDate {
 
 export const calendarDate = refine(string, isCalendarDate, "expected a date such as 2026-11-26");
 
+/** A time the scan wrote with `iso`, such as `2026-11-26T09:05:00Z`. */
+export const instant = refine(
+  string,
+  (text): text is string => {
+    const ms = Date.parse(text);
+    return !Number.isNaN(ms) && iso(new Date(ms)) === text;
+  },
+  "expected a time such as 2026-11-26T09:05:00Z",
+);
+
 /** The local midnight that starts `date` plus `days`, in `zone`. */
 export function midnight(date: CalendarDate, zone: string, days = 0): Date {
   const [year = 0, month = 1, day = 1] = date.split("-").map(Number);

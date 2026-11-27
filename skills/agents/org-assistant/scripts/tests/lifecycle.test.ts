@@ -4,6 +4,7 @@
  * crash, a busy thread, or an inline scan between two scans loses nothing and sends nothing twice.
  */
 import assert from "node:assert/strict";
+import { readFileSync, writeFileSync } from "node:fs";
 import { test } from "node:test";
 
 import { Org, linearTime, utc } from "./helpers.ts";
@@ -35,6 +36,39 @@ test("a sent batch stays frozen while in flight, and the next batch carries what
   org.deliver(first?.id);
   org.scan("13:05");
   assert.deepEqual(org.kinds(org.lastSent()), ["ticket.mention ENG-101"]);
+});
+
+test("on a quarter-hour timer, an unposted batch is resent an hour after its wake, then fails the unit", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  org.scan("10:05");
+  org.threadIs("failed"); // the run stopped before posting, such as at a usage limit
+  for (const clock of ["10:20", "10:35", "10:50"]) org.scan(clock);
+  assert.equal(org.sent().length, 2);
+  org.scan("11:05");
+  assert.match(org.lastSent()?.message ?? "", /try="2"/);
+  for (const clock of ["11:20", "11:35", "11:50"]) org.scan(clock);
+  const stopped = org.scan("12:05", { code: 1 });
+  assert.match(stopped.stderr, /undelivered after 2 wakes/);
+  assert.equal(org.sent().length, 3);
+});
+
+test("a wake time the scan can't read fails the organisation instead of resending early", (t) => {
+  const org = new Org(t);
+  org.startDay();
+  org.note("n1", "issueAssignedToYou", "ENG-103", linearTime("09:30"));
+  org.save();
+  org.scan("10:05");
+  const file = org.statePath("pending.json");
+  const pending = JSON.parse(readFileSync(file, "utf8"));
+  pending.sent.tries[0].at = "2026-02-30T09:05:00Z"; // a day February lacks, which Date.parse moves on
+  writeFileSync(file, JSON.stringify(pending));
+  org.threadIs("completed");
+  const broken = org.scan("10:20", { code: 1 });
+  assert.match(broken.stderr, /tries.*expected a time such as/);
+  assert.equal(org.sent().length, 2);
 });
 
 test("a reply that names the batch counts as delivered, and one that names a longer id doesn't", (t) => {
