@@ -4,7 +4,7 @@ Read from SKILL.md step 2 and step 3. Each section is one rule set; the scan enf
 
 ## What wakes the thread
 
-The scan sorts each change into a tier ([scan](scan.md#kinds) lists every kind). Each time below names the first scan that may wake the thread: while an earlier batch waits to be posted, new changes gather beside it until it is delivered, resent, or given up ([failure](scan.md#failure)), and quiet and pause hold wakes as the last paragraph says.
+The scan sorts each change into a tier ([scan](scan.md#kinds) lists every kind). Each time below names the first scan that **may wake** the thread. A scan may not wake it while the thread is busy, while quiet or pause holds the wake as the last paragraph says, or while an earlier batch waits to be posted: that batch stays frozen through its resends and after the scan gives up on it, and new changes gather beside it until the thread posts it or, held by quiet, it rejoins a due overview ([failure](scan.md#failure)).
 
 - **Now**, at the next scan: a ticket assigned to the user or taken from them; someone else changed status, priority, or due date on their ticket; a comment or mention on their ticket; a Slack DM or mention unanswered for 30 minutes; a review request, requested changes, or red CI on their PR; a blocker of their ticket closed; a release their PR waits on shipped; a deadline within 24 hours; a T3 thread that waits on them or failed.
 - **Batched**, with the next wake and at the latest at the first scan at or after 13:00 and 17:00: a status change on a ticket their work depends on; a new ticket in a project they work in; a T3 thread that finished, or that has run an hour with no new item.
