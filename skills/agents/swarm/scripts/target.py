@@ -464,7 +464,7 @@ def resolve(parent, role, config, codex_model, usage, read_banked):
     if role not in CROSS_VENDOR_ROLES:
         return resolve_native(parent, role, config, usage, read_banked)
     target = resolve_counterpart(parent, role, config, codex_model, usage, read_banked)
-    if CROSS_VENDOR_ROLES[role][0] == 'review':
+    if role.startswith('review'):
         # A fallback target carries no effort, so Gemini's comes from the configuration.
         target['alternate'] = {'run': ANTIGRAVITY, 'model': GEMINI, 'effort': counterpart_effort(parent, role, config)}
     return target
@@ -477,7 +477,7 @@ def counterpart_effort(parent, role, config):
 
 def resolve_counterpart(parent, role, config, codex_model, usage, read_banked):
     """Return the other vendor's target for a review or computer-use role, or run "fallback" when Codex usage is nearly spent."""
-    entry_name, effort_key, default_effort = CROSS_VENDOR_ROLES[role]
+    entry_name, effort_key, _ = CROSS_VENDOR_ROLES[role]
     entry = table(table(config.get(parent)).get(entry_name))
     vendor = 'claude-code' if parent == 'codex' else 'codex'
     effort = counterpart_effort(parent, role, config)

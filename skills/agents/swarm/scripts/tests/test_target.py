@@ -339,6 +339,9 @@ class TargetResolution(unittest.TestCase):
         # The fixture's full effort is max, which no target runs above xhigh.
         self.assertEqual([self.run_target(role)['alternate'] for role in ('review-full','review-delta')],[gemini('xhigh'),gemini('high')])
         self.assertEqual(self.run_target('review-delta',parent='codex')['alternate'],gemini('high'))
+        # Each host reads its own review entry.
+        self.config.write_text(json.dumps({**CONFIG,'codex':{'review':{'effort':{'delta':'medium'}}}}))
+        self.assertEqual(self.run_target('review-delta',parent='codex')['alternate'],gemini('medium'))
         # A configured effort that differs from the role's default reaches the alternate, on a fallback target too.
         self.config.write_text(json.dumps({**CONFIG,'claude-code':{'review':{'effort':{'full':'medium'}}}}))
         self.assertEqual(self.run_target('review-full')['alternate'],gemini('medium'))
