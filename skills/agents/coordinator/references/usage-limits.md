@@ -1,20 +1,23 @@
 # Usage limits
 
-A **usage limit** stops every thread on one provider instance, one of the user's accounts, until the reset time its notice names, as in `You've hit your 5-hour limit · resets 3pm`. A limit on this thread's own instance stops you too, so you next wake once the user moves this thread to another instance or the limit resets. A run that ended on such a notice follows this file, and no send here counts among the stuck rule's two retries.
+A **usage limit** stops every thread on one provider instance, one of the user's accounts, until the reset time its notice names, as in `You've hit your 5-hour limit · resets 3pm`. The limited instance is the `providerInstanceId` of the run that ended on the notice, which `t3_thread_read` lists. A limit on this thread's own instance stops you too, so you next wake once the user moves this thread to another instance or the limit resets.
 
-## Instance order
+Record each limit you see with `scripts/project.py <folder> learn "<instance>: usage limit until <reset time>"`. A limit holds its instance until that time and nothing after it. A limit you missed costs one failed launch, whose notice records it.
+
+## Pick an instance
 
 The project's **home** is the instance a standing rule names, which keeps it across phases and across a move of this thread. When no rule names one, append a rule that names this thread's instance as the home.
 
-The order is the home, then the other instances of its driver, in a standing rule's order when one gives it, then the instances of the counterpart vendor: Codex for a Claude home, and Claude for a Codex home. It holds only instances `orchestrator_capabilities` lists with `canRunChildTask: true`. An instance in the order is **free** when Listening's `Limits` line doesn't name it.
+Every launch and every resend below takes the first **free** instance, one no recorded limit holds, in this order: the home, then the other instances of its driver, in a standing rule's order when one gives it, then the instances of the counterpart vendor, Codex for a Claude home and Claude for a Codex home. The order holds only instances `orchestrator_capabilities` lists with `canRunChildTask: true`. So work returns to the home once its limit resets.
 
-A worker's target on an instance is that instance as `providerInstanceId`, with the model and effort a standing rule names for it, or else the ones /swarm's `long-running` role resolves with `--parent` set to the instance's host. When the role prints no model, take the instance's first listed model at the worker's effort.
+Pass the instance as the target's `providerInstanceId`. On an instance of this thread's vendor a worker keeps the model and effort its role resolved. On the other vendor it takes the model and effort a standing rule names, or else that instance's first listed model at the same effort.
 
-## On a wake that reaches this file
+## Resend a stopped task
 
-1. **Record.** Set `Limits` to every instance a limit still holds with its reset time, keeping the timer id the line already names, as in `scripts/project.py <folder> listen Limits "claude_adapt until 2026-11-23T15:00+01:00 · timer <id>"`. Leave out an instance whose reset time has passed.
-2. **Resume.** While an instance is free, resume each worker a limit stopped. Read its thread's status first, and go on only when its newest run still ended on the limit. Set the first free instance's target with `t3_thread_configure`, or leave a worker whose own instance is free where it is. Then resend the task the limit interrupted with `t3_thread_send`: that send in full, with its inputs and decisions and what the branch already holds, since T3 hands a new instance only a summary of the thread. Each send takes a slot as step 3's Slots says. A worker stays `waiting`, on the reset or the slot, until its send succeeds, and then reads `running` with Waits on `—`.
-3. **Wait.** While no instance is free, set each stopped worker `waiting` on the earliest reset, and keep one `once` timer for that time, as SKILL.md's timer describes: keep the timer `Limits` names when it is set for that time; otherwise delete it, set a new one, and write its id on the line.
-4. **Clear.** Once no limit is left and no worker waits on a reset, delete the timer `Limits` names and set the line to none.
+Move a worker whose run ended on a limit to the instance picked above with `t3_thread_configure`, or leave it where it is when its own instance is free again. Then resend the task the limit interrupted with `t3_thread_send`: that send in full, with its inputs and decisions and what the branch already holds, since T3 hands a new instance only a summary of the thread. The resend takes a slot like any later task (SKILL.md step 3) and leaves the worker's retry count as it was.
 
-**Complete when:** `Limits` names each instance a limit holds with its reset time, or reads none; every worker a limit stopped is `running` on a free instance, `waiting` on a slot, or `waiting` on a reset that the one timer `Limits` names wakes you for.
+## When no instance is free
+
+Until a reset, the accounts are a shared resource no task can take (SKILL.md step 3). Leave a unit that hasn't started `queued`, and set a stopped worker `waiting` on the earliest reset. Keep a `once` timer for that time, as SKILL.md's timer describes, recorded under Listening as `Reset`, until an instance is free. Then delete it, set that line to none, and launch or resend what waited.
+
+**Complete when:** every launch and resend since the limit took the first free instance, or waits behind the `Reset` timer as `queued` or `waiting`.
