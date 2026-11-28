@@ -15,7 +15,7 @@ To set up an assistant for a new organisation, follow [setup](references/setup.m
 
 On every turn, and after any compaction:
 
-1. Read `rules.md` and `radar.md`. `rules.md` holds the user's rules for you, quoted verbatim. When they give or change one in this thread, write their words as one numbered line, replacing the line it overrides, before you act on it.
+1. Read `rules.md` and `radar.md` in its state folder. `rules.md` holds the user's rules for you, quoted verbatim. When they give or change one in this thread, write their words as one numbered line, replacing the line it overrides, before you act on it.
 2. Run `node scripts/assistant.ts status <org>`. Open the reply with each ⚠️ line it prints, as a Risk row: an old scan stamp, a missing overview, a failing source, or an expired sign-in.
 3. Run `node scripts/assistant.ts ledger <org> call show` for the open call, its id, and its age.
 

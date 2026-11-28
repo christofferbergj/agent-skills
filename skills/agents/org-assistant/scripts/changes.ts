@@ -1,7 +1,7 @@
 /**
  * What a change is, and how soon each kind reaches the user. A change holds ids, kinds, states,
- * counts, and staff names only: never a ticket title, a message body, or anything about a
- * practitioner. `references/rules.md` gives the tiers for people; `KINDS` is the one table the scan
+ * counts, and staff names only: never a ticket title, a message body, or anything the profile's
+ * privacy rules keep out. `references/rules.md` gives the tiers for people; `KINDS` is the one table the scan
  * reads them from.
  */
 import {

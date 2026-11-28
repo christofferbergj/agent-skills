@@ -15,7 +15,10 @@ import { basename, dirname, join } from "node:path";
 // 8,000 characters of Markdown stays under both.
 const LIMIT = 8_000;
 const SETUP = /^## Setup\s*$/m;
-const T3_STATE_DB = process.env.T3_STATE_DB ?? join(homedir(), ".t3", "userdata", "statev2.sqlite");
+// T3CODE_HOME moves T3's data directory, as T3's own CLI reads it.
+const T3_STATE_DB =
+  process.env.T3_STATE_DB ||
+  join(process.env.T3CODE_HOME || join(homedir(), ".t3"), "userdata", "statev2.sqlite");
 
 const path = process.argv[2] ?? join(import.meta.dirname, "..", "SKILL.md");
 // A missing file has no frontmatter, so its directory names the skill in the warning.

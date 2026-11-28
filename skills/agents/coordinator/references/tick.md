@@ -17,7 +17,7 @@ T3 already wakes the coordinator when a `delegate_task` child completes, when a 
 - **Owner**: a `#N` or `repo#N` the tick can't resolve, because the checkout is gone or has no GitHub origin. With an origin, `#N`, `repo#N`, a range `#20–#22`, and a URL each resolve to `owner/repo#N`, which needs no checkout.
 - **Unreadable**: a row with a cell that starts with a live state but whose cells don't match the Workers header, or a live row with no thread link.
 
-Each finding except a PR change repeats hourly while it holds, so fixing the row or Watches stops it. While the coordinator's own thread runs, the tick still times its workers but sends nothing and leaves PRs for later, so the running turn settles first. `tick.json` beside `project.md` holds what the tick last saw; a failed send leaves it unchanged, so the next tick sends again. A thread or PR it can't read is named on stderr, in the timer's log.
+Each finding except a PR change repeats hourly while it holds, so fixing the row or Watches stops it. While the coordinator's own thread runs, the tick still times its workers but sends nothing and leaves PRs for later, so the running turn settles first. `tick.json` beside `project.md` holds what the tick last saw; a failed send leaves it unchanged, so the next tick sends again. A thread or PR it can't read is named on stderr, in the timer's log, with the time and the CLI's reason. A copy of a project whose coordinator thread is on another machine's environment is skipped: T3 here can't read that thread, and that machine's timer ticks it.
 
 ## Install
 

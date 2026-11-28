@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, renameSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -77,6 +77,19 @@ test("warns instead of failing the session when the rules are missing", () => {
 
 test("skips a T3 delegated task, whose parent reads its report", () => {
   assert.equal(stdout([], t3State("thread:delegated-task:review-1")), "");
+});
+
+test("finds T3's state database under T3CODE_HOME when it's set", () => {
+  const home = mkdtempSync(join(tmpdir(), "t3-home-"));
+  mkdirSync(join(home, "userdata"));
+  renameSync(t3State("thread:delegated-task:review-1"), join(home, "userdata", "statev2.sqlite"));
+  const result = spawnSync(process.execPath, [SCRIPT], {
+    input: SESSION,
+    encoding: "utf8",
+    env: { ...process.env, T3_STATE_DB: "", T3CODE_HOME: home },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(result.stdout, "");
 });
 
 test("loads the rules in a T3 thread the user talks to", () => {

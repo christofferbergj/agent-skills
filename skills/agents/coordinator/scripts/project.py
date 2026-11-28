@@ -39,7 +39,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 STATES = ("queued", "overdue", "unknown", "running", "waiting", "stuck", "done", "dropped",
@@ -452,10 +452,22 @@ def _run(args: list[str], cwd: Path | None = None, stdin: str | None = None) -> 
     return done.returncode, done.stdout if done.returncode == 0 else done.stderr
 
 
+def _warn(text: str) -> None:
+    """A line for the timer's log, which has no times of its own, stamped in UTC."""
+    print(f"{datetime.now(timezone.utc):%Y-%m-%dT%H:%M:%SZ} {text}", file=sys.stderr)
+
+
+def _reason(out: str) -> str:
+    """The last line of a CLI's error output, for the timer's log."""
+    return (out.strip().splitlines() or [""])[-1][:200]
+
+
 def show_thread(thread: str) -> dict | None:
-    """The thread's state from `t3 thread show`, or None when it can't be read."""
+    """The thread's state from `t3 thread show`, or None when it can't be read, with the
+    CLI's reason in the log."""
     code, out = _run(["t3", "thread", "show", thread, "--json", "--messages", "0", "--log-level", "error"])
     if code != 0:
+        _warn(f"tick: `t3 thread show {thread}` exited {code}: {_reason(out)}")
         return None
     # A t3 CLI older than the server can still log a multi-line warning to stdout ahead of
     # the JSON, so parse from the first line that opens an object holding the thread.
@@ -471,11 +483,22 @@ def view_pr(ref: str) -> list | None:
     """[state, isDraft] of `owner/repo#N`; None when unread."""
     repo, number = ref.split("#")
     code, out = _run(["gh", "pr", "view", number, "-R", repo, "--json", "state,isDraft"])
+    if code:
+        _warn(f"tick: `gh pr view {number} -R {repo}` exited {code}: {_reason(out)}")
     try:
         pr = json.loads(out) if code == 0 else None
         return [pr["state"], pr["isDraft"]] if pr else None
     except (ValueError, KeyError, TypeError):
         return None
+
+
+def this_environment() -> str:
+    """This machine's T3 environment id, or "" when unknown."""
+    path = Path(os.environ.get("T3CODE_HOME") or "~/.t3").expanduser() / "userdata" / "environment-id"
+    try:
+        return path.read_text().strip()
+    except OSError:
+        return ""
 
 
 def _header(lines: list[str], field: str) -> str:
@@ -554,7 +577,7 @@ def tick(lines: list[str], state: dict, now: float, show=show_thread, view=view_
     coordinator = LINK.search(_header(lines, "Coordinator"))
     lead = coordinator and show(coordinator.group(2))
     if not lead or lead.get("archived"):
-        print(f"tick: can't read the coordinator's thread, or it's archived: {_header(lines, 'Coordinator')}", file=sys.stderr)
+        _warn(f"tick: can't read the coordinator's thread, or it's archived: {_header(lines, 'Coordinator')}")
         return None
     busy = hold and lead.get("status") in ACTIVE
     place = _header(lines, "Checkout").split(" (")[0].strip()
@@ -587,7 +610,7 @@ def tick(lines: list[str], state: dict, now: float, show=show_thread, view=view_
             continue
         now_seen = show(thread)
         if now_seen is None:
-            print(f"tick: can't read thread {thread}", file=sys.stderr)
+            _warn(f"tick: can't read thread {thread}")
             if thread in seen:
                 threads[thread] = seen[thread]  # keep its last look, so a stall stays timed
             found.append((f"unread:{thread}", f"{slug}: `t3 thread show` can't read its thread"))
@@ -618,7 +641,7 @@ def tick(lines: list[str], state: dict, now: float, show=show_thread, view=view_
         known = state.get("prs", {}).get(ref)
         prs[ref] = view(ref) or known
         if prs[ref] is known:
-            print(f"tick: can't read PR {ref}", file=sys.stderr)
+            _warn(f"tick: can't read PR {ref}")
         if ref in watched and prs[ref] and prs[ref][0] != "OPEN":  # a watch left on a finished PR
             found.append((f"watch:{ref}", f"{ref}: {prs[ref][0].lower()}, and still under Watches"))
         elif known and prs[ref] != known:
@@ -652,6 +675,14 @@ def _tick(folder: Path, lines: list[str], send: bool) -> int:
     """Runs tick: with --send only while Listening's Heartbeat is `tick`, saving the state
     only after the message went out, so a failed send is retried next tick."""
     if send and _listened(lines, "Heartbeat") != "tick":
+        return 0
+    # A copy of a project whose coordinator runs on another machine: T3 here can't read or
+    # message its thread, and that machine's timer ticks it.
+    lead, here = LINK.search(_header(lines, "Coordinator")), this_environment()
+    if lead and here and lead.group(1) != here:
+        if not send:
+            print(f"its coordinator's thread is on environment {lead.group(1)}, not this machine's {here}, "
+                  "so that machine's timer ticks it")
         return 0
     store = folder / "tick.json"
     try:

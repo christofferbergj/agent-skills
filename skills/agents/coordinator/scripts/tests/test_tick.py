@@ -70,6 +70,8 @@ class Tick(unittest.TestCase):
         self.addCleanup(subprocess.run, ["rm", "-rf", str(self.root)])
         self.fake, self.dir = self.root / "fake", self.root / "coordinator" / "export"
         (self.fake / "bin").mkdir(parents=True)
+        (self.fake / "userdata").mkdir()
+        (self.fake / "userdata" / "environment-id").write_text("env\n")  # this machine's, as T3 writes it
         self.dir.mkdir(parents=True)
         for name, body in [("t3", FAKE_T3), ("gh", FAKE_GH)]:
             (self.fake / "bin" / name).write_text(body)
@@ -90,7 +92,7 @@ class Tick(unittest.TestCase):
     def tick(self, *args, code=0, send_code=0):
         (self.fake / "threads.json").write_text(json.dumps(self.threads))
         (self.fake / "prs.json").write_text(json.dumps(self.prs))
-        env = {**os.environ, "FAKE": str(self.fake), "SEND_CODE": str(send_code),
+        env = {**os.environ, "FAKE": str(self.fake), "SEND_CODE": str(send_code), "T3CODE_HOME": str(self.fake),
                "PATH": f"{self.fake / 'bin'}:{os.environ['PATH']}"}
         result = subprocess.run([sys.executable, str(SCRIPT), str(self.dir), "tick", *args],
                                 capture_output=True, text=True, env=env)
@@ -351,6 +353,31 @@ class Tick(unittest.TestCase):
         del self.threads["lead"]
         self.assertIn("tick: can't read the coordinator's thread", self.tick("--send", code=1).stderr)
 
+    def test_a_failed_read_names_the_clis_reason_with_the_time(self):
+        # Upstream's Mac timer log held 158 bare "can't read" lines by Nov 25, 2026, with no time or cause.
+        del self.threads["lead"]
+        err = self.tick("--send", code=1).stderr
+        self.assertRegex(err, r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\dZ tick: `t3 thread show lead` exited 1: "
+                              r"Thread is no longer available\.\n")
+        self.assertRegex(err, r"\n\S+Z tick: can't read the coordinator's thread")
+        self.threads["lead"] = thread("completed", 40)
+        del self.prs["acme/app#7"]
+        self.assertRegex(self.tick("--send").stderr, r"\S+Z tick: `gh pr view 7 -R acme/app` exited 1: no pull requests found")
+
+    def test_a_project_whose_coordinator_is_on_another_machine_is_left_to_that_machine(self):
+        # Upstream, Nov 23 to 26, 2026: a linked machine's timer logged "can't read the coordinator's thread"
+        # 410 times for a copy of a Mac project, since its T3 can't read a Mac thread.
+        (self.fake / "userdata" / "environment-id").write_text("linked\n")
+        result = self.tick("--send")
+        self.assertEqual((result.stderr, self.sent(), (self.dir / "tick.json").exists()), ("", [], False))
+        self.assertEqual(self.tick().stdout, "its coordinator's thread is on environment env, not this machine's "
+                                             "linked, so that machine's timer ticks it\n")
+        (self.fake / "userdata" / "environment-id").unlink()  # unknown: ticks as before
+        self.threads["w1"] = thread("completed", 2)
+        self.tick("--send")
+        self.tick("--send")
+        self.assertEqual(len(self.sent()), 1)
+
     def test_tick_sh_ticks_each_project_and_stamps_its_run(self):
         other = self.dir.parent / "parked"
         other.mkdir()
@@ -358,7 +385,8 @@ class Tick(unittest.TestCase):
         self.write_project(remote="running")
         (self.fake / "threads.json").write_text(json.dumps(self.threads))
         (self.fake / "prs.json").write_text(json.dumps(self.prs))
-        env = {**os.environ, "FAKE": str(self.fake), "PATH": f"{self.fake / 'bin'}:{os.environ['PATH']}"}
+        env = {**os.environ, "FAKE": str(self.fake), "T3CODE_HOME": str(self.fake),
+               "PATH": f"{self.fake / 'bin'}:{os.environ['PATH']}"}
         subprocess.run([str(HERE / "tick.sh"), str(self.dir.parent)], env=env, check=True)
         self.assertEqual([m["to"] for m in self.sent()], ["lead"])
         self.assertLess(time.time() - (self.dir.parent / ".tick").stat().st_mtime, 60)
